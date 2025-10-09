@@ -1,4 +1,4 @@
-# 🚀  "Nombre del proyecto" Info
+#  🌿  CIDE-SEMILLEROS
 
 ## 📋 Requisitos Previos
 
