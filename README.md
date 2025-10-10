@@ -33,13 +33,37 @@ inngresar en la raiz del proyecto
 
 #### 3. 
 
- "Ingresar a la consola y ejecutar este comando. 
+ Ingresar a la consola y ejecutar este comando. 
 
 ```bash
 
 node instalar_dependencias.js
 
 ```
+
+#### 4. 
+
+ Iniciar el servidor ingresa el comando en CMD. 
+
+```bash
+
+php artisan serve
+
+```
+
+
+### 🧩 Posibles errores al iniciar el servidor Laravel
+
+| Mensaje o pantalla | Causa probable | Solución |
+|--------------------|----------------|-----------|
+| ❌ **404 Not Found** | No hay rutas configuradas o `routes/web.php` vacío | Abre `routes/web.php` y asegúrate de tener:<br>`Route::get('/', function () { return view('welcome'); });` |
+| ⚠️ **APP_KEY missing** | No generaste la clave de aplicación | Ejecuta:<br>`php artisan key:generate` |
+| 🔒 **Access denied for user 'root'@'localhost'** | Base de datos mal configurada | Revisa las variables `DB_` en tu archivo `.env` |
+| 🧱 **Class not found** | Falta alguna dependencia del proyecto | Ejecuta:<br>`composer install` |
+| ⚪ **Pantalla blanca** | Error en PHP, pero `APP_DEBUG` está desactivado | En el archivo `.env`, cambia:<br>`APP_DEBUG=true` |
+
+
+
 
 
 
