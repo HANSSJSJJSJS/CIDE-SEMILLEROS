@@ -1,10 +1,6 @@
 # 🌿 CIDE-SEMILLEROS
 
-## 📋 Requisitosprevioss
-
-Antes de comenzar, asegúrate de tener instalado:
-
-## Requisitos del entorno
+## 📋 Requisitos previos
 
 | Herramienta     | Versión recomendada | Descripción |
 |-----------------|---------------------|--------------|
