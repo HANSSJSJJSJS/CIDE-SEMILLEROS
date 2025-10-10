@@ -28,6 +28,10 @@
             @endisset
 
             <!-- Page Content -->
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit">Cerrar sesión</button>
+            </form>
             <main>
                 {{ $slot }}
             </main>
