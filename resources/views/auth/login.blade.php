@@ -1,74 +1,47 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>SCIDES - Inicio de Sesión</title>
-    <link rel="stylesheet" href="{{ asset('css/Login.css') }}">
-</head>
-<body>
-    <div class="container">
-        <!-- Panel Izquierdo -->
-        <div class="left-panel">
-            <div class="logo-sena">
-                <img src="{{ asset('images/logo-sena.png') }}" alt="Logo SENA">
-            </div>
-            <div class="scides-title">SCIDES</div>
+<x-guest-layout>
+    <!-- Session Status -->
+    <x-auth-session-status class="mb-4" :status="session('status')" />
+
+    <form method="POST" action="{{ route('login') }}">
+        @csrf
+
+        <!-- Email Address -->
+        <div>
+            <x-input-label for="email" :value="__('Email')" />
+            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
+            <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
-        
-        <!-- Panel Derecho -->
-        <div class="right-panel" style="background-image: url('{{ asset('images/Loginfondo.png') }}');">
-            
-            <!-- Formulario -->
-            <div class="login-form">
-                <h2 class="form-title">Inicio de sesión</h2>
-                
-                @if($errors->has('error'))
-                    <div class="alert alert-error">{{ $errors->first('error') }}</div>
-                @endif
-                
-                @if(session('success'))
-                    <div class="alert alert-success">{{ session('success') }}</div>
-                @endif
-                
-                <form method="POST" action="{{ route('login.post') }}">
-                    @csrf
-                    
-                    <div class="form-group">
-                        <label for="email">Usuario:</label>
-                        <input 
-                            type="email" 
-                            id="email" 
-                            name="email" 
-                            value="{{ old('email') }}"
-                            required 
-                            autocomplete="email"
-                            autofocus
-                            placeholder="Ingresa tu correo"
-                        >
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="password">contraseña:</label>
-                        <input 
-                            type="password" 
-                            id="password" 
-                            name="password" 
-                            required
-                            autocomplete="current-password"
-                            placeholder="Ingresa tu contraseña"
-                        >
-                    </div>
-                    
-                    <button type="submit" class="btn-entrar">ENTRAR</button>
-                </form>
-                
-                <div class="forgot-password">
-                    <a href="#">¿Olvidaste tú contraseña?</a>
-                </div>
-            </div>
+
+        <!-- Password -->
+        <div class="mt-4">
+            <x-input-label for="password" :value="__('Password')" />
+
+            <x-text-input id="password" class="block mt-1 w-full"
+                            type="password"
+                            name="password"
+                            required autocomplete="current-password" />
+
+            <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
-    </div>
-</body>
-</html>
+
+        <!-- Remember Me -->
+        <div class="block mt-4">
+            <label for="remember_me" class="inline-flex items-center">
+                <input id="remember_me" type="checkbox" class="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800" name="remember">
+                <span class="ms-2 text-sm text-gray-600 dark:text-gray-400">{{ __('Remember me') }}</span>
+            </label>
+        </div>
+
+        <div class="flex items-center justify-end mt-4">
+            @if (Route::has('password.request'))
+                <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('password.request') }}">
+                    {{ __('Forgot your password?') }}
+                </a>
+            @endif
+
+            <x-primary-button class="ms-3">
+                {{ __('Log in') }}
+            </x-primary-button>
+        </div>
+    </form>
+</x-guest-layout>
