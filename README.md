@@ -4,19 +4,16 @@
 
 Antes de comenzar, asegúrate de tener instalado:
 
+## Requisitos del entorno
+
 | Herramienta     | Versión recomendada | Descripción |
-
 |-----------------|---------------------|--------------|
+| PHP             | 8.1 o superior      | Lenguaje principal usado por Laravel. |
+| Composer        | Última versión      | Gestor de dependencias de PHP. |
+| MySQL           | 5.7+                | Base de datos típica para Laravel. |
+| Node.js + NPM   | Node 18+            | Para compilar los assets (CSS, JS, etc.). |
+| Git             | —                   | Para clonar y administrar el repositorio. |
 
-| PHP         | 8.1 o superior      | Lenguaje principal usado por Laravel. |
-
-| Composer    | Última versión      | Gestor de dependencias de PHP. |
-
-| MySQL       | 5.7+                | Base de datos típica para Laravel. |
-
-| Node.js + NPM | Node 18+          | Para compilar los assets (CSS, JS, etc.). |
-
-| Git         | —                   | Para clonar y administrar el repositorio. |
 
 "Listar el paso a paso para ejecutar el proyecto de manera local".
 
