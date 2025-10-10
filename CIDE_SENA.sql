@@ -25,8 +25,9 @@ SET time_zone = "+00:00";
 
 --
 -- Estructura de tabla para la tabla `aprendices`
---
+CREATE DATABASE IF NOT EXISTS CIDE_SENA;
 
+USE CIDE_SENA;
 CREATE TABLE `aprendices` (
   `id_usuario` int(10) UNSIGNED NOT NULL,
   `nombres` varchar(120) NOT NULL,
