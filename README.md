@@ -1,42 +1,52 @@
-#  🌿  CIDE-SEMILLEROS
+# 🌿 CIDE-SEMILLEROS
 
-## 📋 Requisitos Previos
+## 📋 Requisitosprevioss
 
-"listar requerimientos antes de ejecutar el proyecto "
 Antes de comenzar, asegúrate de tener instalado:
 
 | Herramienta     | Versión recomendada | Descripción |
+
 |-----------------|---------------------|--------------|
-| **PHP**         | 8.1 o superior      | Lenguaje principal usado por Laravel. |
-| **Composer**    | Última versión      | Gestor de dependencias de PHP. |
-| **MySQL**       | 5.7+                | Base de datos típica para Laravel. |
-| **Node.js + NPM** | Node 18+          | Para compilar los assets (CSS, JS, etc.). |
-| **Git**         | —                   | Para clonar y administrar el repositorio. |
 
-" listar el  paso a paso para ejecutar el poryecto de manera local "
+| PHP         | 8.1 o superior      | Lenguaje principal usado por Laravel. |
 
+| Composer    | Última versión      | Gestor de dependencias de PHP. |
 
-## 🛠️ Instrucciones de Instalación
+| MySQL       | 5.7+                | Base de datos típica para Laravel. |
 
+| Node.js + NPM | Node 18+          | Para compilar los assets (CSS, JS, etc.). |
 
-#### 1. Clona el proyecto
+| Git         | —                   | Para clonar y administrar el repositorio. |
+
+"Listar el paso a paso para ejecutar el proyecto de manera local".
+
+## 🛠️ Instrucciones deinstalaciónn
+
+#### 1. Clona el proyecto.
 
 ```bash
+
   git clone https://github.com/HANSSJSJJSJS/CIDE-SEMILLEROS.git
+
 ```
 
 #### 2. 
 
 ```bash
-ingresar paso 
+
+inngresar en la raiz del proyecto
+
 ```
 
 #### 3. 
 
-```bash
-ingresar paso 
-```
+ "Ingresar a la consola y ejecutar este comando. 
 
+```bash
+
+node instalar_dependencias.js
+
+```
 
 
 
