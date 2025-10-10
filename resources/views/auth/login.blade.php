@@ -18,37 +18,7 @@
         </div>
         
         <!-- Panel Derecho -->
-        <div class="right-panel">
-            <!-- Decoración de hojas -->
-            <div class="leaves-decoration">
-                <svg class="leaf leaf-top" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                    <g opacity="0.4">
-                        <path d="M100,20 Q140,60 100,100 Q60,60 100,20" fill="#ffffff"/>
-                        <path d="M110,30 Q135,55 110,80" fill="none" stroke="#ffffff" stroke-width="2"/>
-                        <path d="M90,30 Q65,55 90,80" fill="none" stroke="#ffffff" stroke-width="2"/>
-                    </g>
-                    <g opacity="0.4" transform="translate(60, 20)">
-                        <path d="M100,20 Q140,60 100,100 Q60,60 100,20" fill="#ffffff"/>
-                    </g>
-                    <g opacity="0.4" transform="translate(120, 10)">
-                        <path d="M100,20 Q140,60 100,100 Q60,60 100,20" fill="#ffffff"/>
-                    </g>
-                </svg>
-                
-                <svg class="leaf leaf-bottom" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                    <g opacity="0.4">
-                        <path d="M100,20 Q140,60 100,100 Q60,60 100,20" fill="#ffffff"/>
-                        <path d="M110,30 Q135,55 110,80" fill="none" stroke="#ffffff" stroke-width="2"/>
-                        <path d="M90,30 Q65,55 90,80" fill="none" stroke="#ffffff" stroke-width="2"/>
-                    </g>
-                    <g opacity="0.4" transform="translate(-60, 30)">
-                        <path d="M100,20 Q140,60 100,100 Q60,60 100,20" fill="#ffffff"/>
-                    </g>
-                    <g opacity="0.4" transform="translate(30, 50)">
-                        <path d="M100,20 Q140,60 100,100 Q60,60 100,20" fill="#ffffff"/>
-                    </g>
-                </svg>
-            </div>
+        <div class="right-panel" style="background-image: url('{{ asset('images/Loginfondo.png') }}');">
             
             <!-- Formulario -->
             <div class="login-form">
