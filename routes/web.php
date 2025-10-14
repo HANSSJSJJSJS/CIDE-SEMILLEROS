@@ -6,6 +6,10 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\UsuarioController;
 
 
+use App\Http\Middleware\RoleMiddleware;
+
+
+app('router')->aliasMiddleware('role', RoleMiddleware::class);
 
 
 Route::resource('usuarios', UsuarioController::class);
