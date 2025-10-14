@@ -44,18 +44,7 @@
                 {{ __('Already registered?') }}
             </a>
 
-            <x-primary-button class="ms-4">
-                <div>
-                    <x-input-label for="role" :value="__('Rol')" />
-                    <select id="role" name="role" class="block mt-1 w-full border-gray-300 rounded-md shadow-sm">
-                        <option value="ADMIN">ADMIN</option>
-                        <option value="INSTRUCTOR">INSTRUCTOR</option>
-                        <option value="APRENDIZ" selected>APRENDIZ</option>
-                        <option value="LIDER GENERAL">LIDER GENERAL</option>
-                    </select>
-                </div>
-                {{ __('Register') }}
-            </x-primary-button>
+            
         </div>
     </form>
 </x-guest-layout>

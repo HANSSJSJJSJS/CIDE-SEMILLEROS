@@ -3,6 +3,12 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\UsuarioController;
+
+
+
+
+Route::resource('usuarios', UsuarioController::class);
 
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
@@ -41,5 +47,14 @@ Route::middleware(['auth', 'role:LIDER GENERAL'])->group(function () {
     Route::get('/lider/dashboard', fn() => view('dashboard-lider'))->name('lider.dashboard');
 });
 // --- FIN RUTAS POR ROLES Y DASHBOARDS ---
+Route::get('/admin/crear', function () {
+    return view('Admin.crear');
+});
+
+Route::get('/admin/crear', function () {
+    return view('Admin.crear');
+});
+
 
 require __DIR__.'/auth.php';
+
