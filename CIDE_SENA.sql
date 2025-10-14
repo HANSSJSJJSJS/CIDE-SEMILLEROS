@@ -1,3 +1,11 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Servidor: 127.0.0.1
+-- Tiempo de generación: 14-10-2025 a las 20:04:28
+-- Versión del servidor: 10.4.32-MariaDB
+-- Versión de PHP: 8.4.13
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -17,9 +25,8 @@ SET time_zone = "+00:00";
 
 --
 -- Estructura de tabla para la tabla `aprendices`
-CREATE DATABASE IF NOT EXISTS CIDE_SENA;
+--
 
-USE CIDE_SENA;
 CREATE TABLE `aprendices` (
   `id_usuario` int(10) UNSIGNED NOT NULL,
   `nombres` varchar(120) NOT NULL,
@@ -76,9 +83,6 @@ CREATE TABLE `documentos` (
 
 -- --------------------------------------------------------
 
-
--- --------------------------------------------------------
-
 --
 -- Estructura de tabla para la tabla `grupos`
 --
@@ -107,7 +111,7 @@ CREATE TABLE `grupo_aprendices` (
   `activo` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- --------------f------------------------------------------
+-- --------------------------------------------------------
 
 --
 -- Estructura de tabla para la tabla `jobs`
@@ -125,9 +129,6 @@ CREATE TABLE `jobs` (
 
 -- --------------------------------------------------------
 
-
--- --------------------------------------------------------
-
 --
 -- Estructura de tabla para la tabla `lideres_semillero`
 --
@@ -138,17 +139,10 @@ CREATE TABLE `lideres_semillero` (
   `apellidos` varchar(120) NOT NULL,
   `id_tipo_documento` tinyint(3) UNSIGNED NOT NULL,
   `documento` varchar(40) NOT NULL,
-  `contacto_nombre` varchar(160) DEFAULT NULL,
-  `contacto_celular` varchar(30) DEFAULT NULL,
   `correo_institucional` varchar(160) DEFAULT NULL,
-  `correo_personal` varchar(160) DEFAULT NULL,
   `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
   `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
-
 
 -- --------------------------------------------------------
 
@@ -178,14 +172,11 @@ CREATE TABLE `proyectos` (
 CREATE TABLE `semilleros` (
   `id_semillero` int(10) UNSIGNED NOT NULL,
   `nombre_semillero` varchar(120) NOT NULL,
-  `descripcion` text DEFAULT NULL,
+  `línea_investigación` text DEFAULT NULL,
   `id_lider_usuario` int(10) UNSIGNED NOT NULL,
   `estado` enum('ACTIVO','INACTIVO') DEFAULT 'ACTIVO',
   `creado_en` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
 
 -- --------------------------------------------------------
 
@@ -291,8 +282,6 @@ ALTER TABLE `documentos`
   ADD KEY `fk_documento_proyecto` (`id_proyecto`);
 
 --
-
---
 -- Indices de la tabla `grupos`
 --
 ALTER TABLE `grupos`
@@ -315,26 +304,11 @@ ALTER TABLE `jobs`
   ADD KEY `jobs_queue_index` (`queue`);
 
 --
--- Indices de la tabla `job_batches`
---
-ALTER TABLE `job_batches`
-  ADD PRIMARY KEY (`id`);
-
---
 -- Indices de la tabla `lideres_semillero`
 --
 ALTER TABLE `lideres_semillero`
   ADD PRIMARY KEY (`id_usuario`),
   ADD KEY `fk_lider_tipo_doc` (`id_tipo_documento`);
-
---
-
-
---
--- Indices de la tabla `password_reset_tokens`
---
-ALTER TABLE `password_reset_tokens`
-  ADD PRIMARY KEY (`email`);
 
 --
 -- Indices de la tabla `proyectos`
@@ -352,7 +326,7 @@ ALTER TABLE `semilleros`
   ADD UNIQUE KEY `nombre_semillero` (`nombre_semillero`),
   ADD KEY `fk_semillero_liderperfil` (`id_lider_usuario`);
 
-
+--
 -- Indices de la tabla `tipos_documento`
 --
 ALTER TABLE `tipos_documento`
@@ -391,8 +365,6 @@ ALTER TABLE `documentos`
   MODIFY `id_documento` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
-
---
 -- AUTO_INCREMENT de la tabla `grupos`
 --
 ALTER TABLE `grupos`
@@ -409,8 +381,6 @@ ALTER TABLE `grupo_aprendices`
 --
 ALTER TABLE `jobs`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
 
 --
 -- AUTO_INCREMENT de la tabla `proyectos`
@@ -447,56 +417,6 @@ ALTER TABLE `users`
 --
 ALTER TABLE `usuarios`
   MODIFY `id_usuario` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- Restricciones para tablas volcadas
---
-
---
--- Filtros para la tabla `aprendices`
---
-ALTER TABLE `aprendices`
-  ADD CONSTRAINT `fk_aprendiz_tipo_doc` FOREIGN KEY (`id_tipo_documento`) REFERENCES `tipos_documento` (`id_tipo_documento`) ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_aprendiz_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `documentos`
---
-ALTER TABLE `documentos`
-  ADD CONSTRAINT `fk_documento_proyecto` FOREIGN KEY (`id_proyecto`) REFERENCES `proyectos` (`id_proyecto`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `grupos`
---
-ALTER TABLE `grupos`
-  ADD CONSTRAINT `fk_grupo_proyecto` FOREIGN KEY (`id_proyecto`) REFERENCES `proyectos` (`id_proyecto`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `grupo_aprendices`
---
-ALTER TABLE `grupo_aprendices`
-  ADD CONSTRAINT `fk_ga_aprendiz_perfil` FOREIGN KEY (`id_aprendiz`) REFERENCES `aprendices` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_ga_grupo` FOREIGN KEY (`id_grupo`) REFERENCES `grupos` (`id_grupo`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `lideres_semillero`
---
-ALTER TABLE `lideres_semillero`
-  ADD CONSTRAINT `fk_lider_tipo_doc` FOREIGN KEY (`id_tipo_documento`) REFERENCES `tipos_documento` (`id_tipo_documento`) ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_lider_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `proyectos`
---
-ALTER TABLE `proyectos`
-  ADD CONSTRAINT `fk_proyecto_semillero` FOREIGN KEY (`id_semillero`) REFERENCES `semilleros` (`id_semillero`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_proyecto_tipo` FOREIGN KEY (`id_tipo_proyecto`) REFERENCES `tipos_proyecto` (`id_tipo_proyecto`) ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `semilleros`
---
-ALTER TABLE `semilleros`
-  ADD CONSTRAINT `fk_semillero_liderperfil` FOREIGN KEY (`id_lider_usuario`) REFERENCES `lideres_semillero` (`id_usuario`) ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
