@@ -1,0 +1,286 @@
+/* Reset y Estilos Globales */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+        
+        /* Panel Izquierdo - Logo y Título */
+        .left-panel {
+            flex: 1;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .logo-sena img {
+            width: 120px;   /* ajusta el valor a tu gusto */
+            height: auto;   /* mantiene la proporción */
+            }
+        
+        
+        .scides-title {
+            font-size: 120px;
+            font-weight: bold;
+            color: #39b54a;
+            font-style: italic;
+            letter-spacing: -3px;
+            line-height: 1;
+        }
+        
+        /* Panel Derecho - Formulario */
+        .right-panel {
+            flex: 1;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            width: 30%;
+            height: 80%;
+            left: -9%;
+            margin-top: 20px;
+            position: relative;
+            border-radius: 80px 0 0 80px;
+            overflow: hidden;
+
+            /* Forma curva similar a la de la imagen */
+        }
+        
+        /* Hojas decorativas */
+        .leaves-decoration {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+        
+        .leaf {
+            position: absolute;
+            opacity: 0.3;
+            filter: brightness(1.2);
+        }
+        
+        .leaf-top {
+            top: 8%;
+            right: 10%;
+            width: 180px;
+            height: auto;
+        }
+        
+        .leaf-bottom {
+            bottom: 12%;
+            left: 8%;
+            width: 200px;
+            height: auto;
+        }
+        
+        /* Formulario de Login */
+        .login-form {
+            background-color: #ffffff;
+            border-radius: 30px;
+            padding: 50px 60px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .form-title {
+            text-align: center;
+            color: #39b54a;
+            font-size: 36px;
+            font-weight: bold;
+            font-style: italic;
+            margin-bottom: 40px;
+            text-decoration: underline;
+            text-decoration-thickness: 2px;
+            text-underline-offset: 8px;
+        }
+        
+        .form-group {
+            margin-bottom: 30px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #000000;
+            font-size: 18px;
+            font-weight: 600;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 18px 20px;
+            border: 3px solid #39b54a;
+            border-radius: 15px;
+            font-size: 16px;
+            background-color: #e8f5e9;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        
+        .form-group input:focus {
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(57, 181, 74, 0.2);
+            border-color: #2d8f3a;
+        }
+        
+        .btn-entrar {
+            width: 100%;
+            padding: 18px;
+            background-color: #39b54a;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 22px;
+            font-weight: bold;
+            font-style: italic;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn-entrar:hover {
+            background-color: #2d8f3a;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(57, 181, 74, 0.4);
+        }
+        
+        .btn-entrar:active {
+            transform: translateY(0);
+        }
+        
+        .forgot-password {
+            text-align: center;
+            margin-top: 25px;
+        }
+        
+        .forgot-password a {
+            color: #39b54a;
+            text-decoration: none;
+            font-weight: bold;
+            font-style: italic;
+            font-size: 16px;
+            transition: color 0.3s ease;
+        }
+        
+        .forgot-password a:hover {
+            color: #2d8f3a;
+            text-decoration: underline;
+        }
+        
+        /* Alertas */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 15px;
+        }
+        
+        .alert-error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 2px solid #ef5350;
+        }
+        
+        .alert-success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 2px solid #66bb6a;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .scides-title {
+                font-size: 90px;
+            }
+        }
+        
+        @media (max-width: 968px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .left-panel {
+                padding: 40px 20px;
+                min-height: 40vh;
+            }
+            
+            .scides-title {
+                font-size: 70px;
+            }
+            
+            .right-panel {
+                border-radius: 40px 40px 0 0;
+                min-height: 60vh;
+            }
+            
+            .login-form {
+                padding: 40px 30px;
+            }
+            
+            .form-title {
+                font-size: 28px;
+            }
+            
+            .leaf-top,
+            .leaf-bottom {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .scides-title {
+                font-size: 50px;
+            }
+            
+            .login-form {
+                padding: 30px 20px;
+            }
+            
+            .form-title {
+                font-size: 24px;
+            }
+            
+            .form-group input {
+                padding: 15px;
+            }
+            
+            .btn-entrar {
+                font-size: 18px;
+                padding: 15px;
+            }
+        }
