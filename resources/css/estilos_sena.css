@@ -1,114 +1,126 @@
-/* TEST: borrar luego */
+/* === AJUSTES DE COLORES Y FONDOS PARA EL FORMULARIO SENA === */
 
-
-/* ===== Tema SENA con scope: gana a Bootstrap por especificidad ===== */
-.sena-theme {
-  /* Colores base del tema */
-  --sena-green-900: #004422;
-  --sena-green-700: #00733b;
-  --sena-green-600: #009e4f;
-  --sena-green-500: #00b259;
-  --sena-bg-soft:   #f8fdf9;
-  --sena-body-bg:   #e9f1ec;
-  --sena-text:      #1a1a1a;
-
-  /* Sobrescribir variables de Bootstrap (5.3+) */
-  --bs-body-bg: var(--sena-body-bg);
-  --bs-body-color: var(--sena-text);
-  --bs-success: var(--sena-green-700);
-  --bs-success-rgb: 0, 115, 59;
-  --bs-link-color: var(--sena-green-700);
-  --bs-link-hover-color: var(--sena-green-600);
+/* Fondo general fuera del formulario */
+.sena-body, html, body {
+  background: linear-gradient(135deg, #0f172a 0%, #f58220 100%) !important;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
-/* ===== Navbar ===== */
-.sena-theme nav.navbar {
-  background: linear-gradient(90deg, var(--sena-green-900) 0%, var(--sena-green-700) 100%);
-  box-shadow: 0 2px 6px rgba(0,0,0,.3);
+/* Cabecera */
+.sena-header {
+  width: 100%;
+  background-color: #0f172a;
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.25);
 }
-.sena-theme nav.navbar .navbar-brand { color:#fff; font-weight:600; }
-
-/* ===== Tarjeta principal ===== */
-.sena-theme .card-sena {
-  background: var(--sena-bg-soft);
-  border-radius: 14px;
-  border: 2px solid var(--sena-green-600);
-  box-shadow: 0 10px 24px rgba(0,0,0,.15);
+.sena-header img.sena-logo {
+  height: 48px;
+  margin-right: 0.75rem;
 }
-
-/* ===== Título de la tarjeta ===== */
-.sena-theme .card-sena h2 {
-  background: var(--sena-green-600);
-  color: #fff;
-  padding: 14px 18px;
-  border-radius: 10px;
+.sena-header-title {
+  color: #f58220;
+  font-size: 1.4rem;
   font-weight: 700;
 }
 
-/* ===== Bloques internos ===== */
-.sena-theme .p-3.border.rounded-3.bg-white {
-  background-color: #e8f5ec !important;   /* un toque de contraste suave */
-  border-color: var(--sena-green-600) !important;
+/* Footer */
+.sena-footer {
+  background-color: #0f172a;
+  color: #e5e7eb;
+  text-align: center;
+  padding: 1rem;
+  margin-top: 2rem;
+  font-size: 0.9rem;
 }
 
-/* ===== Labels ===== */
-.sena-theme label.form-label,
-.sena-theme .fw-semibold {
-  color: var(--sena-green-900);
+/* Tarjeta del formulario */
+.sena-theme .card-sena {
+  background-color: #ffffff !important;
+  border-radius: 16px !important;
+  border: 2px solid #f58220 !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+
+/* Títulos */
+.sena-theme .titulo-sena {
+  color: #0f172a !important;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+/* Subtítulos de secciones */
+.sena-theme .text-sena,
+.sena-theme h5 {
+  color: #f58220 !important;
+}
+
+/* Inputs y selects claros */
+.sena-theme input,
+.sena-theme select,
+.sena-theme textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  padding: 0.5rem 0.75rem !important;
+  box-shadow: none !important;
+}
+
+/* Focus en input */
+.sena-theme input:focus,
+.sena-theme select:focus {
+  outline: 2px solid #f58220 !important;
+  box-shadow: 0 0 0 3px rgba(245,130,32,0.2) !important;
+}
+
+/* Botón principal */
+.sena-theme .btn-sena,
+.sena-theme button[type=submit],
+.sena-theme .btn-primary {
+  background-color: #f58220 !important;
+  border: none !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  padding: 0.6rem 1.5rem !important;
   font-weight: 600;
+  transition: transform .1s ease, filter .2s ease;
+}
+.sena-theme .btn-sena:hover,
+.sena-theme button[type=submit]:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
 }
 
-/* ===== Inputs / selects ===== */
-.sena-theme .form-control,
-.sena-theme .form-select {
-  background-color: #fff;
-  border: 1.5px solid #b0b0b0;
-  border-radius: 6px;
-  padding: 10px 12px;
-  transition: box-shadow .2s, border-color .2s, background-color .2s;
-}
-.sena-theme .form-control:focus,
-.sena-theme .form-select:focus {
-  border-color: var(--sena-green-600);
-  box-shadow: 0 0 0 .15rem rgba(0,158,79,.25);
-  background-color: #fff;
-}
-
-/* ===== Botones ===== */
-.sena-theme .btn-success {
-  /* en BS 5.3 puedes redefinir tokens del botón */
-  --bs-btn-bg: var(--sena-green-700);
-  --bs-btn-border-color: var(--sena-green-700);
-  --bs-btn-hover-bg: var(--sena-green-600);
-  --bs-btn-hover-border-color: var(--sena-green-600);
-  --bs-btn-active-bg: var(--sena-green-900);
-  --bs-btn-active-border-color: var(--sena-green-900);
-  font-weight: 600;
-  color: #fff;
-  box-shadow: 0 3px 6px rgba(0,0,0,.25);
-}
-
-.sena-theme .btn-outline-secondary {
-  --bs-btn-color: #222;
-  --bs-btn-border-color: #444;
-  --bs-btn-hover-bg: #444;
-  --bs-btn-hover-color: #fff;
-  --bs-btn-hover-border-color: #444;
-}
-
-/* ===== Alertas ===== */
-.sena-theme .alert-success {
-  background-color: #d1e7dd;
-  color: #0f5132;
-  border: none;
+/* Textos de label */
+.sena-theme label,
+.sena-theme .form-label,
+.sena-theme .block {
+  color: #0f172a !important;
   font-weight: 500;
 }
 
-/* ===== Secciones (títulos) ===== */
-.sena-theme h5.text-success {
-  color: var(--sena-green-700) !important;
-  font-weight: 700;
-  border-bottom: 2px solid var(--sena-green-600);
-  display: inline-block;
-  padding-bottom: 4px;
+/* Select dropdown icon */
+.sena-theme select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%230f172a' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5H7z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1em;
+}
+
+/* Corrige el modo oscuro de Breeze */
+html.dark .sena-theme *,
+body.dark .sena-theme * {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Ajusta el contenedor principal */
+.sena-theme .container {
+  max-width: 800px;
 }
