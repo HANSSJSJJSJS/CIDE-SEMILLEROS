@@ -36,19 +36,19 @@ Route::middleware('auth')->group(function () {
 
 // --- RUTAS POR ROLES Y DASHBOARDS ---
 Route::middleware(['auth', 'role:ADMIN'])->group(function () {
-    Route::get('/admin/dashboard', fn() => view('dashboard-admin'))->name('admin.dashboard');
+    Route::get('/admin/dashboard', fn() => view('admin.dashboard-admin'))->name('admin.dashboard');
 });
 
 Route::middleware(['auth', 'role:INSTRUCTOR'])->group(function () {
-    Route::get('/instructor/dashboard', fn() => view('dashboard-instructor'))->name('instructor.dashboard');
+    Route::get('/lider_semi/dashboard', fn() => view('lider_semi.dashboard-instructor'))->name('lider_semi.instructor.dashboard');
 });
 
 Route::middleware(['auth', 'role:APRENDIZ'])->group(function () {
-    Route::get('/aprendiz/dashboard', fn() => view('dashboard-aprendiz'))->name('aprendiz.dashboard');
+    Route::get('/aprendiz/dashboard', fn() => view('aprendiz.dashboard-aprendiz'))->name('aprendiz.aprendiz.dashboard');
 });
 
 Route::middleware(['auth', 'role:LIDER GENERAL'])->group(function () {
-    Route::get('/lider/dashboard', fn() => view('dashboard-lider'))->name('lider.dashboard');
+    Route::get('/lider_general/dashboard', fn() => view('lider_general.dashboard-lider'))->name('lider_general.lider.dashboard');
 });
 // --- FIN RUTAS POR ROLES Y DASHBOARDS ---
 Route::get('/admin/crear', function () {
