@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 14-10-2025 a las 20:04:28
+-- Tiempo de generación: 15-10-2025 a las 20:45:54
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.4.13
 
@@ -24,16 +24,29 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `administradores`
+--
+
+CREATE TABLE `administradores` (
+  `id_usuario` bigint(20) UNSIGNED NOT NULL,
+  `nombre` varchar(120) NOT NULL,
+  `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
+  `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `aprendices`
 --
 
 CREATE TABLE `aprendices` (
-  `id_usuario` int(10) UNSIGNED NOT NULL,
+  `id_usuario` bigint(20) UNSIGNED NOT NULL,
   `nombres` varchar(120) NOT NULL,
   `apellidos` varchar(120) NOT NULL,
   `ficha` varchar(30) NOT NULL,
   `programa` varchar(160) NOT NULL,
-  `id_tipo_documento` tinyint(3) UNSIGNED NOT NULL,
+  `id_tipo_documento` int(10) UNSIGNED NOT NULL,
   `documento` varchar(40) NOT NULL,
   `celular` varchar(30) DEFAULT NULL,
   `correo_institucional` varchar(160) DEFAULT NULL,
@@ -84,6 +97,22 @@ CREATE TABLE `documentos` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `failed_jobs`
+--
+
+CREATE TABLE `failed_jobs` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `uuid` varchar(255) NOT NULL,
+  `connection` text NOT NULL,
+  `queue` text NOT NULL,
+  `payload` longtext NOT NULL,
+  `exception` longtext NOT NULL,
+  `failed_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `grupos`
 --
 
@@ -106,7 +135,7 @@ CREATE TABLE `grupos` (
 CREATE TABLE `grupo_aprendices` (
   `id_grupo_aprendiz` int(10) UNSIGNED NOT NULL,
   `id_grupo` int(10) UNSIGNED NOT NULL,
-  `id_aprendiz` int(10) UNSIGNED NOT NULL,
+  `id_usuario` bigint(20) UNSIGNED NOT NULL,
   `fecha_ingreso` date DEFAULT curdate(),
   `activo` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -130,18 +159,86 @@ CREATE TABLE `jobs` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `job_batches`
+--
+
+CREATE TABLE `job_batches` (
+  `id` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `total_jobs` int(11) NOT NULL,
+  `pending_jobs` int(11) NOT NULL,
+  `failed_jobs` int(11) NOT NULL,
+  `failed_job_ids` longtext NOT NULL,
+  `options` mediumtext DEFAULT NULL,
+  `cancelled_at` int(11) DEFAULT NULL,
+  `created_at` int(11) NOT NULL,
+  `finished_at` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `lideres_generales`
+--
+
+CREATE TABLE `lideres_generales` (
+  `id_usuario` bigint(20) UNSIGNED NOT NULL,
+  `nombre` varchar(120) NOT NULL,
+  `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
+  `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `lideres_semillero`
 --
 
 CREATE TABLE `lideres_semillero` (
-  `id_usuario` int(10) UNSIGNED NOT NULL,
+  `id_usuario` bigint(20) UNSIGNED NOT NULL,
   `nombres` varchar(120) NOT NULL,
   `apellidos` varchar(120) NOT NULL,
-  `id_tipo_documento` tinyint(3) UNSIGNED NOT NULL,
+  `id_tipo_documento` int(10) UNSIGNED NOT NULL,
   `documento` varchar(40) NOT NULL,
   `correo_institucional` varchar(160) DEFAULT NULL,
   `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
   `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `migrations`
+--
+
+CREATE TABLE `migrations` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `migration` varchar(255) NOT NULL,
+  `batch` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `migrations`
+--
+
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
+(1, '0001_01_01_000000_create_users_table', 1),
+(2, '0001_01_01_000001_create_cache_table', 1),
+(3, '0001_01_01_000002_create_jobs_table', 1),
+(4, '2025_10_15_152741_create_administradores_table', 2),
+(5, '2025_10_15_152742_create_lideres_generales_table', 2),
+(6, '2025_10_15_160035_add_nombre_to_admins_and_lideres_generales', 3);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `password_reset_tokens`
+--
+
+CREATE TABLE `password_reset_tokens` (
+  `email` varchar(255) NOT NULL,
+  `token` varchar(255) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -181,42 +278,25 @@ CREATE TABLE `semilleros` (
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `tipos_documento`
+-- Estructura de tabla para la tabla `sessions`
 --
 
-CREATE TABLE `tipos_documento` (
-  `id_tipo_documento` tinyint(3) UNSIGNED NOT NULL,
-  `nombre` varchar(30) NOT NULL
+CREATE TABLE `sessions` (
+  `id` varchar(255) NOT NULL,
+  `user_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `payload` longtext NOT NULL,
+  `last_activity` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Volcado de datos para la tabla `tipos_documento`
+-- Volcado de datos para la tabla `sessions`
 --
 
-INSERT INTO `tipos_documento` (`id_tipo_documento`, `nombre`) VALUES
-(1, 'CC'),
-(3, 'CE'),
-(5, 'NIT'),
-(4, 'PA'),
-(2, 'TI');
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `tipos_proyecto`
---
-
-CREATE TABLE `tipos_proyecto` (
-  `id_tipo_proyecto` tinyint(3) UNSIGNED NOT NULL,
-  `categoria` varchar(80) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Volcado de datos para la tabla `tipos_proyecto`
---
-
-INSERT INTO `tipos_proyecto` (`id_tipo_proyecto`, `categoria`) VALUES
-(1, 'Sin categoría');
+INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
+('13kUKS1d698DmocMmjfaSe8QijwpD2Ep3JWOWFkM', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiNWJ0dlBucndJQzluYm94djZHS3Y3MGVTRnRwRFRVazJHSUE0UlA0NSI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==', 1760545462),
+('shVHVgTUTTnBaQTkjCzWsvii33iFuKrPoWNuIl4W', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiMGJTRHdCWmtUaVZ4bFg0YUZrVTkwcUF4aHB3eVN2N05xQVZmcnQwUyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MzA6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9yZWdpc3RlciI7fXM6MzoidXJsIjthOjE6e3M6ODoiaW50ZW5kZWQiO3M6MzE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9kYXNoYm9hcmQiO319', 1760553840);
 
 -- --------------------------------------------------------
 
@@ -230,30 +310,29 @@ CREATE TABLE `users` (
   `email` varchar(255) NOT NULL,
   `email_verified_at` timestamp NULL DEFAULT NULL,
   `password` varchar(255) NOT NULL,
+  `role` varchar(255) NOT NULL DEFAULT 'APRENDIZ',
   `remember_token` varchar(100) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- --------------------------------------------------------
-
 --
--- Estructura de tabla para la tabla `usuarios`
+-- Volcado de datos para la tabla `users`
 --
 
-CREATE TABLE `usuarios` (
-  `id_usuario` int(10) UNSIGNED NOT NULL,
-  `correo` varchar(160) NOT NULL,
-  `password_hash` varchar(255) NOT NULL,
-  `rol` enum('ADMINISTRADOR','LIDER_GENERAL','LIDER_SEMILLERO','APRENDIZ') NOT NULL,
-  `estado` enum('ACTIVO','INACTIVO') DEFAULT 'ACTIVO',
-  `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
-  `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `role`, `remember_token`, `created_at`, `updated_at`) VALUES
+(1, 'Joaquin cañon', 'danielcf97@hotmail.com', NULL, '$2y$12$xjqyO9KBTo.32FxTy5hOku5ulV206VNIlqcr4.uGs0viakynklvLC', 'ADMIN', NULL, '2025-10-15 19:37:02', '2025-10-15 19:37:02'),
+(2, 'sergio', 'aergio@hotmail.com', NULL, '$2y$12$1bcrL0rfsqo3/g4FFd/HVOkEmoZw122UXkkiVRc17AYFYO1IcziPu', 'ADMIN', NULL, '2025-10-15 23:42:52', '2025-10-15 23:42:52');
 
 --
 -- Índices para tablas volcadas
 --
+
+--
+-- Indices de la tabla `administradores`
+--
+ALTER TABLE `administradores`
+  ADD PRIMARY KEY (`id_usuario`);
 
 --
 -- Indices de la tabla `aprendices`
@@ -282,6 +361,13 @@ ALTER TABLE `documentos`
   ADD KEY `fk_documento_proyecto` (`id_proyecto`);
 
 --
+-- Indices de la tabla `failed_jobs`
+--
+ALTER TABLE `failed_jobs`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`);
+
+--
 -- Indices de la tabla `grupos`
 --
 ALTER TABLE `grupos`
@@ -293,8 +379,8 @@ ALTER TABLE `grupos`
 --
 ALTER TABLE `grupo_aprendices`
   ADD PRIMARY KEY (`id_grupo_aprendiz`),
-  ADD UNIQUE KEY `uq_grupo_aprendiz` (`id_grupo`,`id_aprendiz`),
-  ADD KEY `fk_ga_aprendiz_perfil` (`id_aprendiz`);
+  ADD UNIQUE KEY `uq_grupo_aprendiz` (`id_grupo`,`id_usuario`),
+  ADD KEY `fk_ga_aprendiz_perfil` (`id_usuario`);
 
 --
 -- Indices de la tabla `jobs`
@@ -304,11 +390,35 @@ ALTER TABLE `jobs`
   ADD KEY `jobs_queue_index` (`queue`);
 
 --
+-- Indices de la tabla `job_batches`
+--
+ALTER TABLE `job_batches`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indices de la tabla `lideres_generales`
+--
+ALTER TABLE `lideres_generales`
+  ADD PRIMARY KEY (`id_usuario`);
+
+--
 -- Indices de la tabla `lideres_semillero`
 --
 ALTER TABLE `lideres_semillero`
   ADD PRIMARY KEY (`id_usuario`),
   ADD KEY `fk_lider_tipo_doc` (`id_tipo_documento`);
+
+--
+-- Indices de la tabla `migrations`
+--
+ALTER TABLE `migrations`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indices de la tabla `password_reset_tokens`
+--
+ALTER TABLE `password_reset_tokens`
+  ADD PRIMARY KEY (`email`);
 
 --
 -- Indices de la tabla `proyectos`
@@ -327,18 +437,12 @@ ALTER TABLE `semilleros`
   ADD KEY `fk_semillero_liderperfil` (`id_lider_usuario`);
 
 --
--- Indices de la tabla `tipos_documento`
+-- Indices de la tabla `sessions`
 --
-ALTER TABLE `tipos_documento`
-  ADD PRIMARY KEY (`id_tipo_documento`),
-  ADD UNIQUE KEY `nombre` (`nombre`);
-
---
--- Indices de la tabla `tipos_proyecto`
---
-ALTER TABLE `tipos_proyecto`
-  ADD PRIMARY KEY (`id_tipo_proyecto`),
-  ADD UNIQUE KEY `categoria` (`categoria`);
+ALTER TABLE `sessions`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `sessions_user_id_index` (`user_id`),
+  ADD KEY `sessions_last_activity_index` (`last_activity`);
 
 --
 -- Indices de la tabla `users`
@@ -346,13 +450,6 @@ ALTER TABLE `tipos_proyecto`
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `users_email_unique` (`email`);
-
---
--- Indices de la tabla `usuarios`
---
-ALTER TABLE `usuarios`
-  ADD PRIMARY KEY (`id_usuario`),
-  ADD UNIQUE KEY `correo` (`correo`);
 
 --
 -- AUTO_INCREMENT de las tablas volcadas
@@ -363,6 +460,12 @@ ALTER TABLE `usuarios`
 --
 ALTER TABLE `documentos`
   MODIFY `id_documento` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `failed_jobs`
+--
+ALTER TABLE `failed_jobs`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `grupos`
@@ -383,6 +486,12 @@ ALTER TABLE `jobs`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de la tabla `migrations`
+--
+ALTER TABLE `migrations`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
 -- AUTO_INCREMENT de la tabla `proyectos`
 --
 ALTER TABLE `proyectos`
@@ -395,28 +504,45 @@ ALTER TABLE `semilleros`
   MODIFY `id_semillero` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT de la tabla `tipos_documento`
---
-ALTER TABLE `tipos_documento`
-  MODIFY `id_tipo_documento` tinyint(3) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT de la tabla `tipos_proyecto`
---
-ALTER TABLE `tipos_proyecto`
-  MODIFY `id_tipo_proyecto` tinyint(3) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
 -- AUTO_INCREMENT de la tabla `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
--- AUTO_INCREMENT de la tabla `usuarios`
+-- Restricciones para tablas volcadas
 --
-ALTER TABLE `usuarios`
-  MODIFY `id_usuario` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- Filtros para la tabla `administradores`
+--
+ALTER TABLE `administradores`
+  ADD CONSTRAINT `administradores_id_usuario_foreign` FOREIGN KEY (`id_usuario`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `aprendices`
+--
+ALTER TABLE `aprendices`
+  ADD CONSTRAINT `fk_aprendices_users` FOREIGN KEY (`id_usuario`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `grupo_aprendices`
+--
+ALTER TABLE `grupo_aprendices`
+  ADD CONSTRAINT `fk_ga_aprendiz_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `aprendices` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_ga_grupo` FOREIGN KEY (`id_grupo`) REFERENCES `grupos` (`id_grupo`);
+
+--
+-- Filtros para la tabla `lideres_generales`
+--
+ALTER TABLE `lideres_generales`
+  ADD CONSTRAINT `lideres_generales_id_usuario_foreign` FOREIGN KEY (`id_usuario`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `lideres_semillero`
+--
+ALTER TABLE `lideres_semillero`
+  ADD CONSTRAINT `fk_lideres_semillero_users` FOREIGN KEY (`id_usuario`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
