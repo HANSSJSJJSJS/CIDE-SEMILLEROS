@@ -1,47 +1,68 @@
-<x-guest-layout>
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+<!DOCTYPE html>
+<html lang="es">
 
-    <form method="POST" action="{{ route('login') }}">
-        @csrf
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>SCIDES - Login</title>
+    <link rel="stylesheet" href="{{ asset('css/Login.css') }}">
+</head>
 
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <img src="{{ asset('images/logo-sena.png') }}" alt="Logo" class="logo">
+            <div class="scides-title">SCIDES</div>
         </div>
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
+        <div class="right-panel">
+            <div class="leaf" style="top: 10%; right: 15%;"></div>
+            <div class="leaf" style="top: 20%; right: 8%;"></div>
+            <div class="leaf" style="top: 15%; right: 25%;"></div>
+            <div class="leaf" style="top: 25%; right: 18%;"></div>
+            <div class="leaf" style="bottom: 15%; left: 10%;"></div>
+            <div class="leaf" style="bottom: 25%; left: 18%;"></div>
+            <div class="leaf" style="bottom: 20%; left: 5%;"></div>
 
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
+            <div class="login-box">
+                <h2 class="login-title">Inicio de sesión</h2>
+                @if ($errors->has('error'))
+                    <div class="alert alert-error">{{ $errors->first('error') }}</div>
+                @endif
 
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+                @if (session('success'))
+                    <div class="alert alert-success">{{ session('success') }}</div>
+                @endif
+
+                <form method="POST" action="{{ route('login') }}">
+                    @csrf
+                    <div class="form-group">
+                        <label for="email">Correo electrónico:</label>
+                        <input type="email" id="email" name="email" value="{{ old('email') }}" required
+                            autocomplete="email" autofocus placeholder="ejemplo@correo.com">
+                        @error('email')
+                            <span class="error-message">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Contraseña:</label>
+                        <input type="password" id="password" name="password" required autocomplete="current-password"
+                            placeholder="Ingresa tu contraseña">
+                        @error('password')
+                            <span class="error-message">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    <button type="submit" class="btn-entrar">ENTRAR</button>
+                </form>
+
+                <div class="forgot-password">
+                    <a href="#">¿Olvidaste tu contraseña?</a>
+                </div>
+            </div>
         </div>
+    </div>
+</body>
 
-        <!-- Remember Me -->
-        <div class="block mt-4">
-            <label for="remember_me" class="inline-flex items-center">
-                <input id="remember_me" type="checkbox" class="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800" name="remember">
-                <span class="ms-2 text-sm text-gray-600 dark:text-gray-400">{{ __('Remember me') }}</span>
-            </label>
-        </div>
-
-        <div class="flex items-center justify-end mt-4">
-            @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('password.request') }}">
-                    {{ __('Forgot your password?') }}
-                </a>
-            @endif
-
-            <x-primary-button class="ms-3">
-                {{ __('Log in') }}
-            </x-primary-button>
-        </div>
-    </form>
-</x-guest-layout>
+</html>
