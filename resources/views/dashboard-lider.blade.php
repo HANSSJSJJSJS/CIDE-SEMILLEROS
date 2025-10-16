@@ -1,1 +1,2 @@
-<h1>Bienvenido LÍDER GENERAL</h1>
+<h1>Bienvenido a SCIDES</h1>
+<a href="{{ route('login') }}">Iniciar sesión</a>
