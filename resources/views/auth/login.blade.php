@@ -49,7 +49,7 @@
                 </form>
 
                 <div class="forgot-password">
-                    <a href="#">¿Olvidaste tu contraseña?</a>
+                    <a href="{{ route('password.request') }}">¿Olvidaste tu contraseña?</a>
                 </div>
                 <div class="sena-footer">
                     <img src="{{ asset('images/logo-sena.png') }}" alt="Logo" class="logo-sena">

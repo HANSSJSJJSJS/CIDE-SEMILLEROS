@@ -46,4 +46,16 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function redirectPath()
+{
+    return match ($this->role) {
+        'ADMIN' => '/admin/dashboard',
+        'LIDER SEMILLERO' => '/lider_semi/dashboard',
+        'APRENDIZ' => '/aprendiz/dashboard',
+        'LIDER GENERAL' => '/lider/dashboard',
+        default => '/',
+    };
+}
+
 }

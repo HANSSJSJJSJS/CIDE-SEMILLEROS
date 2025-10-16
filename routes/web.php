@@ -39,7 +39,7 @@ Route::middleware(['auth', 'role:ADMIN'])->group(function () {
     Route::get('/admin/dashboard', fn() => view('admin.dashboard-admin'))->name('admin.dashboard');
 });
 
-Route::middleware(['auth', 'role:INSTRUCTOR'])->group(function () {
+Route::middleware(['auth', 'role:LIDER SEMILLERO'])->group(function () {
     Route::get('/lider_semi/dashboard', fn() => view('lider_semi.dashboard-instructor'))->name('lider_semi.instructor.dashboard');
 });
 
