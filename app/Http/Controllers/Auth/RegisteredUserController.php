@@ -76,7 +76,7 @@ class RegisteredUserController extends Controller
                     'id_usuario'           => $user->id,
                     'nombre'               => $request->nombres,
                     'apellidos'            => $request->apellidos,
-                    'Correo_institucional' => $user->email, // o "Correo_institucional" si tu columna va con mayúscula
+                    'correo' => $user->email, // o "Correo_institucional" si tu columna va con mayúscula
                 ]);
              }
 
@@ -114,7 +114,8 @@ class RegisteredUserController extends Controller
         if ($request->role === 'LIDER GENERAL') {
             LiderGeneral::create([
                 'id_usuario'           => $user->id,
-                'nombre'               => $request->name,   // mismo nombre que users.name
+                'nombres'               => $request->nombres,
+                'apellidos'            => $request->apellidos,
                 'Correo_institucional' => $user->email,     // mismo correo que users.email
             ]);
         }

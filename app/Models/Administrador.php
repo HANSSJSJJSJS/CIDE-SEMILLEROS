@@ -17,7 +17,7 @@ class Administrador extends Model
         'id_usuario',
         'nombre',
         'apellidos',
-        'correo_institucional', // <— si en tu BD es "Correo_institucional", cámbialo aquí y en el create()
+        'correo',
     ];
 
     public function user()

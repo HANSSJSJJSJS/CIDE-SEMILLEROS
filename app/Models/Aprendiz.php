@@ -19,8 +19,9 @@ class Aprendiz extends Model
         'documento',
         'celular',
         'correo_institucional',
+        'correo_personal',
         'contacto_nombre',
         'contacto_celular',
-        'correo_personal',
+        
     ];
 }

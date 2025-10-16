@@ -3,11 +3,12 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
+// Controladores base
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UsuarioController;
 
-// (Ejemplo) Controladores de tus módulos
+// Controladores de módulos
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LiderController;
 use App\Http\Controllers\SemilleroController;
@@ -46,7 +47,6 @@ Route::get('/dashboard', function () {
 
     if (!$user) return redirect()->route('login');
 
-    // Ajusta los nombres a los que maneje tu RoleMiddleware/base de datos
     switch ($user->rol ?? $user->role ?? null) {
         case 'ADMIN':
             return redirect()->route('admin.dashboard');
@@ -54,12 +54,13 @@ Route::get('/dashboard', function () {
             return redirect()->route('instructor.dashboard');
         case 'APRENDIZ':
             return redirect()->route('aprendiz.dashboard');
-        case 'LIDER_GENERAL': // si hoy lo tienes con espacio, cámbialo también en BD
+        case 'LIDER_SEMILLERO':
+            return redirect()->route('lidersemillero.dashboard');
+        case 'LIDER_GENERAL':
         case 'LIDER GENERAL':
             return redirect()->route('lider.dashboard');
         default:
-            // Rol no contemplado: envía a un dashboard genérico o error
-            return view('dashboard'); // opcional
+            return view('dashboard'); // opcional: genérico
     }
 })->middleware(['auth', 'verified'])->name('dashboard');
 
@@ -83,12 +84,8 @@ Route::middleware('auth')->group(function () {
 // ADMIN
 Route::middleware(['auth', 'role:ADMIN'])->group(function () {
     Route::view('/admin/dashboard', 'dashboard-admin')->name('admin.dashboard');
-
-    // Usuarios (solo admin)
-    Route::resource('usuarios', UsuarioController::class);
-
-    // Página “Funciones del administrador” para el botón del menú
     Route::get('/admin/funciones', [AdminController::class, 'index'])->name('admin.functions');
+    Route::resource('usuarios', UsuarioController::class);
 });
 
 // INSTRUCTOR
@@ -96,13 +93,22 @@ Route::middleware(['auth', 'role:INSTRUCTOR'])->group(function () {
     Route::view('/instructor/dashboard', 'dashboard-instructor')->name('instructor.dashboard');
 });
 
+// LÍDER DE SEMILLERO
+Route::middleware(['auth', 'role:LIDER_SEMILLERO'])->group(function () {
+    Route::view('/lidersemillero/dashboard', 'dashboard-lider-semillero')->name('lidersemillero.dashboard');
+    Route::view('/lidersemillero/proyectos', 'lidersemillero.proyectos')->name('lidersemillero.proyectos');
+    Route::view('/lidersemillero/cuenta', 'lidersemillero.cuenta')->name('lidersemillero.cuenta');
+});
+
 // APRENDIZ
 Route::middleware(['auth', 'role:APRENDIZ'])->group(function () {
     Route::view('/aprendiz/dashboard', 'dashboard-aprendiz')->name('aprendiz.dashboard');
+    Route::view('/aprendiz/proyectos', 'aprendiz.proyectos')->name('aprendiz.proyectos');
+    Route::view('/aprendiz/cuenta', 'aprendiz.cuenta')->name('aprendiz.cuenta');
 });
 
 // LÍDER GENERAL
-Route::middleware(['auth', 'role:LIDER_GENERAL'])->group(function () {
+Route::middleware(['auth', 'role:LIDER_GENERAL,LIDER GENERAL'])->group(function () {
     Route::view('/lider/dashboard', 'dashboard-lider')->name('lider.dashboard');
 });
 
@@ -110,42 +116,33 @@ Route::middleware(['auth', 'role:LIDER_GENERAL'])->group(function () {
 |--------------------------------------------------------------------------
 | MÓDULOS DEL PROYECTO (rutas que usa el menú lateral)
 |--------------------------------------------------------------------------
-| Si aún no tienes controladores, puedes dejar Route::view temporalmente.
-| Cuando los tengas, reemplazas por controladores reales como abajo.
 */
 
 // LÍDERES (registro de aprendices líderes)
 Route::middleware(['auth', 'role:ADMIN,INSTRUCTOR'])->group(function () {
-    Route::resource('lideres', LiderController::class)->only(['index','create','store']);
+    Route::resource('lideres', LiderController::class)->only(['index', 'create', 'store']);
 });
 
 // SEMILLEROS
 Route::middleware(['auth', 'role:ADMIN,INSTRUCTOR,LIDER_GENERAL'])->group(function () {
-    Route::resource('semilleros', SemilleroController::class)->only(['index','create','store','show']);
+    Route::resource('semilleros', SemilleroController::class)->only(['index', 'create', 'store', 'show']);
 });
 
 // APRENDICES (perfiles)
 Route::middleware(['auth', 'role:ADMIN,INSTRUCTOR'])->group(function () {
-    Route::resource('aprendices', AprendizController::class)->only(['index','create','store','show']);
+    Route::resource('aprendices', AprendizController::class)->only(['index', 'create', 'store', 'show']);
 });
 
 // GRUPOS DE INVESTIGACIÓN
 Route::middleware(['auth', 'role:ADMIN,INSTRUCTOR,LIDER_GENERAL'])->group(function () {
-    Route::resource('grupos', GrupoInvestigacionController::class)->only(['index','create','store','show']);
+    Route::resource('grupos', GrupoInvestigacionController::class)->only(['index', 'create', 'store', 'show']);
 });
 
 /*
 |--------------------------------------------------------------------------
 | PASSWORD CHANGE (para el botón “Cambio contraseña”)
 |--------------------------------------------------------------------------
-| Si usas Fortify o Jetstream, ajusta esta ruta a tu flujo real.
 */
 Route::middleware('auth')->get('/password/change', function () {
-    return view('auth.passwords.change'); // crea esta vista o apunta al form real
+    return view('auth.passwords.change');
 })->name('password.change');
-
-Route::middleware(['auth'])->group(function () {
-    Route::resource('usuarios', \App\Http\Controllers\UsuarioController::class)->only(['index']);
-    Route::resource('semilleros', \App\Http\Controllers\SemilleroController::class)->only(['index']);
-    Route::get('/profile', [\App\Http\Controllers\ProfileController::class,'edit'])->name('profile.edit');
-});
