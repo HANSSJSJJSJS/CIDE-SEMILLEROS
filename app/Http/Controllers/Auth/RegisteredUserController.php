@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\LiderSemillero;
 use App\Models\Aprendiz;
+use App\Models\LiderGeneral;
+use App\Models\Administrador;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,8 +17,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
-use App\Models\LiderGeneral;
-
 
 class RegisteredUserController extends Controller
 {
@@ -27,12 +27,13 @@ class RegisteredUserController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        // Validación base (users)
+        // Validación base (USERS) — ya NO pedimos 'name'; pedimos 'nombres' y 'apellidos'
         $rules = [
-            'role'     => ['required','string', Rule::in(['ADMIN','INSTRUCTOR','APRENDIZ','LIDER_SEMILLERO','LIDER GENERAL'])],
-            'name'     => ['required','string','max:255'],
-            'email'    => ['required','string','lowercase','email','max:255','unique:users,email'], // correo personal
-            'password' => ['required','confirmed', Rules\Password::defaults()],
+            'role'       => ['required','string', Rule::in(['ADMIN','INSTRUCTOR','APRENDIZ','LIDER_SEMILLERO','LIDER GENERAL'])],
+            'nombres'    => ['required','string','max:255'],
+            'apellidos'  => ['required','string','max:255'],
+            'email'      => ['required','string','lowercase','email','max:255','unique:users,email'], // correo personal
+            'password'   => ['required','confirmed', Rules\Password::defaults()],
         ];
 
         // LÍDER SEMILLERO (extras)
@@ -57,25 +58,37 @@ class RegisteredUserController extends Controller
             ]);
         }
 
+      
         $request->validate($rules);
 
         $user = DB::transaction(function () use ($request) {
-            // 1) Crear usuario (correo personal)
+            // 1) Crear usuario (name = nombres + apellidos)
             $user = User::create([
-                'name'     => $request->name,
-                'email'    => $request->email,          // personal
+                'name'     => $request->nombres . ' ' . $request->apellidos,
+                'email'    => $request->email,          // correo personal
                 'password' => Hash::make($request->password),
                 'role'     => $request->role,
             ]);
+
+                // 5) ADMINISTRADOR
+             if ($request->role === 'ADMIN') {
+                 Administrador::create([
+                    'id_usuario'           => $user->id,
+                    'nombre'               => $request->nombres,
+                    'apellidos'            => $request->apellidos,
+                    'Correo_institucional' => $user->email, // o "Correo_institucional" si tu columna va con mayúscula
+                ]);
+             }
 
             // 2) LÍDER SEMILLERO
             if ($request->role === 'LIDER_SEMILLERO') {
                 LiderSemillero::create([
                     'id_usuario'           => $user->id,
-                    'nombre_completo'      => $request->name,
-                    'tipo_documento'       => $request->lider_tipo_documento, // CC/CE
+                    'nombres'              => $request->nombres,           // ← corregido
+                    'apellidos'            => $request->apellidos,         // ← corregido
+                    'tipo_documento'       => $request->lider_tipo_documento,
                     'documento'            => $request->lider_documento,
-                    'correo_institucional' => $user->email, // mismo del usuario
+                    'correo_institucional' => $user->email,                // mismo correo del user
                 ]);
             }
 
@@ -83,28 +96,28 @@ class RegisteredUserController extends Controller
             if ($request->role === 'APRENDIZ') {
                 Aprendiz::create([
                     'id_usuario'           => $user->id,
-                    'nombre_completo'      => $request->name,
+                    'nombres'              => $request->nombres,           // ← corregido
+                    'apellidos'            => $request->apellidos,         // ← corregido
                     'ficha'                => $request->aprendiz_ficha,
                     'programa'             => $request->aprendiz_programa,
-                    'tipo_documento'       => $request->aprendiz_tipo_documento,   // CC/CE/TI
+                    'tipo_documento'       => $request->aprendiz_tipo_documento,
                     'documento'            => $request->aprendiz_documento,
                     'celular'              => $request->aprendiz_celular,
                     'correo_institucional' => $request->aprendiz_correo_institucional,
                     'contacto'             => $request->aprendiz_contacto,
                     'celular_contacto'     => $request->aprendiz_cel_contacto,
-                    'correo_personal'      => $user->email, // copia del users.email
+                    'correo_personal'      => $user->email,                // copia del users.email
                 ]);
             }
-       
-            
 
-
-            // 4) ADMIN o INSTRUCTOR (no se requiere tabla extra)
-
-
-
-
-
+            // 5) LÍDER GENERAL
+        if ($request->role === 'LIDER GENERAL') {
+            LiderGeneral::create([
+                'id_usuario'           => $user->id,
+                'nombre'               => $request->name,   // mismo nombre que users.name
+                'Correo_institucional' => $user->email,     // mismo correo que users.email
+            ]);
+        }
 
             return $user;
         });
@@ -115,4 +128,3 @@ class RegisteredUserController extends Controller
         return redirect()->route('dashboard');
     }
 }
-

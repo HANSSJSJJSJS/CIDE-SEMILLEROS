@@ -33,19 +33,33 @@
         <div class="mt-6" x-show="role === 'ADMIN'">
             <h3 class="font-bold text-indigo-600 text-lg">Datos de Administrador</h3>
         </div>
-         <div class="mt-6" x-show="role === 'LIDER GENERAL">
-            <h3 class="font-bold text-indigo-600 text-lg">Datos de LIDER GENERAL </h3>
-        </div>
+      <!-- ===== Datos de LÍDER GENERAL ===== -->
+        <div class="mt-6" x-show="role === 'LIDER GENERAL'">
+            <h3 class="font-bold text-indigo-600 text-lg mb-2">Datos de Líder General</h3></div>
+
+
+
+
+
 
         <!-- ORDEN NUEVO (comienza aquí) -->
 
         <!-- 1) Nombre completo (users.name) -->
-        <div class="mt-4">
-            <x-input-label for="name" :value="__('Nombre completo')" />
-            <x-text-input id="name" class="block mt-1 w-full" type="text" name="name"
-                          :value="old('name')" required autofocus autocomplete="name" />
-            <x-input-error :messages="$errors->get('name')" class="mt-2" />
-        </div>
+       <!-- Nombre completo -->
+            <div class="mt-4">
+            <x-input-label for="nombres" :value="__('Nombres')" />
+            <x-text-input id="nombres" class="block mt-1 w-full" type="text" name="nombres"
+                            :value="old('nombres')" required autofocus />
+            <x-input-error :messages="$errors->get('nombres')" class="mt-2" />
+            </div>
+
+            <!-- Apellidos -->
+            <div class="mt-4">
+            <x-input-label for="apellidos" :value="__('Apellidos')" />
+            <x-text-input id="apellidos" class="block mt-1 w-full" type="text" name="apellidos"
+                            :value="old('apellidos')" required />
+            <x-input-error :messages="$errors->get('apellidos')" class="mt-2" />
+            </div>
 
         <!-- 2) Tipo de documento -->
         {{-- LÍDER: usa lider_tipo_documento --}}

@@ -11,7 +11,8 @@ class LiderSemillero extends Model
 
     protected $fillable = [
         'id_usuario',
-        'nombre_completo',
+        'nombres',
+        'apellidos',
         'tipo_documento',       // VARCHAR(5): CC/CE
         'documento',            // cambia a 'documentos' si tu columna es plural
         'correo_institucional',
