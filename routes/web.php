@@ -1,64 +1,60 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\UsuarioController;
 
-
-use App\Http\Middleware\RoleMiddleware;
-
-
-app('router')->aliasMiddleware('role', RoleMiddleware::class);
-
-
-Route::resource('usuarios', UsuarioController::class);
-
-Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
-    ->middleware('auth')
-    ->name('logout');
-
-
+// ---------------------------------------------
+// RUTAS PÚBLICAS
+// ---------------------------------------------
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy']);
 
-
+// ---------------------------------------------
+// RUTAS GENERALES (acceso con login)
+// ---------------------------------------------
 Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', fn() => view('dashboard'))->name('dashboard');
+
+    // Perfil del usuario
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Gestión de usuarios (solo si aplica)
+    Route::resource('usuarios', UsuarioController::class);
 });
 
-// --- RUTAS POR ROLES Y DASHBOARDS ---
+// ---------------------------------------------
+// RUTAS POR ROLES
+// ---------------------------------------------
+ 
+// ADMINISTRADOR
 Route::middleware(['auth', 'role:ADMIN'])->group(function () {
-    Route::get('/admin/dashboard', fn() => view('admin.dashboard-admin'))->name('admin.dashboard');
+    Route::get('/admin/dashboard', fn() => view('admin.admin-dashboard'))->name('admin.dashboard');
+    Route::get('/admin/crear', fn() => view('admin.crear'))->name('admin.crear');
 });
 
+// INSTRUCTOR o LIDER SEMILLERO (mismo rol)
 Route::middleware(['auth', 'role:LIDER SEMILLERO'])->group(function () {
-    Route::get('/lider_semi/dashboard', fn() => view('lider_semi.dashboard-instructor'))->name('lider_semi.instructor.dashboard');
+    Route::get('/lider_semi/dashboard', fn() => view('lider_semi.dashboard-instructor'))->name('lider_semi.dashboard');
 });
 
-Route::middleware(['auth', 'role:APRENDIZ'])->group(function () {
-    Route::get('/aprendiz/dashboard', fn() => view('aprendiz.dashboard-aprendiz'))->name('aprendiz.aprendiz.dashboard');
-});
-
+// LÍDER GENERAL
 Route::middleware(['auth', 'role:LIDER GENERAL'])->group(function () {
-    Route::get('/lider_general/dashboard', fn() => view('lider_general.dashboard-lider'))->name('lider_general.lider.dashboard');
-});
-// --- FIN RUTAS POR ROLES Y DASHBOARDS ---
-Route::get('/admin/crear', function () {
-    return view('Admin.crear');
+    Route::get('/lider_general/dashboard', fn() => view('lider_general.dashboard-lider'))->name('lider_general.dashboard');
 });
 
-Route::get('/admin/crear', function () {
-    return view('Admin.crear');
+// APRENDIZ
+Route::middleware(['auth', 'role:APRENDIZ'])->group(function () {
+    Route::get('/aprendiz/dashboard', fn() => view('aprendiz.dashboard-aprendiz'))->name('aprendiz.dashboard');
 });
 
-
+// ---------------------------------------------
+// AUTENTICACIÓN (Laravel Breeze / Fortify)
+// ---------------------------------------------
 require __DIR__.'/auth.php';
-
