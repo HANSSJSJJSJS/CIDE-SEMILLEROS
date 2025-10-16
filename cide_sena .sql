@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 15-10-2025 a las 20:45:54
+-- Tiempo de generación: 16-10-2025 a las 15:17:13
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.4.13
 
@@ -42,11 +42,10 @@ CREATE TABLE `administradores` (
 
 CREATE TABLE `aprendices` (
   `id_usuario` bigint(20) UNSIGNED NOT NULL,
-  `nombres` varchar(120) NOT NULL,
-  `apellidos` varchar(120) NOT NULL,
+  `nombre_completo` varchar(120) NOT NULL,
   `ficha` varchar(30) NOT NULL,
   `programa` varchar(160) NOT NULL,
-  `id_tipo_documento` int(10) UNSIGNED NOT NULL,
+  `tipo_documento` varchar(5) DEFAULT NULL,
   `documento` varchar(40) NOT NULL,
   `celular` varchar(30) DEFAULT NULL,
   `correo_institucional` varchar(160) DEFAULT NULL,
@@ -56,6 +55,13 @@ CREATE TABLE `aprendices` (
   `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
   `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `aprendices`
+--
+
+INSERT INTO `aprendices` (`id_usuario`, `nombre_completo`, `ficha`, `programa`, `tipo_documento`, `documento`, `celular`, `correo_institucional`, `correo_personal`, `contacto_nombre`, `contacto_celular`, `creado_en`, `actualizado_en`) VALUES
+(8, 'Joaquin cañon', '2848527', 'ADSO', 'CC', '1012443507', '3053970242', 'joaquin_canon@soy.sena.edu.co', 'test3@gmail.com', NULL, NULL, '2025-10-15 20:50:17', '2025-10-15 20:50:17');
 
 -- --------------------------------------------------------
 
@@ -178,31 +184,38 @@ CREATE TABLE `job_batches` (
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `lideres_generales`
---
-
-CREATE TABLE `lideres_generales` (
-  `id_usuario` bigint(20) UNSIGNED NOT NULL,
-  `nombre` varchar(120) NOT NULL,
-  `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
-  `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
 -- Estructura de tabla para la tabla `lideres_semillero`
 --
 
 CREATE TABLE `lideres_semillero` (
   `id_usuario` bigint(20) UNSIGNED NOT NULL,
-  `nombres` varchar(120) NOT NULL,
-  `apellidos` varchar(120) NOT NULL,
-  `id_tipo_documento` int(10) UNSIGNED NOT NULL,
+  `nombre_completo` varchar(120) NOT NULL,
+  `tipo_documento` varchar(5) DEFAULT NULL,
   `documento` varchar(40) NOT NULL,
   `correo_institucional` varchar(160) DEFAULT NULL,
   `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
   `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `lideres_semillero`
+--
+
+INSERT INTO `lideres_semillero` (`id_usuario`, `nombre_completo`, `tipo_documento`, `documento`, `correo_institucional`, `creado_en`, `actualizado_en`) VALUES
+(5, 'Joaquin cañon', 'CC', '1012443507', 'test1@gmail.com', '2025-10-15 20:18:13', '2025-10-15 20:18:13');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `lider_general`
+--
+
+CREATE TABLE `lider_general` (
+  `id_usuario` bigint(20) UNSIGNED NOT NULL,
+  `nombre` varchar(120) NOT NULL,
+  `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
+  `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `Correo_institucional` varchar(120) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -295,8 +308,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('13kUKS1d698DmocMmjfaSe8QijwpD2Ep3JWOWFkM', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiNWJ0dlBucndJQzluYm94djZHS3Y3MGVTRnRwRFRVazJHSUE0UlA0NSI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==', 1760545462),
-('shVHVgTUTTnBaQTkjCzWsvii33iFuKrPoWNuIl4W', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiMGJTRHdCWmtUaVZ4bFg0YUZrVTkwcUF4aHB3eVN2N05xQVZmcnQwUyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MzA6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9yZWdpc3RlciI7fXM6MzoidXJsIjthOjE6e3M6ODoiaW50ZW5kZWQiO3M6MzE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9kYXNoYm9hcmQiO319', 1760553840);
+('pbEoULXZvZtZmtJB6lHpRvyFuAXW01Zc82mzTFbT', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiTlo1Y2I2YlNvZGY2RTR5S0lETjdRaHVVUXZsVnVBYlJtZjZUSzFZeSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MzA6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9yZWdpc3RlciI7fX0=', 1760564607);
 
 -- --------------------------------------------------------
 
@@ -321,8 +333,10 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `role`, `remember_token`, `created_at`, `updated_at`) VALUES
-(1, 'Joaquin cañon', 'danielcf97@hotmail.com', NULL, '$2y$12$xjqyO9KBTo.32FxTy5hOku5ulV206VNIlqcr4.uGs0viakynklvLC', 'ADMIN', NULL, '2025-10-15 19:37:02', '2025-10-15 19:37:02'),
-(2, 'sergio', 'aergio@hotmail.com', NULL, '$2y$12$1bcrL0rfsqo3/g4FFd/HVOkEmoZw122UXkkiVRc17AYFYO1IcziPu', 'ADMIN', NULL, '2025-10-15 23:42:52', '2025-10-15 23:42:52');
+(4, 'Joaquin cañon', 'test@gmail.com', NULL, '$2y$12$ESFF/wMQPumWmeMHt1/Ij.sOpCKgD1xnximeFE4zvCwctCLudRpt.', 'ADMIN', NULL, '2025-10-16 01:10:41', '2025-10-16 01:10:41'),
+(5, 'Joaquin cañon', 'test1@gmail.com', NULL, '$2y$12$lmTgIhA2MR1UujyoiNm4ieUnBICj0B5jLKEPqq0Cwmgo8XKdNRzyy', 'LIDER_SEMILLERO', NULL, '2025-10-16 01:18:13', '2025-10-16 01:18:13'),
+(7, 'Joaquin cañon', 'test2@gmail.com', NULL, '$2y$12$MzYpU1P2shOnKz6oSehUW.EHnmTqe70i5MMfr5o1B5gtf5NpjKMLu', 'APRENDIZ', NULL, '2025-10-16 01:48:48', '2025-10-16 01:48:48'),
+(8, 'Joaquin cañon', 'test3@gmail.com', NULL, '$2y$12$CysY7mh6WuCxIc.j4vORxuqAEPzjDJr0lxxqSo.Q.8B0Q9caCicLW', 'APRENDIZ', NULL, '2025-10-16 01:50:17', '2025-10-16 01:50:17');
 
 --
 -- Índices para tablas volcadas
@@ -338,8 +352,7 @@ ALTER TABLE `administradores`
 -- Indices de la tabla `aprendices`
 --
 ALTER TABLE `aprendices`
-  ADD PRIMARY KEY (`id_usuario`),
-  ADD KEY `fk_aprendiz_tipo_doc` (`id_tipo_documento`);
+  ADD PRIMARY KEY (`id_usuario`);
 
 --
 -- Indices de la tabla `cache`
@@ -396,17 +409,16 @@ ALTER TABLE `job_batches`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indices de la tabla `lideres_generales`
---
-ALTER TABLE `lideres_generales`
-  ADD PRIMARY KEY (`id_usuario`);
-
---
 -- Indices de la tabla `lideres_semillero`
 --
 ALTER TABLE `lideres_semillero`
-  ADD PRIMARY KEY (`id_usuario`),
-  ADD KEY `fk_lider_tipo_doc` (`id_tipo_documento`);
+  ADD PRIMARY KEY (`id_usuario`);
+
+--
+-- Indices de la tabla `lider_general`
+--
+ALTER TABLE `lider_general`
+  ADD PRIMARY KEY (`id_usuario`);
 
 --
 -- Indices de la tabla `migrations`
@@ -507,7 +519,7 @@ ALTER TABLE `semilleros`
 -- AUTO_INCREMENT de la tabla `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- Restricciones para tablas volcadas
@@ -533,16 +545,16 @@ ALTER TABLE `grupo_aprendices`
   ADD CONSTRAINT `fk_ga_grupo` FOREIGN KEY (`id_grupo`) REFERENCES `grupos` (`id_grupo`);
 
 --
--- Filtros para la tabla `lideres_generales`
---
-ALTER TABLE `lideres_generales`
-  ADD CONSTRAINT `lideres_generales_id_usuario_foreign` FOREIGN KEY (`id_usuario`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
 -- Filtros para la tabla `lideres_semillero`
 --
 ALTER TABLE `lideres_semillero`
   ADD CONSTRAINT `fk_lideres_semillero_users` FOREIGN KEY (`id_usuario`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `lider_general`
+--
+ALTER TABLE `lider_general`
+  ADD CONSTRAINT `lideres_generales_id_usuario_foreign` FOREIGN KEY (`id_usuario`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
