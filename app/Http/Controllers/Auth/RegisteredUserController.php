@@ -58,7 +58,6 @@ class RegisteredUserController extends Controller
             ]);
         }
 
-
         $request->validate($rules);
 
         $user = DB::transaction(function () use ($request) {
