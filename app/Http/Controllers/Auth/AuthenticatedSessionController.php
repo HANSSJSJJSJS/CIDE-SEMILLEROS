@@ -29,18 +29,8 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
 
-        switch ($user->role) {
-            case 'ADMIN':
-                return redirect('/admin/dashboard');
-            case 'INSTRUCTOR':
-                return redirect('/instructor/dashboard');
-            case 'APRENDIZ':
-                return redirect('/aprendiz/dashboard');
-            case 'LIDER GENERAL':
-                return redirect('/lider/dashboard');
-            default:
-                return redirect('/');
-        }
+        return redirect()->intended($user->redirectPath());
+
     }
 
 

@@ -79,7 +79,6 @@ Route::middleware('auth')->group(function () {
 | RUTAS POR ROLES
 |--------------------------------------------------------------------------
 */
-
 // ADMIN
 Route::middleware(['auth', 'role:ADMIN'])->group(function () {
     Route::view('/admin/dashboard', 'dashboard-admin')->name('admin.dashboard');
@@ -96,6 +95,11 @@ Route::middleware(['auth', 'role:INSTRUCTOR'])->group(function () {
     Route::view('/instructor/dashboard', 'dashboard-instructor')->name('instructor.dashboard');
 });
 
+// LÍDER DE SEMILLERO
+Route::middleware(['auth', 'role:LIDER_SEMILLERO'])->group(function () {
+    Route::view('/lider_semi/dashboard', 'lider_semi.dashboard-instructor')->name('lider_semi.instructor.dashboard');
+});
+
 // APRENDIZ
 Route::middleware(['auth', 'role:APRENDIZ'])->group(function () {
     Route::view('/aprendiz/dashboard', 'dashboard-aprendiz')->name('aprendiz.dashboard');
@@ -105,6 +109,12 @@ Route::middleware(['auth', 'role:APRENDIZ'])->group(function () {
 Route::middleware(['auth', 'role:LIDER_GENERAL'])->group(function () {
     Route::view('/lider/dashboard', 'dashboard-lider')->name('lider.dashboard');
 });
+
+
+
+
+
+
 
 /*
 |--------------------------------------------------------------------------
