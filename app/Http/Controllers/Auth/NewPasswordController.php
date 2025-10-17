@@ -16,7 +16,7 @@ use Illuminate\View\View;
 class NewPasswordController extends Controller
 {
     /**
-     * Display the password reset view.
+     * Mostrar la vista de restablecimiento de contraseña.
      */
     public function create(Request $request): View
     {
@@ -24,7 +24,7 @@ class NewPasswordController extends Controller
     }
 
     /**
-     * Handle an incoming new password request.
+     * Gestionar una nueva solicitud de contraseña entrante.
      *
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -36,9 +36,9 @@ class NewPasswordController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
+        // Aquí intentaremos restablecer la contraseña del usuario. Si tiene éxito,
+        // Actualizará la contraseña en un modelo de usuario real y la conservará en el
+        // base de datos. De lo contrario, analizaremos el error y devolveremos la respuesta.
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function (User $user) use ($request) {
@@ -51,9 +51,9 @@ class NewPasswordController extends Controller
             }
         );
 
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
+        // Si la contraseña se restableció correctamente, redirigiremos al usuario nuevamente a
+        // Vista autenticada de inicio de la aplicación. Si hay un error, podemos
+        // redirigirlos de vuelta al lugar de donde vinieron con su mensaje de error.
         return $status == Password::PASSWORD_RESET
                     ? redirect()->route('login')->with('status', __($status))
                     : back()->withInput($request->only('email'))

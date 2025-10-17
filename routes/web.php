@@ -6,13 +6,9 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UsuarioController;
 
-
 // ---------------------------------------------
 // RUTAS PÚBLICAS
 // ---------------------------------------------
-Route::get('/', function () {
-    return view('welcome');
-});
 
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy']);
 
@@ -20,7 +16,7 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy']);
 // RUTAS GENERALES (acceso con login)
 // ---------------------------------------------
 
-// (Ejemplo) Controladores de tus módulos
+// Controladores de tus módulos
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LiderController;
 use App\Http\Controllers\SemilleroController;
@@ -36,7 +32,10 @@ app('router')->aliasMiddleware('role', RoleMiddleware::class);
 | PÚBLICO
 |--------------------------------------------------------------------------
 */
-Route::view('/', 'welcome')->name('welcome');
+
+Route::get('/', function () {
+    return redirect()->route('login');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -59,20 +58,18 @@ Route::get('/dashboard', function () {
 
     if (!$user) return redirect()->route('login');
 
-    // Ajusta los nombres a los que maneje tu RoleMiddleware/base de datos
     switch ($user->rol ?? $user->role ?? null) {
         case 'ADMIN':
-            return redirect()->route('admin.dashboard');
+            return view('Admin.dashboard-admin'); // Vista en carpeta Admin
         case 'INSTRUCTOR':
-            return redirect()->route('instructor.dashboard');
+            return view('Instructor.dashboard-instructor'); // Vista en carpeta Instructor
         case 'APRENDIZ':
-            return redirect()->route('aprendiz.dashboard');
-        case 'LIDER_GENERAL': // si hoy lo tienes con espacio, cámbialo también en BD
+            return view('Aprendiz.dashboard-aprendiz'); // Vista en carpeta Aprendiz
+        case 'LIDER_GENERAL':
         case 'LIDER GENERAL':
-            return redirect()->route('lider.dashboard');
+            return view('Lider.dashboard-lider'); // Vista en carpeta Lider
         default:
-            // Rol no contemplado: envía a un dashboard genérico o error
-            return view('dashboard'); // opcional
+            return view('dashboard'); // Vista genérica o error
     }
 })->middleware(['auth', 'verified'])->name('dashboard');
 
@@ -81,9 +78,10 @@ Route::get('/dashboard', function () {
 | PERFIL (área del usuario)
 |--------------------------------------------------------------------------
 */
->>>>>>> dfda83aa73b75a9470edde3fb32dc68a154c263b
+
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', fn() => view('dashboard'))->name('dashboard');
+    // Ya tienes el dashboard directo arriba, así que no repitas esta ruta
+    // Eliminar: Route::get('/dashboard', fn() => view('dashboard'))->name('dashboard');
 
     // Perfil del usuario
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -94,15 +92,22 @@ Route::middleware('auth')->group(function () {
     Route::resource('usuarios', UsuarioController::class);
 });
 
-
 // ---------------------------------------------
 // RUTAS POR ROLES
 // ---------------------------------------------
- 
-// ADMINISTRADOR
+// Ya no necesitas rutas separadas para dashboards, lo manejas desde /dashboard
+
+// Resto de rutas por rol para otros módulos
+
+// ADMIN
 Route::middleware(['auth', 'role:ADMIN'])->group(function () {
-    Route::get('/admin/dashboard', fn() => view('admin.admin-dashboard'))->name('admin.dashboard');
     Route::get('/admin/crear', fn() => view('admin.crear'))->name('admin.crear');
+
+    // Usuarios (solo admin)
+    Route::resource('usuarios', UsuarioController::class);
+
+    // Página “Funciones del administrador” para el botón del menú
+    Route::get('/admin/funciones', [AdminController::class, 'index'])->name('admin.functions');
 });
 
 // INSTRUCTOR o LIDER SEMILLERO (mismo rol)
@@ -121,59 +126,8 @@ Route::middleware(['auth', 'role:APRENDIZ'])->group(function () {
 });
 
 // ---------------------------------------------
-// AUTENTICACIÓN (Laravel Breeze / Fortify)
+// MÓDULOS DEL PROYECTO (rutas que usa el menú lateral)
 // ---------------------------------------------
-require __DIR__.'/auth.php';
-
-/*
-|--------------------------------------------------------------------------
-| RUTAS POR ROLES
-|--------------------------------------------------------------------------
-*/
-// ADMIN
-Route::middleware(['auth', 'role:ADMIN'])->group(function () {
-    Route::view('/admin/dashboard', 'dashboard-admin')->name('admin.dashboard');
-
-    // Usuarios (solo admin)
-    Route::resource('usuarios', UsuarioController::class);
-
-    // Página “Funciones del administrador” para el botón del menú
-    Route::get('/admin/funciones', [AdminController::class, 'index'])->name('admin.functions');
-});
-
-// INSTRUCTOR
-Route::middleware(['auth', 'role:INSTRUCTOR'])->group(function () {
-    Route::view('/instructor/dashboard', 'dashboard-instructor')->name('instructor.dashboard');
-});
-
-// LÍDER DE SEMILLERO
-Route::middleware(['auth', 'role:LIDER_SEMILLERO'])->group(function () {
-    Route::view('/lider_semi/dashboard', 'lider_semi.dashboard-instructor')->name('lider_semi.instructor.dashboard');
-});
-
-// APRENDIZ
-Route::middleware(['auth', 'role:APRENDIZ'])->group(function () {
-    Route::view('/aprendiz/dashboard', 'dashboard-aprendiz')->name('aprendiz.dashboard');
-});
-
-// LÍDER GENERAL
-Route::middleware(['auth', 'role:LIDER_GENERAL'])->group(function () {
-    Route::view('/lider/dashboard', 'dashboard-lider')->name('lider.dashboard');
-});
-
-
-
-
-
-
-
-/*
-|--------------------------------------------------------------------------
-| MÓDULOS DEL PROYECTO (rutas que usa el menú lateral)
-|--------------------------------------------------------------------------
-| Si aún no tienes controladores, puedes dejar Route::view temporalmente.
-| Cuando los tengas, reemplazas por controladores reales como abajo.
-*/
 
 // LÍDERES (registro de aprendices líderes)
 Route::middleware(['auth', 'role:ADMIN,INSTRUCTOR'])->group(function () {
@@ -199,10 +153,9 @@ Route::middleware(['auth', 'role:ADMIN,INSTRUCTOR,LIDER_GENERAL'])->group(functi
 |--------------------------------------------------------------------------
 | PASSWORD CHANGE (para el botón “Cambio contraseña”)
 |--------------------------------------------------------------------------
-| Si usas Fortify o Jetstream, ajusta esta ruta a tu flujo real.
 */
 Route::middleware('auth')->get('/password/change', function () {
-    return view('auth.passwords.change'); // crea esta vista o apunta al form real
+    return view('auth.passwords.change');
 })->name('password.change');
 
 Route::middleware(['auth'])->group(function () {
@@ -211,3 +164,28 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [\App\Http\Controllers\ProfileController::class,'edit'])->name('profile.edit');
 });
 
+// ---------------------------------------------
+// RUTAS DEL MÓDULO APRENDIZ
+// ---------------------------------------------
+
+use App\Http\Controllers\Aprendiz\DashboardController;
+use App\Http\Controllers\Aprendiz\PerfilController;
+use App\Http\Controllers\Aprendiz\ProyectoController;
+use App\Http\Controllers\Aprendiz\ArchivoController;
+
+Route::middleware(['auth', 'role:APRENDIZ'])->prefix('aprendiz')->name('aprendiz.')->group(function () {
+    // Dashboard Aprendiz
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Perfil (ver datos personales)
+    Route::get('/perfil', [PerfilController::class, 'show'])->name('perfil.show');
+
+    // Proyectos (solo ver)
+    Route::get('/proyectos', [ProyectoController::class, 'index'])->name('proyectos.index');
+    Route::get('/proyectos/{id}', [ProyectoController::class, 'show'])->name('proyectos.show');
+
+    // Archivos: ver lista, descargar y subir PDFs
+    Route::get('/archivos', [ArchivoController::class, 'index'])->name('archivos.index');
+    Route::get('/archivos/{id}/download', [ArchivoController::class, 'download'])->name('archivos.download');
+    Route::post('/archivos/upload', [ArchivoController::class, 'upload'])->name('archivos.upload');
+});

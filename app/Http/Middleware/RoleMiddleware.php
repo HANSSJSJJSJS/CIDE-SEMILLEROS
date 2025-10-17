@@ -25,7 +25,7 @@ class RoleMiddleware
         }
 
         // Verifica si el rol del usuario está en los roles permitidos
-        if (!in_array(Auth::user()->rol, $roles)) {
+        if (!in_array(Auth::user()->role, $roles)) {
             abort(403, 'No tienes permisos para acceder a esta página.');
         }
 
