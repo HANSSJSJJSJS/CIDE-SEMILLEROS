@@ -6,15 +6,22 @@ use Illuminate\Database\Eloquent\Model;
 
 class Administrador extends Model
 {
-    protected $table = 'administradores';
-    protected $primaryKey = 'id_usuario'; // PK que también es FK a users.id
-    public $incrementing = false;         // no autoincrementa
-    public $timestamps   = false;         // pon true si tu tabla tiene created_at/updated_at
+    protected $table = 'administradores';   // nombre de tu tabla
+    protected $primaryKey = 'id_usuario';   // PK es id_usuario
+    public $incrementing = false;           // si no es AUTO_INCREMENT
+    public $timestamps = true;              // mapear tus columnas de fecha
+    const CREATED_AT = 'creado_en';
+    const UPDATED_AT = 'actualizado_en';
 
-    protected $fillable = ['id_usuario', 'nombre'];
+    protected $fillable = [
+        'id_usuario',
+        'nombre',
+        'apellidos',
+        'correo_institucional', // <— si en tu BD es "Correo_institucional", cámbialo aquí y en el create()
+    ];
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'id_usuario');
+        return $this->belongsTo(\App\Models\User::class, 'id_usuario');
     }
 }

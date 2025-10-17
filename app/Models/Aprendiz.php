@@ -11,7 +11,8 @@ class Aprendiz extends Model
 
     protected $fillable = [
         'id_usuario',
-        'nombre_completo',
+        'nombres',
+        'apellidos',
         'ficha',
         'programa',
         'tipo_documento',
