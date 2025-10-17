@@ -114,6 +114,7 @@ class RegisteredUserController extends Controller
             LiderGeneral::create([
                 'id_usuario'           => $user->id,
                 'nombre'               => $request->name,   // mismo nombre que users.name
+                'apellidos'            => $request->apellidos,
                 'Correo_institucional' => $user->email,     // mismo correo que users.email
             ]);
         }

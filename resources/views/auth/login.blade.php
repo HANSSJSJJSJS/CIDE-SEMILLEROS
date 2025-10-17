@@ -58,7 +58,8 @@
                 </form>
 
                 <div class="forgot-password">
-                    <a href="#">¿Olvidaste tu contraseña?</a>
+                    <a href="{{ route('password.request') }}">¿Olvidaste tu contraseña?</a>
+
                 </div>
             </div>
         </div>
