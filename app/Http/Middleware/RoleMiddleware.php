@@ -19,14 +19,26 @@ class RoleMiddleware
      */
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        // Verifica si el usuario está autenticado
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->route('login');
         }
 
-        // Verifica si el rol del usuario está en los roles permitidos
-        if (!in_array(Auth::user()->rol, $roles)) {
-            abort(403, 'No tienes permisos para acceder a esta página.');
+        $user = Auth::user();
+        $userRole = strtoupper(str_replace([' ', '-'], '_', trim($user->role ?? $user->rol ?? '')));
+
+        // Normaliza parámetros: puede venir "ADMIN,INSTRUCTOR" o varios args
+        $allowed = [];
+        foreach ($roles as $r) {
+            foreach (explode(',', $r) as $part) {
+                $part = trim($part);
+                if ($part === '') continue;
+                $allowed[] = strtoupper(str_replace([' ', '-'], '_', $part));
+            }
+        }
+
+        if (! in_array($userRole, $allowed, true)) {
+            // redirigir al dashboard genérico o abort(403)
+            return redirect()->route('dashboard')->withErrors(['error' => 'No tienes permisos para acceder a esta sección.']);
         }
 
         return $next($request);

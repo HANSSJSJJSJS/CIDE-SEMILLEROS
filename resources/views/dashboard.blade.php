@@ -120,14 +120,19 @@
 
           <!-- Título centrado visualmente (se centra en mobile con utilidades) -->
           <div class="d-none d-lg-flex justify-content-center flex-grow-1 position-absolute start-0 end-0">
-            <h5 class="top-title m-0">bienvenidso a</h5>
+            <h5 class="top-title m-0">bienvenidos</h5>
           </div>
           <div class="d-flex d-lg-none flex-grow-1 justify-content-center">
-            <h5 class="top-title m-0">bienvenidso a</h5>
+            <h5 class="top-title m-0">bienvenidos</h5>
           </div>
 
           <!-- Espaciador derecho (vacío porque no pediste acciones a la derecha) -->
-          <div style="width:140px"></div>
+          <div style="width:140px;display:flex;justify-content:flex-end;">
+            <form method="POST" action="{{ route('logout') }}">
+              @csrf
+              <button type="submit" class="btn btn-outline-secondary">Cerrar sesión</button>
+            </form>
+          </div>
         </div>
       </div>
     </nav>
