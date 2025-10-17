@@ -1,3 +1,5 @@
+
+import './form_usuario.js';
 // public/js/form_usuario.js
 document.addEventListener('DOMContentLoaded', () => {
   // Helpers
@@ -135,4 +137,10 @@ document.addEventListener('DOMContentLoaded', () => {
       submitBtn && (submitBtn.disabled = false);
     }
   });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.querySelector('form[action*="admin/usuarios"]');
+  if (!form) return;
+  // ... tu código ...
 });

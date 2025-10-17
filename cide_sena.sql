@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 16-10-2025 a las 17:25:17
+-- Tiempo de generación: 16-10-2025 a las 23:42:20
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.4.13
 
@@ -31,6 +31,7 @@ CREATE TABLE `administradores` (
   `id_usuario` bigint(20) UNSIGNED NOT NULL,
   `nombre` varchar(120) NOT NULL,
   `apellidos` varchar(120) DEFAULT NULL,
+  `correo` varchar(150) DEFAULT NULL,
   `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
   `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -39,8 +40,8 @@ CREATE TABLE `administradores` (
 -- Volcado de datos para la tabla `administradores`
 --
 
-INSERT INTO `administradores` (`id_usuario`, `nombre`, `apellidos`, `creado_en`, `actualizado_en`) VALUES
-(30, 'maria', 'torres', '2025-10-16 20:21:34', '2025-10-16 20:21:34');
+INSERT INTO `administradores` (`id_usuario`, `nombre`, `apellidos`, `correo`, `creado_en`, `actualizado_en`) VALUES
+(1, 'Luis', 'Torres', 'luis@hotmail.com', '2025-10-17 01:10:55', '2025-10-17 01:10:55');
 
 -- --------------------------------------------------------
 
@@ -70,7 +71,7 @@ CREATE TABLE `aprendices` (
 --
 
 INSERT INTO `aprendices` (`id_usuario`, `nombres`, `apellidos`, `ficha`, `programa`, `tipo_documento`, `documento`, `celular`, `correo_institucional`, `correo_personal`, `contacto_nombre`, `contacto_celular`, `creado_en`, `actualizado_en`) VALUES
-(26, 'joaquin', 'cañon', '2848527', 'adso', 'CC', '1012443507', '3053970242', 'hola11@hotmail.com', 'danielcf97@hotmail.com', NULL, NULL, '2025-10-16 15:03:39', '2025-10-16 15:03:39');
+(2, 'joaquin', 'cañon', '2848527', 'ADSO', 'CC', '1012443507', '3053970242', 'joaquin_canon@soy.sena.edu.co', 'danielcf97@hotmail.com', NULL, NULL, '2025-10-16 20:13:08', '2025-10-16 20:13:08');
 
 -- --------------------------------------------------------
 
@@ -212,7 +213,7 @@ CREATE TABLE `lideres_semillero` (
 --
 
 INSERT INTO `lideres_semillero` (`id_usuario`, `nombres`, `apellidos`, `tipo_documento`, `documento`, `correo_institucional`, `creado_en`, `actualizado_en`) VALUES
-(25, 'Jose', 'mogoñon', 'CE', '123456789', 'correo@hotmail.com', '2025-10-16 15:01:45', '2025-10-16 15:01:45');
+(3, 'Andrez', 'Ortiz', 'CC', '785445872', 'andrez@hotmail.com', '2025-10-16 20:45:58', '2025-10-16 20:45:58');
 
 -- --------------------------------------------------------
 
@@ -234,7 +235,7 @@ CREATE TABLE `lider_general` (
 --
 
 INSERT INTO `lider_general` (`id_usuario`, `nombres`, `apellidos`, `creado_en`, `actualizado_en`, `Correo_institucional`) VALUES
-(23, 'luis', '', '2025-10-16 14:25:05', '2025-10-16 14:33:46', 'luis111@hotmail.com');
+(8, 'Harol', 'Pardo', '2025-10-17 02:27:54', '2025-10-17 02:27:54', 'harol@hotmail.com');
 
 -- --------------------------------------------------------
 
@@ -326,7 +327,10 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('EDRIIXDQRA7jobopN2H7dwIoKsAk3YqQybJ30xeK', 30, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiaWdmeGRMc2d0a0F3Q05Gd1pNeFFkZXRXOXRnWEp2cXhlSlFFOVBYayI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MzE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9kYXNoYm9hcmQiO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTozMDt9', 1760628095);
+('eTdkQNnBnoATljLLhcGxyyFbFqRjT7D7nwo6hBvm', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiT09jME9jM0NaNFZzNjNHUGxnV2hmb1FramhqSEZiTTNjWFB2anNuaSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9sb2dpbiI7fX0=', 1760648818),
+('lPEiSQt7gOKLXCKoL1VVVJuiO9Mhhi2tKRFKocor', 34, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoidnBBNkR1bWpKdVpSSE9laXlBdUNlTXpXZklrTVQ0OFk4d0JIcHZmYyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjM0O30=', 1760650118),
+('P4iFNQqaElqwONnrvUuO7WzWp8l1SqXIarprQFxa', 8, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiZHJ6aU9Na0JBMEtyM01GMFg3TmhDQTk2SHZ3YmVTSUw4Tnh3OVNuMSI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mzc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9saWRlci9kYXNoYm9hcmQiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTo4O30=', 1760650806),
+('pCnxJiskPFynNA9l2MZJuWczVsg4cNLJ6u9dygdg', 8, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiRHdVMjZiV0N3MTN2dzhxb2pLNVZVNkNuakF5aWwwc0VuQWdVa3liVyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mzc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9saWRlci9kYXNoYm9hcmQiO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTo4O30=', 1760650088);
 
 -- --------------------------------------------------------
 
@@ -351,11 +355,10 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `role`, `remember_token`, `created_at`, `updated_at`) VALUES
-(23, 'luis', 'luis111@hotmail.com', NULL, '$2y$12$telu8zAjQEs8aUnnIPfTFugatCjbGFxsCxT5ri97UnP/JFeLn2vPC', 'LIDER GENERAL', NULL, '2025-10-16 19:25:05', '2025-10-16 19:25:05'),
-(24, 'joaquin cañon', 'admin@hola.com', NULL, '$2y$12$XoBCQBVadL3/0PY1sIRFfuAoorRFd4rKVvTNf3dEvgAo7VIDeKEqy', 'ADMIN', NULL, '2025-10-16 20:00:00', '2025-10-16 20:00:00'),
-(25, 'Jose mogoñon', 'correo@hotmail.com', NULL, '$2y$12$hXAZa42VsWTMGsBHLO2aKOiTczq2RHhjiDdUNZtEUNwE0827F7fJ6', 'LIDER_SEMILLERO', NULL, '2025-10-16 20:01:45', '2025-10-16 20:01:45'),
-(26, 'joaquin cañon', 'danielcf97@hotmail.com', NULL, '$2y$12$Hnha5y1PV6ZDbQdj/X4dDuDVM2oO2zyRDNSzPTy0qwwVOcbB6fNAq', 'APRENDIZ', NULL, '2025-10-16 20:03:39', '2025-10-16 20:03:39'),
-(30, 'maria torres', 'maria@hotmail.com', NULL, '$2y$12$XJsoiu5YUaGqBYYP1aLGluHYJEhhnT1io8WSE9TMRGqtyTm7viiIa', 'ADMIN', NULL, '2025-10-16 20:21:34', '2025-10-16 20:21:34');
+(1, 'Luis Torres', 'luis@hotmail.com', NULL, '$2y$12$Xw05i8BnWt0ff8xaUPl2feUpcqfX0pFBL8zqfqvd/B6Se3YkxFRTu', 'ADMIN', NULL, '2025-10-17 01:10:55', '2025-10-17 01:10:55'),
+(2, 'joaquin cañon', 'danielcf97@hotmail.com', NULL, '$2y$12$T.gAC/7fK9cZF1tfRXAcMuQk4LRTltxkuFWfA/musJZhJYbFZOGai', 'APRENDIZ', NULL, '2025-10-17 01:13:08', '2025-10-17 01:13:08'),
+(3, 'Andrez Ortiz', 'andrez@hotmail.com', NULL, '$2y$12$zGDBciTZqMrlVkD0POAUzuL4.TcBMmI5llnHyBZrBDFuloEbY2fOm', 'LIDER_SEMILLERO', NULL, '2025-10-17 01:45:58', '2025-10-17 01:45:58'),
+(8, 'Harol Pardo', 'harol@hotmail.com', NULL, '$2y$12$sfpT5NyUWCYix3BX5HXIBeXno3.FvWzYqn8hgpvO.vMGEg9tEITOK', 'LIDER GENERAL', NULL, '2025-10-17 02:27:54', '2025-10-17 02:27:54');
 
 --
 -- Índices para tablas volcadas
@@ -538,7 +541,7 @@ ALTER TABLE `semilleros`
 -- AUTO_INCREMENT de la tabla `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- Restricciones para tablas volcadas

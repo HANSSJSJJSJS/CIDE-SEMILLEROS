@@ -14,6 +14,8 @@ use App\Http\Controllers\LiderController;
 use App\Http\Controllers\SemilleroController;
 use App\Http\Controllers\AprendizController;
 use App\Http\Controllers\GrupoInvestigacionController;
+use App\Http\Controllers\Admin\DashboardController;
+
 
 // Middleware de rol
 use App\Http\Middleware\RoleMiddleware;
@@ -83,9 +85,16 @@ Route::middleware('auth')->group(function () {
 
 // ADMIN
 Route::middleware(['auth', 'role:ADMIN'])->group(function () {
-    Route::view('/admin/dashboard', 'dashboard-admin')->name('admin.dashboard');
+    Route::view('/admin/dashboard', 'admin.dashboard')->name('admin.dashboard');
     Route::get('/admin/funciones', [AdminController::class, 'index'])->name('admin.functions');
     Route::resource('usuarios', UsuarioController::class);
+    Route::middleware(['auth','role:ADMIN'])->group(function () {
+    Route::get('/admin/dashboard', DashboardController::class)->name('admin.dashboard');
+    Route::resource('usuarios', UsuarioController::class)->only(['index', 'create', 'store']);
+
+    
+});
+    
 });
 
 // INSTRUCTOR

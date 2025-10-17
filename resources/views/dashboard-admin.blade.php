@@ -169,33 +169,51 @@
           <aside class="side-panel h-100">
             <div class="side-inner h-100">
               <div class="d-grid gap-3">
+                <a class="menu-btn" href="{{ route('usuarios.create') }}">
+                <span>Gestión de usuarios</span><i class="bi bi-chevron-right"></i>
+              </a>
                 <a class="menu-btn" href="{{ route('usuarios.index', [], false) }}">
-                  <span>Gestión de usuarios</span><i class="bi bi-chevron-right"></i>
+                  <span>Gestión de usuarios</span><i class="bi bi-chevron-right"> </i>
                 </a>
                 <a class="menu-btn" href="{{ route('semilleros.index', [], false) }}">
-                  <span>Gestión de semilleros</span><i class="bi bi-chevron-right"></i>
+                  <span>Gestión de cuenta </span><i class="bi bi-chevron-right"></i>
                 </a>
-                <a class="menu-btn" href="{{ route('profile.edit', [], false) }}">
-                  <span>Gestión de cuenta</span><i class="bi bi-chevron-right"></i>
-                </a>
+              
               </div>
             </div>
           </aside>
         </div>
 
-        <!-- Contenido -->
-        <div class="col-lg-8 col-xl-9">
-          <section class="content-area h-100">
-            <h4 class="fw-bold mb-3 text-success">Panel de administración</h4>
-            <p class="text-muted">
-              Selecciona una de las opciones del menú lateral para gestionar usuarios, semilleros o tu cuenta.
-            </p>
-          </section>
-        </div>
-      </div>
-    </main>
-  </div>
+          <!-- Contenido -->
+          <div class="col-lg-8 col-xl-9">
+            <section id="content-area" class="content-area h-100">
+              <h4 class="fw-bold mb-3 text-success">Panel de administración</h4>
+              <p class="text-muted">Selecciona una de las opciones del menú lateral...</p>
+            </section>
+          </div>    
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const links = document.querySelectorAll('.menu-btn');
+  const contentArea = document.getElementById('content-area');
+
+  links.forEach(link => {
+    link.addEventListener('click', async (e) => {
+      e.preventDefault();
+
+      const url = e.currentTarget.getAttribute('href');
+      const res = await fetch(url);
+      const html = await res.text();
+
+      contentArea.innerHTML = html;
+    });
+  });
+});
+</script>
+
+
+
 </html>

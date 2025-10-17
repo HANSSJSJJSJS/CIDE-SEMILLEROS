@@ -4,9 +4,11 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>[x-cloak]{display:none!important}</style>
 
-    <form method="POST" action="{{ route('register') }}"
-          x-data="{ role: '{{ old('role') }}' }" x-cloak>
-        @csrf
+    <form method="POST"
+      action="{{ isset($adminMode) && $adminMode ? route('usuarios.store') : route('register') }}"
+      x-data="{ role: '{{ old('role') }}' }" x-cloak>
+    @csrf
+
 
         <!-- Rol del usuario -->
         <div>
@@ -195,5 +197,6 @@
                 {{ __('Registrarme') }}
             </x-primary-button>
         </div>
+    <script src="{{ asset('js/form_usuario.js') }}"></script>
     </form>
-</x-guest-layout>
+
