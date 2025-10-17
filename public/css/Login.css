@@ -143,6 +143,31 @@
             box-shadow: 0 0 0 3px rgba(57, 181, 74, 0.2);
             border-color: #2d8f3a;
         }
+
+        /* Ajustes rápidos para el icono */
+        .password-container {
+            position: relative;
+        }
+
+        .password-container input {
+            width: 100%;
+            padding-right: 40px; /* espacio para el icono */
+        }
+
+        .toggle-password {
+            position: absolute;
+            top: 70%;
+            right: 15px;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #35A900;
+            font-size: 1.6rem;
+        }
+
+        .toggle-password:hover {
+            color: #36a90096;
+        }
+    
         
         .btn-entrar {
             width: 100%;
