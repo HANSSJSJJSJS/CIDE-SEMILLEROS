@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany; // Importar BelongsToMany
 
 class User extends Authenticatable
 {
@@ -46,4 +47,34 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    // --- AQUÍ AÑADIMOS LA RELACIÓN DE MUCHOS A MUCHOS ---
+
+    /**
+     * El usuario pertenece a muchos proyectos.
+     */
+    public function proyectos(): BelongsToMany
+    {
+        // Esto define la relación:
+        // 1. Con el modelo Proyecto.
+        // 2. Usando la tabla pivote 'proyecto_user'.
+        // 3. Asume que las claves son 'user_id' y 'proyecto_id' o 'id_proyecto'.
+        // Si tu clave foránea en la tabla pivote es 'id_proyecto' para la columna del proyecto,
+        // ajusta la definición de la relación aquí:
+        return $this->belongsToMany(Proyecto::class, 'proyecto_user', 'user_id', 'id_proyecto');
+    }
+
+    // ----------------------------------------------------
+
+    public function redirectPath()
+{
+    return match ($this->role) {
+        'ADMIN' => '/admin/dashboard',
+        'LIDER SEMILLERO' => '/lider_semi/dashboard',
+        'APRENDIZ' => '/aprendiz/dashboard',
+        'LIDER GENERAL' => '/lider/dashboard',
+        default => '/',
+    };
+}
+
 }

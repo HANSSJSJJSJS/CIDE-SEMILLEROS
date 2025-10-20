@@ -33,9 +33,9 @@ class PasswordResetLinkController extends Controller
             'email' => 'required|email',
         ]);
 
-        // We will send the password reset link to this user. Once we have attempted
-        // to send the link, we will examine the response then see the message we
-        // need to show to the user. Finally, we'll send out a proper response.
+        // Enviaremos el enlace de restablecimiento de contraseña a este usuario.
+        // Una vez que hayamos intentado enviar el enlace, examinaremos la respuesta y
+        // veremos el mensaje que debemos mostrarle. Finalmente, enviaremos la respuesta correcta.
         $status = Password::sendResetLink(
             $request->only('email')
         );

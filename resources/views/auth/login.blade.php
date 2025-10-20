@@ -12,20 +12,11 @@
 <body>
     <div class="container">
         <div class="left-panel">
-            <img src="{{ asset('images/logo-sena.png') }}" alt="Logo" class="logo">
-            <div class="scides-title">SCIDES</div>
+            <img src="{{ asset('images/logo_semillero.png') }}" alt="Logo CIDE" class="logo-cide">
         </div>
-
         <div class="right-panel">
-            <div class="leaf" style="top: 10%; right: 15%;"></div>
-            <div class="leaf" style="top: 20%; right: 8%;"></div>
-            <div class="leaf" style="top: 15%; right: 25%;"></div>
-            <div class="leaf" style="top: 25%; right: 18%;"></div>
-            <div class="leaf" style="bottom: 15%; left: 10%;"></div>
-            <div class="leaf" style="bottom: 25%; left: 18%;"></div>
-            <div class="leaf" style="bottom: 20%; left: 5%;"></div>
-
-            <div class="login-box">
+            <img src="{{ asset('images/Loginfondo.png') }}" alt="Logo CIDE" class="login-background">
+            <div class="login-form">
                 <h2 class="login-title">Inicio de sesión</h2>
                 @if ($errors->has('error'))
                     <div class="alert alert-error">{{ $errors->first('error') }}</div>
@@ -56,10 +47,11 @@
 
                     <button type="submit" class="btn-entrar">ENTRAR</button>
                 </form>
-
                 <div class="forgot-password">
                     <a href="{{ route('password.request') }}">¿Olvidaste tu contraseña?</a>
-
+                </div>
+                <div class="sena-footer">
+                    <img src="{{ asset('images/logo-sena.png') }}" alt="Logo" class="logo-sena">
                 </div>
             </div>
         </div>

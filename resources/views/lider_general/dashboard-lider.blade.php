@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SCIDES · Dashboard</title>
+  <title>SCIDES · Dashboard Lider General</title>
 
   <!-- Bootstrap & Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -120,10 +120,10 @@
 
           <!-- Título centrado visualmente (se centra en mobile con utilidades) -->
           <div class="d-none d-lg-flex justify-content-center flex-grow-1 position-absolute start-0 end-0">
-            <h5 class="top-title m-0">BIENVENIDO</h5>
+            <h5 class="top-title m-0">Bienvenido al Modulo Lider General</h5>
           </div>
           <div class="d-flex d-lg-none flex-grow-1 justify-content-center">
-            <h5 class="top-title m-0"></h5>
+            <h5 class="top-title m-0">BIENVENIDO</h5>
           </div>
 
           <!-- Espaciador derecho (vacío porque no pediste acciones a la derecha) -->

@@ -33,7 +33,24 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $user = Auth::user();
+
+        // Mapea roles a rutas nombradas (ajusta los keys si tus roles en BD son diferentes)
+        $map = [
+            'ADMIN' => 'admin.dashboard',
+            'LIDER SEMILLERO' => 'lider_semi.dashboard',   // coincide con routes/web.php
+            'APRENDIZ' => 'aprendiz.dashboard',
+            'LIDER GENERAL' => 'lider_general.dashboard', // coincide con routes/web.php
+        ];
+
+        $roleKey = strtoupper(trim($user->rol ?? ''));
+
+        if (isset($map[$roleKey])) {
+            return redirect()->route($map[$roleKey]);
+        }
+
+        // fallback al dashboard general
+        return redirect()->route('dashboard');
     }
 
     /**

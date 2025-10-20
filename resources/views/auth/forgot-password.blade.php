@@ -18,8 +18,13 @@
 
         <div class="flex items-center justify-end mt-4">
             <x-primary-button>
-                {{ __('Generar Enlace para restablecer contraseña de correo electrónico') }}
+                {{ __('Generar enlace para restablecer la contraseña') }}
             </x-primary-button>
+        </div>
+        <div class="mt-4">
+            <a class="block mt-1 w-full" href="{{ route('login') }}">
+                {{ __('Volver al inicio de sesión') }}
+            </a>
         </div>
     </form>
 </x-guest-layout>

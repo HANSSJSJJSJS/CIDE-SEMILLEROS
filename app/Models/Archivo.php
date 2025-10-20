@@ -4,28 +4,28 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
+use App\Models\Proyecto;
 
 class Archivo extends Model
 {
     use HasFactory;
 
-    protected $table = 'archivos';
-
     protected $fillable = [
-        'nombre',
+        'nombre_archivo',
         'ruta',
-        'descripcion',
-        'usuario_id',
         'proyecto_id',
+        'user_id',
+        'estado'
     ];
-
-    public function usuario()
-    {
-        return $this->belongsTo('App\Models\Aprendiz', 'usuario_id');
-    }
 
     public function proyecto()
     {
-        return $this->belongsTo('App\Models\Proyecto', 'proyecto_id');
+        return $this->belongsTo(Proyecto::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

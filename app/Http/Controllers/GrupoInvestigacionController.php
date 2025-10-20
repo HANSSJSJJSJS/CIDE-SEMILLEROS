@@ -3,7 +3,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
-class AprendizController extends Controller
+class GrupoinvestigacionController extends Controller
 {
     public function index(){ return view('usuarios.index'); }
     public function create(){ return view('usuarios.create'); }
