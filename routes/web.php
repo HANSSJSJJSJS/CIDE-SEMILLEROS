@@ -2,8 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Middleware\RoleMiddleware;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\AdminController;
@@ -32,13 +30,32 @@ require __DIR__.'/auth.php';
 | DASHBOARD POR ROL (vistas según archivos que tienes)
 |--------------------------------------------------------------------------
 */
+
+//admin
 Route::middleware(['auth','role:ADMIN'])->group(function () {
     // resources/views/admin/admin-dashboard.blade.php
     Route::get('/admin/dashboard', fn() => view('admin.dashboard-admin'))->name('admin.dashboard');
     Route::get('/admin/crear', fn() => view('admin.crear'))->name('admin.crear');
     Route::get('/admin/funciones', [AdminController::class, 'index'])->name('admin.functions');
+    Route::get('/usuarios', [usuarioController::class, 'index'])->name('users.index');
+
 });
 
+use App\Http\Controllers\Admin\DashboardController;
+
+Route::middleware(['auth','verified'])
+    ->prefix('admin')->name('admin.')
+    ->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    });
+
+
+
+
+
+
+
+//fin admin 
 Route::middleware(['auth','role:INSTRUCTOR'])->group(function () {
     // resources/views/instructor/dashboard-instructor.blade.php
     Route::get('/instructor/dashboard', fn() => view('instructor.dashboard-instructor'))->name('instructor.dashboard');
