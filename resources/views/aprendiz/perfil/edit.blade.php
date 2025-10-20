@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Panel del Aprendiz SENA - Mi Perfil</title>
+    <title>Panel del Aprendiz SENA - Editar Perfil</title>
 
     <!-- Bootstrap & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -55,7 +55,7 @@
             <div class="col-md-3">
                 <div class="sidebar">
                     <div class="list-group">
-                        <a href="{{ route('dashboard') }}" class="list-group-item list-group-item-action">
+                        <a href="{{ route('aprendiz.dashboard') }}" class="list-group-item list-group-item-action">
                             🏠 Inicio
                         </a>
                         <a href="{{ route('aprendiz.proyectos.index') }}" class="list-group-item list-group-item-action">
@@ -74,44 +74,22 @@
             <!-- Contenido Principal -->
             <div class="col-md-9">
                 <div class="profile-section">
-                    <h2 class="mb-3">Mi Perfil</h2>
-                    <p class="text-muted mb-4">Información personal y académica</p>
-
-                    <form>
+                    <h2 class="mb-3">Editar Perfil</h2>
+                    <form method="POST" action="{{ route('aprendiz.perfil.update') }}">
+                        @csrf
                         <div class="mb-3">
                             <label class="form-label">Nombre Completo</label>
-                            <input type="text" class="form-control" value="{{ Auth::user()->name }}" disabled>
+                            <input type="text" class="form-control" name="name" value="{{ Auth::user()->name }}" required>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Correo Electrónico</label>
-                            <input type="email" class="form-control" value="{{ Auth::user()->email }}" disabled>
+                            <input type="email" class="form-control" name="email" value="{{ Auth::user()->email }}" required>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Programa de Formación</label>
-                            <input type="text" class="form-control" value="Semillero SENA" disabled>
-                        </div>
-
-                            @if(isset($aprendiz->estado))
-                                @if($aprendiz->estado === 'Activo')
-                                    <div class="alert alert-success text-center fw-bold">
-             Estado: HABILITADO EN EL SÍSTEMA
-        </div>
-    @else
-        <div class="alert alert-danger text-center fw-bold">
-            Estado: INHABILITADO EN EL SÍSTEMA
-        </div>
-    @endif
-@else
-    <div class="alert alert-secondary text-center fw-bold">
-        Estado NO DISPONIBLE EN EL SÍSTEMA
-    </div>
-@endif
-
-                    </form>
-
-                    <a href="{{ route('aprendiz.perfil.edit') }}" class="btn btn-primary">Editar Perfil</a>
+                        <button type="submit" class="btn btn-primary">Actualizar Perfil</button>
+                        <button type="button" class="btn btn-secondary" data-url="{{ route('aprendiz.perfil.show') }}" onclick="window.location=this.dataset.url">Cancelar</button>
+                        </form>
                 </div>
             </div>
         </div>

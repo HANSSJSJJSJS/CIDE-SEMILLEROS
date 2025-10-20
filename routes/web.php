@@ -179,6 +179,8 @@ Route::middleware(['auth', 'role:APRENDIZ'])->prefix('aprendiz')->name('aprendiz
 
     // Perfil (ver datos personales)
     Route::get('/perfil', [PerfilController::class, 'show'])->name('perfil.show');
+    Route::get('/perfil/edit', [PerfilController::class, 'edit'])->name('perfil.edit');
+    Route::post('/perfil/update', [PerfilController::class, 'update'])->name('perfil.update');
 
     // Proyectos (solo ver)
     Route::get('/proyectos', [ProyectoController::class, 'index'])->name('proyectos.index');
@@ -186,6 +188,8 @@ Route::middleware(['auth', 'role:APRENDIZ'])->prefix('aprendiz')->name('aprendiz
 
     // Archivos: ver lista, descargar y subir PDFs
     Route::get('/archivos', [ArchivoController::class, 'index'])->name('archivos.index');
-    Route::get('/archivos/{id}/download', [ArchivoController::class, 'download'])->name('archivos.download');
-    Route::post('/archivos/upload', [ArchivoController::class, 'upload'])->name('archivos.upload');
+    Route::get('/archivos/upload', [ArchivoController::class, 'create'])->name('archivos.upload');
+    Route::post('/archivos/upload', [ArchivoController::class, 'upload'])->name('archivos.upload.post');
+
+    Route::resource('archivos', ArchivoController::class);
 });

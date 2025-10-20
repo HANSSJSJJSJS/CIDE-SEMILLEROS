@@ -3,45 +3,69 @@
 namespace App\Http\Controllers\Aprendiz;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Archivo;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Proyecto;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User; // Asegúrate de importar el modelo User si no lo está
 
 class ArchivoController extends Controller
 {
-    // Ver todos los archivos del usuario (solo los suyos)
     public function index()
     {
-        $archivos = Archivo::where('user_id', Auth::id())->latest()->get();
+        // 1. Obtener el usuario autenticado.
+        $user = Auth::user();
 
-        return view('Aprendiz.Archivos.index', compact('archivos'));
+        // 2. CORRECCIÓN: Obtener los proyectos a través de la relación de muchos a muchos.
+        // Esto le dice a Laravel que use la tabla pivote (proyecto_user).
+        $proyectos = $user->proyectos;
+
+        // 3. El resto de la lógica para archivos está bien, ya que Archivo sí tiene user_id.
+        $archivos = Archivo::where('user_id', $user->id)->get();
+
+        return view('aprendiz.archivos.index', compact('proyectos', 'archivos'));
     }
 
-    // Subir archivo PDF
+    public function create()
+    {
+        return view('aprendiz.archivos.upload');
+    }
+
     public function upload(Request $request)
     {
         $request->validate([
-            'archivo' => 'required|mimes:pdf|max:10240', // máx 10MB
+            // Asegúrate de que el proyecto realmente pertenece al usuario antes de permitir la subida
+            'proyecto_id' => 'required|exists:proyectos,id_proyecto', // Nota: Usé 'id_proyecto' si esa es tu clave primaria
+            'documentos' => 'required|array',
+            'documentos.*' => 'required|mimes:pdf|max:10240'
         ]);
 
-        $archivoSubido = $request->file('archivo');
+        foreach ($request->file('documentos') as $documento) {
+            $ruta = $documento->store('documentos', 'public');
 
-        $ruta = $archivoSubido->store('archivos_aprendiz');
+            Archivo::create([
+                'nombre_archivo' => $documento->getClientOriginalName(),
+                'ruta' => $ruta,
+                'proyecto_id' => $request->proyecto_id,
+                'user_id' => Auth::id()
+            ]);
+        }
 
-        Archivo::create([
-            'user_id' => Auth::id(),
-            'nombre_archivo' => $ruta,
-        ]);
-
-        return back()->with('success', 'Archivo subido correctamente.');
+        return redirect()->route('aprendiz.archivos.index')
+            ->with('success', 'Documentos subidos correctamente');
     }
 
-    // Descargar archivo (si es del mismo usuario)
-    public function download($id)
+    public function destroy(Archivo $archivo)
     {
-        $archivo = Archivo::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
+        if ($archivo->user_id !== Auth::id()) {
+            abort(403);
+        }
 
-        return Storage::download($archivo->nombre_archivo);
+        Storage::disk('public')->delete($archivo->ruta);
+        $archivo->delete();
+
+        return redirect()->route('aprendiz.archivos.index')
+            ->with('success', 'Documento eliminado correctamente');
     }
 }

@@ -99,63 +99,39 @@
             <!-- Contenido Principal -->
             <div class="col-md-9">
                 <h2 class="mb-3">Mis Proyectos</h2>
-                <p class="text-muted mb-4">Proyectos asignados en el semillero SENA</p>
+<p class="text-muted mb-4">Proyectos asignados en el semillero SENA</p>
 
-                <!-- Proyecto 1 -->
-                <div class="project-card">
-                    <h4>Proyecto de Desarrollo Web</h4>
-                    <span class="badge bg-success mb-2">En progreso</span>
-                    <p>Desarrollo de una aplicación web responsiva con tecnologías modernas</p>
+@forelse ($proyectos as $proyecto)
+    <div class="project-card mb-3">
+        <h4>{{ $proyecto->nombre_proyecto }}</h4>
 
-                    <div class="mb-2">Progreso</div>
-                    <div class="progress mb-3">
-                        <div class="progress-bar bg-success" style="width: 60%"></div>
-                    </div>
+        <span class="badge bg-{{ $proyecto->estado === 'activo' ? 'success' : 'warning' }} mb-2">
+            {{ ucfirst($proyecto->estado ?? 'pendiente') }}
+        </span>
 
-                    <div class="mb-3">Documentos: 2/3</div>
+        <p>{{ $proyecto->descripcion ?? 'Sin descripción disponible.' }}</p>
 
-                    <div>
-                        <a href="{{ route('aprendiz.proyectos.show', 1) }}" class="btn btn-sena">Ver Detalles</a>
-                        <a href="{{ route('aprendiz.archivos.index') }}" class="btn btn-outline-sena">Subir Docs</a>
-                    </div>
-                </div>
+        <div class="mb-2">Fechas del Proyecto</div>
+        <p class="text-muted">
+            Inicio: {{ $proyecto->fecha_inicio ? \Carbon\Carbon::parse($proyecto->fecha_inicio)->format('d/m/Y') : 'No definida' }} -
+            Fin: {{ $proyecto->fecha_fin ? \Carbon\Carbon::parse($proyecto->fecha_fin)->format('d/m/Y') : 'No definida' }}
+        </p>
 
-                <!-- Proyecto 2 -->
-                <div class="project-card">
-                    <h4>Proyecto de Base de Datos</h4>
-                    <span class="badge bg-warning text-dark mb-2">Pendiente</span>
-                    <p>Diseño e implementación de una base de datos relacional</p>
+        <div class="mb-3">
+            Semillero: {{ $proyecto->semillero->nombre ?? 'No asignado' }} <br>
+            Tipo: {{ $proyecto->tipoProyecto->nombre ?? 'No especificado' }}
+        </div>
 
-                    <div class="mb-2">Progreso</div>
-                    <div class="progress mb-3">
-                        <div class="progress-bar bg-success" style="width: 30%"></div>
-                    </div>
-
-                    <div class="mb-3">Documentos: 1/4</div>
-
-                    <div>
-                        <a href="{{ route('aprendiz.proyectos.show', 2) }}" class="btn btn-sena">Ver Detalles</a>
-                        <a href="{{ route('aprendiz.archivos.index') }}" class="btn btn-outline-sena">Subir Docs</a>
-                    </div>
-                </div>
-
-                <!-- Proyecto 3 -->
-                <div class="project-card">
-                    <h4>Proyecto de Seguridad Informática</h4>
-                    <span class="badge bg-warning text-dark mb-2">Pendiente</span>
-                    <p>Análisis de vulnerabilidades y propuesta de soluciones</p>
-
-                    <div class="mb-2">Progreso</div>
-                    <div class="progress mb-3">
-                        <div class="progress-bar bg-success" style="width: 0%"></div>
-                    </div>
-
-                    <div class="mb-3">Documentos: 0/3</div>
-
-                    <div>
-                        <a href="{{ route('aprendiz.proyectos.show', 3) }}" class="btn btn-sena">Ver Detalles</a>
-                        <a href="{{ route('aprendiz.archivos.index') }}" class="btn btn-outline-sena">Subir Docs</a>
-                    </div>
+        <div>
+            <a href="{{ route('aprendiz.proyectos.show', $proyecto->id_proyecto) }}" class="btn btn-sena">Ver Detalles</a>
+            <a href="{{ route('aprendiz.archivos.create', ['proyecto' => $proyecto->id_proyecto]) }}" class="btn btn-outline-sena">Subir Docs</a>
+        </div>
+    </div>
+@empty
+    <div class="alert alert-warning">
+        No tienes proyectos asignados actualmente.
+    </div>
+@endforelse
                 </div>
             </div>
         </div>
