@@ -114,8 +114,8 @@ class RegisteredUserController extends Controller
         if ($request->role === 'LIDER GENERAL') {
             LiderGeneral::create([
                 'id_usuario'           => $user->id,
-                'nombre'               => $request->name,   // mismo nombre que users.name
-                'Correo_institucional' => $user->email,     // mismo correo que users.email
+                'nombre'              => $request->nombres ?? $user->name,
+                'Correo_institucional' => $user->email,
             ]);
         }
 
