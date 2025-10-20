@@ -1,0 +1,89 @@
+        :root {
+            --sena-green: #39A900;
+            --sena-dark: #2E8900;
+            --gray-bg: #f8f9fb;
+            --nav-dark: #0D1B2A;
+        }
+
+        body {
+            background: var(--gray-bg);
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .px-3.mb-4 {
+            display: flex;
+            flex-direction: column;
+            /* coloca el logo y el texto en columna */
+            align-items: center;
+            /* centra horizontalmente */
+            justify-content: center;
+            /* centra verticalmente (si tiene altura definida) */
+            text-align: center;
+            /* centra el texto */
+        }
+
+        .logo-sena {
+            height: 80px;
+            width: 80px;
+            margin-bottom: 8px;
+            /* separa el logo del texto */
+        }
+
+        .sidebar {
+            height: 100vh;
+            background: #fff;
+            border-right: 2px solid #eaeaea;
+            padding-top: 1.5rem;
+        }
+
+        .sidebar .nav-link {
+            color: #333;
+            font-weight: 500;
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+
+        .sidebar .nav-link.active {
+            background: var(--sena-green);
+            color: #fff;
+        }
+
+        .sidebar .nav-link:hover {
+            background: #e9f7ec;
+            color: var(--sena-dark);
+        }
+
+        .topbar {
+            background: var(--sena-green);
+            color: #fff;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-radius: 0 0 15px 15px;
+        }
+
+        .profile-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .profile-info .avatar {
+            background: #fff;
+            color: var(--sena-green);
+            font-weight: 700;
+            border-radius: 50%;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-metric {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+        }

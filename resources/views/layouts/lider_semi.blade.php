@@ -8,98 +8,8 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-
-    <style>
-        :root {
-            --sena-green: #39A900;
-            --sena-dark: #2E8900;
-            --gray-bg: #f8f9fb;
-            --nav-dark: #0D1B2A;
-        }
-
-        body {
-            background: var(--gray-bg);
-            font-family: 'Segoe UI', sans-serif;
-        }
-
-        .px-3.mb-4 {
-            display: flex;
-            flex-direction: column;
-            /* coloca el logo y el texto en columna */
-            align-items: center;
-            /* centra horizontalmente */
-            justify-content: center;
-            /* centra verticalmente (si tiene altura definida) */
-            text-align: center;
-            /* centra el texto */
-        }
-
-        .logo-sena {
-            height: 80px;
-            width: 80px;
-            margin-bottom: 8px;
-            /* separa el logo del texto */
-        }
-
-        .sidebar {
-            height: 100vh;
-            background: #fff;
-            border-right: 1px solid #eaeaea;
-            padding-top: 1.5rem;
-        }
-
-        .sidebar .nav-link {
-            color: #333;
-            font-weight: 500;
-            border-radius: 10px;
-            margin-bottom: 8px;
-        }
-
-        .sidebar .nav-link.active {
-            background: var(--sena-green);
-            color: #fff;
-        }
-
-        .sidebar .nav-link:hover {
-            background: #e9f7ec;
-            color: var(--sena-dark);
-        }
-
-        .topbar {
-            background: var(--sena-green);
-            color: #fff;
-            padding: 1rem 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-radius: 0 0 15px 15px;
-        }
-
-        .profile-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .profile-info .avatar {
-            background: #fff;
-            color: var(--sena-green);
-            font-weight: 700;
-            border-radius: 50%;
-            width: 38px;
-            height: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .card-metric {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
-            padding: 1.5rem;
-        }
-    </style>
+    <link href="{{ asset('css/lider.css') }}" rel="stylesheet">
+    @yield('styles')
 </head>
 
 <body>
@@ -112,17 +22,11 @@
                     <p class="text-muted small">Sistema de Gestión Semillero</p>
                 </div>
                 <ul class="nav flex-column px-2">
-                    <li><a href="{{ route('lider_semi.dashboard') }}" class="nav-link {{ request()->routeIs('lider_semi.dashboard') ? 'active' : '' }}"><i class="bi bi-house-fill me-2"></i> Dashboard</a>
+                    <li><a href="{{ route('lider_semi.dashboard') }}" class="nav-link {{ request()->routeIs('lider_semi.dashboard') ? 'active' : '' }}"><i class="bi bi-house-fill me-2"></i> Inicio</a>
                     </li>
-                    <li><a href="{{ route('lider_semi.semilleros') }}" class="nav-link {{ request()->routeIs('lider_semi.semilleros') ? 'active' : '' }}"><i
-                                class="bi bi-hdd-stack me-2"></i>
-                            Mis Semilleros</a></li>
-                    <li><a href="{{ route('lider_semi.aprendices') }}" class="nav-link {{ request()->routeIs('lider_semi.aprendices') ? 'active' : '' }}"><i class="bi bi-person-video2"></i> Aprendices</a></li>
-                    <li><a href="{{ route('lider_semi.documentos') }}" class="nav-link position-relative {{ request()->routeIs('lider_semi.documentos') ? 'active' : '' }}">
-                            <i class="bi bi-file-earmark-text me-2"></i> Documentación
-                            <span
-                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">3</span>
-                        </a></li>
+                    <li><a href="{{ route('lider_semi.semilleros') }}" class="nav-link {{ request()->routeIs('lider_semi.semilleros') ? 'active' : '' }}"><i class="bi bi-hdd-stack me-2"></i>Mis Proyectos</a></li>
+                    <li><a href="{{ route('lider_semi.aprendices') }}" class="nav-link {{ request()->routeIs('lider_semi.aprendices') ? 'active' : '' }}"><i class="bi bi-person-video2 me-2"></i>Aprendices</a></li>
+                    <li><a href="{{ route('lider_semi.documentos') }}" class="nav-link position-relative {{ request()->routeIs('lider_semi.documentos') ? 'active' : '' }}"><i class="bi bi-file-earmark-text me-2"></i> Documentación</a></li>
                     <li><a href="{{ route('lider_semi.recursos') }}" class="nav-link {{ request()->routeIs('lider_semi.recursos') ? 'active' : '' }}"><i class="bi bi-journal-text me-2"></i> Recursos</a></li>
                     <li><a href="{{ route('lider_semi.calendario') }}" class="nav-link {{ request()->routeIs('lider_semi.calendario') ? 'active' : '' }}"><i class="bi bi-calendar-event me-2"></i> Calendario</a></li>
                     <li><a href="{{ route('lider_semi.perfil') }}" class="nav-link {{ request()->routeIs('lider_semi.perfil') ? 'active' : '' }}"><i class="bi bi-person-circle me-2"></i> Mi Perfil</a></li>

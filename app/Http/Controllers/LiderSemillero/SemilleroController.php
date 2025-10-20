@@ -15,6 +15,39 @@ class SemilleroController extends Controller
     {
         $userId = auth()->id();
 
+        // Si existe la tabla de proyectos, mostrar proyectos como "Mis Proyectos"
+        if (Schema::hasTable('proyectos')) {
+            $pcols = [];
+            // nombre
+            if (Schema::hasColumn('proyectos', 'nombre_proyecto')) {
+                $pcols[] = DB::raw('nombre_proyecto as nombre');
+            } else {
+                $pcols[] = DB::raw("'' as nombre");
+            }
+            // descripcion
+            if (Schema::hasColumn('proyectos', 'descripcion')) {
+                $pcols[] = 'descripcion';
+            } else {
+                $pcols[] = DB::raw("'' as descripcion");
+            }
+            // estado
+            if (Schema::hasColumn('proyectos', 'estado')) {
+                $pcols[] = 'estado';
+            } else {
+                $pcols[] = DB::raw("'EN_EJECUCION' as estado");
+            }
+            // progreso (placeholder)
+            $pcols[] = DB::raw('0 as progreso');
+            // aprendices (placeholder)
+            $pcols[] = DB::raw('0 as aprendices');
+
+            $proyectos = DB::table('proyectos')->select($pcols)->get();
+
+            // Reusar la misma vista, mapeando proyectos a la colección esperada
+            $semilleros = $proyectos;
+            return view('lider_semi.semilleros', compact('semilleros'));
+        }
+
         $query = Semillero::query();
 
         // Selecciones seguras con alias para columnas que la vista usa (sin asumir PK 'id')
