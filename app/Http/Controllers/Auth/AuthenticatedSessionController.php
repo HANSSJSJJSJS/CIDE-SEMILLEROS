@@ -32,9 +32,9 @@ class AuthenticatedSessionController extends Controller
 
         $map = [
             'ADMIN' => 'admin.dashboard',
-            'INSTRUCTOR' => 'instructor.dashboard',
+            'INSTRUCTOR' => 'lider_semi.dashboard',
             'APRENDIZ' => 'aprendiz.dashboard',
-            'LIDER_SEMILLERO' => 'lider_semi.instructor.dashboard',
+            'LIDER_SEMILLERO' => 'lider_semi.dashboard',
             'LIDER_GENERAL' => 'lider.dashboard',
         ];
 
@@ -43,6 +43,24 @@ class AuthenticatedSessionController extends Controller
         return redirect()->route($route);
     }
 
+    protected function redirectTo()
+    {
+        $role = auth()->user()->role ?? auth()->user()->rol ?? '';
+        $roleKey = strtoupper(str_replace([' ', '-'], '_', trim($role)));
+
+        switch ($roleKey) {
+            case 'LIDER_SEMILLERO':
+                return '/lider_semi/dashboard';
+            case 'ADMIN':
+                return '/admin/dashboard';
+            case 'APRENDIZ':
+                return '/aprendiz/dashboard';
+            case 'LIDER_GENERAL':
+                return '/lider/dashboard';
+            default:
+                return '/home';
+        }
+    }
 
     /**
      * Cerrar la sesión del usuario autenticado.

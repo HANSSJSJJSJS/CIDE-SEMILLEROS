@@ -3,23 +3,33 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class LiderSemillero extends Model
 {
     protected $table = 'lideres_semillero';
-    public $timestamps = false; // pon true si tu tabla tiene created_at/updated_at
+    protected $primaryKey = 'id_usuario';
+    public $incrementing = false;
+    
+    const CREATED_AT = 'creado_en';
+    const UPDATED_AT = 'actualizado_en';
 
     protected $fillable = [
         'id_usuario',
-        'nombres',
-        'apellidos',
-        'tipo_documento',       // VARCHAR(5): CC/CE
-        'documento',            // cambia a 'documentos' si tu columna es plural
+        'nombre_completo',
+        'tipo_documento',
+        'documento',
         'correo_institucional',
     ];
 
-    public function user()
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'id_usuario');
+        return $this->belongsTo(User::class, 'id_usuario');
+    }
+
+    public function semilleros(): HasMany
+    {
+        return $this->hasMany(Semillero::class, 'id_lider_usuario', 'id_usuario');
     }
 }

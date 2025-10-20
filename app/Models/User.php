@@ -51,11 +51,26 @@ class User extends Authenticatable
 {
     return match ($this->role) {
         'ADMIN' => '/admin/dashboard',
-        'LIDER SEMILLERO' => '/lider_semi/dashboard',
+        'LIDER_SEMILLERO' => '/lider_semi/dashboard',
         'APRENDIZ' => '/aprendiz/dashboard',
         'LIDER GENERAL' => '/lider/dashboard',
         default => '/',
     };
+}
+
+public function liderSemillero()
+{
+    return $this->hasOne(LiderSemillero::class, 'id_usuario');
+}
+
+public function aprendiz()
+{
+    return $this->hasOne(Aprendiz::class, 'id_usuario');
+}
+
+public function administrador()
+{
+    return $this->hasOne(Administrador::class, 'id_usuario');
 }
 
 }

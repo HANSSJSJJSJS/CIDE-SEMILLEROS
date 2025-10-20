@@ -5,10 +5,14 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\AdminController;
-use App\Http\Controllers\LiderController;
-use App\Http\Controllers\SemilleroController;
+use App\Http\Controllers\LiderSemillero\DashboardController_semi;
 use App\Http\Controllers\AprendizController;
+use App\Http\Controllers\LiderSemillero\SemilleroController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\LiderController;
 use App\Http\Controllers\GrupoInvestigacionController;
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -37,11 +41,9 @@ Route::middleware(['auth','role:ADMIN'])->group(function () {
     Route::get('/admin/dashboard', fn() => view('admin.dashboard-admin'))->name('admin.dashboard');
     Route::get('/admin/crear', fn() => view('admin.crear'))->name('admin.crear');
     Route::get('/admin/funciones', [AdminController::class, 'index'])->name('admin.functions');
-    Route::get('/usuarios', [usuarioController::class, 'index'])->name('users.index');
+    Route::get('/usuarios', [UsuarioController::class, 'index'])->name('users.index');
 
 });
-
-use App\Http\Controllers\Admin\DashboardController;
 
 Route::middleware(['auth','verified'])
     ->prefix('admin')->name('admin.')
@@ -53,18 +55,9 @@ Route::middleware(['auth','verified'])
 
 
 
-
-
 //fin admin 
-Route::middleware(['auth','role:INSTRUCTOR'])->group(function () {
-    // resources/views/instructor/dashboard-instructor.blade.php
-    Route::get('/instructor/dashboard', fn() => view('instructor.dashboard-instructor'))->name('instructor.dashboard');
-});
 
-Route::middleware(['auth','role:LIDER_SEMILLERO'])->group(function () {
-    // [dashboard-lider_semi.blade.php](http://_vscodecontentref_/1)
-    Route::get('/lider_semi/dashboard', fn() => view('lider_semi.dashboard-lider_semi'))->name('lider_semi.instructor.dashboard');
-});
+
 
 Route::middleware(['auth','role:APRENDIZ'])->group(function () {
     // [dashboard-aprendiz.blade.php](http://_vscodecontentref_/2)
@@ -89,9 +82,9 @@ Route::get('/dashboard', function () {
 
     return match ($rol) {
         'ADMIN' => redirect()->route('admin.dashboard'),
-        'INSTRUCTOR' => redirect()->route('instructor.dashboard'),
+        'INSTRUCTOR' => redirect()->route('lider_semi.dashboard'),
         'APRENDIZ' => redirect()->route('aprendiz.dashboard'),
-        'LIDER_SEMILLERO' => redirect()->route('lider_semi.instructor.dashboard'),
+        'LIDER_SEMILLERO' => redirect()->route('lider_semi.dashboard'),
         'LIDER_GENERAL' => redirect()->route('lider.dashboard'),
         default => view('dashboard'),
     };
@@ -117,7 +110,7 @@ Route::middleware('auth')->group(function () {
 // ---------------------------------------------
 // AUTENTICACIÓN (Laravel Breeze / Fortify)
 // ---------------------------------------------
-require __DIR__.'/auth.php';
+ 
 
 
 
@@ -130,23 +123,34 @@ require __DIR__.'/auth.php';
 */
 
 // LÍDERES (registro de aprendices líderes)
-Route::middleware(['auth', 'role:ADMIN,INSTRUCTOR'])->group(function () {
+Route::middleware(['auth', 'role:ADMIN,LIDER_SEMILLERO'])->group(function () {
     Route::resource('lideres', LiderController::class)->only(['index','create','store']);
 });
 
 // SEMILLEROS
-Route::middleware(['auth', 'role:ADMIN,INSTRUCTOR,LIDER_GENERAL'])->group(function () {
+Route::middleware(['auth', 'role:ADMIN,LIDER_SEMILLERO,LIDER_GENERAL'])->group(function () {
     Route::resource('semilleros', SemilleroController::class)->only(['index','create','store','show']);
 });
 
 // APRENDICES (perfiles)
-Route::middleware(['auth', 'role:ADMIN,INSTRUCTOR'])->group(function () {
+Route::middleware(['auth', 'role:ADMIN,LIDER_SEMILLERO'])->group(function () {
     Route::resource('aprendices', AprendizController::class)->only(['index','create','store','show']);
 });
 
 // GRUPOS DE INVESTIGACIÓN
-Route::middleware(['auth', 'role:ADMIN,INSTRUCTOR,LIDER_GENERAL'])->group(function () {
+Route::middleware(['auth', 'role:ADMIN,LIDER_SEMILLERO,LIDER_GENERAL'])->group(function () {
     Route::resource('grupos', GrupoInvestigacionController::class)->only(['index','create','store','show']);
+});
+
+// Rutas para líder-semillero
+Route::middleware(['auth', 'lider.semillero'])->prefix('lider_semi')->name('lider_semi.')->group(function () {
+    Route::get('/dashboard', [DashboardController_semi::class, 'index'])->name('dashboard');
+    Route::get('/semilleros', [SemilleroController::class, 'semilleros'])->name('semilleros');
+    Route::view('/aprendices', 'lider_semi.aprendices')->name('aprendices');
+    Route::view('/documentos', 'lider_semi.documentos')->name('documentos');
+    Route::view('/recursos', 'lider_semi.recursos')->name('recursos');
+    Route::view('/calendario', 'lider_semi.calendario')->name('calendario');
+    Route::view('/perfil', 'lider_semi.perfil')->name('perfil');
 });
 
 /*
@@ -158,10 +162,4 @@ Route::middleware(['auth', 'role:ADMIN,INSTRUCTOR,LIDER_GENERAL'])->group(functi
 Route::middleware('auth')->get('/password/change', function () {
     return view('auth.passwords.change'); // crea esta vista o apunta al form real
 })->name('password.change');
-
-Route::middleware(['auth'])->group(function () {
-    Route::resource('usuarios', \App\Http\Controllers\UsuarioController::class)->only(['index']);
-    Route::resource('semilleros', \App\Http\Controllers\SemilleroController::class)->only(['index']);
-    Route::get('/profile', [\App\Http\Controllers\ProfileController::class,'edit'])->name('profile.edit');
-});
 

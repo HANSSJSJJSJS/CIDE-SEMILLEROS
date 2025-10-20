@@ -7,20 +7,33 @@ use Illuminate\Database\Eloquent\Model;
 class Aprendiz extends Model
 {
     protected $table = 'aprendices';
-    public $timestamps = false; // pon true si tu tabla tiene timestamps
+    protected $primaryKey = 'id_usuario';
+    public $incrementing = false;
+    
+    const CREATED_AT = 'creado_en';
+    const UPDATED_AT = 'actualizado_en';
 
     protected $fillable = [
         'id_usuario',
-        'nombres',
-        'apellidos',
+        'nombre_completo',
         'ficha',
         'programa',
         'tipo_documento',
         'documento',
         'celular',
         'correo_institucional',
+        'correo_personal',
         'contacto_nombre',
         'contacto_celular',
-        'correo_personal',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'id_usuario');
+    }
+
+    public function grupos()
+    {
+        return $this->belongsToMany(Grupo::class, 'grupo_aprendices', 'id_usuario', 'id_grupo');
+    }
 }
