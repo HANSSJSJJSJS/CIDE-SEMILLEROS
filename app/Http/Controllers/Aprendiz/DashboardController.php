@@ -12,6 +12,6 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         // Aquí puedes preparar datos para la vista del dashboard
-        return view('dashboard', compact('user'));
+        return view('aprendiz.dashboard-aprendiz', compact('user'));
     }
 }
