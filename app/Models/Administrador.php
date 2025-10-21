@@ -20,7 +20,7 @@ class Administrador extends Model
 
     protected $fillable = [
         'id_usuario',
-        'nombre',
+        'nombres',
         'apellidos',
     ];
 }

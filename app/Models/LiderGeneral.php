@@ -17,11 +17,6 @@ class LiderGeneral extends Model
     const UPDATED_AT = 'actualizado_en';
     public $timestamps = true;
 
-    protected $fillable = [
-        'id_usuario',
-        'nombres',
-        'apellidos',
-        // ¡Ojo! la columna en BD es con mayúscula inicial:
-        'Correo_institucional',
-    ];
+   protected $fillable = ['id_lidergen','nombres','apellido','Correo_institucional'];
+
 }

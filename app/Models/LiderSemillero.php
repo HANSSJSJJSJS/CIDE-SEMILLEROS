@@ -16,12 +16,9 @@ class LiderSemillero extends Model
     const UPDATED_AT = 'actualizado_en';
 
     protected $fillable = [
-        'id_usuario',
-        'nombre_completo',
-        'tipo_documento',
-        'documento',
-        'correo_institucional',
-    ];
+    'id_lider_semi', 'nombres', 'apellido',
+    'tipo_documento', 'documento', 'correo_institucional'
+];
 
     public function user(): BelongsTo
     {

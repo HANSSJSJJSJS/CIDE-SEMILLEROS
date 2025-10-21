@@ -17,18 +17,9 @@ class Aprendiz extends Model
     public $timestamps = true;
 
     protected $fillable = [
-        'id_usuario',
-        'nombres',
-        'apellidos',
-        'ficha',
-        'programa',
-        'id_tipo_documento', // nullable en tu BD
-        'tipo_documento',
-        'documento',
-        'celular',
-        'correo_institucional',
-        'correo_personal',
-        'contacto_nombre',     // 👈 como pediste
-        'contacto_celular',    // 👈 como pediste
+        'id_aprendiz', 'id_usuario', 'nombre_completo', 'apellido',
+        'ficha', 'programa', 'tipo_documento', 'documento', 'celular',
+        'correo_institucional', 'correo_personal', 'contacto_nombre', 'contacto_celular'
     ];
+
 }
