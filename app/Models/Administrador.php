@@ -6,22 +6,24 @@ use Illuminate\Database\Eloquent\Model;
 
 class Administrador extends Model
 {
-    protected $table = 'administradores';   // nombre de tu tabla
-    protected $primaryKey = 'id_usuario';   // PK es id_usuario
-    public $incrementing = false;           // si no es AUTO_INCREMENT
-    public $timestamps = true;              // mapear tus columnas de fecha
+    protected $table = 'administradores';
+
+    // Si tu PK no es "id", ajusta aquí; si es "id", puedes omitirlo:
+    // protected $primaryKey = 'id_administrador';
+
+    public $timestamps = true;
+    // Tus columnas de timestamp SON en español (lo vemos en el error):
     const CREATED_AT = 'creado_en';
     const UPDATED_AT = 'actualizado_en';
 
-    protected $fillable = [
-        'id_usuario',
-        'nombre',
-        'apellidos',
-        'correo_institucional', // <— si en tu BD es "Correo_institucional", cámbialo aquí y en el create()
-    ];
+    // ✅ MUY IMPORTANTE: permitir asignar id_usuario
+    protected $fillable = ['id_usuario','nombre'];
+
+    // Alternativa permisiva (para descartar problemas de mass assignment):
+    // protected $guarded = [];
 
     public function user()
     {
-        return $this->belongsTo(\App\Models\User::class, 'id_usuario');
+        return $this->belongsTo(User::class, 'id_usuario');
     }
 }

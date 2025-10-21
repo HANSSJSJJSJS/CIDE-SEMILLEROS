@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ProfileController;
@@ -9,12 +10,16 @@ use App\Http\Controllers\LiderController;
 use App\Http\Controllers\SemilleroController;
 use App\Http\Controllers\AprendizController;
 use App\Http\Controllers\GrupoInvestigacionController;
-
+use App\Http\Controllers\Admin\DashboardController;
 /*
 |--------------------------------------------------------------------------
 | RUTAS PÚBLICAS / AUTH
 |--------------------------------------------------------------------------
 */
+
+Route::get('/dashboard-admin', function () {
+    return view('dashboard-admin');
+})->name('dashboard-admin');
 Route::get('/', fn() => view('welcome'))->name('welcome');
 
 Route::get('/login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])->name('login');
@@ -24,6 +29,7 @@ Route::post('/logout', [\App\Http\Controllers\Auth\AuthenticatedSessionControlle
     ->name('logout');
 
 require __DIR__.'/auth.php';
+
 
 /*
 |--------------------------------------------------------------------------
@@ -41,16 +47,17 @@ Route::middleware(['auth','role:ADMIN'])->group(function () {
 
 });
 
-use App\Http\Controllers\Admin\DashboardController;
+
 
 Route::middleware(['auth','verified'])
     ->prefix('admin')->name('admin.')
     ->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     });
-
-
-
+Route::middleware(['auth'])->group(function () {
+    Route::get('/admin/usuarios/create', [UserController::class, 'create'])->name('admin.usuarios.create');
+    Route::post('/admin/usuarios', [UserController::class, 'store'])->name('admin.usuarios.store');
+});
 
 
 
