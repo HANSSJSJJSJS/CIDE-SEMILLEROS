@@ -1,192 +1,179 @@
+{{-- resources/views/dashboard.blade.php --}}
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Panel del Aprendiz</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Panel del Aprendiz SENA</title>
 
-  <!-- Bootstrap + Iconos -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Bootstrap & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  <style>
-    :root {
-      --sena-green:#39A900;
-      --sena-green-dark:#2E8900;
-      --light-gray:#f4f6f8;
-    }
+    <style>
+        :root {
+            --sena-green: #39B54A;
+        }
 
-    body {
-      background: var(--light-gray);
-      margin: 0;
-      height: 100dvh;
-      font-family: 'Segoe UI', sans-serif;
-      overflow-x: hidden;
-    }
+        body {
+            background: #f8f9fa;
+        }
 
-    .app-green {
-      background: var(--sena-green);
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      padding: 16px;
-    }
+        .top-bar {
+            background: var(--sena-green);
+            color: white;
+            padding: 1rem;
+        }
 
-    .navbar-aprendiz {
-      background: #fff;
-      border-radius: 12px;
-      padding: .8rem 1.2rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
+        .top-bar h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
 
-    .user-pill {
-      background: #fff;
-      color: var(--sena-green);
-      border: 2px solid var(--sena-green);
-      border-radius: 999px;
-      padding: .35rem .9rem;
-      font-weight: 700;
-      display: inline-flex;
-      align-items: center;
-      gap: .5rem;
-    }
+        .sidebar {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
 
-    .top-title {
-      color: var(--sena-green);
-      font-weight: 800;
-      font-size: 1.25rem;
-      flex: 1;
-      text-align: center;
-    }
+        .main-content {
+            padding: 2rem;
+        }
 
-    .logout-btn {
-      background: var(--sena-green);
-      color: #fff;
-      border: none;
-      border-radius: 999px;
-      font-weight: 600;
-      padding: .45rem .9rem;
-      display: inline-flex;
-      align-items: center;
-      gap: .4rem;
-      transition: background .2s;
-    }
-    .logout-btn:hover {
-      background: var(--sena-green-dark);
-    }
+        .stat-card {
+            padding: 1.5rem;
+            border-radius: 8px;
+            color: white;
+            margin-bottom: 1rem;
+        }
 
-    /* Main */
-    .dashboard-main {
-      background: var(--sena-green);
-      border-radius: 12px;
-      flex: 1;
-      padding: 16px;
-    }
+        .stat-green { background: #39B54A; }
+        .stat-orange { background: #F7931E; }
+        .stat-teal { background: #00A99D; }
 
-    .side-panel {
-      background: #fff;
-      border-radius: 16px;
-      padding: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,.06);
-    }
+        .steps-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+        }
 
-    .side-inner {
-      background: var(--sena-green-dark);
-      border-radius: 12px;
-      padding: 16px;
-    }
+        .step-item {
+            display: flex;
+            align-items: start;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
 
-    .menu-btn {
-      background: #fff;
-      color: #111;
-      border: none;
-      border-radius: 999px;
-      padding: .65rem 1rem;
-      font-weight: 700;
-      text-align: left;
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 4px 0 rgba(0,0,0,0.12);
-      transition: transform .05s, box-shadow .05s;
-    }
-
-    .menu-btn:hover {
-      transform: translateY(1px);
-      box-shadow: 0 3px 0 rgba(0,0,0,0.2);
-    }
-
-    .content-area {
-      background: #fff;
-      border-radius: 16px;
-      min-height: 350px;
-      padding: 2rem;
-      color: #111;
-      box-shadow: 0 4px 10px rgba(0,0,0,.06);
-    }
-
-  </style>
+        .step-number {
+            background: #39B54A;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+    </style>
 </head>
-
 <body>
-
-  <div class="app-green">
-    <!-- Navbar -->
-    <nav class="navbar-aprendiz">
-      <div class="user-pill">
-        <i class="bi bi-person-fill"></i>
-        {{ Auth::user()->name ?? 'Aprendiz' }}
-      </div>
-
-      <div class="top-title">Panel del Aprendiz</div>
-
-      <form method="POST" action="{{ route('logout') }}">
-        @csrf
-        <button type="submit" class="logout-btn">
-          <i class="bi bi-box-arrow-right"></i> Cerrar sesión
-        </button>
-      </form>
-    </nav>
-
-    <!-- Contenido -->
-    <main class="dashboard-main">
-      <div class="row g-4 flex-grow-1">
-        <!-- Panel lateral -->
-        <div class="col-lg-4 col-xl-3">
-          <aside class="side-panel h-100">
-            <div class="side-inner h-100">
-              <div class="d-grid gap-3">
-                <a class="menu-btn" href="#">
-                  <span>Ver Perfil</span><i class="bi bi-chevron-right"></i>
-                </a>
-                <a class="menu-btn" href="#">
-                  <span>Mis Proyectos</span><i class="bi bi-chevron-right"></i>
-                </a>
-                <a class="menu-btn" href="#">
-                  <span>Subir Documentos (PDF)</span><i class="bi bi-chevron-right"></i>
-                </a>
-              </div>
+    <!-- Barra Superior -->
+    <div class="top-bar">
+        <div class="container d-flex justify-content-between align-items-center">
+            <h1>📋 Panel del Aprendiz SENA</h1>
+            <div>
+                <span>{{ Auth::user()->name }}</span>
+                <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                    @csrf
+                    <button type="submit" class="btn btn-light btn-sm ms-2">Cerrar sesión</button>
+                </form>
             </div>
-          </aside>
         </div>
+    </div>
 
-        <!-- Área principal -->
-        <div class="col-lg-8 col-xl-9">
-          <section class="content-area h-100">
-            <h4 class="fw-bold mb-3 text-success">Bienvenido(a) {{ Auth::user()->name ?? 'Aprendiz' }}</h4>
-            <p class="text-muted">
-              Desde este panel podrás consultar tus datos personales, subir documentos PDF y revisar el progreso de tus proyectos.
-            </p>
-          </section>
+    <div class="container py-4">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3">
+                <div class="sidebar">
+                    <div class="list-group">
+                        <a href="{{ route('dashboard') }}" class="list-group-item list-group-item-action {{ Request::routeIs('aprendiz.dashboard') ? 'active' : '' }}">
+                            🏠 Inicio
+                        </a>
+                        <a href="{{ route('aprendiz.proyectos.index') }}" class="list-group-item list-group-item-action {{ Request::routeIs('aprendiz.proyectos.*') ? 'active' : '' }}">
+                            📁 Mis Proyectos
+                        </a>
+                        <a href="{{ route('aprendiz.archivos.index') }}" class="list-group-item list-group-item-action {{ Request::routeIs('aprendiz.archivos.*') ? 'active' : '' }}">
+                            📤 Subir Documentos
+                        </a>
+                        <a href="{{ route('aprendiz.perfil.show') }}" class="list-group-item list-group-item-action {{ Request::routeIs('profile.*') ? 'active' : '' }}">
+                            👤 Mi Perfil
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenido Principal -->
+            <div class="col-md-9">
+                <h2 class="mb-4">Bienvenido(a), {{ Auth::user()->name }}</h2>
+                <p class="text-muted">Gestiona tus proyectos y documentos desde tu panel de aprendiz</p>
+
+                <!-- Estadísticas -->
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="stat-card stat-green">
+                            <h3>0</h3>
+                            <p>Proyectos Asignados</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card stat-orange">
+                            <h3>0</h3>
+                            <p>Documentos Pendientes</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card stat-teal">
+                            <h3>0</h3>
+                            <p>Documentos Completados</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Próximos Pasos -->
+                <div class="steps-section">
+                    <h4 class="mb-4">Próximos Pasos</h4>
+
+                    <div class="step-item">
+                        <div class="step-number">1</div>
+                        <div>
+                            <h5>Revisa tus Proyectos</h5>
+                            <p class="text-muted">Consulta los proyectos asignados y sus requisitos</p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-number">2</div>
+                        <div>
+                            <h5>Prepara Documentos</h5>
+                            <p class="text-muted">Reúne los documentos PDF requeridos para cada proyecto</p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-number">3</div>
+                        <div>
+                            <h5>Sube Documentos</h5>
+                            <p class="text-muted">Carga los archivos en la sección de subida de documentos</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </main>
-  </div>
+    </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
