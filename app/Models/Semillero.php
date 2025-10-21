@@ -18,17 +18,3 @@ class Semillero extends Model
     //     return $this->hasMany(\App\Models\Proyecto::class, 'semillero_id');
     // }
 }
-    protected $primaryKey = 'id_semillero';
-
-    protected $fillable = [
-        'nombre_semillero',
-        'descripcion',
-        'fecha_creacion',
-        'estado'
-    ];
-
-    public function proyectos()
-    {
-        return $this->hasMany(Proyecto::class, 'id_semillero');
-    }
-}
