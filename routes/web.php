@@ -143,10 +143,25 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_SEMILLERO,LIDER_GENERAL'])->group(f
 });
 
 // Rutas para líder-semillero
-Route::middleware(['auth', 'lider.semillero'])->prefix('lider_semi')->name('lider_semi.')->group(function () {
+Route::middleware(['auth','lider.semillero'])->prefix('lider_semi')->name('lider_semi.')->group(function () {
     Route::get('/dashboard', [DashboardController_semi::class, 'index'])->name('dashboard');
     Route::get('/semilleros', [SemilleroController::class, 'semilleros'])->name('semilleros');
-    Route::view('/aprendices', 'lider_semi.aprendices')->name('aprendices');
+    Route::get('/aprendices', [SemilleroController::class, 'aprendices'])->name('aprendices');
+    // Gestión de aprendices por semillero
+    Route::get('/semilleros/{semillero}/aprendices', [SemilleroController::class, 'editAprendices'])->name('semilleros.aprendices.edit');
+    Route::put('/semilleros/{semillero}/aprendices', [SemilleroController::class, 'updateAprendices'])->name('semilleros.aprendices.update');
+    Route::get('/semilleros/{semillero}/aprendices/search', [SemilleroController::class, 'searchAprendices'])->name('semilleros.aprendices.search');
+    Route::post('/semilleros/{semillero}/aprendices/attach', [SemilleroController::class, 'attachAprendiz'])->name('semilleros.aprendices.attach');
+    Route::delete('/semilleros/{semillero}/aprendices/{aprendiz}', [SemilleroController::class, 'detachAprendiz'])->name('semilleros.aprendices.detach');
+    Route::post('/semilleros/{semillero}/aprendices/create', [SemilleroController::class, 'createAndAttachAprendiz'])->name('semilleros.aprendices.create');
+
+    // Gestión de aprendices por proyecto
+    Route::get('/proyectos/{proyecto}/aprendices', [SemilleroController::class, 'editProyectoAprendices'])->name('proyectos.aprendices.edit');
+    Route::put('/proyectos/{proyecto}/aprendices', [SemilleroController::class, 'updateProyectoAprendices'])->name('proyectos.aprendices.update');
+    Route::get('/proyectos/{proyecto}/aprendices/search', [SemilleroController::class, 'searchProyectoAprendices'])->name('proyectos.aprendices.search');
+    Route::post('/proyectos/{proyecto}/aprendices/attach', [SemilleroController::class, 'attachProyectoAprendiz'])->name('proyectos.aprendices.attach');
+    Route::delete('/proyectos/{proyecto}/aprendices/{aprendiz}', [SemilleroController::class, 'detachProyectoAprendiz'])->name('proyectos.aprendices.detach');
+    Route::post('/proyectos/{proyecto}/aprendices/create', [SemilleroController::class, 'createAndAttachProyectoAprendiz'])->name('proyectos.aprendices.create');
     Route::view('/documentos', 'lider_semi.documentos')->name('documentos');
     Route::view('/recursos', 'lider_semi.recursos')->name('recursos');
     Route::view('/calendario', 'lider_semi.calendario')->name('calendario');

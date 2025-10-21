@@ -7,14 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 class Aprendiz extends Model
 {
     protected $table = 'aprendices';
-    protected $primaryKey = 'id_usuario';
-    public $incrementing = false;
-    
-    const CREATED_AT = 'creado_en';
-    const UPDATED_AT = 'actualizado_en';
+    protected $primaryKey = 'id_aprendiz';
+    public $incrementing = true;
+
+    public $timestamps = false;
 
     protected $fillable = [
-        'id_usuario',
+        'id_aprendiz',
         'nombre_completo',
         'ficha',
         'programa',
@@ -35,5 +34,10 @@ class Aprendiz extends Model
     public function grupos()
     {
         return $this->belongsToMany(Grupo::class, 'grupo_aprendices', 'id_usuario', 'id_grupo');
+    }
+
+    public function semilleros()
+    {
+        return $this->belongsToMany(Semillero::class, 'aprendiz_semillero', 'id_aprendiz', 'id_semillero', 'id_aprendiz', 'id_semillero');
     }
 }
