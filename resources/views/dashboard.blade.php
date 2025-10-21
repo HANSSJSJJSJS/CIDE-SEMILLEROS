@@ -145,7 +145,7 @@
           <div class="side-outer">
             <div class="side-inner">
               <div class="d-grid gap-3">
-                <a class="menu-btn" href="{{ route('usuarios.index', [], false) }}">
+                <a class="menu-btn" href="{{ route('aprendiz.dashboard', [], false) }}">
                   <span>Gestión de usuarios</span>
                   <i class="bi bi-chevron-right"></i>
                 </a>

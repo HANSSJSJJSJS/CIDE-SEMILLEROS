@@ -170,7 +170,6 @@
       </div>
     </div>
 
-<<<<<<< HEAD
     <div class="col-lg-4">
       <div class="card p-4">
         <h5 class="fw-bold mb-3">Acciones Rápidas</h5>
@@ -185,10 +184,3 @@
   </div>
 </div>
 @endsection
-=======
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
->>>>>>> Kev-rama
