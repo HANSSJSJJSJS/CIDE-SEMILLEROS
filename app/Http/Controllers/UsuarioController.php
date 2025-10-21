@@ -3,6 +3,11 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Administrador;
+use App\Models\LiderGeneral;
+use App\Models\LiderSemillero;
+use App\Models\Aprendiz;
+use Illuminate\Support\Facades\Hash;
 
 class UsuarioController extends Controller
 {
@@ -32,4 +37,69 @@ class UsuarioController extends Controller
     public function edit($id){ /* ... */ }
     public function update(Request $r,$id){ /* ... */ }
     public function destroy($id){ /* ... */ }
+
+
+    // Nuevo método para crear usuario vía AJAX
+        /**
+     * Crear usuario por AJAX (sin recargar la página)
+     */
+    public function storeAjax(Request $request)
+    {
+        $request->validate([
+            'nombre'   => 'required|string|max:255',
+            'apellido' => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|min:6',
+            'role'     => 'required|in:ADMIN,LIDER_GENERAL,LIDER_SEMILLERO,APRENDIZ',
+        ]);
+
+        // Crear el usuario principal
+        $user = User::create([
+            'nombre'   => $request->nombre,
+            'apellido' => $request->apellido,
+            'email'    => $request->email,
+            'password' => Hash::make($request->password),
+            'role'     => $request->role,
+        ]);
+
+        // Crear registro adicional según el rol
+        switch ($request->role) {
+            case 'ADMIN':
+                Administrador::create(['id_usuario' => $user->id]);
+                break;
+            case 'LIDER_GENERAL':
+                LiderGeneral::create(['id_usuario' => $user->id]);
+                break;
+            case 'LIDER_SEMILLERO':
+                LiderSemillero::create(['id_usuario' => $user->id]);
+                break;
+            case 'APRENDIZ':
+                Aprendiz::create(['id_usuario' => $user->id]);
+                break;
+        }
+
+        // Responder JSON
+        return response()->json([
+            'success' => true,
+            'message' => 'Usuario creado correctamente.',
+            'user'    => $user
+        ]);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
+
+

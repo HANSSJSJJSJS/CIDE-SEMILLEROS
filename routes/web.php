@@ -1,55 +1,48 @@
 <?php
-
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LiderSemillero\DashboardController_semi;
 use App\Http\Controllers\AprendizController;
 use App\Http\Controllers\LiderSemillero\SemilleroController;
-use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\LiderController;
 use App\Http\Controllers\GrupoInvestigacionController;
+// Controladores Admin
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\UserController;     // <-- el del store del modal
+use App\Http\Controllers\UsuarioController;        // <-- tu listado (si NO está en Admin) controlador de gestión de usuarios en el panel
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
 
-
-/*
-|--------------------------------------------------------------------------
-| RUTAS PÚBLICAS / AUTH
-|--------------------------------------------------------------------------
-*/
+// ====== PÚBLICAS / AUTH ======
 Route::get('/', fn() => view('welcome'))->name('welcome');
 
-Route::get('/login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])->name('login');
-Route::post('/login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'store'])->name('login.post');
-Route::post('/logout', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'destroy'])
-    ->middleware('auth')
-    ->name('logout');
+Route::get('/login',  [AuthenticatedSessionController::class, 'create'])->name('login');
+Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
+    ->middleware('auth')->name('logout');
 
 require __DIR__.'/auth.php';
 
-/*
-|--------------------------------------------------------------------------
-| DASHBOARD POR ROL (vistas según archivos que tienes)
-|--------------------------------------------------------------------------
-*/
-
-//admin
-Route::middleware(['auth','role:ADMIN'])->group(function () {
-    // resources/views/admin/admin-dashboard.blade.php
-    Route::get('/admin/dashboard', fn() => view('admin.dashboard-admin'))->name('admin.dashboard');
-    Route::get('/admin/crear', fn() => view('admin.crear'))->name('admin.crear');
-    Route::get('/admin/funciones', [AdminController::class, 'index'])->name('admin.functions');
-    Route::get('/usuarios', [UsuarioController::class, 'index'])->name('users.index');
-
-});
-
-Route::middleware(['auth','verified'])
-    ->prefix('admin')->name('admin.')
+// ====== ADMIN (UN SOLO BLOQUE) ======
+Route::middleware(['auth', 'role:ADMIN'])
+    ->prefix('admin')
+    ->name('admin.')
     ->group(function () {
+
+        // Dashboard admin (una sola vez)
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    });
+
+        // Gestión de usuarios (listado)
+        Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');
+
+        // Crear usuario (form tradicional si lo usas)
+        Route::post('/usuarios/store', [UsuarioController::class, 'store'])->name('usuarios.store');
+
+        // Crear usuario (AJAX)
+        Route::post('/usuarios/ajax/store', [UsuarioController::class, 'storeAjax'])->name('usuarios.store.ajax');
+    }); 
 
 
 
@@ -163,3 +156,7 @@ Route::middleware('auth')->get('/password/change', function () {
     return view('auth.passwords.change'); // crea esta vista o apunta al form real
 })->name('password.change');
 
+
+// Crear usuario (AJAX)
+Route::post('/usuarios/ajax/store', [UsuarioController::class, 'storeAjax'])
+    ->name('usuarios.store.ajax');

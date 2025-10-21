@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}"
     <title>Panel de Administración - CIDE SEMILLERO</title>
     <link rel="stylesheet" href="../css/Style_layouts.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
   
 </head>
 <body>
@@ -594,45 +598,69 @@
     </div>
 
     <!-- Modal for Add User -->
-    <div id="addUser" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Nuevo Usuario</h3>
-                <button class="close-modal" onclick="closeModal('addUser')">×</button>
+<!-- Botón -->
+<button type="button" class="btn btn-primary" onclick="openModal()">Nuevo Usuario</button>
+
+
+<!-- Modal -->
+<!-- Modal Nuevo Usuario -->
+<div class="modal fade" id="modalNuevoUsuario" tabindex="-1" aria-labelledby="modalNuevoUsuarioLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalNuevoUsuarioLabel">Registrar Nuevo Usuario</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <!-- ESTE es el formulario -->
+      <form id="formNuevoUsuario" method="POST" action="{{ route('admin.usuarios.store.ajax') }}">
+        @csrf
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="nombre" class="form-label">Nombre</label>
+              <input type="text" name="nombre" id="nombre" class="form-control" required>
             </div>
-            <form>
-                <div class="form-group">
-                    <label class="form-label">Nombre Completo</label>
-                    <input type="text" class="form-input" placeholder="Ingrese el nombre completo">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-input" placeholder="usuario@sena.edu.co">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Documento</label>
-                    <input type="text" class="form-input" placeholder="Número de documento">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Rol</label>
-                    <select class="form-input">
-                        <option>Seleccione un rol</option>
-                        <option>Administrador</option>
-                        <option>Líder</option>
-                        <option>Aprendiz</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Contraseña</label>
-                    <input type="password" class="form-input" placeholder="Contraseña temporal">
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('addUser')">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Crear Usuario</button>
-                </div>
-            </form>
+
+            <div class="col-md-6 mb-3">
+              <label for="apellido" class="form-label">Apellido</label>
+              <input type="text" name="apellido" id="apellido" class="form-control" required>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label for="email" class="form-label">Correo</label>
+              <input type="email" name="email" id="email" class="form-control" required>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label for="password" class="form-label">Contraseña</label>
+              <input type="password" name="password" id="password" class="form-control" required>
+            </div>
+
+            <div class="col-md-12 mb-3">
+              <label for="role" class="form-label">Rol</label>
+              <select name="role" id="role" class="form-select" required>
+                <option value="">Seleccione un rol</option>
+                <option value="ADMIN">Administrador</option>
+                <option value="LIDER_GENERAL">Líder General</option>
+                <option value="LIDER_SEMILLERO">Líder Semillero</option>
+                <option value="APRENDIZ">Aprendiz</option>
+              </select>
+            </div>
+          </div>
         </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Guardar Usuario</button>
+        </div>
+      </form>
     </div>
+  </div>
+</div>
+
+
+
 
     <!-- Modal for Add Semillero -->
     <div id="addSemillero" class="modal">
@@ -676,6 +704,53 @@
         </div>
     </div>
 
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('formNuevoUsuario');
+
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch("{{ route('admin.usuarios.store.ajax') }}", {
+                method: "POST",
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // cerrar modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoUsuario'));
+                modal.hide();
+
+                // limpiar formulario
+                form.reset();
+
+                // mostrar alerta de éxito
+                alert('✅ ' + data.message);
+
+                // recargar tabla o lista si tienes una
+                // ejemplo: $('#tablaUsuarios').DataTable().ajax.reload();
+            } else {
+                alert('❌ Error al crear usuario.');
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert('Error en la petición.');
+        }
+    });
+});
+</script>
+
+
     <script>
         function showSection(sectionId) {
             // Hide all sections
@@ -716,5 +791,28 @@
             }
         }
     </script>
+
+<script>
+function openModal() {
+  const el = document.getElementById('modalNuevoUsuario');
+  if (!el) {
+    console.error('No se encontró #modalNuevoUsuario en el DOM');
+    return;
+  }
+  // Requiere bootstrap.bundle ya cargado
+  const modal = bootstrap.Modal.getOrCreateInstance(el);
+  modal.show();
+}
+</script>
+
+
+
+
+
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+
 </body>
 </html>
