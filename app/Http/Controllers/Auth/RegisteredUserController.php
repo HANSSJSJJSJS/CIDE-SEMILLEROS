@@ -58,7 +58,6 @@ class RegisteredUserController extends Controller
             ]);
         }
 
-      
         $request->validate($rules);
 
         $user = DB::transaction(function () use ($request) {
@@ -114,8 +113,9 @@ class RegisteredUserController extends Controller
         if ($request->role === 'LIDER GENERAL') {
             LiderGeneral::create([
                 'id_usuario'           => $user->id,
-                'nombre'              => $request->nombres ?? $user->name,
-                'Correo_institucional' => $user->email,
+                'nombre'               => $request->name,   // mismo nombre que users.name
+                'apellidos'            => $request->apellidos,
+                'Correo_institucional' => $user->email,     // mismo correo que users.email
             ]);
         }
 

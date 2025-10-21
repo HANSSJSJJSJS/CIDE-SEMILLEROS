@@ -11,8 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('admins_and_lideres_generales', function (Blueprint $table) {
-            //
+        Schema::create('admins_and_lideres_generales', function (Blueprint $table) {
+            $table->id();
+            // agrega aquí las columnas que necesites, ejemplo:
+            $table->string('nombre', 120);
+            $table->unsignedBigInteger('id_usuario');
+            // cualquier otra columna...
+            $table->timestamps();
         });
     }
 
@@ -21,8 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('admins_and_lideres_generales', function (Blueprint $table) {
-            //
-        });
+        Schema::dropIfExists('admins_and_lideres_generales');
     }
 };

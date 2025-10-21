@@ -23,6 +23,7 @@ class RoleMiddleware
             return redirect()->route('login');
         }
 
+<<<<<<< HEAD
         $user = Auth::user();
         $userRole = strtoupper(str_replace([' ', '-'], '_', trim($user->role ?? $user->rol ?? '')));
 
@@ -39,6 +40,11 @@ class RoleMiddleware
         if (! in_array($userRole, $allowed, true)) {
             // redirigir al dashboard genérico o abort(403)
             return redirect()->route('dashboard')->withErrors(['error' => 'No tienes permisos para acceder a esta sección.']);
+=======
+        // Verifica si el rol del usuario está en los roles permitidos
+        if (!in_array(Auth::user()->role, $roles)) {
+            abort(403, 'No tienes permisos para acceder a esta página.');
+>>>>>>> Kev-rama
         }
 
         return $next($request);

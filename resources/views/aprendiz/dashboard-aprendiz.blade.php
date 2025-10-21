@@ -10,10 +10,10 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
   <style>
-    :root { 
-      --sena-green:#39A900; 
-      --sena-green-dark:#2E8900; 
-      --light-gray:#f4f6f8; 
+    :root {
+      --sena-green:#39A900;
+      --sena-green-dark:#2E8900;
+      --light-gray:#f4f6f8;
     }
 
     body {

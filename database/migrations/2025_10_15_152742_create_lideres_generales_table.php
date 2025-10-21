@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration {
     public function up(): void
     {
-        // ✅ Agregar columna "nombre" a las dos tablas
+        // Agregar columna "nombre" a las dos tablas
         Schema::table('administradores', function (Blueprint $table) {
             $table->string('nombre', 120)->after('id_usuario');
         });
@@ -17,7 +17,7 @@ return new class extends Migration {
             $table->string('nombre', 120)->after('id_usuario');
         });
 
-        // ✅ Rellenar los nombres con los datos de users
+        // Rellenar los nombres con los datos de users
         DB::statement("
             UPDATE administradores a
             JOIN users u ON u.id = a.id_usuario

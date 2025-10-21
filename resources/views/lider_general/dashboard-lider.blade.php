@@ -10,10 +10,10 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
   <style>
-    :root { 
-      --sena-green:#39A900; 
-      --sena-green-dark:#2E8900; 
-      --light-gray:#f4f6f8; 
+    :root {
+      --sena-green:#39A900;
+      --sena-green-dark:#2E8900;
+      --light-gray:#f4f6f8;
     }
 
     body {
@@ -194,12 +194,12 @@
               Bienvenido(a) {{ Auth::user()->name ?? 'Líder General' }}
             </h4>
             <p class="text-muted mb-4">
-              Desde este panel puedes gestionar usuarios, proyectos, documentación e investigaciones. 
+              Desde este panel puedes gestionar usuarios, proyectos, documentación e investigaciones.
               Además, podrás revisar reportes, avances y realizar presentaciones de los semilleros.
             </p>
 
             <div class="alert alert-success" role="alert">
-              <i class="bi bi-shield-check me-2"></i> 
+              <i class="bi bi-shield-check me-2"></i>
               Recuerda: solo tú puedes <strong>inhabilitar proyectos</strong>.
             </div>
           </section>

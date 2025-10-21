@@ -59,7 +59,6 @@
 
                     <button type="submit" class="btn-entrar">ENTRAR</button>
                 </form>
-
                 <div class="forgot-password">
                     <a href="{{ route('password.request') }}">¿Olvidaste tu contraseña?</a>
                 </div>
