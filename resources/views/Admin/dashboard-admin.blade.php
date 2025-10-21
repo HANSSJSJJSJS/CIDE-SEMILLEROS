@@ -598,66 +598,195 @@
     </div>
 
     <!-- Modal for Add User -->
-<!-- Botón -->
-<button type="button" class="btn btn-primary" onclick="openModal()">Nuevo Usuario</button>
 
+<!-- BOTÓN -->
+<button type="button" class="btn btn-primary mb-3"
+        data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
+  <i class="fa fa-user-plus me-1"></i> Nuevo Usuario
+</button>
 
-<!-- Modal -->
-<!-- Modal Nuevo Usuario -->
+<!-- MODAL -->
 <div class="modal fade" id="modalNuevoUsuario" tabindex="-1" aria-labelledby="modalNuevoUsuarioLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow rounded-4">
       <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="modalNuevoUsuarioLabel">Registrar Nuevo Usuario</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h5 class="modal-title fw-semibold" id="modalNuevoUsuarioLabel">Registrar usuario</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
 
-      <!-- ESTE es el formulario -->
-      <form id="formNuevoUsuario" method="POST" action="{{ route('admin.usuarios.store.ajax') }}">
+      <form id="formNuevoUsuario" method="POST" action="{{ route('admin.usuarios.store') }}">
         @csrf
-        <div class="modal-body">
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label for="nombre" class="form-label">Nombre</label>
-              <input type="text" name="nombre" id="nombre" class="form-control" required>
+
+        <div class="modal-body bg-light">
+          <div class="container-fluid">
+
+            {{-- 1) Rol (único visible al inicio) --}}
+            <div class="card border-0 shadow-sm mb-3">
+              <div class="card-body">
+                <label class="form-label fw-semibold mb-1">Rol</label>
+                <select name="role" id="selectRol" class="form-select" required>
+                  <option value="">Seleccione un rol...</option>
+                  <option value="ADMIN">Administrador</option>
+                  <option value="LIDER_GENERAL">Líder General</option>
+                  <option value="LIDER_SEMILLERO">Líder de Semillero</option>
+                  <option value="APRENDIZ">Aprendiz</option>
+                </select>
+              </div>
             </div>
 
-            <div class="col-md-6 mb-3">
-              <label for="apellido" class="form-label">Apellido</label>
-              <input type="text" name="apellido" id="apellido" class="form-control" required>
+            {{-- 2) Campos comunes (aparecen después de elegir rol) --}}
+            <div id="commonFields" class="d-none">
+              <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">Nombre</label>
+                      <input type="text" name="nombre" class="form-control" placeholder="María">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Apellidos</label>
+                      <input type="text" name="apellido" class="form-control" placeholder="Gómez Pérez">
+                    </div>
+
+                    <div class="col-md-6">
+                      <label class="form-label">Correo (login)</label>
+                      <input type="email" name="email" class="form-control" placeholder="correo@ejemplo.com">
+                      <small id="emailHint" class="text-muted"></small>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Contraseña</label>
+                      <input type="password" name="password" class="form-control" placeholder="Mínimo 6 caracteres">
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="col-md-6 mb-3">
-              <label for="email" class="form-label">Correo</label>
-              <input type="email" name="email" id="email" class="form-control" required>
+            {{-- 3) Campos por rol (solo lo necesario, sin textos largos) --}}
+
+            {{-- Líder General: sin campos extra (institucional = login) --}}
+            <div class="role-fields d-none" data-role="LIDER_GENERAL"></div>
+
+            {{-- Líder Semillero: documento --}}
+            <div class="role-fields d-none" data-role="LIDER_SEMILLERO">
+              <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <label class="form-label">Tipo documento</label>
+                      <select name="ls_tipo_documento" class="form-select">
+                        <option value="">Seleccione</option>
+                        <option value="CC">CC</option>
+                        <option value="TI">TI</option>
+                        <option value="CE">CE</option>
+                      </select>
+                    </div>
+                    <div class="col-md-8">
+                      <label class="form-label">Número documento</label>
+                      <input type="text" name="ls_documento" class="form-control">
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="col-md-6 mb-3">
-              <label for="password" class="form-label">Contraseña</label>
-              <input type="password" name="password" id="password" class="form-control" required>
+            {{-- Aprendiz: institucional requerido --}}
+            <div class="role-fields d-none" data-role="APRENDIZ">
+              <div class="card border-0 shadow-sm mb-1">
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <label class="form-label">Ficha</label>
+                      <input type="text" name="ap_ficha" class="form-control">
+                    </div>
+                    <div class="col-md-8">
+                      <label class="form-label">Programa</label>
+                      <input type="text" name="ap_programa" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label">Tipo documento</label>
+                      <select name="ap_tipo_documento" class="form-select">
+                        <option value="">Seleccione</option>
+                        <option value="CC">CC</option>
+                        <option value="TI">TI</option>
+                        <option value="CE">CE</option>
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label">Número documento</label>
+                      <input type="text" name="ap_documento" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label">Celular (opcional)</label>
+                      <input type="text" name="ap_celular" class="form-control">
+                    </div>
+                    <div class="col-md-12">
+                      <label class="form-label">Correo institucional</label>
+                      <input type="email" name="ap_correo_institucional" class="form-control" placeholder="usuario@sena.edu.co">
+                    </div>
+                    {{-- Personal = login (oculto) --}}
+                    <input type="hidden" name="ap_correo_personal">
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="col-md-12 mb-3">
-              <label for="role" class="form-label">Rol</label>
-              <select name="role" id="role" class="form-select" required>
-                <option value="">Seleccione un rol</option>
-                <option value="ADMIN">Administrador</option>
-                <option value="LIDER_GENERAL">Líder General</option>
-                <option value="LIDER_SEMILLERO">Líder Semillero</option>
-                <option value="APRENDIZ">Aprendiz</option>
-              </select>
-            </div>
+            {{-- Admin: sin extras --}}
+            <div class="role-fields d-none" data-role="ADMIN"></div>
+
           </div>
         </div>
 
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-success">Guardar Usuario</button>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success px-4">Guardar Usuario</button>
         </div>
       </form>
     </div>
   </div>
 </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -704,51 +833,6 @@
         </div>
     </div>
 
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const form = document.getElementById('formNuevoUsuario');
-
-    form.addEventListener('submit', async function (e) {
-        e.preventDefault();
-
-        const formData = new FormData(form);
-
-        try {
-            const response = await fetch("{{ route('admin.usuarios.store.ajax') }}", {
-                method: "POST",
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: formData
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                // cerrar modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoUsuario'));
-                modal.hide();
-
-                // limpiar formulario
-                form.reset();
-
-                // mostrar alerta de éxito
-                alert('✅ ' + data.message);
-
-                // recargar tabla o lista si tienes una
-                // ejemplo: $('#tablaUsuarios').DataTable().ajax.reload();
-            } else {
-                alert('❌ Error al crear usuario.');
-            }
-
-        } catch (error) {
-            console.error(error);
-            alert('Error en la petición.');
-        }
-    });
-});
-</script>
 
 
     <script>
@@ -803,6 +887,89 @@ function openModal() {
   const modal = bootstrap.Modal.getOrCreateInstance(el);
   modal.show();
 }
+</script>
+
+
+
+{{-- Estética mínima --}}
+<style>
+  #modalNuevoUsuario .card-body { padding: 1rem 1rem; }
+  #modalNuevoUsuario .form-label { font-weight: 600; }
+</style>
+
+{{-- Lógica UI minimalista --}}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const selectRol = document.getElementById('selectRol');
+  const common    = document.getElementById('commonFields');
+  const sections  = document.querySelectorAll('.role-fields');
+  const emailHint = document.getElementById('emailHint');
+
+  // inputs base
+  const nombre   = document.querySelector('[name="nombre"]');
+  const apellido = document.querySelector('[name="apellido"]');
+  const email    = document.querySelector('[name="email"]');
+  const pass     = document.querySelector('[name="password"]');
+
+  // líder semillero
+  const ls_tipo  = document.querySelector('[name="ls_tipo_documento"]');
+  const ls_doc   = document.querySelector('[name="ls_documento"]');
+
+  // aprendiz
+  const ap_ficha    = document.querySelector('[name="ap_ficha"]');
+  const ap_programa = document.querySelector('[name="ap_programa"]');
+  const ap_tipo     = document.querySelector('[name="ap_tipo_documento"]');
+  const ap_doc      = document.querySelector('[name="ap_documento"]');
+  const ap_ci       = document.querySelector('[name="ap_correo_institucional"]');
+  const ap_cp       = document.querySelector('[name="ap_correo_personal"]');
+
+  const setReq = (el, on) => { if(!el) return; on ? el.setAttribute('required','required') : el.removeAttribute('required'); };
+
+  function updateEmailHint(role) {
+    const map = {
+      'LIDER_GENERAL': 'El correo institucional será el correo de login.',
+      'LIDER_SEMILLERO': 'El correo institucional será el correo de login.',
+      'APRENDIZ': 'El correo personal será el correo de login.',
+      'ADMIN': ''
+    };
+    emailHint.textContent = map[role] || '';
+  }
+
+  function toggle() {
+    const rol = selectRol.value;
+
+    // comunes sólo si hay rol
+    common.classList.toggle('d-none', !rol);
+
+    // reset required
+    [nombre,apellido,email,pass,ls_tipo,ls_doc,ap_ficha,ap_programa,ap_tipo,ap_doc,ap_ci].forEach(el => setReq(el,false));
+
+    if (rol) { // base requeridos
+      setReq(nombre,true); setReq(apellido,true); setReq(email,true); setReq(pass,true);
+    }
+
+    // mostrar sección del rol
+    sections.forEach(s => s.classList.toggle('d-none', s.dataset.role !== rol));
+
+    // requeridos por rol
+    if (rol === 'LIDER_SEMILLERO') {
+      setReq(ls_tipo,true); setReq(ls_doc,true);
+    }
+    if (rol === 'APRENDIZ') {
+      setReq(ap_ficha,true); setReq(ap_programa,true); setReq(ap_tipo,true); setReq(ap_doc,true); setReq(ap_ci,true);
+    }
+
+    updateEmailHint(rol);
+  }
+
+  selectRol.addEventListener('change', toggle);
+  toggle();
+
+  // personal = login para aprendices (antes de enviar)
+  document.getElementById('formNuevoUsuario').addEventListener('submit', () => {
+    if (selectRol.value === 'APRENDIZ' && ap_cp) ap_cp.value = email.value || '';
+  });
+});
 </script>
 
 
