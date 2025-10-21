@@ -181,89 +181,110 @@
                     </div>
                 </div>
             </section>
-
-      {{-- Users Section --}}
+{{-- Users Section --}}
 <section id="users" class="content-section">
-    <h2 class="section-title">Gestión de Usuarios</h2>
-    <p class="section-subtitle">Administra todos los usuarios del sistema</p>
+  <h2 class="section-title">Gestión de Usuarios</h2>
+  <p class="section-subtitle">Administra todos los usuarios del sistema</p>
 
-    <div class="toolbar">
-        <div class="search-box">
-            <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-            <input type="text" placeholder="Buscar usuarios por nombre o email..." />
-        </div>
-        <select>
-            <option>Todos los roles</option>
-            <option>Administrador</option>
-            <option>Líder</option>
-            <option>Aprendiz</option>
-        </select>
-        <select>
-            <option>Todos los estados</option>
-            <option>Activo</option>
-            <option>Inactivo</option>
-        </select>
-        <button class="btn btn-primary" onclick="openModal('addUser')">
-            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            Nuevo Usuario
-        </button>
+  {{-- Toolbar --}}
+  <div class="toolbar d-flex flex-wrap gap-2 align-items-center mb-3">
+    <div class="search-box position-relative flex-grow-1" style="max-width: 420px;">
+      <svg class="position-absolute" style="left:10px; top:50%; transform:translateY(-50%);" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input id="userSearch" type="text" class="form-control ps-5"
+             placeholder="Buscar usuarios por nombre o email...">
     </div>
 
-    <div class="table-container">
-        <table>
-            <thead>
-            <tr>
-                <th>Usuario</th>
-                <th>Email</th>
-                 <th>Rol</th> {{-- NUEVA --}}
-                {{-- <th>Semillero</th>  --}} {{-- eliminado --}}
-                {{-- <th>Último acceso</th> --}} {{-- eliminado --}}
-                <th>Registrado</th>
-                <th>Acciones</th>
-            </tr>
-            </thead>
+    {{-- Filtro por Rol (valores EXACTOS de tu app) --}}
+    <select id="roleFilter" class="form-select" style="max-width: 220px;">
+      <option value="">Todos los roles</option>
+      <option value="ADMIN">Administrador</option>
+      <option value="LIDER_GENERAL">Líder General</option>
+      <option value="LIDER_SEMILLERO">Líder de Semillero</option>
+      <option value="APRENDIZ">Aprendiz</option>
+    </select>
 
-            <tbody>
-            @forelse($users as $user)
-                <tr>
-                    <td><strong>{{ $user->name }}</strong></td>
-                    <td>{{ $user->email }}</td>
-                    <td>
-                        <span class="badge">
-                            {{ strtoupper($user->role ?? 'SIN ROL') }}
-                        </span>
-                    </td>
-                    <td>{{ optional($user->created_at)->format('Y-m-d H:i') }}</td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn btn-icon btn-edit" title="Editar">✏️</button>
-                            <button class="btn btn-icon btn-delete" title="Eliminar">🗑️</button>
-                        </div>
-                    </td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="5" class="text-center">No hay usuarios.</td>
-                </tr>
-            @endforelse
-            </tbody>
+    {{-- Filtro por Estado (si aún no hay columna, queda en “ACTIVO” por defecto) --}}
+    <select id="statusFilter" class="form-select" style="max-width: 180px;">
+      <option value="">Todos los estados</option>
+      <option value="ACTIVO">Activo</option>
+      <option value="INACTIVO">Inactivo</option>
+    </select>
 
-        </table>
-    </div>
+    {{-- Abre el modal que ya tenemos --}}
+    <button class="btn btn-primary d-flex align-items-center gap-2"
+            data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
+      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Nuevo Usuario
+    </button>
+  </div>
 
-    @isset($users)
-        @if(method_exists($users, 'links'))
-            <div class="mt-3">
-                {{ $users->links() }}
+  {{-- Tabla --}}
+  <div class="table-container table-responsive">
+    <table id="usersTable" class="table table-striped align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Usuario</th>
+          <th>Email</th>
+          <th>Rol</th>
+          <th>Registrado</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+
+      <tbody>
+      @forelse($users as $user)
+        @php
+          $role = strtoupper($user->role ?? 'SIN ROL');
+          $roleClass = match($role) {
+              'ADMIN' => 'bg-danger',
+              'LIDER_GENERAL' => 'bg-warning text-dark',
+              'LIDER_SEMILLERO' => 'bg-primary',
+              'APRENDIZ' => 'bg-success',
+              default => 'bg-secondary'
+          };
+          $status = 'ACTIVO'; // cámbialo cuando tengas la columna en BD
+        @endphp
+
+        <tr data-role="{{ $role }}" data-status="{{ $status }}">
+          <td><strong>{{ $user->name }}</strong></td>
+          <td>{{ $user->email }}</td>
+          <td><span class="badge {{ $roleClass }}">{{ $role }}</span></td>
+          <td>{{ optional($user->created_at)->format('Y-m-d H:i') }}</td>
+          <td class="text-end">
+            <div class="d-inline-flex gap-2">
+              <button class="btn btn-sm btn-outline-secondary" title="Editar" disabled>✏️</button>
+              <button class="btn btn-sm btn-outline-danger" title="Eliminar" disabled>🗑️</button>
             </div>
-        @endif
-    @endisset
+          </td>
+        </tr>
+      @empty
+        <tr>
+          <td colspan="5" class="text-center text-muted">No hay usuarios.</td>
+        </tr>
+      @endforelse
+      </tbody>
+    </table>
+  </div>
+
+  {{-- Paginación --}}
+  @isset($users)
+    @if(method_exists($users, 'links'))
+      <div class="mt-3">
+        {{ $users->links() }}
+      </div>
+    @endif
+  @endisset
 </section>
+
+<style>
+  #users .toolbar .form-control, #users .toolbar .form-select { height: 42px; }
+</style>
+
 
             <!-- Semilleros Section -->
             <section id="semilleros" class="content-section">
@@ -759,49 +780,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     <!-- Modal for Add Semillero -->
     <div id="addSemillero" class="modal">
         <div class="modal-content">
@@ -984,6 +962,57 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 
+
+<!--  filtros-->
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const $search  = document.getElementById('userSearch');
+  const $role    = document.getElementById('roleFilter');
+  const $status  = document.getElementById('statusFilter');
+  const $rows    = Array.from(document.querySelectorAll('#usersTable tbody tr'));
+
+  const normalize = s => (s || '').toString().toLowerCase()
+                        .normalize('NFD').replace(/\p{Diacritic}/gu, '');
+
+  let timer;
+  const debounce = (fn, wait=220) => (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), wait);
+  };
+
+  function applyFilters() {
+    const q  = normalize($search.value);
+    const rf = $role.value;             // ADMIN / LIDER_GENERAL / ...
+    const sf = $status.value;           // ACTIVO / INACTIVO
+
+    let visible = 0;
+
+    $rows.forEach(tr => {
+      const name  = normalize(tr.children[0]?.innerText);
+      const email = normalize(tr.children[1]?.innerText);
+      const r     = tr.dataset.role || '';
+      const s     = tr.dataset.status || '';
+
+      const matchText = !q || name.includes(q) || email.includes(q);
+      const matchRole = !rf || r === rf;
+      const matchStat = !sf || s === sf;
+
+      const show = matchText && matchRole && matchStat;
+      tr.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    // Si quieres, aquí puedes mostrar/ocultar un renglón "sin resultados"
+  }
+
+  $search.addEventListener('input', debounce(applyFilters));
+  $role.addEventListener('change', applyFilters);
+  $status.addEventListener('change', applyFilters);
+
+  applyFilters();
+});
+</script>
 
 
 
