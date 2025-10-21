@@ -6,28 +6,22 @@ use Illuminate\Database\Eloquent\Model;
 
 class LiderGeneral extends Model
 {
-    // Nombre EXACTO de la tabla
-    protected $table = 'lider_general';
+    protected $table = 'lider_general'; // tu tabla es singular
 
-    // La PK de tu tabla (no es 'id')
     protected $primaryKey = 'id_usuario';
-    public $incrementing = false; // si id_usuario no es AUTO_INCREMENT
+    public $incrementing = false;
+    protected $keyType = 'int';
 
-    // Si quieres que Eloquent rellene creado_en/actualizado_en automáticamente:
-    public $timestamps = true;
+    // en esta tabla "creado_en" puede ser NULL según tu dump
     const CREATED_AT = 'creado_en';
     const UPDATED_AT = 'actualizado_en';
+    public $timestamps = true;
 
-    // MUY IMPORTANTE: columnas permitidas para asignación masiva
     protected $fillable = [
         'id_usuario',
-        'nombre',
+        'nombres',
         'apellidos',
-        'Correo_institucional', // usa el mismo casing que en la BD
+        // ¡Ojo! la columna en BD es con mayúscula inicial:
+        'Correo_institucional',
     ];
-
-    public function user()
-    {
-        return $this->belongsTo(\App\Models\User::class, 'id_usuario');
-    }
 }

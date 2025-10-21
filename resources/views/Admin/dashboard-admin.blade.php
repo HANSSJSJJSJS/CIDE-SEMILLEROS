@@ -717,13 +717,24 @@
                       <input type="text" name="ap_documento" class="form-control">
                     </div>
                     <div class="col-md-4">
-                      <label class="form-label">Celular (opcional)</label>
+                      <label class="form-label">Celular )</label>
                       <input type="text" name="ap_celular" class="form-control">
                     </div>
                     <div class="col-md-12">
                       <label class="form-label">Correo institucional</label>
                       <input type="email" name="ap_correo_institucional" class="form-control" placeholder="usuario@sena.edu.co">
                     </div>
+
+                                        <div class="col-md-6">
+                    <label class="form-label">Contacto emergencia (nombre)</label>
+                    <input type="text" name="ap_contacto_nombre" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                    <label class="form-label">Celular de contacto</label>
+                    <input type="text" name="ap_contacto_celular" class="form-control">
+                    </div>
+
+
                     {{-- Personal = login (oculto) --}}
                     <input type="hidden" name="ap_correo_personal">
                   </div>
