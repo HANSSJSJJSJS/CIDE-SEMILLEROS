@@ -2,10 +2,6 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Servidor: localhost
--- Tiempo de generación: 21-10-2025 a las 20:25:03
--- Versión del servidor: 10.4.28-MariaDB
--- Versión de PHP: 8.0.28
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -34,7 +30,7 @@ CREATE TABLE `administradores` (
   `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- --------------------------------------------------------
+
 
 --
 -- Estructura de tabla para la tabla `aprendices`
@@ -46,6 +42,7 @@ CREATE TABLE `aprendices` (
   `nombre_completo` varchar(120) NOT NULL,
   `ficha` varchar(30) NOT NULL,
   `programa` varchar(160) NOT NULL,
+  `id_tipo_documento` int(11) DEFAULT NULL,
   `tipo_documento` varchar(5) DEFAULT NULL,
   `documento` varchar(40) NOT NULL,
   `celular` varchar(30) DEFAULT NULL,
@@ -56,53 +53,7 @@ CREATE TABLE `aprendices` (
   `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
   `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Volcado de datos para la tabla `aprendices`
---
-
-INSERT INTO `aprendices` (`id_aprendiz`, `id_usuario`, `nombre_completo`, `ficha`, `programa`, `tipo_documento`, `documento`, `celular`, `correo_institucional`, `correo_personal`, `contacto_nombre`, `contacto_celular`, `creado_en`, `actualizado_en`) VALUES
-(7, 7, 'Joaquin cañon', '', '', NULL, '', NULL, 'test2@gmail.com', NULL, NULL, NULL, '2025-10-21 15:46:36', '2025-10-21 18:16:48'),
-(8, NULL, 'Joaquin cañon', '2848527', 'ADSO', 'CC', '1012443507', '3053970242', 'joaquin_canon@soy.sena.edu.co', 'test3@gmail.com', NULL, NULL, '2025-10-15 20:50:17', '2025-10-15 20:50:17'),
-(20, 20, 'Laura Martínez', '', '', NULL, '', NULL, 'laura@sena.edu.co', NULL, NULL, NULL, '2025-10-21 15:46:36', '2025-10-21 18:16:48'),
-(21, 21, 'Carlos Pérez', '', '', NULL, '', NULL, 'carlos@sena.edu.co', NULL, NULL, NULL, '2025-10-21 15:46:36', '2025-10-21 18:16:48'),
-(25, 25, 'Laura Rodríguez', '', '', NULL, '', NULL, 'laura.rod@example.com', NULL, NULL, NULL, '2025-10-21 15:46:36', '2025-10-21 18:16:48'),
-(26, 26, 'Carlos Gómez', '', '', NULL, '', NULL, 'carlos.gomez@example.com', NULL, NULL, NULL, '2025-10-21 15:46:36', '2025-10-21 18:16:48'),
-(27, 27, 'Valentina Ruiz', '', '', NULL, '', NULL, 'valentina.ruiz@example.com', NULL, NULL, NULL, '2025-10-21 15:46:36', '2025-10-21 18:16:48'),
-(28, 28, 'Andrés Pérez', '', '', NULL, '', NULL, 'andres.perez@example.com', NULL, NULL, NULL, '2025-10-21 15:46:36', '2025-10-21 18:16:48'),
-(29, 29, 'María Castro', '', '', NULL, '', NULL, 'maria.castro@example.com', NULL, NULL, NULL, '2025-10-21 15:46:36', '2025-10-21 18:16:48');
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `aprendiz_proyecto`
---
-
-CREATE TABLE `aprendiz_proyecto` (
-  `id_aprendiz` bigint(20) UNSIGNED NOT NULL,
-  `id_proyecto` int(10) UNSIGNED NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `aprendiz_proyecto`
---
-
-INSERT INTO `aprendiz_proyecto` (`id_aprendiz`, `id_proyecto`, `created_at`, `updated_at`) VALUES
-(4, 3, '2025-10-21 15:51:32', '2025-10-21 15:51:32'),
-(8, 3, '2025-10-21 16:31:28', '2025-10-21 16:31:28'),
-(8, 5, '2025-10-21 15:53:07', '2025-10-21 15:56:03'),
-(20, 2, '2025-10-21 18:22:03', '2025-10-21 18:22:03'),
-(21, 1, '2025-10-21 18:01:12', '2025-10-21 18:01:12'),
-(21, 4, '2025-10-21 15:53:07', '2025-10-21 15:55:17'),
-(25, 4, '2025-10-21 15:53:07', '2025-10-21 15:55:10'),
-(26, 3, '2025-10-21 15:53:07', '2025-10-21 15:55:54'),
-(27, 1, '2025-10-21 18:01:12', '2025-10-21 18:01:12'),
-(28, 2, '2025-10-21 18:22:03', '2025-10-21 18:22:03'),
-(29, 5, '2025-10-21 15:53:07', '2025-10-21 15:56:10');
-
--- --------------------------------------------------------
+-----------------------------------------------------
 
 --
 -- Estructura de tabla para la tabla `cache`
@@ -259,12 +210,6 @@ CREATE TABLE `lideres_semillero` (
   `id_tipo_documento` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Volcado de datos para la tabla `lideres_semillero`
---
-
-INSERT INTO `lideres_semillero` (`id_lider_semi`, `nombre_completo`, `tipo_documento`, `documento`, `correo_institucional`, `creado_en`, `actualizado_en`, `id_tipo_documento`) VALUES
-(5, 'Joaquin cañon', 'CC', '1012443507', 'test1@gmail.com', '2025-10-15 20:18:13', '2025-10-15 20:18:13', NULL);
 
 -- --------------------------------------------------------
 
@@ -273,21 +218,11 @@ INSERT INTO `lideres_semillero` (`id_lider_semi`, `nombre_completo`, `tipo_docum
 --
 
 CREATE TABLE `lider_general` (
-  `id_lidergen` bigint(20) UNSIGNED NOT NULL,
-  `nombre` varchar(120) NOT NULL,
-  `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
   `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `Correo_institucional` varchar(120) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Volcado de datos para la tabla `lider_general`
---
-
-INSERT INTO `lider_general` (`id_lidergen`, `nombre`, `creado_en`, `actualizado_en`, `Correo_institucional`) VALUES
-(19, 'hansbleidi', '2025-10-20 18:47:33', '2025-10-20 18:47:33', 'yurani@gmail.com');
-
--- --------------------------------------------------------
+----------------
 
 --
 -- Estructura de tabla para la tabla `migrations`
@@ -309,9 +244,7 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (3, '0001_01_01_000002_create_jobs_table', 1),
 (4, '2025_10_15_152741_create_administradores_table', 2),
 (5, '2025_10_15_152742_create_lideres_generales_table', 2),
-(8, '2025_10_15_160035_add_nombre_to_admins_and_lideres_generales', 3),
-(9, '2025_10_15_191526_update_id_tipo_documento_in_aprendices_and_lideres_semillero', 3),
-(10, '2025_10_20_163848_create_semilleros_table', 4);
+
 
 -- --------------------------------------------------------
 
@@ -396,10 +329,7 @@ CREATE TABLE `sessions` (
 -- Volcado de datos para la tabla `sessions`
 --
 
-INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('Ky9qGqglmAkrQ7e5jvzGHaApwmEcV73tT9X19IA8', 5, '127.0.0.1', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiS1JTbXZoaTVoYmJSQUFmdkVwclluOFg3WUtseFZpYVJLdWVRWUVoWSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6NDM6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9saWRlcl9zZW1pL3NlbWlsbGVyb3MiO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTo1O30=', 1761070923);
-
--- --------------------------------------------------------
+- --------------------------------------------------------
 
 --
 -- Estructura de tabla para la tabla `users`
@@ -408,6 +338,7 @@ INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, 
 CREATE TABLE `users` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `name` varchar(255) NOT NULL,
+  `apellidos` varchar(120) DEFAULT NULL,
   `email` varchar(255) NOT NULL,
   `email_verified_at` timestamp NULL DEFAULT NULL,
   `password` varchar(255) NOT NULL,
@@ -421,36 +352,6 @@ CREATE TABLE `users` (
 -- Volcado de datos para la tabla `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `role`, `remember_token`, `created_at`, `updated_at`) VALUES
-(4, 'Joaquin cañon', 'test@gmail.com', NULL, '$2y$12$ESFF/wMQPumWmeMHt1/Ij.sOpCKgD1xnximeFE4zvCwctCLudRpt.', 'ADMIN', NULL, '2025-10-16 01:10:41', '2025-10-16 01:10:41'),
-(5, 'Joaquin cañon', 'test1@gmail.com', NULL, '$2y$12$lmTgIhA2MR1UujyoiNm4ieUnBICj0B5jLKEPqq0Cwmgo8XKdNRzyy', 'LIDER_SEMILLERO', NULL, '2025-10-16 01:18:13', '2025-10-16 01:18:13'),
-(7, 'Joaquin cañon', 'test2@gmail.com', NULL, '$2y$12$MzYpU1P2shOnKz6oSehUW.EHnmTqe70i5MMfr5o1B5gtf5NpjKMLu', 'APRENDIZ', NULL, '2025-10-16 01:48:48', '2025-10-16 01:48:48'),
-(8, 'Joaquin cañon', 'test3@gmail.com', NULL, '$2y$12$CysY7mh6WuCxIc.j4vORxuqAEPzjDJr0lxxqSo.Q.8B0Q9caCicLW', 'APRENDIZ', NULL, '2025-10-16 01:50:17', '2025-10-16 01:50:17'),
-(9, 'hansita', 'hanscard@20gmail.com', NULL, '$2y$12$BKJsJ8LlRHORZj/c4gIBqeU1u9Zt3lPlAiyOFjX23Ac084uYZpXR.', 'ADMIN', NULL, '2025-10-16 19:17:57', '2025-10-16 19:17:57'),
-(19, 'hansbleidi cardenas', 'yurani@gmail.com', NULL, '$2y$12$9mTG3Dsy5lkI8d7ce6SwAOfrBGsUkVoLrLW.e0tnDBE35RspSLQWm', 'LIDER GENERAL', NULL, '2025-10-20 18:47:33', '2025-10-20 18:47:33'),
-(20, 'Laura Martínez', 'laura@sena.edu.co', NULL, '$2y$12$abcdefghijklmnopqrstuv', 'APRENDIZ', NULL, '2025-10-20 20:01:37', '2025-10-20 20:01:37'),
-(21, 'Carlos Pérez', 'carlos@sena.edu.co', NULL, '$2y$12$abcdefghijklmnopqrstuv', 'APRENDIZ', NULL, '2025-10-20 20:01:37', '2025-10-20 20:01:37'),
-(22, 'Ana Torres', 'ana@sena.edu.co', NULL, '$2y$12$abcdefghijklmnopqrstuv', 'LIDER_SEMILLERO', NULL, '2025-10-20 20:01:37', '2025-10-20 20:01:37'),
-(23, 'Miguel García', 'miguel@sena.edu.co', NULL, '$2y$12$abcdefghijklmnopqrstuv', 'ADMIN', NULL, '2025-10-20 20:01:37', '2025-10-20 20:01:37'),
-(24, 'Lucía Rojas', 'lucia@sena.edu.co', NULL, '$2y$12$abcdefghijklmnopqrstuv', 'LIDER GENERAL', NULL, '2025-10-20 20:01:37', '2025-10-20 20:01:37'),
-(25, 'Laura Rodríguez', 'laura.rod@example.com', '2025-10-21 15:08:35', '$2y$10$examplehash1', 'APRENDIZ', NULL, '2025-10-21 15:08:35', '2025-10-21 15:08:35'),
-(26, 'Carlos Gómez', 'carlos.gomez@example.com', '2025-10-21 15:08:35', '$2y$10$examplehash2', 'APRENDIZ', NULL, '2025-10-21 15:08:35', '2025-10-21 15:08:35'),
-(27, 'Valentina Ruiz', 'valentina.ruiz@example.com', '2025-10-21 15:08:35', '$2y$10$examplehash3', 'APRENDIZ', NULL, '2025-10-21 15:08:35', '2025-10-21 15:08:35'),
-(28, 'Andrés Pérez', 'andres.perez@example.com', '2025-10-21 15:08:35', '$2y$10$examplehash4', 'APRENDIZ', NULL, '2025-10-21 15:08:35', '2025-10-21 15:08:35'),
-(29, 'María Castro', 'maria.castro@example.com', '2025-10-21 15:08:35', '$2y$10$examplehash5', 'APRENDIZ', NULL, '2025-10-21 15:08:35', '2025-10-21 15:08:35');
-
---
--- Disparadores `users`
---
-DELIMITER $$
-CREATE TRIGGER `after_user_insert` AFTER INSERT ON `users` FOR EACH ROW BEGIN
-  IF NEW.role = 'APRENDIZ' THEN
-    INSERT INTO aprendices (id_usuario, nombre_completo, correo_institucional, creado_en, actualizado_en)
-    VALUES (NEW.id, NEW.name, NEW.email, NOW(), NOW());
-  END IF;
-END
-$$
-DELIMITER ;
 
 --
 -- Índices para tablas volcadas
@@ -624,9 +525,7 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT de la tabla `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
---
 -- AUTO_INCREMENT de la tabla `proyectos`
 --
 ALTER TABLE `proyectos`
@@ -640,9 +539,7 @@ ALTER TABLE `semilleros`
 
 --
 -- AUTO_INCREMENT de la tabla `users`
---
-ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
+
 
 --
 -- Restricciones para tablas volcadas

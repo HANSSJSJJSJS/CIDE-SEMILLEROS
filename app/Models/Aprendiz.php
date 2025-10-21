@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Aprendiz extends Model
 {
     protected $table = 'aprendices';
+
     protected $primaryKey = 'id_aprendiz';
     public $incrementing = true;
 
@@ -17,14 +18,16 @@ class Aprendiz extends Model
         'nombre_completo',
         'ficha',
         'programa',
+        'id_tipo_documento', // nullable en tu BD
         'tipo_documento',
         'documento',
         'celular',
         'correo_institucional',
         'correo_personal',
-        'contacto_nombre',
-        'contacto_celular',
+        'contacto_nombre',     // 👈 como pediste
+        'contacto_celular',    // 👈 como pediste
     ];
+
 
     public function user()
     {
