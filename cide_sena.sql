@@ -3,14 +3,13 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 16-10-2025 a las 17:25:17
+-- Tiempo de generación: 21-10-2025 a las 17:23:00
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.4.13
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
-
 
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -41,7 +40,10 @@ CREATE TABLE `administradores` (
 --
 
 INSERT INTO `administradores` (`id_usuario`, `nombre`, `apellidos`, `creado_en`, `actualizado_en`) VALUES
-(30, 'maria', 'torres', '2025-10-16 20:21:34', '2025-10-16 20:21:34');
+(37, 'maria', 'mogoñon', '2025-10-21 00:25:20', '2025-10-21 00:25:20'),
+(38, 'deivit', 'mogoñon', '2025-10-21 01:10:49', '2025-10-21 01:10:49'),
+(39, 'harol', 'torres', '2025-10-21 01:34:23', '2025-10-21 01:34:23'),
+(43, 'joaquin', 'cañon', '2025-10-21 19:23:45', '2025-10-21 19:23:45');
 
 -- --------------------------------------------------------
 
@@ -55,6 +57,7 @@ CREATE TABLE `aprendices` (
   `apellidos` varchar(120) DEFAULT NULL,
   `ficha` varchar(30) NOT NULL,
   `programa` varchar(160) NOT NULL,
+  `id_tipo_documento` int(11) DEFAULT NULL,
   `tipo_documento` varchar(5) DEFAULT NULL,
   `documento` varchar(40) NOT NULL,
   `celular` varchar(30) DEFAULT NULL,
@@ -65,13 +68,6 @@ CREATE TABLE `aprendices` (
   `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
   `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Volcado de datos para la tabla `aprendices`
---
-
-INSERT INTO `aprendices` (`id_usuario`, `nombres`, `apellidos`, `ficha`, `programa`, `tipo_documento`, `documento`, `celular`, `correo_institucional`, `correo_personal`, `contacto_nombre`, `contacto_celular`, `creado_en`, `actualizado_en`) VALUES
-(26, 'joaquin', 'cañon', '2848527', 'adso', 'CC', '1012443507', '3053970242', 'hola11@hotmail.com', 'danielcf97@hotmail.com', NULL, NULL, '2025-10-16 15:03:39', '2025-10-16 15:03:39');
 
 -- --------------------------------------------------------
 
@@ -205,15 +201,9 @@ CREATE TABLE `lideres_semillero` (
   `documento` varchar(40) NOT NULL,
   `correo_institucional` varchar(160) DEFAULT NULL,
   `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
-  `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `id_tipo_documento` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Volcado de datos para la tabla `lideres_semillero`
---
-
-INSERT INTO `lideres_semillero` (`id_usuario`, `nombres`, `apellidos`, `tipo_documento`, `documento`, `correo_institucional`, `creado_en`, `actualizado_en`) VALUES
-(25, 'Jose', 'mogoñon', 'CE', '123456789', 'correo@hotmail.com', '2025-10-16 15:01:45', '2025-10-16 15:01:45');
 
 -- --------------------------------------------------------
 
@@ -223,19 +213,12 @@ INSERT INTO `lideres_semillero` (`id_usuario`, `nombres`, `apellidos`, `tipo_doc
 
 CREATE TABLE `lider_general` (
   `id_usuario` bigint(20) UNSIGNED NOT NULL,
-  `nombres` varchar(120) NOT NULL,
+  `nombres` varchar(120) DEFAULT NULL,
   `apellidos` varchar(120) DEFAULT NULL,
-  `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
+  `creado_en` timestamp NULL DEFAULT NULL,
   `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `Correo_institucional` varchar(120) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Volcado de datos para la tabla `lider_general`
---
-
-INSERT INTO `lider_general` (`id_usuario`, `nombres`, `apellidos`, `creado_en`, `actualizado_en`, `Correo_institucional`) VALUES
-(23, 'luis', '', '2025-10-16 14:25:05', '2025-10-16 14:33:46', 'luis111@hotmail.com');
 
 -- --------------------------------------------------------
 
@@ -259,7 +242,9 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (3, '0001_01_01_000002_create_jobs_table', 1),
 (4, '2025_10_15_152741_create_administradores_table', 2),
 (5, '2025_10_15_152742_create_lideres_generales_table', 2),
-(6, '2025_10_15_160035_add_nombre_to_admins_and_lideres_generales', 3);
+(6, '2025_10_15_160035_add_nombre_to_admins_and_lideres_generales', 3),
+(7, '2025_10_15_191526_update_id_tipo_documento_in_aprendices_and_lideres_semillero', 4),
+(8, '2025_10_21_151521_add_apellidos_to_users_table', 5);
 
 -- --------------------------------------------------------
 
@@ -327,7 +312,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('EDRIIXDQRA7jobopN2H7dwIoKsAk3YqQybJ30xeK', 30, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiaWdmeGRMc2d0a0F3Q05Gd1pNeFFkZXRXOXRnWEp2cXhlSlFFOVBYayI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MzE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9kYXNoYm9hcmQiO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTozMDt9', 1760628095);
+('mOkAXYdPsX4EAPOjzQ1GfOtSepG03rBiU4DN4kqR', 37, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiSk1nZ2tBMGpRMDluSEM2MHNhb1dKOVgzY2JnMGFDc205VEJIY2lTViI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mzc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9kYXNoYm9hcmQiO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTozNzt9', 1760994399),
+('qXRlviN3c4QK4vn1vrbYhtH5bqnER4cKxnpdqLU8', 37, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiMWxkQjVsMkhwT3JBZXBXNE01QVc0NXlER3dTaWR3Rmp4anJKV1A3OSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mzc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9kYXNoYm9hcmQiO31zOjM6InVybCI7YToxOntzOjg6ImludGVuZGVkIjtzOjM3OiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYWRtaW4vZGFzaGJvYXJkIjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6Mzc7fQ==', 1761059904);
 
 -- --------------------------------------------------------
 
@@ -338,6 +324,7 @@ INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, 
 CREATE TABLE `users` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `name` varchar(255) NOT NULL,
+  `apellidos` varchar(120) DEFAULT NULL,
   `email` varchar(255) NOT NULL,
   `email_verified_at` timestamp NULL DEFAULT NULL,
   `password` varchar(255) NOT NULL,
@@ -351,12 +338,11 @@ CREATE TABLE `users` (
 -- Volcado de datos para la tabla `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `role`, `remember_token`, `created_at`, `updated_at`) VALUES
-(23, 'luis', 'luis111@hotmail.com', NULL, '$2y$12$telu8zAjQEs8aUnnIPfTFugatCjbGFxsCxT5ri97UnP/JFeLn2vPC', 'LIDER GENERAL', NULL, '2025-10-16 19:25:05', '2025-10-16 19:25:05'),
-(24, 'joaquin cañon', 'admin@hola.com', NULL, '$2y$12$XoBCQBVadL3/0PY1sIRFfuAoorRFd4rKVvTNf3dEvgAo7VIDeKEqy', 'ADMIN', NULL, '2025-10-16 20:00:00', '2025-10-16 20:00:00'),
-(25, 'Jose mogoñon', 'correo@hotmail.com', NULL, '$2y$12$hXAZa42VsWTMGsBHLO2aKOiTczq2RHhjiDdUNZtEUNwE0827F7fJ6', 'LIDER_SEMILLERO', NULL, '2025-10-16 20:01:45', '2025-10-16 20:01:45'),
-(26, 'joaquin cañon', 'danielcf97@hotmail.com', NULL, '$2y$12$Hnha5y1PV6ZDbQdj/X4dDuDVM2oO2zyRDNSzPTy0qwwVOcbB6fNAq', 'APRENDIZ', NULL, '2025-10-16 20:03:39', '2025-10-16 20:03:39'),
-(30, 'maria torres', 'maria@hotmail.com', NULL, '$2y$12$XJsoiu5YUaGqBYYP1aLGluHYJEhhnT1io8WSE9TMRGqtyTm7viiIa', 'ADMIN', NULL, '2025-10-16 20:21:34', '2025-10-16 20:21:34');
+INSERT INTO `users` (`id`, `name`, `apellidos`, `email`, `email_verified_at`, `password`, `role`, `remember_token`, `created_at`, `updated_at`) VALUES
+(37, 'maria mogoñon', NULL, 'admin@hola.com', NULL, '$2y$12$10.VbgOKZXg/t3d0/rqCcehnG8AOl1ZKl/GjUZVXZb7qhl3s.qtCK', 'ADMIN', NULL, '2025-10-21 00:25:20', '2025-10-21 00:25:20'),
+(38, 'deivit mogoñon', NULL, 'luis111@hotmail.com', NULL, '$2y$12$95cDkCtZw2TXYlKSeeUxzOzhy42eoFCh3WaIuewbFu7fLzW/OLFEC', 'ADMIN', NULL, '2025-10-21 01:10:49', '2025-10-21 01:10:49'),
+(39, 'harol torres', NULL, 'harola@hola.com', NULL, '$2y$12$S.KD8x7v0nxOsCIFdr6gBuPCaBeg5RZqxabjSC58/d6jvOctalSDK', 'ADMIN', NULL, '2025-10-21 01:34:23', '2025-10-21 01:34:23'),
+(43, 'joaquin cañon', NULL, 'danielcf97@hotmail.com', NULL, '$2y$12$Qa2Jqhc2FMzY0EKYOFImXeJF/HG02teiUgoPLW71mNv69B2O5MbJG', 'ADMIN', NULL, '2025-10-21 19:23:45', '2025-10-21 19:23:45');
 
 --
 -- Índices para tablas volcadas
@@ -521,7 +507,7 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT de la tabla `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT de la tabla `proyectos`
@@ -539,7 +525,7 @@ ALTER TABLE `semilleros`
 -- AUTO_INCREMENT de la tabla `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
 
 --
 -- Restricciones para tablas volcadas

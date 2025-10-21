@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}"
     <title>Panel de Administración - CIDE SEMILLERO</title>
     <link rel="stylesheet" href="../css/Style_layouts.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
   
 </head>
 <body>
@@ -177,89 +181,110 @@
                     </div>
                 </div>
             </section>
-
-      {{-- Users Section --}}
+{{-- Users Section --}}
 <section id="users" class="content-section">
-    <h2 class="section-title">Gestión de Usuarios</h2>
-    <p class="section-subtitle">Administra todos los usuarios del sistema</p>
+  <h2 class="section-title">Gestión de Usuarios</h2>
+  <p class="section-subtitle">Administra todos los usuarios del sistema</p>
 
-    <div class="toolbar">
-        <div class="search-box">
-            <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-            <input type="text" placeholder="Buscar usuarios por nombre o email..." />
-        </div>
-        <select>
-            <option>Todos los roles</option>
-            <option>Administrador</option>
-            <option>Líder</option>
-            <option>Aprendiz</option>
-        </select>
-        <select>
-            <option>Todos los estados</option>
-            <option>Activo</option>
-            <option>Inactivo</option>
-        </select>
-        <button class="btn btn-primary" onclick="openModal('addUser')">
-            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            Nuevo Usuario
-        </button>
+  {{-- Toolbar --}}
+  <div class="toolbar d-flex flex-wrap gap-2 align-items-center mb-3">
+    <div class="search-box position-relative flex-grow-1" style="max-width: 420px;">
+      <svg class="position-absolute" style="left:10px; top:50%; transform:translateY(-50%);" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input id="userSearch" type="text" class="form-control ps-5"
+             placeholder="Buscar usuarios por nombre o email...">
     </div>
 
-    <div class="table-container">
-        <table>
-            <thead>
-            <tr>
-                <th>Usuario</th>
-                <th>Email</th>
-                 <th>Rol</th> {{-- NUEVA --}}
-                {{-- <th>Semillero</th>  --}} {{-- eliminado --}}
-                {{-- <th>Último acceso</th> --}} {{-- eliminado --}}
-                <th>Registrado</th>
-                <th>Acciones</th>
-            </tr>
-            </thead>
+    {{-- Filtro por Rol (valores EXACTOS de tu app) --}}
+    <select id="roleFilter" class="form-select" style="max-width: 220px;">
+      <option value="">Todos los roles</option>
+      <option value="ADMIN">Administrador</option>
+      <option value="LIDER_GENERAL">Líder General</option>
+      <option value="LIDER_SEMILLERO">Líder de Semillero</option>
+      <option value="APRENDIZ">Aprendiz</option>
+    </select>
 
-            <tbody>
-            @forelse($users as $user)
-                <tr>
-                    <td><strong>{{ $user->name }}</strong></td>
-                    <td>{{ $user->email }}</td>
-                    <td>
-                        <span class="badge">
-                            {{ strtoupper($user->role ?? 'SIN ROL') }}
-                        </span>
-                    </td>
-                    <td>{{ optional($user->created_at)->format('Y-m-d H:i') }}</td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn btn-icon btn-edit" title="Editar">✏️</button>
-                            <button class="btn btn-icon btn-delete" title="Eliminar">🗑️</button>
-                        </div>
-                    </td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="5" class="text-center">No hay usuarios.</td>
-                </tr>
-            @endforelse
-            </tbody>
+    {{-- Filtro por Estado (si aún no hay columna, queda en “ACTIVO” por defecto) --}}
+    <select id="statusFilter" class="form-select" style="max-width: 180px;">
+      <option value="">Todos los estados</option>
+      <option value="ACTIVO">Activo</option>
+      <option value="INACTIVO">Inactivo</option>
+    </select>
 
-        </table>
-    </div>
+    {{-- Abre el modal que ya tenemos --}}
+    <button class="btn btn-primary d-flex align-items-center gap-2"
+            data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
+      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Nuevo Usuario
+    </button>
+  </div>
 
-    @isset($users)
-        @if(method_exists($users, 'links'))
-            <div class="mt-3">
-                {{ $users->links() }}
+  {{-- Tabla --}}
+  <div class="table-container table-responsive">
+    <table id="usersTable" class="table table-striped align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Usuario</th>
+          <th>Email</th>
+          <th>Rol</th>
+          <th>Registrado</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+
+      <tbody>
+      @forelse($users as $user)
+        @php
+          $role = strtoupper($user->role ?? 'SIN ROL');
+          $roleClass = match($role) {
+              'ADMIN' => 'bg-danger',
+              'LIDER_GENERAL' => 'bg-warning text-dark',
+              'LIDER_SEMILLERO' => 'bg-primary',
+              'APRENDIZ' => 'bg-success',
+              default => 'bg-secondary'
+          };
+          $status = 'ACTIVO'; // cámbialo cuando tengas la columna en BD
+        @endphp
+
+        <tr data-role="{{ $role }}" data-status="{{ $status }}">
+          <td><strong>{{ $user->name }}</strong></td>
+          <td>{{ $user->email }}</td>
+          <td><span class="badge {{ $roleClass }}">{{ $role }}</span></td>
+          <td>{{ optional($user->created_at)->format('Y-m-d H:i') }}</td>
+          <td class="text-end">
+            <div class="d-inline-flex gap-2">
+              <button class="btn btn-sm btn-outline-secondary" title="Editar" disabled>✏️</button>
+              <button class="btn btn-sm btn-outline-danger" title="Eliminar" disabled>🗑️</button>
             </div>
-        @endif
-    @endisset
+          </td>
+        </tr>
+      @empty
+        <tr>
+          <td colspan="5" class="text-center text-muted">No hay usuarios.</td>
+        </tr>
+      @endforelse
+      </tbody>
+    </table>
+  </div>
+
+  {{-- Paginación --}}
+  @isset($users)
+    @if(method_exists($users, 'links'))
+      <div class="mt-3">
+        {{ $users->links() }}
+      </div>
+    @endif
+  @endisset
 </section>
+
+<style>
+  #users .toolbar .form-control, #users .toolbar .form-select { height: 42px; }
+</style>
+
 
             <!-- Semilleros Section -->
             <section id="semilleros" class="content-section">
@@ -594,45 +619,166 @@
     </div>
 
     <!-- Modal for Add User -->
-    <div id="addUser" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Nuevo Usuario</h3>
-                <button class="close-modal" onclick="closeModal('addUser')">×</button>
+
+<!-- BOTÓN -->
+<button type="button" class="btn btn-primary mb-3"
+        data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
+  <i class="fa fa-user-plus me-1"></i> Nuevo Usuario
+</button>
+
+<!-- MODAL -->
+<div class="modal fade" id="modalNuevoUsuario" tabindex="-1" aria-labelledby="modalNuevoUsuarioLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow rounded-4">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-semibold" id="modalNuevoUsuarioLabel">Registrar usuario</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <form id="formNuevoUsuario" method="POST" action="{{ route('admin.usuarios.store') }}">
+        @csrf
+
+        <div class="modal-body bg-light">
+          <div class="container-fluid">
+
+            {{-- 1) Rol (único visible al inicio) --}}
+            <div class="card border-0 shadow-sm mb-3">
+              <div class="card-body">
+                <label class="form-label fw-semibold mb-1">Rol</label>
+                <select name="role" id="selectRol" class="form-select" required>
+                  <option value="">Seleccione un rol...</option>
+                  <option value="ADMIN">Administrador</option>
+                  <option value="LIDER_GENERAL">Líder General</option>
+                  <option value="LIDER_SEMILLERO">Líder de Semillero</option>
+                  <option value="APRENDIZ">Aprendiz</option>
+                </select>
+              </div>
             </div>
-            <form>
-                <div class="form-group">
-                    <label class="form-label">Nombre Completo</label>
-                    <input type="text" class="form-input" placeholder="Ingrese el nombre completo">
+
+            {{-- 2) Campos comunes (aparecen después de elegir rol) --}}
+            <div id="commonFields" class="d-none">
+              <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">Nombre</label>
+                      <input type="text" name="nombre" class="form-control" placeholder="María">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Apellidos</label>
+                      <input type="text" name="apellido" class="form-control" placeholder="Gómez Pérez">
+                    </div>
+
+                    <div class="col-md-6">
+                      <label class="form-label">Correo (login)</label>
+                      <input type="email" name="email" class="form-control" placeholder="correo@ejemplo.com">
+                      <small id="emailHint" class="text-muted"></small>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Contraseña</label>
+                      <input type="password" name="password" class="form-control" placeholder="Mínimo 6 caracteres">
+                    </div>
+                  </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-input" placeholder="usuario@sena.edu.co">
+              </div>
+            </div>
+
+            {{-- 3) Campos por rol (solo lo necesario, sin textos largos) --}}
+
+            {{-- Líder General: sin campos extra (institucional = login) --}}
+            <div class="role-fields d-none" data-role="LIDER_GENERAL"></div>
+
+            {{-- Líder Semillero: documento --}}
+            <div class="role-fields d-none" data-role="LIDER_SEMILLERO">
+              <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <label class="form-label">Tipo documento</label>
+                      <select name="ls_tipo_documento" class="form-select">
+                        <option value="">Seleccione</option>
+                        <option value="CC">CC</option>
+                        <option value="TI">TI</option>
+                        <option value="CE">CE</option>
+                      </select>
+                    </div>
+                    <div class="col-md-8">
+                      <label class="form-label">Número documento</label>
+                      <input type="text" name="ls_documento" class="form-control">
+                    </div>
+                  </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Documento</label>
-                    <input type="text" class="form-input" placeholder="Número de documento">
+              </div>
+            </div>
+
+            {{-- Aprendiz: institucional requerido --}}
+            <div class="role-fields d-none" data-role="APRENDIZ">
+              <div class="card border-0 shadow-sm mb-1">
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <label class="form-label">Ficha</label>
+                      <input type="text" name="ap_ficha" class="form-control">
+                    </div>
+                    <div class="col-md-8">
+                      <label class="form-label">Programa</label>
+                      <input type="text" name="ap_programa" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label">Tipo documento</label>
+                      <select name="ap_tipo_documento" class="form-select">
+                        <option value="">Seleccione</option>
+                        <option value="CC">CC</option>
+                        <option value="TI">TI</option>
+                        <option value="CE">CE</option>
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label">Número documento</label>
+                      <input type="text" name="ap_documento" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label">Celular )</label>
+                      <input type="text" name="ap_celular" class="form-control">
+                    </div>
+                    <div class="col-md-12">
+                      <label class="form-label">Correo institucional</label>
+                      <input type="email" name="ap_correo_institucional" class="form-control" placeholder="usuario@sena.edu.co">
+                    </div>
+
+                                        <div class="col-md-6">
+                    <label class="form-label">Contacto emergencia (nombre)</label>
+                    <input type="text" name="ap_contacto_nombre" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                    <label class="form-label">Celular de contacto</label>
+                    <input type="text" name="ap_contacto_celular" class="form-control">
+                    </div>
+
+
+                    {{-- Personal = login (oculto) --}}
+                    <input type="hidden" name="ap_correo_personal">
+                  </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Rol</label>
-                    <select class="form-input">
-                        <option>Seleccione un rol</option>
-                        <option>Administrador</option>
-                        <option>Líder</option>
-                        <option>Aprendiz</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Contraseña</label>
-                    <input type="password" class="form-input" placeholder="Contraseña temporal">
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('addUser')">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Crear Usuario</button>
-                </div>
-            </form>
+              </div>
+            </div>
+
+            {{-- Admin: sin extras --}}
+            <div class="role-fields d-none" data-role="ADMIN"></div>
+
+          </div>
         </div>
+
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success px-4">Guardar Usuario</button>
+        </div>
+      </form>
     </div>
+  </div>
+</div>
+
+
 
     <!-- Modal for Add Semillero -->
     <div id="addSemillero" class="modal">
@@ -676,6 +822,8 @@
         </div>
     </div>
 
+
+
     <script>
         function showSection(sectionId) {
             // Hide all sections
@@ -716,5 +864,162 @@
             }
         }
     </script>
+
+<script>
+function openModal() {
+  const el = document.getElementById('modalNuevoUsuario');
+  if (!el) {
+    console.error('No se encontró #modalNuevoUsuario en el DOM');
+    return;
+  }
+  // Requiere bootstrap.bundle ya cargado
+  const modal = bootstrap.Modal.getOrCreateInstance(el);
+  modal.show();
+}
+</script>
+
+
+
+{{-- Estética mínima --}}
+<style>
+  #modalNuevoUsuario .card-body { padding: 1rem 1rem; }
+  #modalNuevoUsuario .form-label { font-weight: 600; }
+</style>
+
+{{-- Lógica UI minimalista --}}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const selectRol = document.getElementById('selectRol');
+  const common    = document.getElementById('commonFields');
+  const sections  = document.querySelectorAll('.role-fields');
+  const emailHint = document.getElementById('emailHint');
+
+  // inputs base
+  const nombre   = document.querySelector('[name="nombre"]');
+  const apellido = document.querySelector('[name="apellido"]');
+  const email    = document.querySelector('[name="email"]');
+  const pass     = document.querySelector('[name="password"]');
+
+  // líder semillero
+  const ls_tipo  = document.querySelector('[name="ls_tipo_documento"]');
+  const ls_doc   = document.querySelector('[name="ls_documento"]');
+
+  // aprendiz
+  const ap_ficha    = document.querySelector('[name="ap_ficha"]');
+  const ap_programa = document.querySelector('[name="ap_programa"]');
+  const ap_tipo     = document.querySelector('[name="ap_tipo_documento"]');
+  const ap_doc      = document.querySelector('[name="ap_documento"]');
+  const ap_ci       = document.querySelector('[name="ap_correo_institucional"]');
+  const ap_cp       = document.querySelector('[name="ap_correo_personal"]');
+
+  const setReq = (el, on) => { if(!el) return; on ? el.setAttribute('required','required') : el.removeAttribute('required'); };
+
+  function updateEmailHint(role) {
+    const map = {
+      'LIDER_GENERAL': 'El correo institucional será el correo de login.',
+      'LIDER_SEMILLERO': 'El correo institucional será el correo de login.',
+      'APRENDIZ': 'El correo personal será el correo de login.',
+      'ADMIN': ''
+    };
+    emailHint.textContent = map[role] || '';
+  }
+
+  function toggle() {
+    const rol = selectRol.value;
+
+    // comunes sólo si hay rol
+    common.classList.toggle('d-none', !rol);
+
+    // reset required
+    [nombre,apellido,email,pass,ls_tipo,ls_doc,ap_ficha,ap_programa,ap_tipo,ap_doc,ap_ci].forEach(el => setReq(el,false));
+
+    if (rol) { // base requeridos
+      setReq(nombre,true); setReq(apellido,true); setReq(email,true); setReq(pass,true);
+    }
+
+    // mostrar sección del rol
+    sections.forEach(s => s.classList.toggle('d-none', s.dataset.role !== rol));
+
+    // requeridos por rol
+    if (rol === 'LIDER_SEMILLERO') {
+      setReq(ls_tipo,true); setReq(ls_doc,true);
+    }
+    if (rol === 'APRENDIZ') {
+      setReq(ap_ficha,true); setReq(ap_programa,true); setReq(ap_tipo,true); setReq(ap_doc,true); setReq(ap_ci,true);
+    }
+
+    updateEmailHint(rol);
+  }
+
+  selectRol.addEventListener('change', toggle);
+  toggle();
+
+  // personal = login para aprendices (antes de enviar)
+  document.getElementById('formNuevoUsuario').addEventListener('submit', () => {
+    if (selectRol.value === 'APRENDIZ' && ap_cp) ap_cp.value = email.value || '';
+  });
+});
+</script>
+
+
+
+<!--  filtros-->
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const $search  = document.getElementById('userSearch');
+  const $role    = document.getElementById('roleFilter');
+  const $status  = document.getElementById('statusFilter');
+  const $rows    = Array.from(document.querySelectorAll('#usersTable tbody tr'));
+
+  const normalize = s => (s || '').toString().toLowerCase()
+                        .normalize('NFD').replace(/\p{Diacritic}/gu, '');
+
+  let timer;
+  const debounce = (fn, wait=220) => (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), wait);
+  };
+
+  function applyFilters() {
+    const q  = normalize($search.value);
+    const rf = $role.value;             // ADMIN / LIDER_GENERAL / ...
+    const sf = $status.value;           // ACTIVO / INACTIVO
+
+    let visible = 0;
+
+    $rows.forEach(tr => {
+      const name  = normalize(tr.children[0]?.innerText);
+      const email = normalize(tr.children[1]?.innerText);
+      const r     = tr.dataset.role || '';
+      const s     = tr.dataset.status || '';
+
+      const matchText = !q || name.includes(q) || email.includes(q);
+      const matchRole = !rf || r === rf;
+      const matchStat = !sf || s === sf;
+
+      const show = matchText && matchRole && matchStat;
+      tr.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    // Si quieres, aquí puedes mostrar/ocultar un renglón "sin resultados"
+  }
+
+  $search.addEventListener('input', debounce(applyFilters));
+  $role.addEventListener('change', applyFilters);
+  $status.addEventListener('change', applyFilters);
+
+  applyFilters();
+});
+</script>
+
+
+
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+
 </body>
 </html>
