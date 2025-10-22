@@ -12,20 +12,20 @@ use App\Http\Controllers\AprendizController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 // Controladores de Módulos Específicos
 use App\Http\Controllers\LiderSemillero\SemilleroController;
-use App\Http\Controllers\LiderSemillero\DashboardController as LiderSemilleroDashboardController; // Alias para evitar conflicto
+use App\Http\Controllers\LiderSemillero\DashboardController as LiderSemilleroDashboardController; // ALIAS para Lider Semillero
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\DashboardController as AdminDashboardController; // Alias para evitar conflicto
-use App\Http\Controllers\Aprendiz\DashboardController as AprendizDashboardController; // Alias para evitar conflicto
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController; // ALIAS para Admin
+use App\Http\Controllers\Aprendiz\DashboardController as AprendizDashboardController; // ALIAS para Aprendiz
 use App\Http\Controllers\Aprendiz\PerfilController;
 use App\Http\Controllers\Aprendiz\ProyectoController;
 use App\Http\Controllers\Aprendiz\ArchivoController;
+use App\Http\Controllers\LiderSemillero\DashboardController_semi;
 
 // ---------------------------------------------
 // RUTAS PÚBLICAS
 // ---------------------------------------------
 
 Route::get('/', function () {
-    // Si el usuario ya está autenticado, lo envía a su dashboard (ruta 'dashboard')
     if (Auth::check()) {
         return redirect()->route('dashboard');
     }
@@ -46,18 +46,17 @@ Route::middleware(['auth', 'role:ADMIN'])
     ->group(function () {
 
         // Dashboard admin
-        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard'); // admin.dashboard
 
-        // Gestión de usuarios: Usa Route::resource para todas las rutas RESTful
+        // Gestión de usuarios
         Route::resource('usuarios', UsuarioController::class);
 
-        // Crear usuario (AJAX) - Si necesitas una ruta especial diferente al store de resource
+        // Crear usuario (AJAX)
         Route::post('/usuarios/ajax/store', [UsuarioController::class, 'storeAjax'])->name('usuarios.store.ajax');
 
         // Página “Funciones del administrador”
         Route::get('/funciones', [AdminController::class, 'index'])->name('functions');
 
-        // Ruta de ejemplo
         Route::get('/crear', fn() => view('admin.crear'))->name('crear');
     });
 
@@ -68,27 +67,27 @@ Route::middleware(['auth', 'role:ADMIN'])
 
 /*
 |--------------------------------------------------------------------------
-| RUTA /dashboard GENÉRICA (fallback que redirige según rol)
+| RUTA /dashboard GENÉRICA (Redirige al dashboard específico de cada rol)
 |--------------------------------------------------------------------------
 */
 Route::get('/dashboard', function () {
     $user = Auth::user();
     if (! $user) return redirect()->route('login');
 
-    switch ($user->rol ?? $user->role ?? null) {
-        case 'ADMIN':
-            return view('Admin.dashboard-admin');
-        case 'INSTRUCTOR': // Asumiendo que es un rol válido
-            return view('Instructor.dashboard-instructor');
-        case 'APRENDIZ':
-            return view('Aprendiz.dashboard-aprendiz');
-        case 'LIDER_GENERAL':
-        case 'LIDER GENERAL':
-            return view('Lider.dashboard-lider');
-        default:
-            return view('dashboard');
-    }
-})->middleware(['auth', 'verified'])->name('dashboard');
+    $rol = strtoupper(str_replace([' ', '-'], '_', trim($user->role ?? $user->rol ?? '')));
+
+    $map = [
+        'ADMIN' => 'admin.dashboard',
+        'INSTRUCTOR' => 'lider_semi.dashboard',
+        'APRENDIZ' => 'aprendiz.dashboard',
+        'LIDER_SEMILLERO' => 'lider_semi.dashboard',
+        'LIDER_GENERAL' => 'lider_general.dashboard',
+    ];
+
+    $route = $map[$rol] ?? 'home';
+
+    return redirect()->route($route); // Redirige al dashboard del rol específico
+})->middleware(['auth', 'verified'])->name('dashboard'); // Nombre de la ruta genérica: 'dashboard'
 
 /*
 |--------------------------------------------------------------------------
@@ -96,18 +95,14 @@ Route::get('/dashboard', function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
-    // Perfil del usuario
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    // Ruta de recursos para usuarios (Si la usan roles NO-ADMIN)
-    // Route::resource('usuarios', UsuarioController::class); // Descomentar solo si aplica a NO-ADMIN
 });
 
 /*
 |--------------------------------------------------------------------------
-| PASSWORD CHANGE (para el botón “Cambio contraseña”)
+| PASSWORD CHANGE
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->get('/password/change', function () {
@@ -115,7 +110,7 @@ Route::middleware('auth')->get('/password/change', function () {
 })->name('password.change');
 
 // ---------------------------------------------
-// MÓDULOS DEL PROYECTO (rutas que usa el menú lateral)
+// MÓDULOS DEL PROYECTO
 // ---------------------------------------------
 
 // LÍDERES (registro de aprendices líderes)
@@ -140,7 +135,7 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_SEMILLERO,LIDER_GENERAL'])->group(f
 
 
 // ---------------------------------------------
-// RUTAS ESPECÍFICAS POR ROL (usando los alias de Dashboard)
+// RUTAS ESPECÍFICAS POR ROL (usando los nombres de vista correctos)
 // ---------------------------------------------
 
 // INSTRUCTOR o LIDER SEMILLERO (mismo rol)
@@ -148,6 +143,10 @@ Route::middleware(['auth', 'role:LIDER SEMILLERO'])
     ->prefix('lider_semi')
     ->name('lider_semi.')
     ->group(function () {
+        // CORREGIDO: Usando el alias de controlador y el nombre de vista que proporcionaste
+        Route::get('/dashboard', [DashboardController_semi::class, 'index'])
+             ->name('dashboard'); // lider_semi.dashboard
+
         Route::get('/semilleros', [SemilleroController::class, 'semilleros'])->name('semilleros');
         Route::view('/aprendices', 'lider_semi.aprendices')->name('aprendices');
         Route::view('/documentos', 'lider_semi.documentos')->name('documentos');
@@ -158,7 +157,9 @@ Route::middleware(['auth', 'role:LIDER SEMILLERO'])
 
 // LÍDER GENERAL (Asumiendo que 'LIDER GENERAL' es el mismo rol)
 Route::middleware(['auth', 'role:LIDER GENERAL'])->group(function () {
-    Route::get('/lider_general/dashboard', fn() => view('lider_general.dashboard-lider'))->name('lider_general.dashboard');
+    // CORREGIDO: Usando el nombre de vista que proporcionaste
+    Route::get('/lider_general/dashboard', fn() => view('lider_general.dashboard_lider'))
+        ->name('lider_general.dashboard'); // lider_general.dashboard
 });
 
 
@@ -182,7 +183,7 @@ Route::middleware(['auth', 'role:APRENDIZ'])
         Route::get('/proyectos', [ProyectoController::class, 'index'])->name('proyectos.index');
         Route::get('/proyectos/{id}', [ProyectoController::class, 'show'])->name('proyectos.show');
 
-        // Archivos: Route::resource crea index, store, update, destroy, etc.
+        // Archivos
         Route::resource('archivos', ArchivoController::class);
 
         // Rutas específicas de Archivos (si necesitas sobrescribir o añadir)

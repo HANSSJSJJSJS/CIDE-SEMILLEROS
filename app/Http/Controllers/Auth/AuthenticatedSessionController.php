@@ -10,16 +10,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Contracts\View\View; // Importación necesaria para tipado de vistas Blade
 
-// Se eliminan las importaciones de Inertia ya que estás usando Blade
-// use Inertia\Inertia;
-// use Inertia\Response;
-
 class AuthenticatedSessionController extends Controller
 {
     /**
      * Display the login view.
      */
-    public function create(): View // Cambiado de Response a View
+    public function create(): View
     {
         // Esto devuelve la vista Blade 'resources/views/auth/login.blade.php'
         return view('auth.login', [
@@ -43,12 +39,15 @@ class AuthenticatedSessionController extends Controller
 
         $map = [
             'ADMIN' => 'admin.dashboard',
-            // El rol INSTRUCTOR puede mapearse a lider_semi.dashboard
+
+            // CORRECCIÓN: Se incluye el rol INSTRUCTOR
             'INSTRUCTOR' => 'lider_semi.dashboard',
+
             'APRENDIZ' => 'aprendiz.dashboard',
             'LIDER_SEMILLERO' => 'lider_semi.dashboard',
-            'LIDER_GENERAL' => 'lider.dashboard',
-            // Asegúrate de que los nombres de rol aquí coincidan con los de tu base de datos
+
+            // CORRECCIÓN: Se usa el nombre de ruta correcto 'lider_general.dashboard'
+            'LIDER_GENERAL' => 'lider_general.dashboard',
         ];
 
         // Redirige a la ruta específica del rol, o a 'dashboard' como fallback
