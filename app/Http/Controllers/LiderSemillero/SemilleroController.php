@@ -64,7 +64,7 @@ class SemilleroController extends Controller
                     $ids = $proyectos->pluck('id_proyecto')->filter()->values()->all();
                     if (!empty($ids)) {
                         // JOIN correcto según si la pivote usa id_aprendiz o id_usuario
-                        $joinCol = $pivot['aprCol'] === 'id_usuario' ? 'id_usuario' : 'id_aprendiz';
+                        $joinCol = ($pivot['aprCol'] === 'id_usuario' && Schema::hasColumn('aprendices', 'id_usuario')) ? 'id_usuario' : 'id_aprendiz';
                         $rows = DB::table($pivot['table'])
                             ->join('aprendices', 'aprendices.'.$joinCol, '=', DB::raw($pivot['table'].'.'.$pivot['aprCol']))
                             ->whereIn(DB::raw($pivot['table'].'.'.$pivot['projCol']), $ids)
@@ -437,7 +437,7 @@ class SemilleroController extends Controller
         $pivot = $this->pivotProyectoAprendiz();
         if (empty($pivot)) return response()->json([]);
         // Obtener IDs de aprendices ya asignados en términos de id_aprendiz
-        if ($pivot['aprCol'] === 'id_usuario') {
+        if ($pivot['aprCol'] === 'id_usuario' && Schema::hasColumn('aprendices', 'id_usuario')) {
             $asignados = DB::table($pivot['table'])
                 ->join('aprendices','aprendices.id_usuario','=',DB::raw($pivot['table'].'.'.$pivot['aprCol']))
                 ->where($pivot['projCol'], $proyectoId)
@@ -481,7 +481,12 @@ class SemilleroController extends Controller
         $pivot = $this->pivotProyectoAprendiz();
         if (empty($pivot)) return response()->json(['ok'=>false], 400);
         
-        $ap = Aprendiz::select('id_aprendiz','id_usuario','nombre_completo','correo_institucional')->findOrFail($data['aprendiz_id']);
+        // Seleccionar columnas que existen
+        $selectCols = ['id_aprendiz','nombre_completo','correo_institucional'];
+        if (Schema::hasColumn('aprendices', 'id_usuario')) {
+            $selectCols[] = 'id_usuario';
+        }
+        $ap = Aprendiz::select($selectCols)->findOrFail($data['aprendiz_id']);
         
         // Si estamos usando documentos como pivote, verificar si ya existe una relación
         if ($pivot['table'] === 'documentos') {
@@ -504,7 +509,10 @@ class SemilleroController extends Controller
             }
         } else {
             // Pivote tradicional
-            $aprValue = $pivot['aprCol'] === 'id_usuario' ? $ap->id_usuario : $ap->id_aprendiz;
+            $aprValue = $ap->id_aprendiz;
+            if ($pivot['aprCol'] === 'id_usuario' && isset($ap->id_usuario)) {
+                $aprValue = $ap->id_usuario;
+            }
             DB::table($pivot['table'])->updateOrInsert([
                 $pivot['projCol'] => $proyectoId,
                 $pivot['aprCol']  => $aprValue,
@@ -532,7 +540,7 @@ class SemilleroController extends Controller
                 ->delete();
         } else {
             // Pivote tradicional
-            if ($pivot['aprCol'] === 'id_usuario') {
+            if ($pivot['aprCol'] === 'id_usuario' && Schema::hasColumn('aprendices', 'id_usuario')) {
                 $ap = Aprendiz::select('id_usuario')->find($aprendizId);
                 $aprVal = $ap ? $ap->id_usuario : null;
             } else {
@@ -572,21 +580,24 @@ class SemilleroController extends Controller
     {
         $userId = auth()->id();
         
-        // Obtener aprendices básicos
-        $aprendices = Aprendiz::select(
-            'aprendices.id_aprendiz',
-            'aprendices.id_usuario',
-            'aprendices.nombre_completo',
-            'aprendices.tipo_documento',
-            'aprendices.documento',
-            'aprendices.celular',
-            'aprendices.correo_institucional',
-            'aprendices.correo_personal',
-            'aprendices.programa',
-            'aprendices.ficha',
-            'aprendices.contacto_nombre',
-            'aprendices.contacto_celular'
-        )->orderBy('nombre_completo')->get();
+        // Obtener aprendices básicos usando Query Builder para evitar problemas con columnas faltantes
+        $selectCols = [
+            'id_aprendiz',
+            'nombre_completo',
+            'tipo_documento',
+            'documento',
+            'celular',
+            'correo_institucional',
+            'correo_personal',
+            'programa',
+            'ficha',
+            'contacto_nombre',
+            'contacto_celular'
+        ];
+        if (Schema::hasColumn('aprendices', 'id_usuario')) {
+            $selectCols[] = 'id_usuario';
+        }
+        $aprendices = DB::table('aprendices')->select($selectCols)->orderBy('nombre_completo')->get();
 
         $aprendicesIds = $aprendices->pluck('id_aprendiz')->toArray();
 
@@ -599,7 +610,7 @@ class SemilleroController extends Controller
                     $proyectosRelaciones = DB::table($pivot['table'])
                         ->join('proyectos', 'proyectos.id_proyecto', '=', DB::raw($pivot['table'].'.'.$pivot['projCol']))
                         ->join('aprendices', function($join) use ($pivot) {
-                            if ($pivot['aprCol'] === 'id_usuario') {
+                            if ($pivot['aprCol'] === 'id_usuario' && Schema::hasColumn('aprendices', 'id_usuario')) {
                                 $join->on('aprendices.id_usuario', '=', DB::raw($pivot['table'].'.'.$pivot['aprCol']));
                             } else {
                                 $join->on('aprendices.id_aprendiz', '=', DB::raw($pivot['table'].'.'.$pivot['aprCol']));
@@ -676,23 +687,52 @@ class SemilleroController extends Controller
             )
             ->get();
 
-        // Contar documentos por proyecto (entregas, pendientes, aprobadas)
+        // Contar documentos reales por proyecto desde la tabla documentos
         $proyectos->transform(function($proyecto) {
-            // Por ahora, valores simulados - puedes conectar con tu tabla de documentos real
-            $proyecto->entregas = rand(0, 5);
-            $proyecto->pendientes = rand(0, 3);
-            $proyecto->aprobadas = rand(0, 5);
+            if (Schema::hasTable('documentos')) {
+                // Verificar si existe la columna estado
+                $hasEstado = Schema::hasColumn('documentos', 'estado');
+                
+                // Contar total de entregas (incluyendo placeholders/evidencias creadas por el líder)
+                $proyecto->entregas = DB::table('documentos')
+                    ->where('id_proyecto', $proyecto->id_proyecto)
+                    ->count();
+                
+                if ($hasEstado) {
+                    // Contar pendientes
+                    $proyecto->pendientes = DB::table('documentos')
+                        ->where('id_proyecto', $proyecto->id_proyecto)
+                        ->where('estado', 'pendiente')
+                        ->count();
+                    
+                    // Contar aprobadas
+                    $proyecto->aprobadas = DB::table('documentos')
+                        ->where('id_proyecto', $proyecto->id_proyecto)
+                        ->where('estado', 'aprobado')
+                        ->count();
+                } else {
+                    // Si no existe columna estado, todas son pendientes
+                    $proyecto->pendientes = $proyecto->entregas;
+                    $proyecto->aprobadas = 0;
+                }
+            } else {
+                $proyecto->entregas = 0;
+                $proyecto->pendientes = 0;
+                $proyecto->aprobadas = 0;
+            }
             
             return $proyecto;
         });
 
         // Separar proyectos activos y completados
         $proyectosActivos = $proyectos->filter(function($p) {
-            return in_array(strtoupper($p->estado), ['ACTIVO', 'EN_EJECUCION', 'EN EJECUCION']);
+            $estadoUpper = strtoupper($p->estado);
+            return in_array($estadoUpper, ['ACTIVO', 'EN_EJECUCION', 'EN EJECUCION', 'EJECUCION', 'EN_FORMULACION', 'EN FORMULACION', 'FORMULACION']);
         });
 
         $proyectosCompletados = $proyectos->filter(function($p) {
-            return in_array(strtoupper($p->estado), ['COMPLETADO', 'FINALIZADO', 'TERMINADO']);
+            $estadoUpper = strtoupper($p->estado);
+            return in_array($estadoUpper, ['COMPLETADO', 'FINALIZADO', 'TERMINADO', 'CERRADO']);
         });
 
         return view('lider_semi.documentos', compact('proyectosActivos', 'proyectosCompletados'));
@@ -713,39 +753,143 @@ class SemilleroController extends Controller
         return response()->json(['proyectos' => $proyectos]);
     }
 
-    // Guardar evidencia de avance (solo registro, el aprendiz subirá después)
+    // Obtener aprendices asignados a un proyecto
+    public function obtenerAprendicesProyecto($proyectoId)
+    {
+        try {
+            if (!Schema::hasTable('proyectos') || !Schema::hasTable('aprendices')) {
+                return response()->json(['aprendices' => []]);
+            }
+
+            // Buscar la tabla pivot
+            $pivot = $this->pivotProyectoAprendiz();
+            
+            if (empty($pivot)) {
+                return response()->json(['aprendices' => []]);
+            }
+
+            // Obtener IDs únicos de aprendices del proyecto
+            $aprendizIds = DB::table($pivot['table'])
+                ->where($pivot['projCol'], $proyectoId)
+                ->whereNotNull($pivot['aprendizCol'])
+                ->where($pivot['aprendizCol'], '>', 0)
+                ->distinct()
+                ->pluck($pivot['aprendizCol']);
+
+            // Si no hay aprendices, retornar vacío
+            if ($aprendizIds->isEmpty()) {
+                return response()->json(['aprendices' => []]);
+            }
+
+            // Obtener información de los aprendices
+            $aprendices = DB::table('aprendices')
+                ->whereIn('id_aprendiz', $aprendizIds)
+                ->where('documento', '!=', 'SIN_ASIGNAR') // Excluir el aprendiz "Sin Asignar"
+                ->select('id_aprendiz', 'nombre_completo')
+                ->orderBy('nombre_completo')
+                ->get();
+
+            return response()->json(['aprendices' => $aprendices]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error al obtener aprendices del proyecto: ' . $e->getMessage());
+            return response()->json(['aprendices' => []]);
+        }
+    }
+
+    // Guardar evidencia de avance (crea un registro en documentos)
     public function guardarEvidencia(Request $request)
     {
         try {
             $request->validate([
-                'proyecto_id' => 'required',
+                'proyecto_id' => 'required|integer|exists:proyectos,id_proyecto',
+                'aprendiz_id' => 'nullable|integer|exists:aprendices,id_aprendiz',
                 'titulo' => 'required|string|max:255',
                 'descripcion' => 'required|string',
                 'tipo_evidencia' => 'required|string',
                 'fecha' => 'required|date'
             ]);
 
-            // Verificar si existe tabla de evidencias
-            if (Schema::hasTable('evidencias')) {
-                DB::table('evidencias')->insert([
-                    'id_proyecto' => $request->proyecto_id,
-                    'titulo' => $request->titulo,
-                    'descripcion' => $request->descripcion,
-                    'tipo_evidencia' => $request->tipo_evidencia,
-                    'fecha' => $request->fecha,
-                    'estado' => 'pendiente', // Estado inicial: pendiente de que el aprendiz suba
-                    'id_usuario' => auth()->id(),
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ]);
+            // Verificar si existe tabla de documentos
+            if (!Schema::hasTable('documentos')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tabla de documentos no encontrada'
+                ], 404);
             }
+
+            // Verificar si id_aprendiz permite NULL
+            $columns = DB::select("SHOW COLUMNS FROM documentos WHERE Field = 'id_aprendiz'");
+            $allowsNull = !empty($columns) && $columns[0]->Null === 'YES';
+            
+            // Preparar datos para insertar
+            $dataToInsert = [
+                'id_proyecto' => $request->proyecto_id,
+                'documento' => $request->titulo,
+                'ruta_archivo' => '',
+                'tipo_archivo' => $request->tipo_evidencia,
+                'tamanio' => 0,
+                'mime_type' => '',
+                'fecha_subido' => now(),
+                'fecha_limite' => $request->fecha,
+                'estado' => 'pendiente',
+                'tipo_documento' => $request->tipo_evidencia,
+                'descripcion' => $request->descripcion
+            ];
+            
+            // Agregar id_aprendiz según lo que se haya seleccionado
+            if ($request->has('aprendiz_id') && $request->aprendiz_id) {
+                // Si se seleccionó un aprendiz, usarlo
+                $dataToInsert['id_aprendiz'] = $request->aprendiz_id;
+            } elseif ($allowsNull) {
+                // Si permite NULL y no se seleccionó aprendiz, usar NULL
+                $dataToInsert['id_aprendiz'] = null;
+            } else {
+                // Si no permite NULL, buscar o crear aprendiz "Sin Asignar"
+                $aprendizSinAsignar = DB::table('aprendices')
+                    ->where('documento', '=', 'SIN_ASIGNAR')
+                    ->first();
+                
+                if (!$aprendizSinAsignar) {
+                    try {
+                        // Crear aprendiz especial "Sin Asignar"
+                        $idAprendizSinAsignar = DB::table('aprendices')->insertGetId([
+                            'nombres' => 'Sin',
+                            'apellidos' => 'Asignar',
+                            'nombre_completo' => 'Sin Asignar',
+                            'tipo_documento' => 'CC',
+                            'documento' => 'SIN_ASIGNAR',
+                            'celular' => '0000000000',
+                            'correo_institucional' => 'sin.asignar@sena.edu.co',
+                            'correo_personal' => 'sin.asignar@sena.edu.co',
+                            'programa' => 'N/A',
+                            'ficha' => '0000000',
+                            'contacto_nombre' => 'N/A',
+                            'contacto_celular' => '0000000000'
+                        ]);
+                        $dataToInsert['id_aprendiz'] = $idAprendizSinAsignar;
+                        \Log::info('Aprendiz Sin Asignar creado con ID: ' . $idAprendizSinAsignar);
+                    } catch (\Exception $e) {
+                        \Log::error('Error al crear aprendiz Sin Asignar: ' . $e->getMessage());
+                        throw $e;
+                    }
+                } else {
+                    $dataToInsert['id_aprendiz'] = $aprendizSinAsignar->id_aprendiz;
+                    \Log::info('Usando aprendiz Sin Asignar existente con ID: ' . $aprendizSinAsignar->id_aprendiz);
+                }
+            }
+            
+            // Crear un registro en la tabla documentos
+            $documentoId = DB::table('documentos')->insertGetId($dataToInsert);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Solicitud de evidencia registrada exitosamente. El aprendiz podrá subir el documento.'
+                'message' => 'Evidencia registrada exitosamente.',
+                'documento_id' => $documentoId
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Error al guardar evidencia: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error al guardar la evidencia: ' . $e->getMessage()
@@ -757,37 +901,64 @@ class SemilleroController extends Controller
     public function obtenerEntregas($proyectoId)
     {
         try {
-            if (!Schema::hasTable('evidencias')) {
+            if (!Schema::hasTable('documentos')) {
                 return response()->json(['entregas' => []]);
             }
 
-            $entregas = DB::table('evidencias as e')
-                ->leftJoin('users as u', 'e.id_usuario', '=', 'u.id')
-                ->where('e.id_proyecto', $proyectoId)
-                ->select(
-                    'e.id_evidencia as id',
-                    'e.titulo',
-                    'e.descripcion',
-                    'e.tipo_evidencia',
-                    'e.archivo_path',
-                    'e.enlace',
-                    'e.fecha',
-                    'e.estado',
-                    'u.name as nombre_aprendiz',
-                    DB::raw("COALESCE(e.archivo_path, e.enlace) as archivo_url"),
-                    DB::raw("CASE 
-                        WHEN e.archivo_path IS NOT NULL THEN SUBSTRING_INDEX(e.archivo_path, '/', -1)
-                        ELSE e.titulo 
-                    END as archivo_nombre")
-                )
-                ->orderBy('e.fecha', 'desc')
+            // Verificar si existe columna descripcion
+            $hasDescripcion = Schema::hasColumn('documentos', 'descripcion');
+            
+            // Obtener documentos reales de la tabla documentos
+            $selectFields = [
+                'd.id_documento as id',
+                'd.documento as titulo',
+                'd.ruta_archivo',
+                'd.tipo_archivo',
+                'd.tamanio',
+                'd.fecha_subido as fecha',
+                DB::raw("COALESCE(d.estado, 'pendiente') as estado"),
+                DB::raw("COALESCE(a.nombre_completo, 'Sin asignar') as nombre_aprendiz"),
+                'd.ruta_archivo as archivo_url',
+                'd.documento as archivo_nombre'
+            ];
+            
+            // Agregar descripción si la columna existe
+            if ($hasDescripcion) {
+                $selectFields[] = DB::raw("COALESCE(d.descripcion, '') as descripcion");
+            } else {
+                $selectFields[] = DB::raw("'' as descripcion");
+            }
+            
+            $entregas = DB::table('documentos as d')
+                ->leftJoin('aprendices as a', 'd.id_aprendiz', '=', 'a.id_aprendiz')
+                ->where('d.id_proyecto', $proyectoId)
+                // Ya no excluimos placeholders, ahora los usamos para evidencias creadas por el líder
+                ->select($selectFields)
+                ->orderBy('d.fecha_subido', 'desc')
                 ->get();
 
-            // Convertir rutas de archivo a URLs públicas
+            // Convertir rutas de archivo a URLs públicas y formatear datos
             $entregas = $entregas->map(function($entrega) {
-                if ($entrega->archivo_path) {
-                    $entrega->archivo_url = asset('storage/' . $entrega->archivo_path);
+                if ($entrega->ruta_archivo) {
+                    // Si la ruta ya es una URL completa, usarla tal cual
+                    if (filter_var($entrega->ruta_archivo, FILTER_VALIDATE_URL)) {
+                        $entrega->archivo_url = $entrega->ruta_archivo;
+                    } else {
+                        // Si es una ruta relativa, convertirla a URL pública
+                        $entrega->archivo_url = asset('storage/' . $entrega->ruta_archivo);
+                    }
                 }
+                
+                // Formatear fecha
+                if ($entrega->fecha) {
+                    try {
+                        $fecha = new \DateTime($entrega->fecha);
+                        $entrega->fecha = $fecha->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        // Mantener fecha original si hay error
+                    }
+                }
+                
                 return $entrega;
             });
 
@@ -809,42 +980,126 @@ class SemilleroController extends Controller
                 'estado' => 'required|in:pendiente,aprobado,rechazado'
             ]);
 
-            if (!Schema::hasTable('evidencias')) {
+            if (!Schema::hasTable('documentos')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Tabla de evidencias no encontrada'
+                    'message' => 'Tabla de documentos no encontrada'
                 ], 404);
             }
 
             // Obtener el proyecto_id antes de actualizar
-            $evidencia = DB::table('evidencias')
-                ->where('id_evidencia', $entregaId)
+            $documento = DB::table('documentos')
+                ->where('id_documento', $entregaId)
                 ->first();
 
-            if (!$evidencia) {
+            if (!$documento) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Evidencia no encontrada'
+                    'message' => 'Documento no encontrado'
                 ], 404);
             }
 
-            DB::table('evidencias')
-                ->where('id_evidencia', $entregaId)
+            // Verificar si la columna estado existe, si no, agregarla temporalmente
+            if (!Schema::hasColumn('documentos', 'estado')) {
+                Schema::table('documentos', function($table) {
+                    $table->enum('estado', ['pendiente', 'aprobado', 'rechazado'])->default('pendiente')->after('fecha_subida');
+                });
+            }
+
+            DB::table('documentos')
+                ->where('id_documento', $entregaId)
                 ->update([
-                    'estado' => $request->estado,
-                    'updated_at' => now()
+                    'estado' => $request->estado
                 ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Estado actualizado exitosamente',
-                'proyecto_id' => $evidencia->id_proyecto
+                'proyecto_id' => $documento->id_proyecto
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error al actualizar el estado: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Actualizar documento completo (tipo_documento, fecha_limite, descripción)
+    public function actualizarDocumento(Request $request, $documentoId)
+    {
+        try {
+            $request->validate([
+                'tipo_documento' => 'required|string',
+                'fecha_limite' => 'required|date',
+                'descripcion' => 'nullable|string'
+            ]);
+
+            if (!Schema::hasTable('documentos')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tabla de documentos no encontrada'
+                ], 404);
+            }
+
+            // Obtener el documento
+            $documento = DB::table('documentos')
+                ->where('id_documento', $documentoId)
+                ->first();
+
+            if (!$documento) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Documento no encontrado'
+                ], 404);
+            }
+
+            // Verificar y crear columnas si no existen
+            if (!Schema::hasColumn('documentos', 'tipo_documento')) {
+                Schema::table('documentos', function($table) {
+                    $table->string('tipo_documento', 50)->nullable()->after('tipo_archivo');
+                });
+            }
+
+            if (!Schema::hasColumn('documentos', 'fecha_limite')) {
+                Schema::table('documentos', function($table) {
+                    $table->date('fecha_limite')->nullable()->after('fecha_subida');
+                });
+            }
+
+            if (!Schema::hasColumn('documentos', 'descripcion')) {
+                Schema::table('documentos', function($table) {
+                    $table->text('descripcion')->nullable()->after('estado');
+                });
+            }
+
+            // Preparar datos para actualizar
+            $updateData = [
+                'tipo_documento' => $request->tipo_documento,
+                'fecha_limite' => $request->fecha_limite
+            ];
+
+            // Agregar descripción
+            if ($request->has('descripcion')) {
+                $updateData['descripcion'] = $request->descripcion;
+            }
+
+            // Actualizar documento
+            DB::table('documentos')
+                ->where('id_documento', $documentoId)
+                ->update($updateData);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Documento actualizado exitosamente',
+                'proyecto_id' => $documento->id_proyecto
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el documento: ' . $e->getMessage()
             ], 500);
         }
     }

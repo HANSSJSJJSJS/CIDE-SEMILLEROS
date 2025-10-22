@@ -395,11 +395,65 @@
     border-radius: 12px;
     padding: 24px;
     margin-bottom: 20px;
-    transition: border-color 0.2s;
+    transition: all 0.2s;
+    position: relative;
 }
 
 .entrega-card:hover {
     border-color: #5aa72e;
+    box-shadow: 0 4px 12px rgba(90, 167, 46, 0.15);
+    transform: translateY(-2px);
+}
+
+/* Botón de editar en la tarjeta */
+.btn-editar-entrega {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background-color: #5aa72e;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+}
+
+.btn-editar-entrega:hover {
+    background-color: #4a8f26;
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-editar-entrega i {
+    font-size: 16px;
+}
+
+/* Candado para evidencias aprobadas */
+.badge-aprobado-lock {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background-color: #28a745;
+    color: white;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+}
+
+.badge-aprobado-lock i {
+    font-size: 14px;
 }
 
 /* Header de la Entrega */
@@ -408,6 +462,7 @@
     justify-content: space-between;
     align-items: start;
     margin-bottom: 12px;
+    padding-right: 50px; /* Espacio para el botón de editar */
 }
 
 .entrega-nombre {
@@ -530,6 +585,21 @@
     margin: 0;
 }
 
+/* Estilos para lista de evidencias en modal */
+#lista-evidencias {
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+#lista-evidencias a {
+    font-weight: 600;
+}
+
+#lista-evidencias a:hover {
+    text-decoration: underline !important;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .documentos-header {
@@ -574,5 +644,13 @@
     
     .modal-evidencia {
         padding: 20px;
+    }
+    
+    .entrega-acciones {
+        flex-direction: column;
+    }
+    
+    .entrega-acciones button {
+        width: 100%;
     }
 }

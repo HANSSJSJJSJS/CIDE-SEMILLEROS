@@ -13,7 +13,7 @@
             <p>Revisa y gestiona los documentos subidos por tus aprendices</p>
         </div>
         <button class="btn btn-light btn-crear-proyecto" id="btnAbrirModal">
-            <i class="fas fa-plus me-2"></i>Crear Proyecto
+            <i class="fas fa-plus me-2"></i>Crear Evidencia
         </button>
     </div>
 
@@ -59,17 +59,10 @@
                         </div>
 
                         <!-- Botones -->
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <button class="btn btn-ver-entregas w-100" onclick="abrirModalEntregas({{ $proyecto->id_proyecto }}, '{{ $proyecto->nombre }}')">
-                                    Ver Entregas
-                                </button>
-                            </div>
-                            <div class="col-6">
-                                <button class="btn btn-editar-proyecto w-100">
-                                    Editar
-                                </button>
-                            </div>
+                        <div class="mt-3">
+                            <button class="btn btn-ver-entregas w-100" onclick="abrirModalEntregas({{ $proyecto->id_proyecto }}, '{{ $proyecto->nombre }}')">
+                                <i class="fas fa-folder-open me-2"></i>Ver Entregas
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -116,17 +109,10 @@
                         </div>
 
                         <!-- Botones -->
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <button class="btn btn-ver-entregas w-100" onclick="abrirModalEntregas({{ $proyecto->id_proyecto }}, '{{ $proyecto->nombre }}')">
-                                    Ver Entregas
-                                </button>
-                            </div>
-                            <div class="col-6">
-                                <button class="btn btn-editar-proyecto w-100">
-                                    Editar
-                                </button>
-                            </div>
+                        <div class="mt-3">
+                            <button class="btn btn-ver-entregas w-100" onclick="abrirModalEntregas({{ $proyecto->id_proyecto }}, '{{ $proyecto->nombre }}')">
+                                <i class="fas fa-folder-open me-2"></i>Ver Entregas
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -146,7 +132,7 @@
 <!-- Modal Registrar Evidencia -->
 <div class="modal-overlay" id="modalEvidencia">
     <div class="modal-evidencia">
-        <h2>Registrar Evidencia de Avance</h2>
+        <h2 id="tituloModalEvidencia">Registrar Evidencia de Avance</h2>
         
         <form id="formEvidencia">
             @csrf
@@ -157,6 +143,21 @@
                 <select class="form-select-evidencia" id="proyecto_id" name="proyecto_id" required>
                     <option value="">Selecciona el proyecto...</option>
                 </select>
+            </div>
+
+            <!-- Aprendiz Asignado -->
+            <div class="mb-3">
+                <label class="form-label-evidencia">Aprendiz Asignado</label>
+                <select class="form-select-evidencia" id="aprendiz_id" name="aprendiz_id">
+                    <option value="">Sin asignar (selecciona primero un proyecto)</option>
+                </select>
+                <small class="text-muted">Selecciona un proyecto primero para ver los aprendices disponibles</small>
+            </div>
+            
+            <!-- Lista de Evidencias Existentes (solo visible en modo edición) -->
+            <div id="evidencias-existentes" style="display: none;">
+                <h4 style="color: #1e4620; font-weight: 700; margin-bottom: 1rem;">Evidencias Subidas</h4>
+                <div id="lista-evidencias" class="mb-4"></div>
             </div>
 
             <!-- Título del Avance -->
@@ -218,9 +219,87 @@
     </div>
 </div>
 
+<!-- Modal Editar Evidencia Individual -->
+<div class="modal-overlay" id="modalEditarEvidencia">
+    <div class="modal-evidencia">
+        <button class="btn-cerrar-modal" onclick="cerrarModalEditarEvidencia()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 2rem; color: #666; cursor: pointer;">×</button>
+        <h2>Editar Evidencias - <span id="nombreProyectoEditar"></span></h2>
+        
+        <form id="formEditarEvidencia">
+            @csrf
+            <input type="hidden" id="edit_documento_id" name="documento_id">
+            
+            <!-- Nombre del Aprendiz (Solo lectura) -->
+            <div class="mb-3">
+                <label class="form-label-evidencia">Aprendiz</label>
+                <input type="text" class="form-control-evidencia" id="edit_nombre_aprendiz" readonly style="background-color: #f5f5f5; cursor: not-allowed;">
+            </div>
+
+            <!-- Archivo (Solo lectura) -->
+            <div class="mb-3">
+                <label class="form-label-evidencia">Archivo</label>
+                <input type="text" class="form-control-evidencia" id="edit_archivo_nombre" readonly style="background-color: #f5f5f5; cursor: not-allowed;">
+            </div>
+
+            <!-- Fecha de Subida (Solo lectura) -->
+            <div class="mb-3">
+                <label class="form-label-evidencia">Fecha de Subida</label>
+                <input type="text" class="form-control-evidencia" id="edit_fecha_subida" readonly style="background-color: #f5f5f5; cursor: not-allowed;">
+            </div>
+
+            <!-- Estado (Solo lectura) -->
+            <div class="mb-3">
+                <label class="form-label-evidencia">Estado</label>
+                <input type="text" class="form-control-evidencia" id="edit_estado_texto" readonly style="background-color: #f5f5f5; cursor: not-allowed;">
+            </div>
+
+            <hr style="margin: 24px 0; border-color: #e0e0e0;">
+            <h4 style="color: #1e4620; font-weight: 700; margin-bottom: 1rem;">Campos Editables</h4>
+
+            <!-- Tipo de Documento (Editable) -->
+            <div class="mb-3">
+                <label class="form-label-evidencia">Tipo de Documento</label>
+                <select class="form-select-evidencia" id="edit_tipo_documento" name="tipo_documento" required>
+                    <option value="">Selecciona el tipo...</option>
+                    <option value="pdf">Documento PDF</option>
+                    <option value="word">Documento Word</option>
+                    <option value="excel">Hoja de Cálculo</option>
+                    <option value="presentacion">Presentación</option>
+                    <option value="imagen">Imagen</option>
+                    <option value="video">Video</option>
+                    <option value="enlace">Enlace</option>
+                    <option value="otro">Otro</option>
+                </select>
+            </div>
+
+            <!-- Fecha Límite de Entrega (Editable) -->
+            <div class="mb-3">
+                <label class="form-label-evidencia">Fecha Límite de Entrega</label>
+                <input type="date" class="form-control-evidencia" id="edit_fecha_limite" name="fecha_limite" required>
+            </div>
+
+            <!-- Descripción (Editable) -->
+            <div class="mb-3">
+                <label class="form-label-evidencia">Descripción</label>
+                <textarea class="form-control-evidencia form-textarea-evidencia" id="edit_descripcion" name="descripcion" placeholder="Agrega una descripción..." rows="4"></textarea>
+            </div>
+
+            <!-- Botones -->
+            <div class="modal-botones">
+                <button type="button" class="btn-cancelar-modal" onclick="cerrarModalEditarEvidencia()">Cancelar</button>
+                <button type="submit" class="btn-guardar-modal">Guardar Cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+// Variable global para guardar el nombre del proyecto actual
+let proyectoNombreActual = '';
+
 // Función para abrir modal de entregas
 function abrirModalEntregas(proyectoId, proyectoNombre) {
+    proyectoNombreActual = proyectoNombre;
     document.getElementById('tituloModalEntregas').textContent = `Entregas - ${proyectoNombre}`;
     document.getElementById('modalEntregas').classList.add('active');
     cargarEntregas(proyectoId);
@@ -239,16 +318,29 @@ function cargarEntregas(proyectoId) {
     fetch(`/lider_semi/proyectos/${proyectoId}/entregas`)
         .then(response => response.json())
         .then(data => {
+            console.log('Datos recibidos:', data); // Debug
             if (data.entregas && data.entregas.length > 0) {
                 let html = '';
                 data.entregas.forEach(entrega => {
+                    console.log('Entrega:', entrega); // Debug
                     const estadoBadge = entrega.estado === 'pendiente' ? 'badge-pendiente' : 
                                        entrega.estado === 'aprobado' ? 'badge-aprobado' : 'badge-rechazado';
                     const estadoTexto = entrega.estado === 'pendiente' ? 'PENDIENTE' : 
                                        entrega.estado === 'aprobado' ? 'APROBADO' : 'RECHAZADO';
                     
                     html += `
-                        <div class="entrega-card">
+                        <div class="entrega-card" style="position: relative;">
+                            <!-- Botón de editar solo si NO está aprobado -->
+                            ${entrega.estado !== 'aprobado' ? `
+                                <button class="btn-editar-entrega" onclick="abrirModalEditarEvidencia(${entrega.id}, '${entrega.nombre_aprendiz}', '${entrega.archivo_nombre}', '${entrega.fecha}', '${entrega.estado}', '${(entrega.descripcion || '').replace(/'/g, "\\'")}', '${proyectoNombreActual}')" title="Editar evidencia">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            ` : `
+                                <div class="badge-aprobado-lock" title="Evidencia aprobada - No editable">
+                                    <i class="fas fa-lock"></i>
+                                </div>
+                            `}
+                            
                             <div class="entrega-header">
                                 <h3 class="entrega-nombre">${entrega.nombre_aprendiz}</h3>
                                 <span class="${estadoBadge}">${estadoTexto}</span>
@@ -256,19 +348,23 @@ function cargarEntregas(proyectoId) {
                             <div class="entrega-info">
                                 ${entrega.archivo_nombre || 'Sin archivo'} · ${entrega.fecha}
                             </div>
-                            <p class="entrega-descripcion">${entrega.descripcion}</p>
+                            <p class="entrega-descripcion">${entrega.descripcion || 'Sin descripción'}</p>
                             <div class="entrega-acciones">
+                                ${(entrega.archivo_url && entrega.archivo_url !== '' && entrega.archivo_url !== 'null') ? `
+                                    <button class="btn-ver-documento" onclick="verDocumento('${entrega.archivo_url}')">
+                                        <i class="fas fa-file-alt"></i> Ver Documento
+                                    </button>
+                                ` : `
+                                    <button class="btn-ver-documento" disabled style="opacity: 0.5; cursor: not-allowed;">
+                                        <i class="fas fa-file-alt"></i> Sin Archivo
+                                    </button>
+                                `}
                                 ${entrega.estado === 'pendiente' ? `
                                     <button class="btn-aprobar" onclick="cambiarEstadoEntrega(${entrega.id}, 'aprobado')">
                                         Aprobar
                                     </button>
                                     <button class="btn-rechazar" onclick="cambiarEstadoEntrega(${entrega.id}, 'rechazado')">
                                         Rechazar
-                                    </button>
-                                ` : ''}
-                                ${entrega.archivo_url ? `
-                                    <button class="btn-ver-documento" onclick="verDocumento('${entrega.archivo_url}')">
-                                        <i class="fas fa-file-alt"></i> Ver Documento
                                     </button>
                                 ` : ''}
                             </div>
@@ -423,6 +519,15 @@ document.addEventListener('DOMContentLoaded', function() {
         modalOverlay.classList.remove('active');
         formEvidencia.reset();
         inputFecha.value = hoy;
+        
+        // Restaurar estado original del modal
+        document.getElementById('tituloModalEvidencia').textContent = 'Registrar Evidencia de Avance';
+        const selectProyecto = document.getElementById('proyecto_id');
+        selectProyecto.disabled = false;
+        selectProyecto.style.backgroundColor = '';
+        selectProyecto.style.cursor = '';
+        document.getElementById('evidencias-existentes').style.display = 'none';
+        document.getElementById('lista-evidencias').innerHTML = '';
     }
 
     // Cargar proyectos desde la base de datos
@@ -444,6 +549,38 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
+    // Cargar aprendices cuando se selecciona un proyecto
+    selectProyecto.addEventListener('change', function() {
+        const proyectoId = this.value;
+        const selectAprendiz = document.getElementById('aprendiz_id');
+        
+        if (!proyectoId) {
+            selectAprendiz.innerHTML = '<option value="">Sin asignar (selecciona primero un proyecto)</option>';
+            return;
+        }
+        
+        // Cargar aprendices del proyecto
+        fetch(`/lider_semi/proyectos/${proyectoId}/aprendices-list`)
+            .then(response => response.json())
+            .then(data => {
+                selectAprendiz.innerHTML = '<option value="">Sin asignar</option>';
+                if (data.aprendices && data.aprendices.length > 0) {
+                    data.aprendices.forEach(aprendiz => {
+                        const option = document.createElement('option');
+                        option.value = aprendiz.id_aprendiz;
+                        option.textContent = aprendiz.nombre_completo;
+                        selectAprendiz.appendChild(option);
+                    });
+                } else {
+                    selectAprendiz.innerHTML = '<option value="">No hay aprendices asignados a este proyecto</option>';
+                }
+            })
+            .catch(error => {
+                console.error('Error al cargar aprendices:', error);
+                selectAprendiz.innerHTML = '<option value="">Error al cargar aprendices</option>';
+            });
+    });
+
     // Enviar formulario
     formEvidencia.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -464,7 +601,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 alert('Evidencia registrada exitosamente');
                 cerrarModal();
-                location.reload(); // Recargar para mostrar cambios
+                // Forzar recarga completa sin caché
+                window.location.href = window.location.href.split('?')[0] + '?t=' + new Date().getTime();
             } else {
                 alert('Error: ' + (data.message || 'No se pudo guardar la evidencia'));
             }
@@ -478,6 +616,91 @@ document.addEventListener('DOMContentLoaded', function() {
             btnGuardar.textContent = 'Guardar Evidencia';
         });
     });
+});
+
+// Función editarProyecto eliminada - ya no se usa
+
+// Función para abrir modal de editar evidencia individual
+function abrirModalEditarEvidencia(documentoId, nombreAprendiz, archivoNombre, fecha, estado, descripcion, proyectoNombre) {
+    // Llenar campos de solo lectura
+    document.getElementById('edit_documento_id').value = documentoId;
+    document.getElementById('edit_nombre_aprendiz').value = nombreAprendiz;
+    document.getElementById('edit_archivo_nombre').value = archivoNombre || 'Sin archivo';
+    document.getElementById('edit_fecha_subida').value = fecha;
+    
+    // Mostrar estado en texto legible
+    const estadoTexto = estado === 'pendiente' ? 'Pendiente' : 
+                       estado === 'aprobado' ? 'Aprobado' : 'Rechazado';
+    document.getElementById('edit_estado_texto').value = estadoTexto;
+    
+    // Llenar campos editables (vacíos por defecto para que el líder los complete)
+    document.getElementById('edit_tipo_documento').value = '';
+    document.getElementById('edit_fecha_limite').value = '';
+    document.getElementById('edit_descripcion').value = descripcion || '';
+    
+    document.getElementById('nombreProyectoEditar').textContent = proyectoNombreActual || proyectoNombre;
+    
+    // Abrir modal
+    document.getElementById('modalEditarEvidencia').classList.add('active');
+}
+
+// Función para cerrar modal de editar evidencia
+function cerrarModalEditarEvidencia() {
+    document.getElementById('modalEditarEvidencia').classList.remove('active');
+    document.getElementById('formEditarEvidencia').reset();
+}
+
+// Manejar el envío del formulario de editar evidencia
+document.addEventListener('DOMContentLoaded', function() {
+    const formEditarEvidencia = document.getElementById('formEditarEvidencia');
+    
+    if (formEditarEvidencia) {
+        formEditarEvidencia.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const documentoId = document.getElementById('edit_documento_id').value;
+            const tipoDocumento = document.getElementById('edit_tipo_documento').value;
+            const fechaLimite = document.getElementById('edit_fecha_limite').value;
+            const descripcion = document.getElementById('edit_descripcion').value;
+            
+            const btnGuardar = formEditarEvidencia.querySelector('.btn-guardar-modal');
+            btnGuardar.disabled = true;
+            btnGuardar.textContent = 'Guardando...';
+            
+            // Actualizar el documento
+            fetch(`/lider_semi/documentos/${documentoId}/actualizar`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    tipo_documento: tipoDocumento,
+                    fecha_limite: fechaLimite,
+                    descripcion: descripcion
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Evidencia actualizada exitosamente');
+                    cerrarModalEditarEvidencia();
+                    // Recargar la página para ver los cambios
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.message || 'No se pudo actualizar la evidencia'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al actualizar la evidencia');
+            })
+            .finally(() => {
+                btnGuardar.disabled = false;
+                btnGuardar.textContent = 'Guardar Cambios';
+            });
+        });
+    }
 });
 </script>
 @endsection
