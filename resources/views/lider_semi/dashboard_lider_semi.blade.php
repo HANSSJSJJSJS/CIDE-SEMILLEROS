@@ -1,170 +1,63 @@
-{{-- resources/views/dashboard.blade.php --}}
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SCIDES · Dashboard Lider Semillero</title>
+@extends('layouts.lider_semi')
 
-  <!-- Bootstrap & Icons -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+@section('content')
+<div class="container-fluid">
+  <h3 class="fw-bold mb-4">¡Bienvenido, {{ Auth::user()->name }}! 👋</h3>
+  <p class="text-muted">Aquí está el resumen de tus semilleros y actividades recientes.</p>
 
-  <style>
-    :root{
-      /* Verde SENA aprox */
-      --sena-green: #2BB673;
-      --sena-green-dark:#1f8f59;
-      --light-gray:#f4f6f8;
-    }
-
-    body{ background: var(--light-gray); }
-
-    /* CONTENEDOR PADRE */
-    .app-wrap{
-      max-width: 1280px;
-      margin: 24px auto;
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.06);
-      overflow: hidden;
-    }
-
-    /* NAV SUPERIOR */
-    .topbar{
-      background: #fff;
-      border-bottom: 1px solid #e9ecef;
-      padding: .75rem 1rem;
-    }
-    .user-pill{
-      background: #fff;
-      color: var(--sena-green);
-      border: 2px solid var(--sena-green);
-      border-radius: 999px;
-      padding: .35rem .8rem;
-      font-weight: 700;
-      display: inline-flex; align-items: center; gap:.5rem;
-    }
-    .top-title{
-      font-weight: 800;
-      color: #111;
-      text-transform: lowercase; /* respeta tu “bienvenidso a” en minúsculas */
-      letter-spacing: .3px;
-    }
-
-    /* LAYOUT PRINCIPAL */
-    .main-area{
-      padding: 1.25rem;
-      background: #fff;
-    }
-
-    /* PANEL LATERAL */
-    .side-outer{
-      background: #fff;
-      border: 1px solid #e9ecef;
-      border-radius: 16px;
-      padding: 10px;
-    }
-    .side-inner{
-      background: var(--sena-green);
-      border-radius: 12px;
-      padding: 14px;
-    }
-    .menu-btn{
-      background: #fff;
-      color: #111;
-      border: none;
-      border-radius: 999px;
-      padding: .65rem .9rem;
-      font-weight: 700;
-      width: 100%;
-      text-align: left;
-      display: flex; align-items: center; justify-content: space-between;
-      box-shadow: 0 4px 0 rgba(0,0,0,.12);
-      transition: transform .05s ease, box-shadow .05s ease;
-    }
-    .menu-btn:hover{ transform: translateY(1px); box-shadow: 0 3px 0 rgba(0,0,0,.18); }
-    .menu-btn:active{ transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,.2); }
-
-    /* CONTENIDO (a la derecha del panel) */
-    .content-card{
-      background: #fff;
-      border: 1px solid #e9ecef;
-      border-radius: 16px;
-      min-height: 320px;
-      padding: 24px;
-    }
-
-    @media (max-width: 991.98px){
-      .center-on-mobile{
-        justify-content: center !important;
-      }
-    }
-  </style>
-</head>
-<body>
-
-  <!-- CONTENEDOR PADRE -->
-  <div class="app-wrap">
-
-    <!-- NAV -->
-    <nav class="topbar">
-      <div class="container-fluid">
-        <div class="d-flex align-items-center justify-content-between">
-          <div class="d-flex align-items-center gap-2 center-on-mobile">
-            <span class="user-pill">
-              <i class="bi bi-person-fill"></i>
-              {{ Auth::user()->name ?? 'Usuario' }}
-            </span>
-          </div>
-
-          <!-- Título centrado visualmente (se centra en mobile con utilidades) -->
-          <div class="d-none d-lg-flex justify-content-center flex-grow-1 position-absolute start-0 end-0">
-            <h5 class="top-title m-0">Bienvenido al Modulo Lider Semillero</h5>
-          </div>
-          <div class="d-flex d-lg-none flex-grow-1 justify-content-center">
-            <h5 class="top-title m-0">BIENVENIDO</h5>
-          </div>
-
-          <!-- Espaciador derecho (vacío porque no pediste acciones a la derecha) -->
-          <div style="width:140px"></div>
-        </div>
+  <div class="row g-4 mb-4">
+    <div class="col-md-3">
+      <div class="card card-metric text-center">
+        <i class="bi bi-people-fill fs-3 text-success"></i>
+        <h3 class="fw-bold mt-2">5</h3>
+        <p class="text-muted">Semilleros Activos</p>
+        <small class="text-success">+2 este mes</small>
       </div>
-    </nav>
+    </div>
+    <div class="col-md-3">
+      <div class="card card-metric text-center">
+        <i class="bi bi-person-badge fs-3 text-primary"></i>
+        <h3 class="fw-bold mt-2">47</h3>
+        <p class="text-muted">Aprendices Totales</p>
+        <small class="text-primary">+8 este mes</small>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card card-metric text-center">
+        <i class="bi bi-file-earmark-check fs-3 text-warning"></i>
+        <h3 class="fw-bold mt-2">24</h3>
+        <p class="text-muted">Documentos Revisados</p>
+        <small class="text-danger">3 pendientes</small>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card card-metric text-center">
+        <i class="bi bi-graph-up-arrow fs-3 text-purple"></i>
+        <h3 class="fw-bold mt-2">87%</h3>
+        <p class="text-muted">Progreso Promedio</p>
+        <small class="text-success">+12%</small>
+      </div>
+    </div>
+  </div>
 
-    <!-- MAIN -->
-    <div class="main-area">
-      <div class="row g-3">
-        <!-- PANEL IZQUIERDO -->
-        <div class="col-lg-4 col-xl-3">
-          <div class="side-outer">
-            <div class="side-inner">
-              <div class="d-grid gap-3">
-                <a class="menu-btn" href="{{ route('usuarios.index', [], false) }}">
-                  <span>Gestión de usuarios</span>
-                  <i class="bi bi-chevron-right"></i>
-                </a>
-
-                <a class="menu-btn" href="{{ route('semilleros.index', [], false) }}">
-                  <span>Gestión de semilleros</span>
-                  <i class="bi bi-chevron-right"></i>
-                </a>
-
-                <a class="menu-btn" href="{{ route('profile.edit', [], false) }}">
-                  <span>Gestión de cuenta</span>
-                  <i class="bi bi-chevron-right"></i>
-                </a>
-              </div>
-            </div>
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card p-4">
+        <h5 class="fw-bold mb-3">Actividad de Aprendices</h5>
+        <div class="text-muted text-center" style="height:200px;">(Gráfico o tabla aquí)</div>
+      </div>
+      <div class="card p-4 mt-4">
+        <h5 class="fw-bold mb-3">Actividad Reciente</h5>
+        <div class="list-group">
+          <div class="list-group-item border-0">
+            <i class="bi bi-person-plus text-success me-2"></i>
+            <strong>María González</strong> se unió al Semillero de IA
+            <div class="text-muted small">Hace 5 minutos</div>
           </div>
-        </div>
-
-        <!-- CONTENIDO DERECHA -->
-        <div class="col-lg-8 col-xl-9">
-          <div class="content-card">
-            {{-- Aquí tu contenido dinámico de cada módulo --}}
-            <h4 class="mb-3">Panel principal</h4>
-            <p class="text-muted mb-0">Selecciona una opción del menú de la izquierda.</p>
+          <div class="list-group-item border-0">
+            <i class="bi bi-file-earmark-arrow-up text-primary me-2"></i>
+            <strong>Carlos Pérez</strong> subió un documento <em>(Proyecto Final - Desarrollo Web.pdf)</em>
+            <div class="text-muted small">Hace 1 hora</div>
           </div>
         </div>
       </div>

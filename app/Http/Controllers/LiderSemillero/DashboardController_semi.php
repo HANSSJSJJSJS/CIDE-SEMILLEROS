@@ -76,7 +76,7 @@ class DashboardController_semi extends Controller
         // Actividad reciente (mock)
         $actividadReciente = $this->obtenerActividadReciente();
 
-        return view('lider_semi.dashboard-lider_semi', compact(
+        return view('lider_semi.dashboard_lider_semi', compact(
             'lider',
             'semilleros',
             'totalAprendices',
