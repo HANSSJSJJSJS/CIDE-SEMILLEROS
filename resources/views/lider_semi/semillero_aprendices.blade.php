@@ -176,15 +176,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const tipo = (tipoDoc && tipoDoc.value.trim()) || '';
         const num = (buscador && buscador.value.trim()) || '';
         
-        // Construir URL con parámetros separados
-        let searchUrl = `{{ route('lider_semi.semilleros.aprendices.search', ['semillero' => '__ID__']) }}`.replace('__ID__', semilleroId);
-        const params = new URLSearchParams();
-        if (tipo) params.append('tipo', tipo);
-        if (num) params.append('num', num);
-        if (params.toString()) searchUrl += '?' + params.toString();
-        
         typingTimer = setTimeout(function(){
-            apiFetch(searchUrl)
+            let url = `{{ route('lider_semi.semilleros.aprendices.search', ['semillero' => '__ID__']) }}`.replace('__ID__', semilleroId) + `?tipo=${encodeURIComponent(tipo)}&num=${encodeURIComponent(num)}`;
+            apiFetch(url)
                 .then(r=>r.json()).then(items=>{
                     resultados.innerHTML = '';
                     if(items && items.length){

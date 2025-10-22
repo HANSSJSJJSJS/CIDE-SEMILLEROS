@@ -111,8 +111,9 @@
                     </div>
                     <div class="modal-footer d-flex justify-content-between">
                         @php
-                            $idSem = $semillero->id_semillero ?? ($semillero->id ?? null);
+                            // Priorizar id_proyecto si existe (estamos en vista de proyectos)
                             $idProj = $semillero->id_proyecto ?? null;
+                            $idSem = !$idProj ? ($semillero->id_semillero ?? ($semillero->id ?? null)) : null;
                         @endphp
                         @if(!empty($idSem) || !empty($idProj))
                             <button type="button" id="open-edit-{{ $loop->index }}" class="btn" style="background-color:#5aa72e;color:#fff;">Editar Aprendices</button>
@@ -196,6 +197,7 @@
             const isSem = {{ !empty($idSem) ? 'true' : 'false' }};
             const refId = {{ !empty($idSem) ? (int)$idSem : (int)($idProj ?? 0) }};
             const token = "{{ csrf_token() }}";
+            console.log('[INIT] Modal #' + idx + ' | isSem:', isSem, '| refId:', refId, '| idProj:', {{ (int)($idProj ?? 0) }}, '| idSem:', {{ (int)($idSem ?? 0) }});
             function getCookie(name){
                 const m = document.cookie.match(new RegExp('(^|; )' + name.replace(/([.$?*|{}()\[\]\\\/\+^])/g,'\\$1') + '=([^;]*)'));
                 return m ? decodeURIComponent(m[2]) : null;
@@ -374,16 +376,18 @@
                 clearTimeout(typingTimer);
                 const tipo = (tipoDoc && tipoDoc.value.trim()) || '';
                 const num = (buscador && buscador.value.trim()) || '';
-                
-                // Construir URL con parámetros separados
-                let searchUrl = route('search');
-                const params = new URLSearchParams();
-                if (tipo) params.append('tipo', tipo);
-                if (num) params.append('num', num);
-                if (params.toString()) searchUrl += '?' + params.toString();
+                console.log('[SEARCH] Tipo:', tipo, '| Num:', num);
                 
                 typingTimer = setTimeout(function(){ 
-                    apiFetch(searchUrl).then(r=>r.json()).then(items=>{ 
+                    let url = route('search') + `?tipo=${encodeURIComponent(tipo)}&num=${encodeURIComponent(num)}`;
+                    console.log('[SEARCH] URL:', url);
+                    apiFetch(url)
+                        .then(r => {
+                            console.log('[SEARCH] Response status:', r.status);
+                            return r.json();
+                        })
+                        .then(items=>{
+                        console.log('[SEARCH] Items recibidos:', items.length, items); 
                         resultados.innerHTML=''; 
                         if(items && items.length){ 
                             items.forEach(it=> resultados.appendChild(renderResultado(it))); 
@@ -393,6 +397,14 @@
                             resultados.style.display='none'; 
                             if(noResult) noResult.style.display='block'; 
                         } 
+                    })
+                    .catch(err => {
+                        console.error('[SEARCH] Error:', err);
+                        resultados.style.display='none';
+                        if(noResult) {
+                            noResult.textContent = 'Error al buscar: ' + err.message;
+                            noResult.style.display='block';
+                        }
                     }); 
                 }, 250);
             }

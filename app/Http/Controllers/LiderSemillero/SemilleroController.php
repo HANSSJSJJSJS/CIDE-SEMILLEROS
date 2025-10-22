@@ -19,35 +19,43 @@ class SemilleroController extends Controller
 
         // Si existe la tabla de proyectos, mostrar proyectos como "Mis Proyectos"
         if (Schema::hasTable('proyectos')) {
-            $pcols = [];
-            // id_proyecto para enlazar con pivote
-            if (Schema::hasColumn('proyectos', 'id_proyecto')) {
-                $pcols[] = 'id_proyecto';
-            }
-            // nombre
-            if (Schema::hasColumn('proyectos', 'nombre_proyecto')) {
-                $pcols[] = DB::raw('nombre_proyecto as nombre');
-            } else {
-                $pcols[] = DB::raw("'' as nombre");
-            }
-            // descripcion
-            if (Schema::hasColumn('proyectos', 'descripcion')) {
-                $pcols[] = 'descripcion';
-            } else {
-                $pcols[] = DB::raw("'' as descripcion");
-            }
-            // estado
-            if (Schema::hasColumn('proyectos', 'estado')) {
-                $pcols[] = 'estado';
-            } else {
-                $pcols[] = DB::raw("'EN_EJECUCION' as estado");
-            }
-            // progreso (placeholder)
-            $pcols[] = DB::raw('0 as progreso');
-            // aprendices (placeholder)
-            $pcols[] = DB::raw('0 as aprendices');
-
-            $proyectos = DB::table('proyectos')->select($pcols)->get();
+            // Obtener proyectos con sus datos reales
+            $proyectos = DB::table('proyectos')
+                ->select(
+                    'id_proyecto',
+                    'id_semillero',
+                    'id_tipo_proyecto',
+                    'nombre_proyecto as nombre',
+                    'descripcion',
+                    'estado',
+                    'fecha_inicio',
+                    'fecha_fin',
+                    'creado_en',
+                    'actualizado_en'
+                )
+                ->get();
+            
+            // Calcular progreso basado en fechas
+            $proyectos->transform(function($p){
+                if ($p->fecha_inicio && $p->fecha_fin) {
+                    $inicio = strtotime($p->fecha_inicio);
+                    $fin = strtotime($p->fecha_fin);
+                    $ahora = time();
+                    if ($ahora < $inicio) {
+                        $p->progreso = 0;
+                    } elseif ($ahora > $fin) {
+                        $p->progreso = 100;
+                    } else {
+                        $total = $fin - $inicio;
+                        $transcurrido = $ahora - $inicio;
+                        $p->progreso = $total > 0 ? round(($transcurrido / $total) * 100) : 0;
+                    }
+                } else {
+                    $p->progreso = 0;
+                }
+                $p->aprendices = 0; // Se actualizará después
+                return $p;
+            });
 
             // Enriquecer con aprendices reales si existe la relación N:M proyecto-aprendiz
             if ($proyectos->isNotEmpty() && Schema::hasTable('aprendices')) {
@@ -250,25 +258,26 @@ class SemilleroController extends Controller
             ->firstOrFail();
         $excluir = $semillero->aprendices->pluck('id_aprendiz')->all();
 
-        $query = Aprendiz::select('id_aprendiz','nombre_completo','correo_institucional','tipo_documento','documento','programa');
+        $query = Aprendiz::select('id_aprendiz','nombre_completo','correo_institucional','tipo_documento','documento','programa','ficha');
         
-        // Si vienen tipo y num separados, usarlos directamente
-        if ($tipo !== '' || $num !== '') {
-            if ($tipo !== '') {
-                $query->where('tipo_documento', $tipo);
-            }
-            if ($num !== '') {
-                $query->where(function($w) use ($num){
-                    $w->where('documento','like',"%{$num}%")
-                      ->orWhere('nombre_completo','like',"%{$num}%");
-                });
-            }
-        } elseif ($q !== '') {
-            // Fallback: búsqueda genérica
+        // Aplicar filtros si existen
+        if ($tipo !== '') {
+            $query->where('tipo_documento', $tipo);
+        }
+        if ($num !== '') {
+            $query->where(function($w) use ($num){
+                $w->where('documento','like',"%{$num}%")
+                  ->orWhere('nombre_completo','like',"%{$num}%")
+                  ->orWhere('ficha','like',"%{$num}%");
+            });
+        }
+        if ($q !== '' && $tipo === '' && $num === '') {
+            // Fallback: búsqueda genérica solo si no hay tipo ni num
             $query->where(function($w) use ($q){
                 $w->where('tipo_documento','like',"%{$q}%")
                   ->orWhere('documento','like',"%{$q}%")
-                  ->orWhere('nombre_completo','like',"%{$q}%");
+                  ->orWhere('nombre_completo','like',"%{$q}%")
+                  ->orWhere('ficha','like',"%{$q}%");
             });
         }
         
@@ -334,13 +343,14 @@ class SemilleroController extends Controller
     // ---- Helpers y gestión por PROYECTO ----
     private function pivotProyectoAprendiz(): array
     {
-        // Preferencia: esquema fijo según BD compartida
-        if (Schema::hasTable('aprendiz_proyectos') &&
-            Schema::hasColumn('aprendiz_proyectos','id_proyecto') &&
-            Schema::hasColumn('aprendiz_proyectos','id_aprendiz')) {
-            return ['table'=>'aprendiz_proyectos','projCol'=>'id_proyecto','aprCol'=>'id_aprendiz'];
+        // Usar la tabla documentos como relación entre proyectos y aprendices
+        if (Schema::hasTable('documentos') &&
+            Schema::hasColumn('documentos','id_proyecto') &&
+            Schema::hasColumn('documentos','id_aprendiz')) {
+            return ['table'=>'documentos','projCol'=>'id_proyecto','aprCol'=>'id_aprendiz'];
         }
 
+        // Fallback: buscar tabla pivote tradicional
         $pivotCandidates = [
             'aprendiz_proyecto', 'aprendices_proyectos', 'aprendiz_proyectos', 'proyecto_aprendiz', 'proyectos_aprendices', 'proyecto_aprendices'
         ];
@@ -351,11 +361,11 @@ class SemilleroController extends Controller
         if (!$table) return [];
         $projCols = ['id_proyecto','proyecto_id','idProyecto'];
         $aprCols  = ['id_aprendiz','aprendiz_id','idAprendiz','id_usuario'];
-        $projCol = null; $aprCol = null;
-        foreach ($projCols as $c) { if (Schema::hasColumn($table, $c)) { $projCol = $c; break; } }
-        foreach ($aprCols as $c) { if (Schema::hasColumn($table, $c)) { $aprCol = $c; break; } }
-        if (!$projCol || !$aprCol) return [];
-        return ['table'=>$table,'projCol'=>$projCol,'aprCol'=>$aprCol];
+        $pivotProjCol = null; $pivotAprCol = null;
+        foreach ($projCols as $c) { if (Schema::hasColumn($table, $c)) { $pivotProjCol = $c; break; } }
+        foreach ($aprCols as $c) { if (Schema::hasColumn($table, $c)) { $pivotAprCol = $c; break; } }
+        if (!$pivotProjCol || !$pivotAprCol) return [];
+        return ['table'=>$table,'projCol'=>$pivotProjCol,'aprCol'=>$pivotAprCol];
     }
 
     public function editProyectoAprendices($proyectoId)
@@ -383,12 +393,36 @@ class SemilleroController extends Controller
         ]);
         $pivot = $this->pivotProyectoAprendiz();
         if (empty($pivot)) abort(404, 'Relación proyecto-aprendiz no configurada');
-        // limpiar y reinsertar
-        DB::table($pivot['table'])->where($pivot['projCol'], $proyectoId)->delete();
+        
+        // Si usamos documentos como pivote, solo eliminar placeholders
+        if ($pivot['table'] === 'documentos') {
+            DB::table('documentos')
+                ->where('id_proyecto', $proyectoId)
+                ->where('documento', 'LIKE', 'PLACEHOLDER_%')
+                ->delete();
+        } else {
+            // Pivote tradicional: limpiar todo
+            DB::table($pivot['table'])->where($pivot['projCol'], $proyectoId)->delete();
+        }
+        
         $ids = $data['aprendices_ids'] ?? [];
         $insert = [];
         foreach ($ids as $aid) {
-            $insert[] = [ $pivot['projCol'] => $proyectoId, $pivot['aprCol'] => $aid ];
+            if ($pivot['table'] === 'documentos') {
+                // Para documentos, crear registros completos con placeholder
+                $insert[] = [
+                    'id_proyecto' => $proyectoId,
+                    'id_aprendiz' => $aid,
+                    'documento' => 'PLACEHOLDER_' . $aid,
+                    'ruta_archivo' => '',
+                    'tipo_archivo' => null,
+                    'tamanio' => null,
+                    'fecha_subida' => now(),
+                ];
+            } else {
+                // Pivote tradicional
+                $insert[] = [ $pivot['projCol'] => $proyectoId, $pivot['aprCol'] => $aid ];
+            }
         }
         if (!empty($insert)) DB::table($pivot['table'])->insert($insert);
         return redirect()->route('lider_semi.semilleros')->with('status','Aprendices del proyecto actualizados');
@@ -414,25 +448,26 @@ class SemilleroController extends Controller
                 ->where($pivot['projCol'], $proyectoId)
                 ->pluck('aprendices.id_aprendiz')->all();
         }
-        $query = Aprendiz::select('id_aprendiz','nombre_completo','correo_institucional','tipo_documento','documento','programa');
+        $query = Aprendiz::select('id_aprendiz','nombre_completo','correo_institucional','tipo_documento','documento','programa','ficha');
         
-        // Si vienen tipo y num separados, usarlos directamente
-        if ($tipo !== '' || $num !== '') {
-            if ($tipo !== '') {
-                $query->where('tipo_documento', $tipo);
-            }
-            if ($num !== '') {
-                $query->where(function($w) use ($num){
-                    $w->where('documento','like',"%{$num}%")
-                      ->orWhere('nombre_completo','like',"%{$num}%");
-                });
-            }
-        } elseif ($q !== '') {
-            // Fallback: búsqueda genérica
+        // Aplicar filtros si existen
+        if ($tipo !== '') {
+            $query->where('tipo_documento', $tipo);
+        }
+        if ($num !== '') {
+            $query->where(function($w) use ($num){
+                $w->where('documento','like',"%{$num}%")
+                  ->orWhere('nombre_completo','like',"%{$num}%")
+                  ->orWhere('ficha','like',"%{$num}%");
+            });
+        }
+        if ($q !== '' && $tipo === '' && $num === '') {
+            // Fallback: búsqueda genérica solo si no hay tipo ni num
             $query->where(function($w) use ($q){
                 $w->where('tipo_documento','like',"%{$q}%")
                   ->orWhere('documento','like',"%{$q}%")
-                  ->orWhere('nombre_completo','like',"%{$q}%");
+                  ->orWhere('nombre_completo','like',"%{$q}%")
+                  ->orWhere('ficha','like',"%{$q}%");
             });
         }
         
@@ -445,27 +480,67 @@ class SemilleroController extends Controller
         $data = $request->validate(['aprendiz_id' => ['required','integer','exists:aprendices,id_aprendiz']]);
         $pivot = $this->pivotProyectoAprendiz();
         if (empty($pivot)) return response()->json(['ok'=>false], 400);
-        $ap = Aprendiz::select('id_aprendiz','id_usuario')->findOrFail($data['aprendiz_id']);
-        $aprValue = $pivot['aprCol'] === 'id_usuario' ? $ap->id_usuario : $ap->id_aprendiz;
-        DB::table($pivot['table'])->updateOrInsert([
-            $pivot['projCol'] => $proyectoId,
-            $pivot['aprCol']  => $aprValue,
-        ], []);
-        $ap = Aprendiz::select('id_aprendiz','nombre_completo','correo_institucional','programa')->find($data['aprendiz_id']);
-        return response()->json(['ok'=>true,'aprendiz'=>$ap]);
+        
+        $ap = Aprendiz::select('id_aprendiz','id_usuario','nombre_completo','correo_institucional')->findOrFail($data['aprendiz_id']);
+        
+        // Si estamos usando documentos como pivote, verificar si ya existe una relación
+        if ($pivot['table'] === 'documentos') {
+            $existe = DB::table('documentos')
+                ->where('id_proyecto', $proyectoId)
+                ->where('id_aprendiz', $ap->id_aprendiz)
+                ->exists();
+            
+            if (!$existe) {
+                // Crear un registro placeholder en documentos para establecer la relación
+                DB::table('documentos')->insert([
+                    'id_proyecto' => $proyectoId,
+                    'id_aprendiz' => $ap->id_aprendiz,
+                    'documento' => 'PLACEHOLDER_' . $ap->id_aprendiz, // NOT NULL, usar placeholder único
+                    'ruta_archivo' => '', // NOT NULL, vacío
+                    'tipo_archivo' => null, // Nullable
+                    'tamanio' => null, // Nullable (nota: es "tamanio" con i)
+                    'fecha_subida' => now(), // NOT NULL
+                ]);
+            }
+        } else {
+            // Pivote tradicional
+            $aprValue = $pivot['aprCol'] === 'id_usuario' ? $ap->id_usuario : $ap->id_aprendiz;
+            DB::table($pivot['table'])->updateOrInsert([
+                $pivot['projCol'] => $proyectoId,
+                $pivot['aprCol']  => $aprValue,
+            ], []);
+        }
+        
+        return response()->json(['ok'=>true,'aprendiz'=>[
+            'id_aprendiz' => $ap->id_aprendiz,
+            'nombre_completo' => $ap->nombre_completo,
+            'correo_institucional' => $ap->correo_institucional,
+        ]]);
     }
 
     public function detachProyectoAprendiz($proyectoId, $aprendizId)
     {
         $pivot = $this->pivotProyectoAprendiz();
         if (empty($pivot)) return response()->json(['ok'=>false], 400);
-        if ($pivot['aprCol'] === 'id_usuario') {
-            $ap = Aprendiz::select('id_usuario')->find($aprendizId);
-            $aprVal = $ap ? $ap->id_usuario : null;
+        
+        if ($pivot['table'] === 'documentos') {
+            // Solo eliminar registros placeholder (identificados por el prefijo PLACEHOLDER_)
+            DB::table('documentos')
+                ->where('id_proyecto', $proyectoId)
+                ->where('id_aprendiz', $aprendizId)
+                ->where('documento', 'LIKE', 'PLACEHOLDER_%')
+                ->delete();
         } else {
-            $aprVal = $aprendizId;
+            // Pivote tradicional
+            if ($pivot['aprCol'] === 'id_usuario') {
+                $ap = Aprendiz::select('id_usuario')->find($aprendizId);
+                $aprVal = $ap ? $ap->id_usuario : null;
+            } else {
+                $aprVal = $aprendizId;
+            }
+            DB::table($pivot['table'])->where($pivot['projCol'], $proyectoId)->where($pivot['aprCol'], $aprVal)->delete();
         }
-        DB::table($pivot['table'])->where($pivot['projCol'], $proyectoId)->where($pivot['aprCol'], $aprVal)->delete();
+        
         return response()->json(['ok'=>true]);
     }
 

@@ -165,6 +165,16 @@ Route::middleware(['auth','lider.semillero'])->prefix('lider_semi')->name('lider
     Route::view('/perfil', 'lider_semi.perfil')->name('perfil');
 });
 
+// Rutas para aprendices
+use App\Http\Controllers\Aprendiz\DocumentoController;
+
+Route::middleware(['auth'])->prefix('aprendiz')->name('aprendiz.')->group(function () {
+    Route::get('/documentos', [DocumentoController::class, 'index'])->name('documentos.index');
+    Route::post('/documentos', [DocumentoController::class, 'store'])->name('documentos.store');
+    Route::get('/documentos/{id}/download', [DocumentoController::class, 'download'])->name('documentos.download');
+    Route::delete('/documentos/{id}', [DocumentoController::class, 'destroy'])->name('documentos.destroy');
+});
+
 /*
 |--------------------------------------------------------------------------
 | PASSWORD CHANGE (para el botón “Cambio contraseña”)
