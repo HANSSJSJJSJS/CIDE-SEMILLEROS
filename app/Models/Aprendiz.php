@@ -16,10 +16,20 @@ class Aprendiz extends Model
     const UPDATED_AT = 'actualizado_en';
     public $timestamps = true;
 
-    protected $fillable = [
-        'id_aprendiz', 'id_usuario', 'nombre_completo', 'apellido',
-        'ficha', 'programa', 'tipo_documento', 'documento', 'celular',
-        'correo_institucional', 'correo_personal', 'contacto_nombre', 'contacto_celular'
+        protected $fillable = [
+        'id_usuario',
+        'nombres',
+        'apellido',
+        'ficha',
+        'programa',
+        'tipo_documento',
+        'documento',
+        'celular',
+        'correo_institucional',
+        'correo_personal',
+        'contacto_nombre',
+        'contacto_celular',
     ];
+
 
 }

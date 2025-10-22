@@ -94,7 +94,7 @@ class UsuarioController extends Controller
                         Aprendiz::updateOrCreate(
                             ['id_usuario' => $user->id],   // busca por id_usuario (único)
                             [
-                                // NO pongas 'id_aprendiz' aquí 👈
+                                // NO pongas 'id_aprendiz' 
                                 'nombres'              => $request->nombre,
                                 'apellido'             => $request->apellido,
                                 'ficha'                => $request->ap_ficha,
