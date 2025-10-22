@@ -98,6 +98,10 @@ Route::middleware('auth')->group(function () {
     // Gestión de usuarios (solo si aplica)
     Route::resource('usuarios', UsuarioController::class);
 });
+Route::get('/admin/usuarios/{id}/edit', [UsuarioController::class, 'edit'])->name('admin.usuarios.edit');
+Route::put('/admin/usuarios/{id}', [UsuarioController::class, 'update'])->name('admin.usuarios.update');
+Route::delete('/admin/usuarios/{id}', [UsuarioController::class, 'destroy'])->name('admin.usuarios.destroy');
+
 
 
 // ---------------------------------------------
