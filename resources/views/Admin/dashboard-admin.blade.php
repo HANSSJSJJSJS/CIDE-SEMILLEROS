@@ -181,6 +181,7 @@
                     </div>
                 </div>
             </section>
+
 {{-- Users Section --}}
 <section id="users" class="content-section">
   <h2 class="section-title">Gestión de Usuarios</h2>
@@ -257,7 +258,10 @@
           <td>{{ optional($user->created_at)->format('Y-m-d H:i') }}</td>
           <td class="text-end">
             <div class="d-inline-flex gap-2">
-              <button class="btn btn-sm btn-outline-secondary" title="Editar" disabled>✏️</button>
+              <a href="#" class="btn btn-sm btn-warning btn-editar" data-id="{{ $user->id }}" data-edit-url="{{ route('admin.usuarios.edit', $user->id) }}" data-update-url="{{ route('admin.usuarios.update', $user->id) }}">
+>
+  <i class="fa fa-edit"></i>
+</a>
               <button class="btn btn-sm btn-outline-danger" title="Eliminar" disabled>🗑️</button>
             </div>
           </td>
@@ -284,6 +288,158 @@
 <style>
   #users .toolbar .form-control, #users .toolbar .form-select { height: 42px; }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // --- refs del modal y form ---
+  const modalEl     = document.getElementById('modalNuevoUsuario');
+  const modalLabel  = modalEl.querySelector('#modalNuevoUsuarioLabel');
+  const form        = document.getElementById('formNuevoUsuario');
+  const selectRol   = document.getElementById('selectRol');
+  const common      = document.getElementById('commonFields');
+  const roleBlocks  = modalEl.querySelectorAll('.role-fields');
+  const submitBtn   = form.querySelector('button[type="submit"]');
+
+  // helper para mostrar/ocultar bloques por rol (creación y edición)
+  function toggleRoleFields() {
+    const role = selectRol.value || '';
+    common.classList.toggle('d-none', !role);
+    roleBlocks.forEach(b => b.classList.toggle('d-none', b.getAttribute('data-role') !== role));
+  }
+  selectRol.addEventListener('change', toggleRoleFields);
+
+  // Normalizaciones de rol (UI ↔ BD)
+  const toUiRole = (dbRole) => {
+    if (dbRole === 'LIDER GENERAL') return 'LIDER_GENERAL';
+    return dbRole; // ADMIN, LIDER_SEMILLERO, APRENDIZ quedan iguales
+  };
+
+  // --- Reset modal a modo CREAR ---
+  function resetToCreateMode() {
+    modalLabel.textContent = 'Registrar usuario';
+    submitBtn.textContent  = 'Guardar Usuario';
+    form.action            = "{{ route('admin.usuarios.store') }}";
+    // quitar _method=PUT si quedó de una edición previa
+    const _method = form.querySelector('input[name="_method"]');
+    if (_method) _method.remove();
+    form.reset();
+    selectRol.removeAttribute('disabled');
+    toggleRoleFields();
+  }
+
+  // al cerrar el modal: siempre volver a modo crear
+  modalEl.addEventListener('hidden.bs.modal', resetToCreateMode);
+
+  // --- Modo EDITAR: click en botón editar ---
+  document.querySelectorAll('.btn-editar').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const editUrl   = btn.dataset.editUrl;
+      const updateUrl = btn.dataset.updateUrl;
+
+      // 1) Traer datos (usuario + perfil)
+      let payload;
+      try {
+        const res = await fetch(editUrl, { headers: {'X-Requested-With':'XMLHttpRequest'} });
+        if (!res.ok) throw new Error('No se pudo cargar el usuario.');
+        payload = await res.json();
+      } catch (err) {
+        alert(err.message || 'Error cargando datos para editar.');
+        return;
+      }
+
+      const { usuario, perfil } = payload;
+      // 2) Cambiar modal a modo edición
+      modalLabel.textContent = 'Editar usuario';
+      submitBtn.textContent  = 'Actualizar';
+      form.action            = updateUrl;
+
+      // inyectar _method=PUT si no existe
+      if (!form.querySelector('input[name="_method"]')) {
+        const hidden = document.createElement('input');
+        hidden.type  = 'hidden';
+        hidden.name  = '_method';
+        hidden.value = 'PUT';
+        form.appendChild(hidden);
+      }
+
+      // 3) Rellenar campos comunes
+      selectRol.value = toUiRole(usuario.role);
+      selectRol.setAttribute('disabled','disabled'); // evitar cambiar rol en edición
+      toggleRoleFields();
+
+      form.querySelector('input[name="nombre"]').value   = usuario.name ?? '';
+      form.querySelector('input[name="apellido"]').value = usuario.apellidos ?? '';
+      form.querySelector('input[name="email"]').value    = usuario.email ?? '';
+      // password vacío (si quieres cambiarlo, hazlo con un flujo separado)
+
+      // 4) Rellenar por rol
+      const role = selectRol.value;
+
+      if (role === 'LIDER_GENERAL') {
+        // Sin extras obligatorios; si quieres, reflecta el institucional desde perfil
+        // (en tu schema: Correo_institucional)
+        // nada más que hacer
+      }
+
+      if (role === 'LIDER_SEMILLERO') {
+        form.querySelector('select[name="ls_tipo_documento"]').value = perfil?.tipo_documento ?? '';
+        form.querySelector('input[name="ls_documento"]').value       = perfil?.documento ?? '';
+      }
+
+      if (role === 'APRENDIZ') {
+        form.querySelector('input[name="ap_ficha"]').value                 = perfil?.ficha ?? '';
+        form.querySelector('input[name="ap_programa"]').value              = perfil?.programa ?? '';
+        form.querySelector('select[name="ap_tipo_documento"]').value       = perfil?.tipo_documento ?? '';
+        form.querySelector('input[name="ap_documento"]').value             = perfil?.documento ?? '';
+        form.querySelector('input[name="ap_celular"]').value               = perfil?.celular ?? '';
+        form.querySelector('input[name="ap_correo_institucional"]').value  = perfil?.correo_institucional ?? '';
+        form.querySelector('input[name="ap_contacto_nombre"]').value       = perfil?.contacto_nombre ?? '';
+        form.querySelector('input[name="ap_contacto_celular"]').value      = perfil?.contacto_celular ?? '';
+        // oculto: personal = login
+        const hiddenPersonal = form.querySelector('input[name="ap_correo_personal"]');
+        if (hiddenPersonal) hiddenPersonal.value = usuario.email ?? '';
+      }
+
+      // 5) Abrir modal en modo edición
+      const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      bsModal.show();
+    });
+  });
+
+  // --- Envío: si estás en modo crear aprendiz, copia email→personal si faltó ---
+  form.addEventListener('submit', function () {
+    if (!form.querySelector('input[name="_method"]') // crear
+        && selectRol.value === 'APRENDIZ') {
+      const p = form.querySelector('input[name="ap_correo_personal"]');
+      const e = form.querySelector('input[name="email"]');
+      if (p && !p.value && e && e.value) p.value = e.value;
+    }
+  });
+
+  // Inicialización
+  resetToCreateMode(); // asegura estado limpio al cargar
+});
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
             <!-- Semilleros Section -->
@@ -618,6 +774,10 @@
         </main>
     </div>
 
+
+
+
+
     <!-- Modal for Add User -->
 
 
@@ -791,6 +951,7 @@
     </div>
   </div>
 </div>
+
 
 
 
