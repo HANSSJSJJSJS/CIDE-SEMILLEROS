@@ -155,7 +155,11 @@ Route::middleware(['auth','lider.semillero'])->prefix('lider_semi')->name('lider
     Route::post('/proyectos/{proyecto}/aprendices/attach', [SemilleroController::class, 'attachProyectoAprendiz'])->name('proyectos.aprendices.attach');
     Route::delete('/proyectos/{proyecto}/aprendices/{aprendiz}', [SemilleroController::class, 'detachProyectoAprendiz'])->name('proyectos.aprendices.detach');
     Route::post('/proyectos/{proyecto}/aprendices/create', [SemilleroController::class, 'createAndAttachProyectoAprendiz'])->name('proyectos.aprendices.create');
-    Route::view('/documentos', 'lider_semi.documentos')->name('documentos');
+    Route::get('/documentos', [SemilleroController::class, 'documentos'])->name('documentos');
+    Route::get('/proyectos/list', [SemilleroController::class, 'listarProyectos'])->name('proyectos.list');
+    Route::post('/evidencias/store', [SemilleroController::class, 'guardarEvidencia'])->name('evidencias.store');
+    Route::get('/proyectos/{proyecto}/entregas', [SemilleroController::class, 'obtenerEntregas'])->name('proyectos.entregas');
+    Route::put('/entregas/{entrega}/estado', [SemilleroController::class, 'cambiarEstadoEntrega'])->name('entregas.estado');
     Route::view('/recursos', 'lider_semi.recursos')->name('recursos');
     Route::view('/calendario', 'lider_semi.calendario')->name('calendario');
     Route::view('/perfil', 'lider_semi.perfil')->name('perfil');

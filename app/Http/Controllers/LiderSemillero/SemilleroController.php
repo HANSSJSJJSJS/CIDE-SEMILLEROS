@@ -580,4 +580,197 @@ class SemilleroController extends Controller
 
         return view('lider_semi.aprendices', compact('aprendices'));
     }
+
+    // Gestión de Documentación - Listar proyectos
+    public function documentos()
+    {
+        $userId = auth()->id();
+        
+        // Verificar si existe la tabla de proyectos
+        if (!Schema::hasTable('proyectos')) {
+            return view('lider_semi.documentos', ['proyectos' => collect([])]);
+        }
+
+        // Obtener proyectos
+        $proyectos = DB::table('proyectos')
+            ->select(
+                'id_proyecto',
+                DB::raw('COALESCE(nombre_proyecto, "Proyecto") as nombre'),
+                DB::raw('COALESCE(descripcion, "") as descripcion'),
+                DB::raw('COALESCE(estado, "ACTIVO") as estado')
+            )
+            ->get();
+
+        // Contar documentos por proyecto (entregas, pendientes, aprobadas)
+        $proyectos->transform(function($proyecto) {
+            // Por ahora, valores simulados - puedes conectar con tu tabla de documentos real
+            $proyecto->entregas = rand(0, 5);
+            $proyecto->pendientes = rand(0, 3);
+            $proyecto->aprobadas = rand(0, 5);
+            
+            return $proyecto;
+        });
+
+        // Separar proyectos activos y completados
+        $proyectosActivos = $proyectos->filter(function($p) {
+            return in_array(strtoupper($p->estado), ['ACTIVO', 'EN_EJECUCION', 'EN EJECUCION']);
+        });
+
+        $proyectosCompletados = $proyectos->filter(function($p) {
+            return in_array(strtoupper($p->estado), ['COMPLETADO', 'FINALIZADO', 'TERMINADO']);
+        });
+
+        return view('lider_semi.documentos', compact('proyectosActivos', 'proyectosCompletados'));
+    }
+
+    // Listar proyectos para el select del modal
+    public function listarProyectos()
+    {
+        if (!Schema::hasTable('proyectos')) {
+            return response()->json(['proyectos' => []]);
+        }
+
+        $proyectos = DB::table('proyectos')
+            ->select('id_proyecto', 'nombre_proyecto')
+            ->orderBy('nombre_proyecto')
+            ->get();
+
+        return response()->json(['proyectos' => $proyectos]);
+    }
+
+    // Guardar evidencia de avance (solo registro, el aprendiz subirá después)
+    public function guardarEvidencia(Request $request)
+    {
+        try {
+            $request->validate([
+                'proyecto_id' => 'required',
+                'titulo' => 'required|string|max:255',
+                'descripcion' => 'required|string',
+                'tipo_evidencia' => 'required|string',
+                'fecha' => 'required|date'
+            ]);
+
+            // Verificar si existe tabla de evidencias
+            if (Schema::hasTable('evidencias')) {
+                DB::table('evidencias')->insert([
+                    'id_proyecto' => $request->proyecto_id,
+                    'titulo' => $request->titulo,
+                    'descripcion' => $request->descripcion,
+                    'tipo_evidencia' => $request->tipo_evidencia,
+                    'fecha' => $request->fecha,
+                    'estado' => 'pendiente', // Estado inicial: pendiente de que el aprendiz suba
+                    'id_usuario' => auth()->id(),
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Solicitud de evidencia registrada exitosamente. El aprendiz podrá subir el documento.'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al guardar la evidencia: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Obtener entregas de un proyecto
+    public function obtenerEntregas($proyectoId)
+    {
+        try {
+            if (!Schema::hasTable('evidencias')) {
+                return response()->json(['entregas' => []]);
+            }
+
+            $entregas = DB::table('evidencias as e')
+                ->leftJoin('users as u', 'e.id_usuario', '=', 'u.id')
+                ->where('e.id_proyecto', $proyectoId)
+                ->select(
+                    'e.id_evidencia as id',
+                    'e.titulo',
+                    'e.descripcion',
+                    'e.tipo_evidencia',
+                    'e.archivo_path',
+                    'e.enlace',
+                    'e.fecha',
+                    'e.estado',
+                    'u.name as nombre_aprendiz',
+                    DB::raw("COALESCE(e.archivo_path, e.enlace) as archivo_url"),
+                    DB::raw("CASE 
+                        WHEN e.archivo_path IS NOT NULL THEN SUBSTRING_INDEX(e.archivo_path, '/', -1)
+                        ELSE e.titulo 
+                    END as archivo_nombre")
+                )
+                ->orderBy('e.fecha', 'desc')
+                ->get();
+
+            // Convertir rutas de archivo a URLs públicas
+            $entregas = $entregas->map(function($entrega) {
+                if ($entrega->archivo_path) {
+                    $entrega->archivo_url = asset('storage/' . $entrega->archivo_path);
+                }
+                return $entrega;
+            });
+
+            return response()->json(['entregas' => $entregas]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'entregas' => [],
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    // Cambiar estado de una entrega
+    public function cambiarEstadoEntrega(Request $request, $entregaId)
+    {
+        try {
+            $request->validate([
+                'estado' => 'required|in:pendiente,aprobado,rechazado'
+            ]);
+
+            if (!Schema::hasTable('evidencias')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tabla de evidencias no encontrada'
+                ], 404);
+            }
+
+            // Obtener el proyecto_id antes de actualizar
+            $evidencia = DB::table('evidencias')
+                ->where('id_evidencia', $entregaId)
+                ->first();
+
+            if (!$evidencia) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Evidencia no encontrada'
+                ], 404);
+            }
+
+            DB::table('evidencias')
+                ->where('id_evidencia', $entregaId)
+                ->update([
+                    'estado' => $request->estado,
+                    'updated_at' => now()
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Estado actualizado exitosamente',
+                'proyecto_id' => $evidencia->id_proyecto
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el estado: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
