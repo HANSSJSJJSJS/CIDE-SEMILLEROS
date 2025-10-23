@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Semillero;
 use App\Models\Aprendiz;
 use App\Models\Proyecto;
+use App\Models\Evento;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
@@ -343,14 +344,7 @@ class SemilleroController extends Controller
     // ---- Helpers y gestión por PROYECTO ----
     private function pivotProyectoAprendiz(): array
     {
-        // Usar la tabla documentos como relación entre proyectos y aprendices
-        if (Schema::hasTable('documentos') &&
-            Schema::hasColumn('documentos','id_proyecto') &&
-            Schema::hasColumn('documentos','id_aprendiz')) {
-            return ['table'=>'documentos','projCol'=>'id_proyecto','aprCol'=>'id_aprendiz'];
-        }
-
-        // Fallback: buscar tabla pivote tradicional
+        // Priorizar tabla pivote tradicional para obtener aprendices asignados
         $pivotCandidates = [
             'aprendiz_proyecto', 'aprendices_proyectos', 'aprendiz_proyectos', 'proyecto_aprendiz', 'proyectos_aprendices', 'proyecto_aprendices'
         ];
@@ -358,14 +352,26 @@ class SemilleroController extends Controller
         foreach ($pivotCandidates as $cand) {
             if (Schema::hasTable($cand)) { $table = $cand; break; }
         }
-        if (!$table) return [];
-        $projCols = ['id_proyecto','proyecto_id','idProyecto'];
-        $aprCols  = ['id_aprendiz','aprendiz_id','idAprendiz','id_usuario'];
-        $pivotProjCol = null; $pivotAprCol = null;
-        foreach ($projCols as $c) { if (Schema::hasColumn($table, $c)) { $pivotProjCol = $c; break; } }
-        foreach ($aprCols as $c) { if (Schema::hasColumn($table, $c)) { $pivotAprCol = $c; break; } }
-        if (!$pivotProjCol || !$pivotAprCol) return [];
-        return ['table'=>$table,'projCol'=>$pivotProjCol,'aprCol'=>$pivotAprCol];
+        
+        if ($table) {
+            $projCols = ['id_proyecto','proyecto_id','idProyecto'];
+            $aprCols  = ['id_aprendiz','aprendiz_id','idAprendiz','id_usuario'];
+            $pivotProjCol = null; $pivotAprCol = null;
+            foreach ($projCols as $c) { if (Schema::hasColumn($table, $c)) { $pivotProjCol = $c; break; } }
+            foreach ($aprCols as $c) { if (Schema::hasColumn($table, $c)) { $pivotAprCol = $c; break; } }
+            if ($pivotProjCol && $pivotAprCol) {
+                return ['table'=>$table,'projCol'=>$pivotProjCol,'aprCol'=>$pivotAprCol];
+            }
+        }
+
+        // Fallback: usar la tabla documentos como relación entre proyectos y aprendices
+        if (Schema::hasTable('documentos') &&
+            Schema::hasColumn('documentos','id_proyecto') &&
+            Schema::hasColumn('documentos','id_aprendiz')) {
+            return ['table'=>'documentos','projCol'=>'id_proyecto','aprCol'=>'id_aprendiz'];
+        }
+
+        return [];
     }
 
     public function editProyectoAprendices($proyectoId)
@@ -725,14 +731,31 @@ class SemilleroController extends Controller
         });
 
         // Separar proyectos activos y completados
+        // Un proyecto se considera activo si:
+        // 1. Su estado es ACTIVO, EN_EJECUCION, etc. O
+        // 2. Tiene evidencias pendientes de revisión
         $proyectosActivos = $proyectos->filter(function($p) {
             $estadoUpper = strtoupper($p->estado);
-            return in_array($estadoUpper, ['ACTIVO', 'EN_EJECUCION', 'EN EJECUCION', 'EJECUCION', 'EN_FORMULACION', 'EN FORMULACION', 'FORMULACION']);
+            $esEstadoActivo = in_array($estadoUpper, ['ACTIVO', 'EN_EJECUCION', 'EN EJECUCION', 'EJECUCION', 'EN_FORMULACION', 'EN FORMULACION', 'FORMULACION']);
+            
+            // Si tiene pendientes, siempre es activo
+            if ($p->pendientes > 0) {
+                return true;
+            }
+            
+            // Si no tiene pendientes pero su estado es activo, también es activo
+            return $esEstadoActivo;
         });
 
+        // Un proyecto se considera completado si:
+        // 1. Su estado es COMPLETADO, FINALIZADO, etc. Y
+        // 2. NO tiene evidencias pendientes (todas están aprobadas o rechazadas)
         $proyectosCompletados = $proyectos->filter(function($p) {
             $estadoUpper = strtoupper($p->estado);
-            return in_array($estadoUpper, ['COMPLETADO', 'FINALIZADO', 'TERMINADO', 'CERRADO']);
+            $esEstadoCompletado = in_array($estadoUpper, ['COMPLETADO', 'FINALIZADO', 'TERMINADO', 'CERRADO']);
+            
+            // Solo es completado si su estado es completado Y no tiene pendientes
+            return $esEstadoCompletado && $p->pendientes === 0;
         });
 
         return view('lider_semi.documentos', compact('proyectosActivos', 'proyectosCompletados'));
@@ -757,7 +780,10 @@ class SemilleroController extends Controller
     public function obtenerAprendicesProyecto($proyectoId)
     {
         try {
+            \Log::info("Obteniendo aprendices para proyecto ID: {$proyectoId}");
+            
             if (!Schema::hasTable('proyectos') || !Schema::hasTable('aprendices')) {
+                \Log::warning('Tablas proyectos o aprendices no existen');
                 return response()->json(['aprendices' => []]);
             }
 
@@ -765,19 +791,25 @@ class SemilleroController extends Controller
             $pivot = $this->pivotProyectoAprendiz();
             
             if (empty($pivot)) {
+                \Log::warning('No se encontró tabla pivot para proyecto-aprendiz');
                 return response()->json(['aprendices' => []]);
             }
+
+            \Log::info("Usando pivot: " . json_encode($pivot));
 
             // Obtener IDs únicos de aprendices del proyecto
             $aprendizIds = DB::table($pivot['table'])
                 ->where($pivot['projCol'], $proyectoId)
-                ->whereNotNull($pivot['aprendizCol'])
-                ->where($pivot['aprendizCol'], '>', 0)
+                ->whereNotNull($pivot['aprCol'])
+                ->where($pivot['aprCol'], '>', 0)
                 ->distinct()
-                ->pluck($pivot['aprendizCol']);
+                ->pluck($pivot['aprCol']);
+
+            \Log::info("IDs de aprendices encontrados: " . $aprendizIds->toJson());
 
             // Si no hay aprendices, retornar vacío
             if ($aprendizIds->isEmpty()) {
+                \Log::info('No se encontraron aprendices para este proyecto');
                 return response()->json(['aprendices' => []]);
             }
 
@@ -789,11 +821,14 @@ class SemilleroController extends Controller
                 ->orderBy('nombre_completo')
                 ->get();
 
+            \Log::info("Aprendices obtenidos: " . $aprendices->toJson());
+
             return response()->json(['aprendices' => $aprendices]);
 
         } catch (\Exception $e) {
             \Log::error('Error al obtener aprendices del proyecto: ' . $e->getMessage());
-            return response()->json(['aprendices' => []]);
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json(['aprendices' => [], 'error' => $e->getMessage()]);
         }
     }
 
@@ -807,7 +842,9 @@ class SemilleroController extends Controller
                 'titulo' => 'required|string|max:255',
                 'descripcion' => 'required|string',
                 'tipo_evidencia' => 'required|string',
-                'fecha' => 'required|date'
+                'fecha' => 'required|date|after_or_equal:today'
+            ], [
+                'fecha.after_or_equal' => 'La fecha del avance no puede ser anterior a hoy. Por favor selecciona una fecha válida.'
             ]);
 
             // Verificar si existe tabla de documentos
@@ -1100,6 +1137,254 @@ class SemilleroController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al actualizar el documento: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ============ MÉTODOS DEL CALENDARIO ============
+
+    // Mostrar vista del calendario
+    public function calendario()
+    {
+        $userId = auth()->id();
+        
+        // Obtener aprendices para el selector de participantes
+        $aprendices = collect([]);
+        
+        if (Schema::hasTable('aprendices')) {
+            $aprendices = Aprendiz::where('documento', '!=', 'SIN_ASIGNAR')
+                ->select('id_aprendiz', 'nombre_completo')
+                ->orderBy('nombre_completo')
+                ->get();
+        }
+
+        // Obtener proyectos con sus aprendices (relación a través de documentos)
+        $proyectos = collect([]);
+        
+        if (Schema::hasTable('proyectos')) {
+            $proyectos = Proyecto::with('aprendices:id_aprendiz,nombre_completo')
+                ->select('id_proyecto', 'nombre_proyecto')
+                ->orderBy('nombre_proyecto')
+                ->get();
+        }
+
+        return view('lider_semi.calendario', compact('aprendices', 'proyectos'));
+    }
+
+    // Obtener eventos del mes
+    public function obtenerEventos(Request $request)
+    {
+        try {
+            // Verificar si existe la tabla de eventos
+            if (!Schema::hasTable('eventos')) {
+                return response()->json([
+                    'success' => true,
+                    'eventos' => []
+                ]);
+            }
+
+            $userId = auth()->id();
+            $mes = $request->input('mes');
+            $anio = $request->input('anio');
+
+            $query = Evento::where('id_lider', $userId)
+                ->with(['participantes:id_aprendiz,nombre_completo', 'proyecto:id_proyecto,nombre_proyecto']);
+
+            if ($mes && $anio) {
+                $query->whereYear('fecha_hora', $anio)
+                      ->whereMonth('fecha_hora', $mes);
+            }
+
+            $eventos = $query->orderBy('fecha_hora', 'asc')->get();
+
+            return response()->json([
+                'success' => true,
+                'eventos' => $eventos->map(function($evento) {
+                    return [
+                        'id' => $evento->id_evento,
+                        'titulo' => $evento->titulo,
+                        'descripcion' => $evento->descripcion,
+                        'fecha_hora' => $evento->fecha_hora->toIso8601String(),
+                        'duracion' => $evento->duracion,
+                        'tipo' => $evento->tipo,
+                        'proyecto' => $evento->proyecto ? $evento->proyecto->nombre_proyecto : null,
+                        'participantes' => $evento->participantes->map(function($p) {
+                            return [
+                                'id' => $p->id_aprendiz,
+                                'nombre' => $p->nombre_completo
+                            ];
+                        })
+                    ];
+                })
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error al obtener eventos: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json([
+                'success' => true,
+                'eventos' => []
+            ]);
+        }
+    }
+
+    // Crear nuevo evento
+    public function crearEvento(Request $request)
+    {
+        try {
+            \Log::info('Datos recibidos para crear evento:', $request->all());
+            
+            $validated = $request->validate([
+                'titulo' => 'required|string|max:255',
+                'tipo' => 'required|string',
+                'descripcion' => 'nullable|string',
+                'fecha_hora' => 'required|date',
+                'duracion' => 'required|integer|min:15',
+                'ubicacion' => 'required|string',
+                'link_virtual' => 'nullable|url',
+                'recordatorio' => 'nullable|string',
+                'id_proyecto' => 'nullable|exists:proyectos,id_proyecto',
+                'participantes' => 'nullable|array',
+                'participantes.*' => 'exists:aprendices,id_aprendiz'
+            ]);
+            
+            \Log::info('Datos validados:', $validated);
+
+            $evento = Evento::create([
+                'id_lider' => auth()->id(),
+                'id_proyecto' => $validated['id_proyecto'] ?? null,
+                'titulo' => $validated['titulo'],
+                'tipo' => $validated['tipo'],
+                'descripcion' => $validated['descripcion'] ?? null,
+                'fecha_hora' => $validated['fecha_hora'],
+                'duracion' => $validated['duracion'],
+                'ubicacion' => $validated['ubicacion'],
+                'link_virtual' => $validated['link_virtual'] ?? null,
+                'recordatorio' => $validated['recordatorio'] ?? 'none'
+            ]);
+
+            // Asignar participantes
+            if (!empty($validated['participantes'])) {
+                $evento->participantes()->attach($validated['participantes']);
+            }
+
+            // Cargar relaciones para la respuesta
+            $evento->load(['participantes:id_aprendiz,nombre_completo', 'proyecto:id_proyecto,nombre_proyecto']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Evento creado exitosamente',
+                'evento' => [
+                    'id' => $evento->id_evento,
+                    'titulo' => $evento->titulo,
+                    'descripcion' => $evento->descripcion,
+                    'fecha_hora' => $evento->fecha_hora->toIso8601String(),
+                    'duracion' => $evento->duracion,
+                    'tipo' => $evento->tipo,
+                    'proyecto' => $evento->proyecto ? $evento->proyecto->nombre_proyecto : null,
+                    'participantes' => $evento->participantes->map(function($p) {
+                        return [
+                            'id' => $p->id_aprendiz,
+                            'nombre' => $p->nombre_completo
+                        ];
+                    })
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error al crear evento: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al crear el evento: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Actualizar evento existente
+    public function actualizarEvento(Request $request, $id)
+    {
+        try {
+            $evento = Evento::where('id_evento', $id)
+                ->where('id_lider', auth()->id())
+                ->firstOrFail();
+
+            $validated = $request->validate([
+                'titulo' => 'required|string|max:255',
+                'descripcion' => 'nullable|string',
+                'fecha_hora' => 'required|date',
+                'duracion' => 'required|integer|min:15',
+                'tipo' => 'nullable|string',
+                'id_proyecto' => 'nullable|exists:proyectos,id_proyecto',
+                'participantes' => 'nullable|array',
+                'participantes.*' => 'exists:aprendices,id_aprendiz'
+            ]);
+
+            $evento->update([
+                'id_proyecto' => $validated['id_proyecto'] ?? null,
+                'titulo' => $validated['titulo'],
+                'descripcion' => $validated['descripcion'] ?? null,
+                'fecha_hora' => $validated['fecha_hora'],
+                'duracion' => $validated['duracion'],
+                'tipo' => $validated['tipo'] ?? 'reunion'
+            ]);
+
+            // Actualizar participantes
+            if (isset($validated['participantes'])) {
+                $evento->participantes()->sync($validated['participantes']);
+            }
+
+            // Cargar relaciones para la respuesta
+            $evento->load(['participantes:id_aprendiz,nombre_completo', 'proyecto:id_proyecto,nombre_proyecto']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Evento actualizado exitosamente',
+                'evento' => [
+                    'id' => $evento->id_evento,
+                    'titulo' => $evento->titulo,
+                    'descripcion' => $evento->descripcion,
+                    'fecha_hora' => $evento->fecha_hora->toIso8601String(),
+                    'duracion' => $evento->duracion,
+                    'tipo' => $evento->tipo,
+                    'proyecto' => $evento->proyecto ? $evento->proyecto->nombre_proyecto : null,
+                    'participantes' => $evento->participantes->map(function($p) {
+                        return [
+                            'id' => $p->id_aprendiz,
+                            'nombre' => $p->nombre_completo
+                        ];
+                    })
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error al actualizar evento: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el evento'
+            ], 500);
+        }
+    }
+
+    // Eliminar evento
+    public function eliminarEvento($id)
+    {
+        try {
+            $evento = Evento::where('id_evento', $id)
+                ->where('id_lider', auth()->id())
+                ->firstOrFail();
+
+            $evento->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Evento eliminado exitosamente'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error al eliminar evento: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar el evento'
             ], 500);
         }
     }

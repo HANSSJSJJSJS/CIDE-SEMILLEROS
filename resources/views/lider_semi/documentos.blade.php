@@ -2,9 +2,138 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/documentos.css') }}">
+<style>
+/* Sistema de Notificaciones Bonitas */
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 400px;
+}
+
+.notification {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    animation: slideIn 0.4s ease-out;
+    border-left: 4px solid #5aa72e;
+}
+
+.notification.success {
+    border-left-color: #5aa72e;
+}
+
+.notification.error {
+    border-left-color: #dc3545;
+}
+
+.notification.warning {
+    border-left-color: #ffc107;
+}
+
+.notification-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.notification.success .notification-icon {
+    background: #e8f5e9;
+    color: #5aa72e;
+}
+
+.notification.error .notification-icon {
+    background: #ffebee;
+    color: #dc3545;
+}
+
+.notification.warning .notification-icon {
+    background: #fff8e1;
+    color: #ffc107;
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-title {
+    font-weight: 700;
+    font-size: 16px;
+    color: #1e4620;
+    margin-bottom: 5px;
+}
+
+.notification-message {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.5;
+}
+
+.notification-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.notification-close:hover {
+    background: #f5f5f5;
+    color: #333;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+.notification.hiding {
+    animation: slideOut 0.3s ease-in forwards;
+}
+</style>
 @endpush
 
 @section('content')
+<!-- Contenedor de Notificaciones -->
+<div class="notification-container" id="notificationContainer"></div>
+
 <div class="container-fluid mt-4 px-4">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4 documentos-header">
@@ -149,9 +278,9 @@
             <div class="mb-3">
                 <label class="form-label-evidencia">Aprendiz Asignado</label>
                 <select class="form-select-evidencia" id="aprendiz_id" name="aprendiz_id">
-                    <option value="">Sin asignar (selecciona primero un proyecto)</option>
+                    <option value="">Selecciona primero un proyecto...</option>
                 </select>
-                <small class="text-muted">Selecciona un proyecto primero para ver los aprendices disponibles</small>
+                <small class="text-muted" id="mensaje-aprendices">Selecciona un proyecto para ver los aprendices asignados</small>
             </div>
             
             <!-- Lista de Evidencias Existentes (solo visible en modo edición) -->
@@ -196,6 +325,7 @@
             <div class="mb-3">
                 <label class="form-label-evidencia">Fecha del Avance</label>
                 <input type="date" class="form-control-evidencia" id="fecha" name="fecha" required>
+                <small class="text-muted">Solo se permiten fechas desde hoy en adelante</small>
             </div>
 
             <!-- Botones -->
@@ -296,6 +426,49 @@
 <script>
 // Variable global para guardar el nombre del proyecto actual
 let proyectoNombreActual = '';
+
+// Sistema de Notificaciones Bonitas
+function showNotification(title, message, type = 'success') {
+    const container = document.getElementById('notificationContainer');
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    
+    const iconMap = {
+        success: '<i class="fas fa-check-circle"></i>',
+        error: '<i class="fas fa-exclamation-circle"></i>',
+        warning: '<i class="fas fa-exclamation-triangle"></i>',
+        info: '<i class="fas fa-info-circle"></i>'
+    };
+    
+    notification.innerHTML = `
+        <div class="notification-icon">
+            ${iconMap[type] || iconMap.success}
+        </div>
+        <div class="notification-content">
+            <div class="notification-title">${title}</div>
+            <div class="notification-message">${message}</div>
+        </div>
+        <button class="notification-close" onclick="closeNotification(this)">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    container.appendChild(notification);
+    
+    // Auto-cerrar después de 5 segundos
+    setTimeout(() => {
+        closeNotification(notification.querySelector('.notification-close'));
+    }, 5000);
+}
+
+function closeNotification(button) {
+    const notification = button.closest('.notification');
+    notification.classList.add('hiding');
+    setTimeout(() => {
+        notification.remove();
+    }, 300);
+}
 
 // Función para abrir modal de entregas
 function abrirModalEntregas(proyectoId, proyectoNombre) {
@@ -409,19 +582,31 @@ function cambiarEstadoEntrega(entregaId, nuevoEstado) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert(`Entrega ${nuevoEstado === 'aprobado' ? 'aprobada' : 'rechazada'} exitosamente`);
+            showNotification(
+                `Entrega ${nuevoEstado === 'aprobado' ? 'Aprobada' : 'Rechazada'}`,
+                `La entrega ha sido ${nuevoEstado === 'aprobado' ? 'aprobada' : 'rechazada'} exitosamente.`,
+                'success'
+            );
             // Recargar entregas
             const proyectoId = data.proyecto_id;
             cargarEntregas(proyectoId);
             // Recargar página para actualizar estadísticas
-            setTimeout(() => location.reload(), 1000);
+            setTimeout(() => location.reload(), 1500);
         } else {
-            alert('Error: ' + (data.message || 'No se pudo actualizar el estado'));
+            showNotification(
+                'Error al Actualizar',
+                data.message || 'No se pudo actualizar el estado de la entrega.',
+                'error'
+            );
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error al actualizar el estado de la entrega');
+        showNotification(
+            'Error de Conexión',
+            'No se pudo actualizar el estado de la entrega. Verifica tu conexión.',
+            'error'
+        );
     });
 }
 
@@ -440,9 +625,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const campoEvidenciaContainer = document.getElementById('campo-evidencia-container');
     const inputFecha = document.getElementById('fecha');
 
-    // Establecer fecha actual por defecto
+    // Establecer fecha actual por defecto y como mínima
     const hoy = new Date().toISOString().split('T')[0];
     inputFecha.value = hoy;
+    inputFecha.min = hoy; // No permitir fechas anteriores a hoy
 
     // Manejar cambio de tipo de evidencia
     selectTipoEvidencia.addEventListener('change', function() {
@@ -499,6 +685,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Cargar proyectos al abrir el modal
     btnAbrirModal.addEventListener('click', function() {
         cargarProyectos();
+        // Deshabilitar selector de aprendices hasta que se seleccione un proyecto
+        const selectAprendiz = document.getElementById('aprendiz_id');
+        selectAprendiz.disabled = true;
+        selectAprendiz.innerHTML = '<option value="">Selecciona primero un proyecto...</option>';
         modalOverlay.classList.add('active');
     });
 
@@ -545,7 +735,11 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error al cargar proyectos:', error);
-                alert('Error al cargar los proyectos');
+                showNotification(
+                    'Error al Cargar',
+                    'No se pudieron cargar los proyectos. Por favor recarga la página.',
+                    'error'
+                );
             });
     }
 
@@ -553,17 +747,27 @@ document.addEventListener('DOMContentLoaded', function() {
     selectProyecto.addEventListener('change', function() {
         const proyectoId = this.value;
         const selectAprendiz = document.getElementById('aprendiz_id');
+        const mensajeAprendices = document.getElementById('mensaje-aprendices');
         
         if (!proyectoId) {
-            selectAprendiz.innerHTML = '<option value="">Sin asignar (selecciona primero un proyecto)</option>';
+            selectAprendiz.innerHTML = '<option value="">Selecciona primero un proyecto...</option>';
+            selectAprendiz.disabled = true;
+            mensajeAprendices.textContent = 'Selecciona un proyecto para ver los aprendices asignados';
+            mensajeAprendices.className = 'text-muted';
             return;
         }
+        
+        // Mostrar estado de carga
+        selectAprendiz.innerHTML = '<option value="">Cargando aprendices...</option>';
+        selectAprendiz.disabled = true;
         
         // Cargar aprendices del proyecto
         fetch(`/lider_semi/proyectos/${proyectoId}/aprendices-list`)
             .then(response => response.json())
             .then(data => {
-                selectAprendiz.innerHTML = '<option value="">Sin asignar</option>';
+                selectAprendiz.innerHTML = '<option value="">Sin asignar a un aprendiz específico</option>';
+                selectAprendiz.disabled = false;
+                
                 if (data.aprendices && data.aprendices.length > 0) {
                     data.aprendices.forEach(aprendiz => {
                         const option = document.createElement('option');
@@ -571,19 +775,39 @@ document.addEventListener('DOMContentLoaded', function() {
                         option.textContent = aprendiz.nombre_completo;
                         selectAprendiz.appendChild(option);
                     });
+                    mensajeAprendices.textContent = `${data.aprendices.length} aprendiz(es) asignado(s) a este proyecto`;
+                    mensajeAprendices.className = 'text-success';
                 } else {
                     selectAprendiz.innerHTML = '<option value="">No hay aprendices asignados a este proyecto</option>';
+                    mensajeAprendices.textContent = 'Este proyecto no tiene aprendices asignados. La evidencia quedará sin asignar.';
+                    mensajeAprendices.className = 'text-warning';
                 }
             })
             .catch(error => {
                 console.error('Error al cargar aprendices:', error);
                 selectAprendiz.innerHTML = '<option value="">Error al cargar aprendices</option>';
+                selectAprendiz.disabled = false;
+                mensajeAprendices.textContent = 'Error al cargar los aprendices del proyecto';
+                mensajeAprendices.className = 'text-danger';
             });
     });
 
     // Enviar formulario
     formEvidencia.addEventListener('submit', function(e) {
         e.preventDefault();
+        
+        // Validar que la fecha no sea anterior a hoy
+        const fechaSeleccionada = document.getElementById('fecha').value;
+        const fechaHoy = new Date().toISOString().split('T')[0];
+        
+        if (fechaSeleccionada < fechaHoy) {
+            showNotification(
+                'Fecha Inválida',
+                'No se pueden registrar evidencias con fechas anteriores a hoy. Por favor selecciona una fecha válida.',
+                'error'
+            );
+            return;
+        }
         
         const formData = new FormData(formEvidencia);
         const btnGuardar = formEvidencia.querySelector('.btn-guardar-modal');
@@ -599,17 +823,31 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Evidencia registrada exitosamente');
+                showNotification(
+                    '¡Evidencia Registrada!',
+                    'La evidencia se ha guardado exitosamente y está disponible para los aprendices.',
+                    'success'
+                );
                 cerrarModal();
-                // Forzar recarga completa sin caché
-                window.location.href = window.location.href.split('?')[0] + '?t=' + new Date().getTime();
+                // Recargar después de mostrar la notificación
+                setTimeout(() => {
+                    window.location.href = window.location.href.split('?')[0] + '?t=' + new Date().getTime();
+                }, 1500);
             } else {
-                alert('Error: ' + (data.message || 'No se pudo guardar la evidencia'));
+                showNotification(
+                    'Error al Guardar',
+                    data.message || 'No se pudo guardar la evidencia. Por favor intenta nuevamente.',
+                    'error'
+                );
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al guardar la evidencia');
+            showNotification(
+                'Error de Conexión',
+                'Hubo un problema al conectar con el servidor. Por favor verifica tu conexión.',
+                'error'
+            );
         })
         .finally(() => {
             btnGuardar.disabled = false;
@@ -683,17 +921,29 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('Evidencia actualizada exitosamente');
+                    showNotification(
+                        '¡Evidencia Actualizada!',
+                        'Los cambios se han guardado exitosamente.',
+                        'success'
+                    );
                     cerrarModalEditarEvidencia();
                     // Recargar la página para ver los cambios
-                    location.reload();
+                    setTimeout(() => location.reload(), 1500);
                 } else {
-                    alert('Error: ' + (data.message || 'No se pudo actualizar la evidencia'));
+                    showNotification(
+                        'Error al Actualizar',
+                        data.message || 'No se pudo actualizar la evidencia. Intenta nuevamente.',
+                        'error'
+                    );
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error al actualizar la evidencia');
+                showNotification(
+                    'Error de Conexión',
+                    'No se pudo actualizar la evidencia. Verifica tu conexión.',
+                    'error'
+                );
             })
             .finally(() => {
                 btnGuardar.disabled = false;

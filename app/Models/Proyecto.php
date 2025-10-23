@@ -37,6 +37,12 @@ class Proyecto extends Model
 
     public function aprendices()
     {
-        return $this->belongsToMany(Aprendiz::class, 'aprendiz_proyecto', 'id_proyecto', 'id_aprendiz', 'id_proyecto', 'id_aprendiz');
+        // La relación se hace a través de la tabla documentos
+        return $this->belongsToMany(
+            Aprendiz::class, 
+            'documentos', 
+            'id_proyecto', 
+            'id_aprendiz'
+        )->distinct();
     }
 }
