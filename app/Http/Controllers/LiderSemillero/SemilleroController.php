@@ -1207,11 +1207,15 @@ class SemilleroController extends Controller
                         'fecha_hora' => $evento->fecha_hora->toIso8601String(),
                         'duracion' => $evento->duracion,
                         'tipo' => $evento->tipo,
+                        'ubicacion' => $evento->ubicacion,
+                        'link_virtual' => $evento->link_virtual,
+                        'codigo_reunion' => $evento->codigo_reunion,
+                        'recordatorio' => $evento->recordatorio,
                         'proyecto' => $evento->proyecto ? $evento->proyecto->nombre_proyecto : null,
                         'participantes' => $evento->participantes->map(function($p) {
                             return [
                                 'id' => $p->id_aprendiz,
-                                'nombre' => $p->nombre_completo
+                                'nombre_completo' => $p->nombre_completo
                             ];
                         })
                     ];
@@ -1245,10 +1249,22 @@ class SemilleroController extends Controller
                 'recordatorio' => 'nullable|string',
                 'id_proyecto' => 'nullable|exists:proyectos,id_proyecto',
                 'participantes' => 'nullable|array',
-                'participantes.*' => 'exists:aprendices,id_aprendiz'
+                'participantes.*' => 'exists:aprendices,id_aprendiz',
+                'generar_enlace' => 'nullable|string|in:teams,meet,personalizado'
             ]);
             
             \Log::info('Datos validados:', $validated);
+
+            // Generar enlace automáticamente si la ubicación es virtual y no se proporcionó enlace
+            $linkVirtual = $validated['link_virtual'] ?? null;
+            $codigoReunion = null;
+            
+            if (($validated['ubicacion'] === 'virtual' || $validated['ubicacion'] === 'hibrido') && empty($linkVirtual)) {
+                $plataforma = $validated['generar_enlace'] ?? 'teams'; // Teams por defecto
+                $linkVirtual = $this->generarEnlaceReunion($plataforma, $validated['titulo']);
+                $codigoReunion = \Illuminate\Support\Str::random(10);
+                \Log::info('Enlace generado automáticamente:', ['plataforma' => $plataforma, 'link' => $linkVirtual]);
+            }
 
             $evento = Evento::create([
                 'id_lider' => auth()->id(),
@@ -1259,7 +1275,8 @@ class SemilleroController extends Controller
                 'fecha_hora' => $validated['fecha_hora'],
                 'duracion' => $validated['duracion'],
                 'ubicacion' => $validated['ubicacion'],
-                'link_virtual' => $validated['link_virtual'] ?? null,
+                'link_virtual' => $linkVirtual,
+                'codigo_reunion' => $codigoReunion,
                 'recordatorio' => $validated['recordatorio'] ?? 'none'
             ]);
 
@@ -1281,6 +1298,9 @@ class SemilleroController extends Controller
                     'fecha_hora' => $evento->fecha_hora->toIso8601String(),
                     'duracion' => $evento->duracion,
                     'tipo' => $evento->tipo,
+                    'ubicacion' => $evento->ubicacion,
+                    'link_virtual' => $evento->link_virtual,
+                    'codigo_reunion' => $evento->codigo_reunion,
                     'proyecto' => $evento->proyecto ? $evento->proyecto->nombre_proyecto : null,
                     'participantes' => $evento->participantes->map(function($p) {
                         return [
@@ -1309,24 +1329,55 @@ class SemilleroController extends Controller
                 ->firstOrFail();
 
             $validated = $request->validate([
-                'titulo' => 'required|string|max:255',
+                'titulo' => 'sometimes|required|string|max:255',
                 'descripcion' => 'nullable|string',
-                'fecha_hora' => 'required|date',
-                'duracion' => 'required|integer|min:15',
+                'fecha_hora' => 'sometimes|required|date',
+                'duracion' => 'sometimes|required|integer|min:15',
                 'tipo' => 'nullable|string',
+                'ubicacion' => 'nullable|string',
+                'link_virtual' => 'nullable|url',
                 'id_proyecto' => 'nullable|exists:proyectos,id_proyecto',
                 'participantes' => 'nullable|array',
-                'participantes.*' => 'exists:aprendices,id_aprendiz'
+                'participantes.*' => 'exists:aprendices,id_aprendiz',
+                'generar_enlace' => 'nullable|string|in:teams,meet,personalizado'
             ]);
 
-            $evento->update([
-                'id_proyecto' => $validated['id_proyecto'] ?? null,
-                'titulo' => $validated['titulo'],
-                'descripcion' => $validated['descripcion'] ?? null,
-                'fecha_hora' => $validated['fecha_hora'],
-                'duracion' => $validated['duracion'],
-                'tipo' => $validated['tipo'] ?? 'reunion'
-            ]);
+            // Generar enlace si la ubicación es virtual y no tiene enlace
+            $updateData = [];
+            
+            if (isset($validated['id_proyecto'])) {
+                $updateData['id_proyecto'] = $validated['id_proyecto'];
+            }
+            if (isset($validated['titulo'])) {
+                $updateData['titulo'] = $validated['titulo'];
+            }
+            if (isset($validated['descripcion'])) {
+                $updateData['descripcion'] = $validated['descripcion'];
+            }
+            if (isset($validated['fecha_hora'])) {
+                $updateData['fecha_hora'] = $validated['fecha_hora'];
+            }
+            if (isset($validated['duracion'])) {
+                $updateData['duracion'] = $validated['duracion'];
+            }
+            if (isset($validated['tipo'])) {
+                $updateData['tipo'] = $validated['tipo'];
+            }
+            
+            if (isset($validated['ubicacion'])) {
+                $updateData['ubicacion'] = $validated['ubicacion'];
+            }
+            
+            if (isset($validated['link_virtual'])) {
+                $updateData['link_virtual'] = $validated['link_virtual'];
+            } elseif (($validated['ubicacion'] ?? $evento->ubicacion) === 'virtual' && empty($evento->link_virtual)) {
+                // Generar enlace automáticamente
+                $plataforma = $validated['generar_enlace'] ?? 'teams';
+                $updateData['link_virtual'] = $this->generarEnlaceReunion($plataforma, $validated['titulo']);
+                $updateData['codigo_reunion'] = $evento->codigo_reunion ?: \Illuminate\Support\Str::random(10);
+            }
+
+            $evento->update($updateData);
 
             // Actualizar participantes
             if (isset($validated['participantes'])) {
@@ -1346,6 +1397,9 @@ class SemilleroController extends Controller
                     'fecha_hora' => $evento->fecha_hora->toIso8601String(),
                     'duracion' => $evento->duracion,
                     'tipo' => $evento->tipo,
+                    'ubicacion' => $evento->ubicacion,
+                    'link_virtual' => $evento->link_virtual,
+                    'codigo_reunion' => $evento->codigo_reunion,
                     'proyecto' => $evento->proyecto ? $evento->proyecto->nombre_proyecto : null,
                     'participantes' => $evento->participantes->map(function($p) {
                         return [
@@ -1386,6 +1440,103 @@ class SemilleroController extends Controller
                 'success' => false,
                 'message' => 'Error al eliminar el evento'
             ], 500);
+        }
+    }
+
+    // Generar enlace de reunión para un evento existente
+    public function generarEnlace(Request $request, $id)
+    {
+        try {
+            $evento = Evento::where('id_evento', $id)
+                ->where('id_lider', auth()->id())
+                ->firstOrFail();
+
+            $request->validate([
+                'plataforma' => 'required|string|in:teams,meet,personalizado'
+            ]);
+
+            $enlace = $this->generarEnlaceReunion($request->plataforma, $evento->titulo);
+            $codigo = $evento->codigo_reunion ?: \Illuminate\Support\Str::random(10);
+
+            $evento->update([
+                'link_virtual' => $enlace,
+                'codigo_reunion' => $codigo
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Enlace de reunión generado exitosamente',
+                'enlace' => $enlace,
+                'codigo_reunion' => $codigo,
+                'evento' => $evento->fresh()
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error al generar enlace: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al generar el enlace: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Obtener información de la reunión
+    public function getInfoReunion($id)
+    {
+        try {
+            $evento = Evento::where('id_evento', $id)->firstOrFail();
+
+            // Verificar acceso: creador o participante
+            $esCreador = $evento->id_lider == auth()->id();
+            $esParticipante = $evento->participantes()->where('id_aprendiz', auth()->id())->exists();
+
+            if (!$esCreador && !$esParticipante) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tienes acceso a este evento'
+                ], 403);
+            }
+
+            return response()->json([
+                'success' => true,
+                'evento' => [
+                    'id' => $evento->id_evento,
+                    'titulo' => $evento->titulo,
+                    'link_virtual' => $evento->link_virtual,
+                    'codigo_reunion' => $evento->codigo_reunion,
+                    'ubicacion' => $evento->ubicacion,
+                    'fecha_hora' => $evento->fecha_hora,
+                    'duracion' => $evento->duracion,
+                    'tiene_enlace' => !empty($evento->link_virtual)
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error al obtener info de reunión: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener información'
+            ], 500);
+        }
+    }
+
+    // Helper: generar enlace según plataforma
+    private function generarEnlaceReunion($plataforma, $titulo)
+    {
+        $codigo = \Illuminate\Support\Str::random(10);
+        $tituloCodificado = urlencode($titulo);
+
+        switch ($plataforma) {
+            case 'teams':
+                $tenant = config('app.teams_tenant_id', 'public');
+                $oid = auth()->id();
+                return "https://teams.microsoft.com/l/meetup-join/19%3Ameeting_{$codigo}%40thread.v2/0?context=%7B%22Tid%22%3A%22{$tenant}%22%2C%22Oid%22%3A%22{$oid}%22%7D&subject={$tituloCodificado}";
+            case 'meet':
+                return "https://meet.google.com/{$codigo}";
+            case 'personalizado':
+                return "https://your-platform.com/meeting/{$codigo}";
+            default:
+                return null;
         }
     }
 }

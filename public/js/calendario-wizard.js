@@ -18,20 +18,7 @@ function initializeWizard() {
     if (btnCancel) btnCancel.addEventListener('click', closeEventModal);
     if (eventForm) eventForm.addEventListener('submit', handleFormSubmit);
     
-    // Mostrar/ocultar campo de link virtual
-    const locationSelect = document.getElementById('event-location');
-    if (locationSelect) {
-        locationSelect.addEventListener('change', function() {
-            const virtualLinkGroup = document.getElementById('virtual-link-group');
-            if (this.value === 'virtual') {
-                virtualLinkGroup.style.display = 'block';
-                document.getElementById('event-virtual-link').required = true;
-            } else {
-                virtualLinkGroup.style.display = 'none';
-                document.getElementById('event-virtual-link').required = false;
-            }
-        });
-    }
+    // El enlace virtual se generará automáticamente en el backend
     
     // Seleccionar todos los participantes
     const selectAllBtn = document.getElementById('select-all-participants');
@@ -196,16 +183,8 @@ function validateStep(step) {
             } else if (!location) {
                 errorMessage = 'Por favor selecciona la ubicación';
                 isValid = false;
-            } else if (location === 'virtual') {
-                const virtualLink = document.getElementById('event-virtual-link').value.trim();
-                if (!virtualLink) {
-                    errorMessage = 'Por favor ingresa el link de la reunión virtual';
-                    isValid = false;
-                } else if (!isValidUrl(virtualLink)) {
-                    errorMessage = 'Por favor ingresa un link válido (debe comenzar con http:// o https://)';
-                    isValid = false;
-                }
             }
+            // Ya no validamos link virtual porque se genera automáticamente
             break;
             
         case 2:
@@ -351,9 +330,9 @@ function handleFormSubmit(e) {
         participantes: Array.from(document.querySelectorAll('.participant-checkbox-modal:checked')).map(cb => cb.value)
     };
     
-    // Si es virtual, agregar el link
+    // Si es virtual, generar enlace automático con Teams
     if (formData.ubicacion === 'virtual') {
-        formData.link_virtual = document.getElementById('event-virtual-link').value;
+        formData.generar_enlace = 'teams';
     }
     
     // Enviar al servidor
@@ -384,7 +363,12 @@ function handleFormSubmit(e) {
     .then(data => {
         console.log('Response data:', data); // Debug
         if (data.success) {
-            mostrarNotificacion('¡Reunión programada exitosamente!', 'info');
+            // Mensaje personalizado si se generó enlace virtual
+            let mensaje = '¡Reunión programada exitosamente!';
+            if (data.evento && data.evento.link_virtual) {
+                mensaje = '¡Reunión virtual creada! El enlace está disponible en los detalles.';
+            }
+            mostrarNotificacion(mensaje, 'info');
             closeEventModal();
             if (typeof cargarEventos === 'function') cargarEventos();
             if (typeof renderCalendar === 'function') renderCalendar();
@@ -435,9 +419,6 @@ function openEventModal(date) {
     document.querySelectorAll('.wizard-step').forEach(step => {
         step.classList.remove('completed');
     });
-    
-    // Ocultar campo de link virtual
-    document.getElementById('virtual-link-group').style.display = 'none';
     
     // Abrir modal
     const modal = document.getElementById('event-modal');

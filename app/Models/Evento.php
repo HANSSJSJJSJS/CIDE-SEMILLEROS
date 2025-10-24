@@ -11,6 +11,7 @@ class Evento extends Model
     
     protected $fillable = [
         'id_lider',
+        'id_usuario',
         'id_proyecto',
         'titulo',
         'tipo',
@@ -19,6 +20,7 @@ class Evento extends Model
         'duracion',
         'ubicacion',
         'link_virtual',
+        'codigo_reunion',
         'recordatorio'
     ];
 

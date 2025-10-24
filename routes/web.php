@@ -173,6 +173,8 @@ Route::middleware(['auth','lider.semillero'])->prefix('lider_semi')->name('lider
     Route::post('/eventos', [SemilleroController::class, 'crearEvento'])->name('eventos.crear');
     Route::put('/eventos/{evento}', [SemilleroController::class, 'actualizarEvento'])->name('eventos.actualizar');
     Route::delete('/eventos/{evento}', [SemilleroController::class, 'eliminarEvento'])->name('eventos.eliminar');
+    Route::post('/eventos/{evento}/generar-enlace', [SemilleroController::class, 'generarEnlace'])->name('eventos.generar-enlace');
+    Route::get('/eventos/{evento}/info', [SemilleroController::class, 'getInfoReunion'])->name('eventos.info');
     
     Route::view('/recursos', 'lider_semi.recursos')->name('recursos');
     Route::view('/perfil', 'lider_semi.perfil')->name('perfil');

@@ -408,11 +408,16 @@ function renderWeekView() {
             // Verificar si hay evento en este horario
             const cellDateTime = new Date(day);
             const [h, m] = hour.split(':');
-            cellDateTime.setHours(parseInt(h), parseInt(m), 0);
+            cellDateTime.setHours(parseInt(h), parseInt(m), 0, 0);
             
             const eventInSlot = eventos.find(event => {
                 const eventDate = new Date(event.fecha_hora);
-                return eventDate.getTime() === cellDateTime.getTime();
+                // Comparar fecha, hora y minuto (ignorar segundos y milisegundos)
+                return eventDate.getFullYear() === cellDateTime.getFullYear() &&
+                       eventDate.getMonth() === cellDateTime.getMonth() &&
+                       eventDate.getDate() === cellDateTime.getDate() &&
+                       eventDate.getHours() === cellDateTime.getHours() &&
+                       eventDate.getMinutes() === cellDateTime.getMinutes();
             });
             
             if (eventInSlot) {
@@ -533,11 +538,16 @@ function renderDayView() {
         // Verificar si hay evento en este horario
         const cellDateTime = new Date(currentDate);
         const [h, m] = hour.split(':');
-        cellDateTime.setHours(parseInt(h), parseInt(m), 0);
+        cellDateTime.setHours(parseInt(h), parseInt(m), 0, 0);
         
         const eventsInSlot = eventos.filter(event => {
             const eventDate = new Date(event.fecha_hora);
-            return eventDate.getTime() === cellDateTime.getTime();
+            // Comparar fecha, hora y minuto (ignorar segundos y milisegundos)
+            return eventDate.getFullYear() === cellDateTime.getFullYear() &&
+                   eventDate.getMonth() === cellDateTime.getMonth() &&
+                   eventDate.getDate() === cellDateTime.getDate() &&
+                   eventDate.getHours() === cellDateTime.getHours() &&
+                   eventDate.getMinutes() === cellDateTime.getMinutes();
         });
         
         if (eventsInSlot.length > 0) {

@@ -421,7 +421,7 @@ function cargarEventos() {
     
     console.log(`Cargando eventos para: ${mes}/${anio}`);
     
-    fetch(`/lider_semi/eventos?mes=${mes}&anio=${anio}`)
+    return fetch(`/lider_semi/eventos?mes=${mes}&anio=${anio}`)
         .then(response => response.json())
         .then(data => {
             console.log('Respuesta del servidor:', data);
@@ -433,10 +433,12 @@ function cargarEventos() {
                 }
                 renderCalendar();
             }
+            return data;
         })
         .catch(error => {
             console.error('Error al cargar eventos:', error);
             showNotification('Error al Cargar', 'No se pudieron cargar los eventos', 'error');
+            throw error;
         });
 }
 
@@ -532,6 +534,11 @@ function openEventModal(date = null) {
     editingEventId = null;
     document.getElementById('event-id').value = '';
     
+    // Resetear selección de plataforma
+    document.querySelectorAll('.link-option').forEach(opt => {
+        opt.classList.remove('selected');
+    });
+    
     if (date) {
         document.getElementById('event-date').value = formatDateForInput(date);
     } else {
@@ -564,7 +571,18 @@ function saveEvent(e) {
     const duracion = document.getElementById('event-duration').value;
     const ubicacion = document.getElementById('event-location').value;
     const descripcion = document.getElementById('event-description').value;
-    const linkVirtual = document.getElementById('event-virtual-link')?.value || null;
+    
+    // Obtener plataforma seleccionada para auto-generación
+    const selectedPlatform = document.querySelector('.link-option.selected');
+    const generarEnlace = selectedPlatform ? selectedPlatform.dataset.platform : null;
+    
+    // El enlace siempre será null para que se genere automáticamente en el backend
+    let linkVirtual = null;
+    
+    // Si la ubicación es virtual y no se seleccionó plataforma, usar 'teams' por defecto
+    if ((ubicacion === 'virtual' || ubicacion === 'hibrido') && !generarEnlace) {
+        console.log('Ubicación virtual sin plataforma seleccionada, se usará Teams por defecto');
+    }
     
     console.log('Valores del formulario:', { date, time, duracion, ubicacion, descripcion, linkVirtual });
     
@@ -599,7 +617,8 @@ function saveEvent(e) {
         ubicacion,
         link_virtual: linkVirtual,
         recordatorio: reminder,
-        participantes
+        participantes,
+        generar_enlace: generarEnlace // Para auto-generación en backend
     };
     
     const url = eventId ? `/lider_semi/eventos/${eventId}` : '/lider_semi/eventos';
@@ -723,99 +742,56 @@ function openEventDrawerById(eventId) {
     setText('detail-hora', horaStr);
     setText('detail-duracion', ev.duracion ? `${ev.duracion} min` : '60 min');
     setText('detail-ubicacion', ev.ubicacion || 'virtual');
+    
+    // Código de reunión
+    const codigoField = document.getElementById('detail-codigo-field');
+    const codigoValue = document.getElementById('detail-codigo');
+    if (ev.codigo_reunion) {
+        if (codigoValue) codigoValue.textContent = ev.codigo_reunion;
+        if (codigoField) codigoField.style.display = 'block';
+    } else if (codigoField) {
+        codigoField.style.display = 'none';
+    }
 
     // Descripción
     const desc = document.getElementById('detail-descripcion');
     if (desc) desc.textContent = ev.descripcion || 'Sin descripción';
 
-    // Enlace virtual (si no existe, ofrecer deep link para crear reunión en Teams)
+    // Enlace virtual
     const linkField = document.getElementById('detail-link-field');
     const link = document.getElementById('detail-link');
-    const genBtn = document.getElementById('detail-generate-link');
-    const outlookBtn = document.getElementById('detail-outlook-link');
-    if (ev.ubicacion === 'virtual') {
-        if (linkField) {
-            linkField.style.display = 'block';
-            console.debug('[Drawer] Enlace visible (virtual). link_virtual:', ev.link_virtual);
-        }
+    const deleteBtn = document.getElementById('delete-link-btn');
+    const linkDisplayContainer = document.getElementById('link-display-container');
+    const replaceLinkContainer = document.getElementById('replace-link-container');
+    
+    // Guardar evento actual
+    window.currentDrawerEvent = ev;
+    
+    // Normalizar ubicación para comparación
+    const ubicacionNorm = (ev.ubicacion || '').toLowerCase().trim();
+    console.log('🔍 [Drawer DEBUG] Ubicación:', ubicacionNorm, 'Link:', ev.link_virtual);
+    
+    if (ubicacionNorm === 'virtual' || ubicacionNorm === 'hibrido') {
+        if (linkField) linkField.style.display = 'block';
+        
         if (ev.link_virtual) {
+            // Mostrar enlace con botón de basura
             if (link) {
                 link.href = ev.link_virtual;
                 link.textContent = 'Abrir reunión';
+                link.style.display = 'inline-flex';
             }
-            if (linkField) linkField.style.display = 'block';
-            if (genBtn) genBtn.style.display = 'none';
-            if (outlookBtn) {
-                outlookBtn.style.display = 'inline-flex';
-                outlookBtn.onclick = () => openOutlookCompose(ev);
-            }
+            if (deleteBtn) deleteBtn.style.display = 'inline-flex';
+            if (linkDisplayContainer) linkDisplayContainer.style.display = 'flex';
+            if (replaceLinkContainer) replaceLinkContainer.style.display = 'none';
         } else {
-            // Mostrar botón para generar enlace
-            if (genBtn) {
-                genBtn.style.display = 'inline-flex';
-                genBtn.onclick = async () => {
-                    const meetingId = generateUniqueId();
-                    const encodedTitle = encodeURIComponent(ev.titulo || 'Reunión');
-                    const meetingLink = `https://teams.microsoft.com/l/meetup-join/19%3A${meetingId}%40thread.v2/0?context=%7B%22Tid%22%3A%22public%22%2C%22Oid%22%3A%22public%22%7D&subject=${encodedTitle}`;
-
-                    // Persistir en backend como link_virtual
-                    try {
-                        const payload = {
-                            titulo: ev.titulo || 'Reunión',
-                            tipo: ev.tipo || 'general',
-                            descripcion: ev.descripcion ?? null,
-                            id_proyecto: ev.proyecto?.id_proyecto ?? ev.id_proyecto ?? null,
-                            fecha_hora: ev.fecha_hora.replace('T',' '),
-                            duracion: parseInt(ev.duracion ?? 60),
-                            ubicacion: 'virtual',
-                            link_virtual: meetingLink,
-                            recordatorio: ev.recordatorio ?? 'none',
-                            participantes: Array.isArray(ev.participantes) ? ev.participantes.map(p => p.id ?? p) : []
-                        };
-                        const res = await fetch(`/lider_semi/eventos/${ev.id}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                            },
-                            body: JSON.stringify(payload)
-                        });
-                        const data = await res.json();
-                        if (data.success) {
-                            ev.link_virtual = meetingLink;
-                            if (link) {
-                                link.href = meetingLink;
-                                link.textContent = 'Abrir reunión';
-                            }
-                            genBtn.style.display = 'none';
-                            showNotification('Enlace generado', 'Se creó y guardó el enlace de Teams', 'success');
-                            if (outlookBtn) {
-                                outlookBtn.style.display = 'inline-flex';
-                                outlookBtn.onclick = () => openOutlookCompose(ev);
-                            }
-                        } else {
-                            showNotification('No se pudo guardar el enlace', data.message || 'Intenta nuevamente', 'error');
-                        }
-                    } catch (e) {
-                        console.error('Error guardando link_virtual:', e);
-                        showNotification('Error de Conexión', 'No se pudo guardar el enlace', 'error');
-                    }
-                };
-            }
-            if (link) {
-                const deep = buildTeamsDeepLink(ev);
-                link.href = deep;
-                link.textContent = 'Crear reunión en Teams';
-            }
-            if (outlookBtn) {
-                outlookBtn.style.display = 'inline-flex';
-                outlookBtn.onclick = () => openOutlookCompose(ev);
-            }
+            // NO HAY ENLACE: Ocultar todo
+            console.log('⚠️ [Drawer] NO tiene link_virtual');
+            if (linkField) linkField.style.display = 'none';
         }
-    } else if (linkField) {
-        linkField.style.display = 'none';
-        console.debug('[Drawer] Enlace oculto (no virtual).');
+    } else {
+        if (linkField) linkField.style.display = 'none';
+        console.debug('[Drawer] Enlace oculto. Ubicación:', ubicacionNorm);
     }
 
     // Participantes chips
@@ -851,11 +827,185 @@ function openEventDrawer() {
 }
 
 function closeEventDrawer() {
+    // Remover foco de cualquier elemento dentro del drawer antes de ocultarlo
+    if (drawer && drawer.contains(document.activeElement)) {
+        document.activeElement.blur();
+    }
+    
     if (drawerOverlay) drawerOverlay.style.display = 'none';
     if (drawer) {
-        drawer.style.display = 'none';
         drawer.setAttribute('aria-hidden', 'true');
+        drawer.style.display = 'none';
     }
+}
+
+// Función para seleccionar plataforma de reunión
+function selectLinkPlatform(platform, event) {
+    document.querySelectorAll('.link-option').forEach(opt => {
+        opt.classList.remove('selected');
+    });
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('selected');
+    }
+    
+    // Ya no hay campo de enlace personalizado
+    console.log('Plataforma seleccionada:', platform);
+}
+
+// Función para mostrar el formulario de reemplazo de enlace
+function showReplaceLinkInput() {
+    const linkDisplayContainer = document.getElementById('link-display-container');
+    const replaceLinkContainer = document.getElementById('replace-link-container');
+    const replaceInput = document.getElementById('replace-link-input');
+    
+    if (linkDisplayContainer) linkDisplayContainer.style.display = 'none';
+    if (replaceLinkContainer) replaceLinkContainer.style.display = 'block';
+    if (replaceInput) {
+        replaceInput.value = '';
+        replaceInput.focus();
+    }
+}
+
+// Función para cancelar el reemplazo de enlace
+function cancelReplaceLink() {
+    const linkDisplayContainer = document.getElementById('link-display-container');
+    const replaceLinkContainer = document.getElementById('replace-link-container');
+    
+    if (linkDisplayContainer) linkDisplayContainer.style.display = 'flex';
+    if (replaceLinkContainer) replaceLinkContainer.style.display = 'none';
+}
+
+// Función para guardar el enlace reemplazado
+function saveReplacedLink() {
+    const ev = window.currentDrawerEvent;
+    if (!ev || !ev.id) {
+        showNotification('Error', 'No se pudo identificar el evento', 'error');
+        return;
+    }
+    
+    const replaceInput = document.getElementById('replace-link-input');
+    const newLink = replaceInput ? replaceInput.value.trim() : '';
+    
+    if (!newLink) {
+        showNotification('Error', 'Por favor ingresa un enlace válido', 'error');
+        return;
+    }
+    
+    // Validar que sea un enlace válido (debe empezar con http:// o https://)
+    if (!newLink.startsWith('http://') && !newLink.startsWith('https://')) {
+        showNotification('Error', 'El enlace debe ser una URL válida (debe empezar con https://)', 'error');
+        return;
+    }
+    
+    saveMeetingLink(ev.id, newLink);
+}
+
+// Función para guardar enlace manual
+function saveMeetingLink(eventId, link) {
+    const replaceLinkContainer = document.getElementById('replace-link-container');
+    if (replaceLinkContainer) {
+        replaceLinkContainer.innerHTML = '<div style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Guardando enlace...</div>';
+    }
+    
+    fetch(`/lider_semi/eventos/${eventId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ 
+            link_virtual: link,
+            _method: 'PUT'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Enlace Guardado', 'El enlace de reunión se guardó exitosamente', 'success');
+            
+            // Recargar eventos y actualizar el drawer
+            cargarEventos().then(() => {
+                // Reabrir el drawer con el evento actualizado
+                openEventDrawerById(eventId);
+            });
+        } else {
+            showNotification('Error', data.message || 'No se pudo guardar el enlace', 'error');
+            cancelReplaceLink();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error de Conexión', 'No se pudo guardar el enlace', 'error');
+        cancelReplaceLink();
+    });
+}
+
+// Función para generar enlace para evento existente (DEPRECADA - mantener por compatibilidad)
+function generateMeetingLink(eventId, platform) {
+    // Mostrar indicador de carga
+    const platformSelector = document.getElementById('platform-selector');
+    if (platformSelector) {
+        platformSelector.innerHTML = '<div style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Generando enlace...</div>';
+    }
+    
+    fetch(`/lider_semi/eventos/${eventId}/generar-enlace`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ plataforma: platform })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Enlace Generado', 'Se ha creado el enlace de reunión exitosamente', 'success');
+            
+            // Recargar eventos y actualizar el drawer con el nuevo enlace
+            cargarEventos().then(() => {
+                // Reabrir el drawer con el evento actualizado
+                openEventDrawerById(eventId);
+            });
+        } else {
+            showNotification('Error', data.message, 'error');
+            // Restaurar el selector si hay error
+            if (platformSelector) {
+                platformSelector.innerHTML = `
+                    <div class="drawer-label" style="margin-bottom:10px; font-weight:600; color:#374151;">
+                        🔗 Generar enlace con:
+                    </div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button type="button" class="btn-calendario btn-small platform-option" data-platform="teams" onclick="generateMeetingLinkFromDrawer('teams')" style="flex:1; min-width:120px;">
+                            <i class="fab fa-microsoft"></i> Teams
+                        </button>
+                        <button type="button" class="btn-calendario btn-small platform-option" data-platform="meet" onclick="generateMeetingLinkFromDrawer('meet')" style="flex:1; min-width:120px;">
+                            <i class="fab fa-google"></i> Meet
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error de Conexión', 'No se pudo generar el enlace', 'error');
+        // Restaurar el selector si hay error
+        if (platformSelector) {
+            platformSelector.innerHTML = `
+                <div class="drawer-label" style="margin-bottom:10px; font-weight:600; color:#374151;">
+                    🔗 Generar enlace con:
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button type="button" class="btn-calendario btn-small platform-option" data-platform="teams" onclick="generateMeetingLinkFromDrawer('teams')" style="flex:1; min-width:120px;">
+                        <i class="fab fa-microsoft"></i> Teams
+                    </button>
+                    <button type="button" class="btn-calendario btn-small platform-option" data-platform="meet" onclick="generateMeetingLinkFromDrawer('meet')" style="flex:1; min-width:120px;">
+                        <i class="fab fa-google"></i> Meet
+                    </button>
+                </div>
+            `;
+        }
+    });
 }
 
 // Función de notificaciones (reutilizando la del módulo de documentos)
@@ -913,4 +1063,39 @@ function showNotification(title, message, type = 'success') {
     setTimeout(() => {
         notification.remove();
     }, 5000);
+}
+
+// DEBUG: Función temporal para diagnosticar visibilidad del drawer
+window.debugDrawerState = function() {
+    console.group('🔍 DEBUG: Estado del Drawer');
+    const ev = window.currentDrawerEvent;
+    console.log('Evento actual:', ev);
+    if (ev) {
+        console.log('- ID:', ev.id);
+        console.log('- Título:', ev.titulo);
+        console.log('- Ubicación:', ev.ubicacion);
+        console.log('- Link virtual:', ev.link_virtual);
+        console.log('- Código reunión:', ev.codigo_reunion);
+    }
+    
+    const elements = {
+        'detail-link-field': document.getElementById('detail-link-field'),
+        'detail-link': document.getElementById('detail-link'),
+        'detail-generate-link': document.getElementById('detail-generate-link'),
+        'detail-outlook-link': document.getElementById('detail-outlook-link'),
+        'platform-selector': document.getElementById('platform-selector')
+    };
+    
+    console.table(Object.entries(elements).map(([id, el]) => ({
+        ID: id,
+        Existe: !!el,
+        Display: el?.style.display || 'N/A',
+        Visible: el ? (el.offsetParent !== null) : false
+    })));
+    console.groupEnd();
+    
+    return {
+        evento: ev,
+        elementos: elements
+    };
 }
