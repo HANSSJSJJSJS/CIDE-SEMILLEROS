@@ -15,6 +15,9 @@ const eventForm = document.getElementById('event-form');
 const closeModal = document.getElementById('close-modal');
 const cancelEvent = document.getElementById('btn-cancel'); // Cambiado de cancel-event a btn-cancel
 const modalTitle = document.getElementById('modal-title');
+// Drawer de detalle
+const drawer = document.getElementById('event-detail-drawer');
+const drawerOverlay = document.getElementById('event-detail-overlay');
 
 // Inicializar calendario
 document.addEventListener('DOMContentLoaded', function() {
@@ -22,11 +25,16 @@ document.addEventListener('DOMContentLoaded', function() {
     cargarEventos();
     
     // Event listeners (con verificación de existencia)
-    if (prevMonthButton) prevMonthButton.addEventListener('click', goToPreviousMonth);
-    if (nextMonthButton) nextMonthButton.addEventListener('click', goToNextMonth);
+    
     if (closeModal) closeModal.addEventListener('click', closeEventModal);
     if (cancelEvent) cancelEvent.addEventListener('click', closeEventModal);
     if (eventForm) eventForm.addEventListener('submit', saveEvent);
+    // Cerrar drawer
+    const closeDrawerBtn = document.getElementById('drawer-close-btn');
+    const closeCta = document.getElementById('drawer-close-cta');
+    if (closeDrawerBtn) closeDrawerBtn.addEventListener('click', closeEventDrawer);
+    if (closeCta) closeCta.addEventListener('click', closeEventDrawer);
+    if (drawerOverlay) drawerOverlay.addEventListener('click', closeEventDrawer);
     
     // Event listeners para opciones de notificación
     document.querySelectorAll('.notification-option-modal').forEach(option => {
@@ -47,6 +55,142 @@ document.addEventListener('DOMContentLoaded', function() {
     if (eventDateInput) {
         eventDateInput.min = formattedDate;
     }
+
+    // Parser local para fechas 'YYYY-MM-DD' (evita parseo UTC por defecto)
+    window.parseLocalYMD = function(str) {
+        if (!str) return null;
+        const parts = str.split('-').map(Number);
+        if (parts.length !== 3) return null;
+        return new Date(parts[0], parts[1]-1, parts[2], 0, 0, 0, 0);
+    };
+
+// Reprogramar evento (mover fecha manteniendo la hora original)
+function updateEventDate(eventId, targetDate) {
+    const ev = eventos.find(e => e.id == eventId);
+    if (!ev) return;
+
+    const oldDate = new Date(ev.fecha_hora);
+    const newDateTime = new Date(targetDate);
+    newDateTime.setHours(oldDate.getHours(), oldDate.getMinutes(), 0, 0);
+
+    // Formato local YYYY-MM-DD HH:MM:SS para evitar desfase UTC
+    const formatLocalDateTime = (d) => {
+        const pad = (n) => String(n).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        const mm = pad(d.getMonth() + 1);
+        const dd = pad(d.getDate());
+        const HH = pad(d.getHours());
+        const MM = pad(d.getMinutes());
+        const SS = '00';
+        return `${yyyy}-${mm}-${dd} ${HH}:${MM}:${SS}`;
+    };
+
+    const url = `/lider_semi/eventos/${eventId}`;
+    const method = 'PUT';
+
+    // Enviar todos los campos que el backend espera, cambiando solo fecha_hora
+    const payload = {
+        titulo: ev.titulo || 'Reunión',
+        tipo: ev.tipo || 'general',
+        descripcion: ev.descripcion ?? null,
+        id_proyecto: ev.proyecto?.id_proyecto ?? ev.id_proyecto ?? null,
+        fecha_hora: formatLocalDateTime(newDateTime),
+        duracion: parseInt(ev.duracion ?? 60),
+        ubicacion: ev.ubicacion ?? 'virtual',
+        link_virtual: ev.link_virtual ?? null,
+        recordatorio: ev.recordatorio ?? 'none',
+        participantes: Array.isArray(ev.participantes) ? ev.participantes.map(p => p.id ?? p) : []
+    };
+
+    fetch(url, {
+        method,
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            // Actualizar estado local inmediatamente
+            ev.fecha_hora = payload.fecha_hora.replace(' ', 'T');
+            showNotification('Reunión reprogramada', data.message || 'Se actualizó la fecha correctamente', 'success');
+            cargarEventos();
+        } else {
+            const detail = data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Intenta nuevamente');
+            console.warn('Respuesta actualización inválida:', data);
+            showNotification('No se pudo reprogramar', detail, 'error');
+        }
+    })
+    .catch(err => {
+        console.error('Error al reprogramar:', err);
+        showNotification('Error de Conexión', 'No se pudo reprogramar el evento', 'error');
+    });
+}
+
+// Reprogramar evento cambiando fecha y hora explícitamente
+// targetDate puede ser Date o string 'YYYY-MM-DD'; targetHour es 'HH:MM'
+function updateEventDateTime(eventId, targetDate, targetHour) {
+    const ev = eventos.find(e => e.id == eventId);
+    if (!ev) return;
+
+    const baseDate = (targetDate instanceof Date) ? new Date(targetDate) : parseLocalYMD(String(targetDate));
+    if (!baseDate) return;
+
+    const [h, m] = (targetHour || '00:00').split(':').map(Number);
+    baseDate.setHours(h || 0, m || 0, 0, 0);
+
+    const formatLocalDateTime = (d) => {
+        const pad = (n) => String(n).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        const mm = pad(d.getMonth() + 1);
+        const dd = pad(d.getDate());
+        const HH = pad(d.getHours());
+        const MM = pad(d.getMinutes());
+        return `${yyyy}-${mm}-${dd} ${HH}:${MM}:00`;
+    };
+
+    const payload = {
+        titulo: ev.titulo || 'Reunión',
+        tipo: ev.tipo || 'general',
+        descripcion: ev.descripcion ?? null,
+        id_proyecto: ev.proyecto?.id_proyecto ?? ev.id_proyecto ?? null,
+        fecha_hora: formatLocalDateTime(baseDate),
+        duracion: parseInt(ev.duracion ?? 60),
+        ubicacion: ev.ubicacion ?? 'virtual',
+        link_virtual: ev.link_virtual ?? null,
+        recordatorio: ev.recordatorio ?? 'none',
+        participantes: Array.isArray(ev.participantes) ? ev.participantes.map(p => p.id ?? p) : []
+    };
+
+    fetch(`/lider_semi/eventos/${eventId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const iso = payload.fecha_hora.replace(' ', 'T');
+            ev.fecha_hora = iso;
+            showNotification('Reunión reprogramada', data.message || 'Se actualizó la fecha y hora', 'success');
+            cargarEventos();
+        } else {
+            const detail = data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Intenta nuevamente');
+            showNotification('No se pudo reprogramar', detail, 'error');
+        }
+    })
+    .catch(err => {
+        console.error('Error al reprogramar (fecha y hora):', err);
+        showNotification('Error de Conexión', 'No se pudo reprogramar el evento', 'error');
+    });
+}
     
     // Cerrar modal al hacer clic fuera
     window.addEventListener('click', function(event) {
@@ -81,7 +225,50 @@ function renderCalendar() {
     for (let i = firstDayOfWeek - 1; i >= 0; i--) {
         const dayElement = document.createElement('div');
         dayElement.className = 'calendar-day other-month';
-        dayElement.innerHTML = `<div class="day-number">${prevMonthLastDay - i}</div>`;
+        const prevDayNum = prevMonthLastDay - i;
+        dayElement.innerHTML = `<div class="day-number">${prevDayNum}</div>`;
+        // Fecha real del día del mes anterior
+        const prevDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, prevDayNum);
+        dayElement.dataset.date = formatDateForInput(prevDate);
+        // Habilitar drop en el día
+        dayElement.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dayElement.classList.add('drag-over');
+        });
+        dayElement.addEventListener('dragleave', () => {
+            dayElement.classList.remove('drag-over');
+        });
+        dayElement.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dayElement.classList.remove('drag-over');
+            const eventId = e.dataTransfer.getData('text/event-id');
+            if (!eventId) return;
+            const targetDate = parseLocalYMD(dayElement.dataset.date);
+            // Validaciones: no pasado y día laborable
+            if (typeof isPastDateTime === 'function' && isPastDateTime(targetDate)) {
+                showNotification('No permitido', 'No puedes mover reuniones a fechas pasadas', 'error');
+                return;
+            }
+            if (typeof isWorkingDay === 'function' && !isWorkingDay(targetDate)) {
+                showNotification('No permitido', 'Solo se pueden programar reuniones en días laborables', 'error');
+                return;
+            }
+            updateEventDate(eventId, targetDate);
+        });
+
+        // Listeners para arrastrar cada evento
+        const previews = dayElement.querySelectorAll('.event-preview[draggable="true"]');
+        previews.forEach(prev => {
+            prev.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/event-id', prev.getAttribute('data-event-id'));
+                e.dataTransfer.effectAllowed = 'move';
+                prev.classList.add('dragging');
+            });
+            prev.addEventListener('dragend', () => {
+                prev.classList.remove('dragging');
+            });
+        });
+
         calendarGrid.appendChild(dayElement);
     }
     
@@ -93,6 +280,8 @@ function renderCalendar() {
         
         // Verificar si es hoy
         const cellDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), i);
+        // Guardar fecha destino para drag & drop
+        dayElement.dataset.date = formatDateForInput(cellDate);
         if (cellDate.toDateString() === today.toDateString()) {
             dayElement.classList.add('today');
         }
@@ -122,10 +311,26 @@ function renderCalendar() {
             <div class="day-number">${i}</div>
             ${dayEvents.length > 0 ? `<div class="event-indicator"></div>` : ''}
             ${dayEvents.slice(0, 2).map(event => `
-                <div class="event-preview">${event.titulo}</div>
+                <div class="event-preview" data-event-id="${event.id}" draggable="true">${event.titulo}</div>
             `).join('')}
             ${dayEvents.length > 2 ? `<div class="event-preview">+${dayEvents.length - 2} más</div>` : ''}
         `;
+
+        // Listeners de clic y drag en eventos renderizados
+        const previews = dayElement.querySelectorAll('.event-preview[draggable="true"]');
+        previews.forEach(prev => {
+            prev.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/event-id', prev.getAttribute('data-event-id'));
+                e.dataTransfer.effectAllowed = 'move';
+                prev.classList.add('dragging');
+            });
+            prev.addEventListener('dragend', () => prev.classList.remove('dragging'));
+            prev.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = prev.getAttribute('data-event-id');
+                if (id) openEventDrawerById(id);
+            });
+        });
         
         // Agregar evento de clic solo si es día laborable y no pasado
         const isClickable = typeof isWorkingDay === 'function' ? 
@@ -148,6 +353,32 @@ function renderCalendar() {
         const dayElement = document.createElement('div');
         dayElement.className = 'calendar-day other-month';
         dayElement.innerHTML = `<div class="day-number">${i}</div>`;
+        const nextDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, i);
+        dayElement.dataset.date = formatDateForInput(nextDate);
+        // Habilitar drop en el día del mes siguiente
+        dayElement.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dayElement.classList.add('drag-over');
+        });
+        dayElement.addEventListener('dragleave', () => {
+            dayElement.classList.remove('drag-over');
+        });
+        dayElement.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dayElement.classList.remove('drag-over');
+            const eventId = e.dataTransfer.getData('text/event-id');
+            if (!eventId) return;
+            const targetDate = parseLocalYMD(dayElement.dataset.date);
+            if (typeof isPastDateTime === 'function' && isPastDateTime(targetDate)) {
+                showNotification('No permitido', 'No puedes mover reuniones a fechas pasadas', 'error');
+                return;
+            }
+            if (typeof isWorkingDay === 'function' && !isWorkingDay(targetDate)) {
+                showNotification('No permitido', 'Solo se pueden programar reuniones en días laborables', 'error');
+                return;
+            }
+            updateEventDate(eventId, targetDate);
+        });
         calendarGrid.appendChild(dayElement);
     }
     
@@ -197,7 +428,9 @@ function cargarEventos() {
             if (data.success) {
                 eventos = data.eventos;
                 console.log(`Eventos cargados: ${eventos.length}`);
-                renderEventsList();
+                if (typeof renderEventsList === 'function' && eventsList && emptyEvents) {
+                    renderEventsList();
+                }
                 renderCalendar();
             }
         })
@@ -208,6 +441,8 @@ function cargarEventos() {
 }
 
 function renderEventsList() {
+    // Si no existen los nodos del sidebar, no hacer nada
+    if (!eventsList || !emptyEvents) return;
     console.log('renderEventsList - Total eventos:', eventos.length);
     eventsList.innerHTML = '';
     
@@ -468,6 +703,159 @@ function deleteEvent(eventId) {
             'error'
         );
     });
+}
+
+// ===== Detalle de reunión (Drawer) =====
+function openEventDrawerById(eventId) {
+    const ev = eventos.find(e => String(e.id) === String(eventId));
+    if (!ev) return;
+
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val ?? '--'; };
+
+    // Fecha y hora legibles
+    const d = new Date(ev.fecha_hora);
+    const fechaStr = d.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
+    const horaStr = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+    setText('detail-titulo', ev.titulo || 'Reunión');
+    setText('detail-tipo', ev.tipo || 'general');
+    setText('detail-fecha', fechaStr);
+    setText('detail-hora', horaStr);
+    setText('detail-duracion', ev.duracion ? `${ev.duracion} min` : '60 min');
+    setText('detail-ubicacion', ev.ubicacion || 'virtual');
+
+    // Descripción
+    const desc = document.getElementById('detail-descripcion');
+    if (desc) desc.textContent = ev.descripcion || 'Sin descripción';
+
+    // Enlace virtual (si no existe, ofrecer deep link para crear reunión en Teams)
+    const linkField = document.getElementById('detail-link-field');
+    const link = document.getElementById('detail-link');
+    const genBtn = document.getElementById('detail-generate-link');
+    const outlookBtn = document.getElementById('detail-outlook-link');
+    if (ev.ubicacion === 'virtual') {
+        if (linkField) {
+            linkField.style.display = 'block';
+            console.debug('[Drawer] Enlace visible (virtual). link_virtual:', ev.link_virtual);
+        }
+        if (ev.link_virtual) {
+            if (link) {
+                link.href = ev.link_virtual;
+                link.textContent = 'Abrir reunión';
+            }
+            if (linkField) linkField.style.display = 'block';
+            if (genBtn) genBtn.style.display = 'none';
+            if (outlookBtn) {
+                outlookBtn.style.display = 'inline-flex';
+                outlookBtn.onclick = () => openOutlookCompose(ev);
+            }
+        } else {
+            // Mostrar botón para generar enlace
+            if (genBtn) {
+                genBtn.style.display = 'inline-flex';
+                genBtn.onclick = async () => {
+                    const meetingId = generateUniqueId();
+                    const encodedTitle = encodeURIComponent(ev.titulo || 'Reunión');
+                    const meetingLink = `https://teams.microsoft.com/l/meetup-join/19%3A${meetingId}%40thread.v2/0?context=%7B%22Tid%22%3A%22public%22%2C%22Oid%22%3A%22public%22%7D&subject=${encodedTitle}`;
+
+                    // Persistir en backend como link_virtual
+                    try {
+                        const payload = {
+                            titulo: ev.titulo || 'Reunión',
+                            tipo: ev.tipo || 'general',
+                            descripcion: ev.descripcion ?? null,
+                            id_proyecto: ev.proyecto?.id_proyecto ?? ev.id_proyecto ?? null,
+                            fecha_hora: ev.fecha_hora.replace('T',' '),
+                            duracion: parseInt(ev.duracion ?? 60),
+                            ubicacion: 'virtual',
+                            link_virtual: meetingLink,
+                            recordatorio: ev.recordatorio ?? 'none',
+                            participantes: Array.isArray(ev.participantes) ? ev.participantes.map(p => p.id ?? p) : []
+                        };
+                        const res = await fetch(`/lider_semi/eventos/${ev.id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            ev.link_virtual = meetingLink;
+                            if (link) {
+                                link.href = meetingLink;
+                                link.textContent = 'Abrir reunión';
+                            }
+                            genBtn.style.display = 'none';
+                            showNotification('Enlace generado', 'Se creó y guardó el enlace de Teams', 'success');
+                            if (outlookBtn) {
+                                outlookBtn.style.display = 'inline-flex';
+                                outlookBtn.onclick = () => openOutlookCompose(ev);
+                            }
+                        } else {
+                            showNotification('No se pudo guardar el enlace', data.message || 'Intenta nuevamente', 'error');
+                        }
+                    } catch (e) {
+                        console.error('Error guardando link_virtual:', e);
+                        showNotification('Error de Conexión', 'No se pudo guardar el enlace', 'error');
+                    }
+                };
+            }
+            if (link) {
+                const deep = buildTeamsDeepLink(ev);
+                link.href = deep;
+                link.textContent = 'Crear reunión en Teams';
+            }
+            if (outlookBtn) {
+                outlookBtn.style.display = 'inline-flex';
+                outlookBtn.onclick = () => openOutlookCompose(ev);
+            }
+        }
+    } else if (linkField) {
+        linkField.style.display = 'none';
+        console.debug('[Drawer] Enlace oculto (no virtual).');
+    }
+
+    // Participantes chips
+    const cont = document.getElementById('detail-participantes');
+    if (cont) {
+        cont.innerHTML = '';
+        const parts = Array.isArray(ev.participantes) ? ev.participantes : [];
+        if (parts.length === 0) cont.textContent = 'Sin participantes';
+        else parts.forEach(p => {
+            const chip = document.createElement('span');
+            chip.className = 'chip';
+            chip.textContent = p.nombre_completo || p.nombre || p.name || `ID ${p.id ?? p}`;
+            cont.appendChild(chip);
+        });
+    }
+
+    // Avatar con iniciales del título
+    const av = document.getElementById('detail-avatar');
+    if (av) {
+        const initials = (ev.titulo || 'RM').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+        av.textContent = initials || 'RM';
+    }
+
+    openEventDrawer();
+}
+
+function openEventDrawer() {
+    if (drawerOverlay) drawerOverlay.style.display = 'block';
+    if (drawer) {
+        drawer.style.display = 'flex';
+        drawer.setAttribute('aria-hidden', 'false');
+    }
+}
+
+function closeEventDrawer() {
+    if (drawerOverlay) drawerOverlay.style.display = 'none';
+    if (drawer) {
+        drawer.style.display = 'none';
+        drawer.setAttribute('aria-hidden', 'true');
+    }
 }
 
 // Función de notificaciones (reutilizando la del módulo de documentos)

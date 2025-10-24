@@ -398,6 +398,12 @@ function renderWeekView() {
             
             const cell = document.createElement('div');
             cell.className = 'week-hour-cell';
+            // Hacer celda droppable para mover eventos a esta fecha/hora
+            cell.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                cell.classList.add('drag-over');
+            });
+            cell.addEventListener('dragleave', () => cell.classList.remove('drag-over'));
             
             // Verificar si hay evento en este horario
             const cellDateTime = new Date(day);
@@ -411,12 +417,49 @@ function renderWeekView() {
             
             if (eventInSlot) {
                 cell.classList.add('has-event');
-                cell.innerHTML = `<div class="week-event">${eventInSlot.titulo}</div>`;
+                const evDiv = document.createElement('div');
+                evDiv.className = 'week-event';
+                evDiv.textContent = eventInSlot.titulo;
+                evDiv.setAttribute('draggable', 'true');
+                evDiv.dataset.eventId = eventInSlot.id;
+                evDiv.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/event-id', String(eventInSlot.id));
+                    e.dataTransfer.effectAllowed = 'move';
+                    evDiv.classList.add('dragging');
+                });
+                evDiv.addEventListener('dragend', () => evDiv.classList.remove('dragging'));
+                evDiv.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (typeof openEventDrawerById === 'function') {
+                        openEventDrawerById(eventInSlot.id);
+                    }
+                });
+                cell.appendChild(evDiv);
             } else {
                 cell.addEventListener('click', () => {
                     openTimeSlotModal(day, hour);
                 });
             }
+
+            // Drop para reprogramar a esta fecha/hora
+            cell.addEventListener('drop', (e) => {
+                e.preventDefault();
+                cell.classList.remove('drag-over');
+                const eventId = e.dataTransfer.getData('text/event-id');
+                if (!eventId) return;
+                // Validaciones
+                if (typeof isPastDateTime === 'function' && isPastDateTime(day, hour)) {
+                    mostrarNotificacion('No puedes mover reuniones a horas pasadas', 'error');
+                    return;
+                }
+                if (typeof isWorkingDay === 'function' && !isWorkingDay(day)) {
+                    mostrarNotificacion('Solo se pueden programar reuniones en días laborables', 'error');
+                    return;
+                }
+                if (typeof updateEventDateTime === 'function') {
+                    updateEventDateTime(eventId, day, hour);
+                }
+            });
             
             row.appendChild(cell);
         }
@@ -480,6 +523,12 @@ function renderDayView() {
         
         const content = document.createElement('div');
         content.className = 'day-time-content';
+        // Permitir drop para mover eventos a esta hora
+        content.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            content.classList.add('drag-over');
+        });
+        content.addEventListener('dragleave', () => content.classList.remove('drag-over'));
         
         // Verificar si hay evento en este horario
         const cellDateTime = new Date(currentDate);
@@ -502,6 +551,20 @@ function renderDayView() {
                         <i class="fas fa-users"></i> ${event.participantes ? event.participantes.length : 0} participantes
                     </div>
                 `;
+                eventDiv.setAttribute('draggable', 'true');
+                eventDiv.dataset.eventId = event.id;
+                eventDiv.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/event-id', String(event.id));
+                    e.dataTransfer.effectAllowed = 'move';
+                    eventDiv.classList.add('dragging');
+                });
+                eventDiv.addEventListener('dragend', () => eventDiv.classList.remove('dragging'));
+                eventDiv.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (typeof openEventDrawerById === 'function') {
+                        openEventDrawerById(event.id);
+                    }
+                });
                 content.appendChild(eventDiv);
             });
         } else {
@@ -509,6 +572,25 @@ function renderDayView() {
                 openTimeSlotModal(currentDate, hour);
             });
         }
+
+        // Drop para reprogramar en esta hora
+        content.addEventListener('drop', (e) => {
+            e.preventDefault();
+            content.classList.remove('drag-over');
+            const eventId = e.dataTransfer.getData('text/event-id');
+            if (!eventId) return;
+            if (typeof isPastDateTime === 'function' && isPastDateTime(currentDate, hour)) {
+                mostrarNotificacion('No puedes mover reuniones a horas pasadas', 'error');
+                return;
+            }
+            if (typeof isWorkingDay === 'function' && !isWorkingDay(currentDate)) {
+                mostrarNotificacion('Solo se pueden programar reuniones en días laborables', 'error');
+                return;
+            }
+            if (typeof updateEventDateTime === 'function') {
+                updateEventDateTime(eventId, currentDate, hour);
+            }
+        });
         
         slot.appendChild(timeLabel);
         slot.appendChild(content);

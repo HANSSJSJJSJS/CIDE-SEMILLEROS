@@ -1,8 +1,9 @@
 @extends('layouts.lider_semi')
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/calendario.css') }}">
-<link rel="stylesheet" href="{{ asset('css/calendario-views.css') }}">
+@php($v = time())
+<link rel="stylesheet" href="{{ asset('css/calendario.css') }}?v={{ $v }}">
+<link rel="stylesheet" href="{{ asset('css/calendario-views.css') }}?v={{ $v }}">
 @endpush
 
 @section('content')
@@ -63,19 +64,6 @@
                 <div class="day-container" id="day-container">
                     <!-- El día se generará con JavaScript -->
                 </div>
-            </div>
-        </div>
-
-        <div class="events-sidebar">
-            <h2 class="section-title">Próximos Eventos</h2>
-            <ul class="events-list" id="events-list">
-                <!-- Los eventos se cargarán con JavaScript -->
-            </ul>
-
-            <div class="empty-state" id="empty-events" style="display: none;">
-                <i class="far fa-calendar-plus"></i>
-                <p>No hay eventos programados</p>
-                <p class="text-muted small">Haz click en un día del calendario para agendar</p>
             </div>
         </div>
     </div>
@@ -357,7 +345,72 @@
     </div>
 </div>
 
-<script src="{{ asset('js/calendario.js') }}"></script>
-<script src="{{ asset('js/calendario-views.js') }}"></script>
-<script src="{{ asset('js/calendario-wizard.js') }}"></script>
+<!-- Drawer lateral de Detalle de Reunión -->
+<div id="event-detail-overlay" class="drawer-overlay" style="display:none;"></div>
+<aside id="event-detail-drawer" class="drawer" aria-hidden="true" style="display:none;">
+    <div class="drawer-header">
+        <div class="drawer-avatar" id="detail-avatar">RM</div>
+        <h3 class="drawer-title" id="detail-title">Detalle de la reunión</h3>
+        <button type="button" class="drawer-close" id="drawer-close-btn">&times;</button>
+    </div>
+    <div class="drawer-body">
+        <section class="drawer-section">
+            <h4 class="drawer-section-title">Información General</h4>
+            <div class="drawer-grid">
+                <div class="drawer-field">
+                    <div class="drawer-label">Título</div>
+                    <div class="drawer-value" id="detail-titulo">--</div>
+                </div>
+                <div class="drawer-field">
+                    <div class="drawer-label">Tipo</div>
+                    <div class="drawer-value" id="detail-tipo">--</div>
+                </div>
+                <div class="drawer-field">
+                    <div class="drawer-label">Fecha</div>
+                    <div class="drawer-value" id="detail-fecha">--</div>
+                </div>
+                <div class="drawer-field">
+                    <div class="drawer-label">Hora</div>
+                    <div class="drawer-value" id="detail-hora">--</div>
+                </div>
+                <div class="drawer-field">
+                    <div class="drawer-label">Duración</div>
+                    <div class="drawer-value" id="detail-duracion">--</div>
+                </div>
+                <div class="drawer-field">
+                    <div class="drawer-label">Ubicación</div>
+                    <div class="drawer-value" id="detail-ubicacion">--</div>
+                </div>
+                <div class="drawer-field" id="detail-link-field" style="display:none;">
+                    <div class="drawer-label">Enlace</div>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <a href="#" id="detail-link" class="drawer-link" target="_blank" rel="noopener">Abrir reunión</a>
+                        <button type="button" id="detail-generate-link" class="btn-calendario btn-primary-calendario btn-small" style="display:none;">
+                            Generar enlace
+                        </button>
+                        <button type="button" id="detail-outlook-link" class="btn-calendario btn-secondary-calendario btn-small" style="display:none;">
+                            Abrir en Outlook
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="drawer-section">
+            <h4 class="drawer-section-title">Participantes</h4>
+            <div id="detail-participantes" class="participants-chips">--</div>
+        </section>
+        <section class="drawer-section">
+            <h4 class="drawer-section-title">Descripción</h4>
+            <div id="detail-descripcion" class="drawer-description">--</div>
+        </section>
+        <div class="drawer-actions">
+            <button type="button" class="btn-calendario btn-secondary-calendario" id="drawer-close-cta">Cerrar</button>
+        </div>
+    </div>
+</aside>
+
+@php($v = time())
+<script src="{{ asset('js/calendario.js') }}?v={{ $v }}"></script>
+<script src="{{ asset('js/calendario-views.js') }}?v={{ $v }}"></script>
+<script src="{{ asset('js/calendario-wizard.js') }}?v={{ $v }}"></script>
 @endsection
