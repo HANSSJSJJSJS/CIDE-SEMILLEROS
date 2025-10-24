@@ -421,8 +421,8 @@ class SemilleroController extends Controller
                     'id_aprendiz' => $aid,
                     'documento' => 'PLACEHOLDER_' . $aid,
                     'ruta_archivo' => '',
-                    'tipo_archivo' => null,
-                    'tamanio' => null,
+                    'tipo_archivo' => 'OTRO',
+                    'tamanio' => 0,
                     'fecha_subida' => now(),
                 ];
             } else {
@@ -508,8 +508,8 @@ class SemilleroController extends Controller
                     'id_aprendiz' => $ap->id_aprendiz,
                     'documento' => 'PLACEHOLDER_' . $ap->id_aprendiz, // NOT NULL, usar placeholder único
                     'ruta_archivo' => '', // NOT NULL, vacío
-                    'tipo_archivo' => null, // Nullable
-                    'tamanio' => null, // Nullable (nota: es "tamanio" con i)
+                    'tipo_archivo' => 'OTRO', // ENUM: usar valor válido
+                    'tamanio' => 0, // NOT NULL, 0 por defecto
                     'fecha_subida' => now(), // NOT NULL
                 ]);
             }
