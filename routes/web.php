@@ -20,6 +20,7 @@ use App\Http\Controllers\Aprendiz\PerfilController;
 use App\Http\Controllers\Aprendiz\ProyectoController;
 use App\Http\Controllers\Aprendiz\ArchivoController;
 use App\Http\Controllers\LiderSemillero\DashboardController_semi;
+use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
 // ---------------------------------------------
 // RUTAS PÚBLICAS
@@ -172,9 +173,14 @@ Route::middleware(['auth', 'role:APRENDIZ'])
     ->group(function () {
 
         // Dashboard Aprendiz
-        Route::get('/dashboard', [AprendizDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [AprendizDashboardController::class, 'index'])
+            ->name('dashboard');
 
-        // Perfil (ver datos personales)
+        // Endpoint de estadísticas del dashboard
+        Route::get('/dashboard/stats', [AprendizDashboardController::class, 'stats'])
+            ->name('dashboard.stats');
+
+        // Perfil (ver y editar datos personales)
         Route::get('/perfil', [PerfilController::class, 'show'])->name('perfil.show');
         Route::get('/perfil/edit', [PerfilController::class, 'edit'])->name('perfil.edit');
         Route::post('/perfil/update', [PerfilController::class, 'update'])->name('perfil.update');
@@ -186,7 +192,8 @@ Route::middleware(['auth', 'role:APRENDIZ'])
         // Archivos
         Route::resource('archivos', ArchivoController::class);
 
-        // Rutas específicas de Archivos (si necesitas sobrescribir o añadir)
+        // Subida de archivos (manual)
         Route::get('/archivos/upload', [ArchivoController::class, 'create'])->name('archivos.upload');
         Route::post('/archivos/upload', [ArchivoController::class, 'upload'])->name('archivos.upload.post');
     });
+

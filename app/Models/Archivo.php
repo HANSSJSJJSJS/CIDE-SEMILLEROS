@@ -11,14 +11,20 @@ class Archivo extends Model
 {
     use HasFactory;
 
+    protected $table = 'archivos';
+
     protected $fillable = [
-        'nombre_archivo',
+        'nombre_original',
+        'nombre_almacenado',
         'ruta',
         'proyecto_id',
         'user_id',
-        'estado'
+        'estado',
+        'mime_type',
+        'subido_en',
     ];
 
+    // 🔹 Relaciones
     public function proyecto()
     {
         return $this->belongsTo(Proyecto::class);
@@ -27,5 +33,27 @@ class Archivo extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    // 🔹 Scopes útiles para estadísticas
+    public function scopeDelUsuario($query, $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
+
+    public function scopeDelProyecto($query, $proyectoId)
+    {
+        return $query->where('proyecto_id', $proyectoId);
+    }
+
+    public function scopeCompletados($query)
+    {
+        // Estado aprobado por el líder
+        return $query->where('estado', 'aprobado');
+    }
+
+    public function scopePendientes($query)
+    {
+        return $query->where('estado', 'pendiente');
     }
 }

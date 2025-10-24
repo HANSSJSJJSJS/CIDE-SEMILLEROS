@@ -2,15 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Evidencia;
+
 
 class Proyecto extends Model
 {
-    use HasFactory;
-
     protected $table = 'proyectos';
     protected $primaryKey = 'id_proyecto';
+    public $timestamps = false;
 
     protected $fillable = [
         'id_semillero',
@@ -29,24 +29,25 @@ class Proyecto extends Model
         'actualizado_en'
     ];
 
-    // Relación con aprendices (usuarios) si usas tabla pivote:
-    public function aprendices()
-    {
-        return $this->belongsToMany(User::class, 'proyecto_user', 'id_proyecto', 'user_id');
-    }
-
+    // Relación con semillero
     public function semillero()
     {
         return $this->belongsTo(Semillero::class, 'id_semillero');
     }
 
-    public function tipoProyecto()
+    // Relación con usuarios (aprendices)
+    public function aprendices()
     {
-        return $this->belongsTo(TipoProyecto::class, 'id_tipo_proyecto');
+        return $this->belongsToMany(User::class, 'proyecto_user', 'id_proyecto', 'user_id');
     }
 
-    public function archivos()
+    // Relación con documentos
+    public function documentos()
     {
-        return $this->hasMany(Archivo::class, 'id_proyecto');
+        return $this->hasMany(Documento::class, 'id_proyecto');
     }
+    public function evidencias()
+{
+    return $this->hasMany(Evidencia::class, 'id_proyecto', 'id_proyecto');
+}
 }

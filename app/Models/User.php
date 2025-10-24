@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany; // Importar BelongsToMany
-
+use App\Models\Proyecto;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -85,6 +85,15 @@ public function aprendiz()
 public function administrador()
 {
     return $this->hasOne(Administrador::class, 'id_usuario');
+}
+
+public function evidencias()
+{
+    return $this->hasMany(Evidencias::class, 'proyecto_id', 'id_proyecto');
+}
+ public function documentos()
+{
+    return $this->hasMany(Documento::class, 'id_usuario', 'id');
 }
 
 }

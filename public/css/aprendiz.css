@@ -1,0 +1,89 @@
+/* Fondo general */
+.main-bg {
+    background-image: url("../images/image.png"); /* cambia la ruta */
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+
+/* Header */
+.header-bar {
+    background: #fff;
+    border-radius: 15px;
+    margin: 15px 20px;
+}
+.brand-text {
+    color: #009639;
+}
+
+/* Sidebar */
+.sidebar {
+    background: #fff;
+    border-radius: 15px;
+    min-height: 85vh;
+    margin-left: 20px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+.user-avatar {
+    background: #002f6c;
+    color: #fff;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    font-weight: bold;
+    line-height: 60px;
+}
+.nav-link {
+    color: #333;
+    font-weight: 500;
+    border-radius: 10px;
+    padding: 10px 15px;
+    margin: 5px 0;
+    transition: all 0.3s;
+}
+.nav-link.active,
+.nav-link:hover {
+    background: #002f6c;
+    color: #fff;
+}
+
+/* Contenido principal */
+.content-wrapper {
+    background: #fff;
+    border-radius: 15px;
+}
+.project-card {
+    background: #f8f9fa;
+    border-left: 5px solid #009639;
+    transition: all 0.3s ease;
+}
+.project-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Botones */
+.btn-success {
+    background-color: #009639;
+    border: none;
+}
+.btn-success:hover {
+    background-color: #007a2b;
+}
+.btn-outline-success {
+    border: 2px solid #009639;
+    color: #009639;
+}
+.btn-outline-success:hover {
+    background-color: #009639;
+    color: #fff;
+}
+/* Alinear contenido principal con sidebar */
+main {
+    margin-top: 0 !important;
+}
+
+/* Elimina separación extra del header */
+.header-bar {
+    margin-bottom: 10px !important;
+}

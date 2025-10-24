@@ -26,16 +26,26 @@ class ArchivoController extends Controller
     {
         // Validar la solicitud
         $request->validate([
-            'archivo' => 'required|file|mimes:pdf|max:2048',
+            'archivo' => 'required|file|mimes:pdf|max:5120', // hasta 5MB
+            'proyecto_id' => 'required|exists:proyectos,id',
         ]);
 
-        // Subir el archivo
-        $path = $request->file('archivo')->store('archivos');
+        // Obtener información del archivo
+        $archivo = $request->file('archivo');
+        $nombreOriginal = $archivo->getClientOriginalName();
+        $nombreAlmacenado = uniqid() . '_' . $nombreOriginal; // nombre único
+        $ruta = $archivo->storeAs('archivos', $nombreAlmacenado, 'public'); // carpeta archivos/ dentro de storage/app/public
 
         // Crear un nuevo registro en la base de datos
         Archivo::create([
-            'ruta' => $path,
-            'nombre' => $request->file('archivo')->getClientOriginalName(),
+            'user_id' => auth()->id(),
+            'proyecto_id' => $request->proyecto_id,
+            'nombre_original' => $nombreOriginal,
+            'nombre_almacenado' => $nombreAlmacenado,
+            'ruta' => $ruta,
+            'estado' => 'pendiente', // Por defecto
+            'mime_type' => $archivo->getClientMimeType(),
+            'subido_en' => now(),
         ]);
 
         return redirect()->route('aprendiz.archivos.index')->with('success', 'Archivo subido exitosamente.');
@@ -45,6 +55,6 @@ class ArchivoController extends Controller
     {
         // Descargar un archivo específico
         $archivo = Archivo::findOrFail($id);
-        return Storage::download($archivo->ruta);
+        return Storage::disk('public')->download($archivo->ruta, $archivo->nombre_original);
     }
 }

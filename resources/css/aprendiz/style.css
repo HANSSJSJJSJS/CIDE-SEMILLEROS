@@ -1,80 +1,367 @@
-/* Este archivo contiene los estilos CSS específicos para el módulo del aprendiz */
+:root {
+            --sena-green: #39B54A;
+            --sidebar-width: 250px;
+            --topbar-height: 60px;
+            --transition-speed: 0.3s;
+        }
 
-body {
-    font-family: 'Arial', sans-serif;
-    background-color: #f4f4f4;
-    margin: 0;
-    padding: 0;
-}
+        body {
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
 
-.container {
-    width: 90%;
-    margin: auto;
-    overflow: hidden;
-}
+        /* Top bar */
+        .top-bar {
+            background: linear-gradient(90deg, var(--sena-green), #2fa43a);
+            color: white;
+            height: var(--topbar-height);
+            padding: 0 1.5rem;
+            z-index: 1030;
+        }
 
-.header {
-    background: #0056b3;
-    color: #ffffff;
-    padding: 10px 0;
-    text-align: center;
-}
+        .top-bar h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0;
+        }
 
-.dashboard {
-    padding: 20px;
-    background: #ffffff;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
+        /* Layout */
+        .wrapper {
+            display: flex;
+            padding-top: var(--topbar-height);
+            min-height: 100vh;
+        }
 
-.card {
-    background: #e9ecef;
-    border-radius: 5px;
-    padding: 15px;
-    margin: 10px 0;
-}
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            position: fixed;
+            top: var(--topbar-height);
+            left: 0;
+            bottom: 0;
+            padding: 1.5rem;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+            overflow-y: auto;
+            transition: transform var(--transition-speed);
+        }
 
-.card h3 {
-    margin: 0;
-}
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding-bottom: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #eee;
+        }
 
-.button {
-    display: inline-block;
-    padding: 10px 15px;
-    background: #28a745;
-    color: #ffffff;
-    border: none;
-    border-radius: 5px;
-    text-decoration: none;
-}
+        .sidebar-logo {
+            height: 40px;
+            width: auto;
+        }
 
-.button:hover {
-    background: #218838;
-}
+        .sidebar-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
 
-.table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
-}
+        .sidebar-subtitle {
+            color: #6c757d;
+            font-size: 0.8rem;
+        }
 
-.table th, .table td {
-    border: 1px solid #dee2e6;
-    padding: 10px;
-    text-align: left;
-}
+        .sidebar-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
 
-.table th {
-    background: #007bff;
-    color: #ffffff;
-}
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: #495057;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all var(--transition-speed);
+        }
 
-.footer {
-    text-align: center;
-    padding: 10px 0;
-    background: #0056b3;
-    color: #ffffff;
-    position: relative;
-    bottom: 0;
-    width: 100%;
-}
+        .menu-item:hover {
+            background: #f8f9fa;
+            color: var(--sena-green);
+        }
+
+        .menu-item.active {
+            background: var(--sena-green);
+            color: white;
+        }
+
+        .menu-item i {
+            font-size: 1.1rem;
+            width: 20px;
+        }
+
+        /* Main content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 2rem;
+            transition: margin var(--transition-speed);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+        }
+
+        /* Top bar */
+        .top-bar {
+            background: linear-gradient(90deg, var(--sena-green), #2fa43a);
+            color: white;
+            padding: 1.05rem 1rem;
+            box-shadow: 0 2px 0 rgba(0,0,0,0.04);
+        }
+        .top-bar h1 { margin:0; font-size:1.15rem; font-weight:700; }
+
+        /* Sidebar / perfil */
+        .sidebar {
+            background: #fff;
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.04);
+            height: 100%;
+        }
+
+        /* Profile area */
+        .profile-section {
+            background: #fff;
+            padding: 1.6rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(20,20,50,0.03);
+        }
+
+        /* Avatar con iniciales */
+        .user-avatar {
+            width:44px;
+            height:44px;
+            border-radius:50%;
+            background:#fff;
+            color:var(--sena-green);
+            font-weight:800;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            box-shadow:0 4px 10px rgba(0,0,0,0.08);
+            border: 2px solid rgba(0,0,0,0.04);
+            font-family: Inter, sans-serif;
+            font-size:1rem;
+        }
+
+        /* Modal estilo SENA */
+        .modal-sena .modal-content {
+            border-radius: 12px;
+            box-shadow: 0 12px 40px rgba(20,20,50,0.12);
+            overflow: hidden;
+        }
+
+        .modal-sena .modal-header {
+            background: linear-gradient(90deg, var(--sena-green), #2fa43a);
+            color: #fff;
+            border-bottom: none;
+        }
+
+        .modal-sena .modal-title {
+            font-weight:700;
+            font-size:1.05rem;
+        }
+
+        .modal-sena .modal-body {
+            background:#fff;
+            padding:1.25rem 1.5rem;
+        }
+
+        .modal-sena .form-control {
+            border-radius: 8px;
+            box-shadow: none;
+        }
+
+        /* Metric cards */
+        .card-metric {
+            border-radius: 14px;
+            padding: 1.6rem;
+            background: var(--card-bg);
+            box-shadow: 0 10px 30px rgba(20,20,50,0.04);
+            height: 100%;
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+        }
+        .metric-icon {
+            width:54px;
+            height:54px;
+            border-radius:12px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            margin-bottom: 0.6rem;
+            font-size:1.25rem;
+            color:white;
+        }
+        .metric-title { color:var(--muted); font-weight:600; margin-top:0.4rem; }
+        .metric-value { font-size:2.1rem; font-weight:800; margin:0.25rem 0; }
+        .metric-aux { font-size:0.9rem; color:#2d9d3b; font-weight:700; }
+
+        /* specifics */
+        .icon-users { background: linear-gradient(180deg,#2aa54a,#1f8b3a); }
+        .icon-aprendices { background: linear-gradient(180deg,#2b9df0,#1a7cd6); }
+        .icon-docs { background: linear-gradient(180deg,#f5a623,#f08c00); }
+        .icon-progress { background: linear-gradient(180deg,#8ef0c9,#39b54a); color:#074; }
+
+        /* Cards grid */
+        .metrics-grid .col { margin-bottom: 1rem; }
+
+        /* Steps / panel */
+        .steps-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.2rem;
+            box-shadow: 0 8px 30px rgba(20,20,50,0.03);
+        }
+
+        /* Small responsive tweaks */
+        @media (max-width: 991px){
+            .metric-value { font-size:1.6rem; }
+        }
+
+        .upload-section .dropzone {
+            border: 2px dashed #39B54A;
+            border-radius: 10px;
+            padding: 2.2rem;
+            text-align: center;
+            background: #f6fff7;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 160px;
+            transition: border-color .15s ease, background .15s ease, transform .08s ease;
+            margin: 0 auto 1rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .upload-section .dropzone svg {
+            color: #2d9d3b;
+            opacity: 0.95;
+            margin-bottom: 0.6rem;
+            width: 56px;
+            height: 56px;
+        }
+
+        .upload-section .dropzone h5,
+        .upload-section .dropzone p {
+            margin: 0;
+        }
+
+        .upload-section .dropzone:hover {
+            border-color: #2a8a36;
+            background: #ecffec;
+            transform: translateY(-2px);
+        }
+
+        /* Si quieres un estado cuando archivos están seleccionados */
+        .upload-section .dropzone.active {
+            border-style: solid;
+            border-width: 2px;
+            border-color: #1f7a2c;
+            background: #e9ffea;
+        }
+
+        /* Estilo para el listado vacío / mensaje "Aún no has subido documentos" */
+        .file-list .p-3 {
+            border: 2px solid #f0ad4e;
+            background: #fff8ec;
+            border-radius: 8px;
+            color: #8a5800;
+            font-weight: 600;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Estética para la lista de archivos seleccionados */
+        #selectedFilesList .list-group-item {
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        }
+
+        /* pequeña mejora visual para botón guardar */
+        .btn-sena {
+            background-color: var(--sena-green);
+            color: #fff;
+            border-radius: 6px;
+            padding: .5rem 1rem;
+            border: none;
+        }
+        .btn-sena:hover { background-color: #2d9d3b; }
+
+        /* Pequeños ajustes responsivos */
+        @media (max-width:767px) {
+            .profile-section { padding: 1rem; }
+            .sidebar { margin-bottom: 1rem; }
+        }
+
+        .user-circle {
+            width: 35px;
+            height: 35px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--sena-green);
+        }
+
+        .list-group-item {
+            padding: 0.8rem 1rem;
+            color: #6c757d;
+            background: transparent;
+            border-radius: 8px;
+            margin-bottom: 0.2rem;
+        }
+
+        .list-group-item.active {
+            background-color: #007bff;
+            border-color: #007bff;
+            color: white;
+        }
+
+        .list-group-item:hover:not(.active) {
+            background-color: #f8f9fa;
+            color: #495057;
+        }
+
+        .form-control:disabled {
+            background-color: #f8f9fa;
+            opacity: 0.8;
+        }
+
+        .alert-success {
+            background-color: #e8f5e9;
+            color: #1b5e20;
+            font-weight: 500;
+        }
+

@@ -2,18 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Proyecto;
 
 class Documento extends Model
 {
-    protected $table = 'documentos'; // ajusta si tu tabla tiene otro nombre
+    use HasFactory;
 
-    // Si usas asignación masiva, define $fillable
-    // protected $fillable = ['id_proyecto', 'titulo', 'estado', ...];
+    protected $primaryKey = 'id_documento';
+    protected $fillable = ['id_proyecto', 'documento', 'estado'];
 
     public function proyecto()
     {
-        return $this->belongsTo(Proyecto::class, 'id_proyecto');
+        return $this->belongsTo(Proyecto::class, 'id_proyecto', 'id_proyecto');
     }
 }
