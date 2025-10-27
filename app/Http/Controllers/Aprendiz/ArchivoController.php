@@ -33,28 +33,34 @@ class ArchivoController extends Controller
     }
 
     public function upload(Request $request)
-    {
-        $request->validate([
-            // Asegúrate de que el proyecto realmente pertenece al usuario antes de permitir la subida
-            'proyecto_id' => 'required|exists:proyectos,id_proyecto', // Nota: Usé 'id_proyecto' si esa es tu clave primaria
-            'documentos' => 'required|array',
-            'documentos.*' => 'required|mimes:pdf|max:10240'
+{
+    $request->validate([
+        'proyecto_id' => 'required|exists:proyectos,id', // usa 'id' si tu clave primaria se llama así
+        'documentos' => 'required|array',
+        'documentos.*' => 'required|mimes:pdf|max:10240',
+    ]);
+
+    foreach ($request->file('documentos') as $documento) {
+        $nombreOriginal = $documento->getClientOriginalName();
+        $nombreAlmacenado = uniqid() . '_' . $nombreOriginal;
+        $ruta = $documento->storeAs('documentos', $nombreAlmacenado, 'public');
+
+        Archivo::create([
+            'nombre_original' => $nombreOriginal,
+            'nombre_almacenado' => $nombreAlmacenado,
+            'ruta' => $ruta,
+            'proyecto_id' => $request->proyecto_id,
+            'user_id' => Auth::id(),
+            'estado' => 'pendiente',
+            'mime_type' => $documento->getClientMimeType(),
+            'subido_en' => now(),
         ]);
-
-        foreach ($request->file('documentos') as $documento) {
-            $ruta = $documento->store('documentos', 'public');
-
-            Archivo::create([
-                'nombre_archivo' => $documento->getClientOriginalName(),
-                'ruta' => $ruta,
-                'proyecto_id' => $request->proyecto_id,
-                'user_id' => Auth::id()
-            ]);
-        }
-
-        return redirect()->route('aprendiz.archivos.index')
-            ->with('success', 'Documentos subidos correctamente');
     }
+
+    return redirect()->route('aprendiz.archivos.index')
+        ->with('success', 'Documentos subidos correctamente');
+}
+
 
     public function destroy(Archivo $archivo)
     {

@@ -14,7 +14,7 @@ class ProyectoController extends Controller
 
         // Obtener proyectos donde el aprendiz está asignado
         $proyectos = Proyecto::whereHas('aprendices', function($q) use ($user) {
-            $q->where('user_id', $user->id);
+            $q->where('id_usuario', $user->id);
         })->get();
 
         return view('aprendiz.proyectos.index', compact('proyectos'));
@@ -26,10 +26,10 @@ class ProyectoController extends Controller
 
         $proyecto = Proyecto::where('id_proyecto', $id)
             ->whereHas('aprendices', function($q) use ($user) {
-                $q->where('user_id', $user->id);
+                $q->where('id_usuario', $user->id);
             })
             ->firstOrFail();
 
-        return view('aprendiz.proyectos.show', compact('proyecto'));
+        return view('aprendiz.proyectos.index', compact('proyecto'));
     }
 }

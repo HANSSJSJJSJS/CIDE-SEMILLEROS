@@ -1,3 +1,4 @@
+<<<<<<< HEAD:resources/views/Admin/dashboard-admin.blade.php
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -285,6 +286,8 @@
   #users .toolbar .form-control, #users .toolbar .form-select { height: 42px; }
 </style>
 
+=======
+>>>>>>> origin/main:resources/views/Admin/copia.html
 
             <!-- Semilleros Section -->
             <section id="semilleros" class="content-section">
@@ -618,7 +621,25 @@
         </main>
     </div>
 
+
+
+
+
     <!-- Modal for Add User -->
+
+
+@if ($errors->any())
+  <div class="alert alert-danger">
+    <ul class="mb-0">
+      @foreach ($errors->all() as $error)
+        <li>{{ $error }}</li>
+      @endforeach
+    </ul>
+  </div>
+@endif
+
+
+
 
 <!-- BOTÓN -->
 <button type="button" class="btn btn-primary mb-3"
@@ -777,6 +798,7 @@
     </div>
   </div>
 </div>
+
 
 
 

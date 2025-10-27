@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Panel del Líder de Semillero</title>
+    <title> Panel del Administrador </title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
@@ -22,16 +22,14 @@
             <nav class="col-md-2 col-lg-2 sidebar d-flex flex-column">
                 <div class="px-3 mb-4">
                     <img src="{{ asset('images/logo-sena.png') }}" alt="Logo" class="logo-sena">
-                    <p class="text-muted small">Sistema de Gestión Semillero</p>
+                    <p class="text-muted small">Sistema de Gestión Semilleros</p>
                 </div>
                 <ul class="nav flex-column px-2">
-                    <li><a href="{{ route('lider_semi.dashboard') }}" class="nav-link {{ request()->routeIs('lider_semi.dashboard') ? 'active' : '' }}"><i class="bi bi-house-fill me-2"></i> Inicio</a>
-                    </li>
-                    <li><a href="{{ route('lider_semi.semilleros') }}" class="nav-link {{ request()->routeIs('lider_semi.semilleros') ? 'active' : '' }}"><i class="bi bi-hdd-stack me-2"></i>Mis Proyectos</a></li>
-                    <li><a href="{{ route('lider_semi.aprendices') }}" class="nav-link {{ request()->routeIs('lider_semi.aprendices') ? 'active' : '' }}"><i class="bi bi-person-video2 me-2"></i>Aprendices</a></li>
-                    <li><a href="{{ route('lider_semi.documentos') }}" class="nav-link position-relative {{ request()->routeIs('lider_semi.documentos') ? 'active' : '' }}"><i class="bi bi-file-earmark-text me-2"></i> Documentación</a></li>
+                    <li><a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"><i class="bi bi-house-fill me-2"></i> Inicio</a></li>
+                    <li><a href="{{ route('admin.usuarios.index') }}" class="nav-link {{ request()->routeIs('admin.usuarios.*') ? 'active' : '' }}"><i class="bi bi-people-fill me-2"></i> Gestión de Usuarios</a></li>
+                    <li><a href="{{ route('admin.semilleros.index') }}" class="nav-link {{ request()->routeIs('admin.semilleros.*') ? 'active' : '' }}">  <i class="bi bi-diagram-3 me-2"></i> Gestión de semilleros </a></li>
+                    <li><a href="{{ route('lider_semi.documentos') }}" class="nav-link position-relative {{ request()->routeIs('lider_semi.documentos') ? 'active' : '' }}"><i class="bi bi-file-earmark-text me-2"></i> Actividad de usuarios</a></li>
                     <li><a href="{{ route('lider_semi.recursos') }}" class="nav-link {{ request()->routeIs('lider_semi.recursos') ? 'active' : '' }}"><i class="bi bi-journal-text me-2"></i> Recursos</a></li>
-                    <li><a href="{{ route('lider_semi.calendario') }}" class="nav-link {{ request()->routeIs('lider_semi.calendario') ? 'active' : '' }}"><i class="bi bi-calendar-event me-2"></i> Calendario</a></li>
                     <li><a href="{{ route('lider_semi.perfil') }}" class="nav-link {{ request()->routeIs('lider_semi.perfil') ? 'active' : '' }}"><i class="bi bi-person-circle me-2"></i> Mi Perfil</a></li>
                 </ul>
             </nav>
@@ -40,7 +38,7 @@
             <main class="col-md-10 col-lg-10 p-0">
                 <!-- Top bar -->
                 <div class="topbar">
-                    <h5 class="fw-bold mb-0">Líder de Semillero</h5>
+                    <h5 class="fw-bold mb-0">Líder General </h5>
                     <div class="profile-info">
                         <!-- Icono de notificaciones -->
                         <button class="btn btn-link text-white position-relative me-2" type="button"
@@ -75,8 +73,10 @@
             </main>
         </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        @stack('scripts')   
+        @yield('scripts')   
+   
 </body>
 
 </html>

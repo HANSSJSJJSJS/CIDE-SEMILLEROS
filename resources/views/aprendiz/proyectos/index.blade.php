@@ -75,8 +75,7 @@
                                 Ver Detalles
                             </a>
                             <a href="{{ route('aprendiz.archivos.create', ['proyecto' => $proyecto->id_proyecto]) }}" class="btn btn-outline-success rounded-3 px-3 fw-semibold">
-                                Subir Docs
-                            </a>
+                                Subir Docs                            </a>
                         </div>
                     </div>
                 @endforeach

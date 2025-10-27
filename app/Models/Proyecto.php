@@ -10,7 +10,12 @@ class Proyecto extends Model
 {
     protected $table = 'proyectos';
     protected $primaryKey = 'id_proyecto';
+    public $incrementing = true;
+    protected $keyType = 'int';
     public $timestamps = false;
+
+    const CREATED_AT = 'creado_en';
+    const UPDATED_AT = 'actualizado_en';
 
     protected $fillable = [
         'id_semillero',
@@ -19,7 +24,7 @@ class Proyecto extends Model
         'descripcion',
         'estado',
         'fecha_inicio',
-        'fecha_fin'
+        'fecha_fin',
     ];
 
     protected $dates = [
@@ -32,22 +37,27 @@ class Proyecto extends Model
     // Relación con semillero
     public function semillero()
     {
-        return $this->belongsTo(Semillero::class, 'id_semillero');
-    }
-
-    // Relación con usuarios (aprendices)
-    public function aprendices()
-    {
-        return $this->belongsToMany(User::class, 'proyecto_user', 'id_proyecto', 'user_id');
+        return $this->belongsTo(Semillero::class, 'id_semillero', 'id_semillero');
     }
 
     // Relación con documentos
     public function documentos()
     {
-        return $this->hasMany(Documento::class, 'id_proyecto');
+        return $this->hasMany(Documento::class, 'id_proyecto', 'id_proyecto');
+    }
+
+    public function aprendices()
+    {
+        // La relación se hace a través de la tabla documentos
+        return $this->belongsToMany(
+            Aprendiz::class,
+            'documentos',
+            'id_proyecto',
+            'id_aprendiz'
+        )->distinct();
     }
     public function evidencias()
 {
     return $this->hasMany(Evidencia::class, 'id_proyecto', 'id_proyecto');
 }
-}
+};
