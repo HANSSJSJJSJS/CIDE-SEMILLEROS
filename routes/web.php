@@ -2,21 +2,23 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LiderSemillero\DashboardController_semi;
 use App\Http\Controllers\AprendizController;
 use App\Http\Controllers\LiderSemillero\SemilleroController;
 use App\Http\Controllers\LiderController;
 use App\Http\Controllers\GrupoInvestigacionController;
 // Controladores Admin
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\UserController;     // <-- el del store del modal
-use App\Http\Controllers\UsuarioController;        // <-- tu listado (si NO está en Admin) controlador de gestión de usuarios en el panel
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\UsuarioController; // 
+use App\Http\Controllers\Admin\SemilleroController as AdminSemilleroController; 
+
+
+
 
 
 // ====== PÚBLICAS / AUTH ======
-Route::get('/', fn() => view('welcome'))->name('welcome');
+Route::get('/', fn () => view('welcome'))->name('welcome');
 
 Route::get('/login',  [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
@@ -26,31 +28,29 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 require __DIR__.'/auth.php';
 
 // ====== ADMIN (UN SOLO BLOQUE) ======
-Route::middleware(['auth', 'role:ADMIN'])
-    ->prefix('admin')
-    ->name('admin.')
+Route::middleware(['auth','role:ADMIN'])
+    ->prefix('admin')->as('admin.')
     ->group(function () {
 
-        // Dashboard admin (una sola vez)
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-        // Gestión de usuarios (listado)
-        Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');
+        // Usuarios
+        Route::get('/usuarios',                [UsuarioController::class, 'index'])->name('usuarios.index');
+        Route::get('/usuarios/create',         [UsuarioController::class, 'create'])->name('usuarios.create');
+        Route::post('/usuarios',               [UsuarioController::class, 'store'])->name('usuarios.store');
+        Route::get('/usuarios/{usuario}/edit', [UsuarioController::class, 'editForm'])->name('usuarios.edit');
+        Route::put('/usuarios/{usuario}',      [UsuarioController::class, 'update'])->name('usuarios.update');
+        Route::delete('/usuarios/{usuario}',   [UsuarioController::class, 'destroy'])->name('usuarios.destroy');
+        Route::get('/usuarios/{id}/edit-ajax', [UsuarioController::class, 'edit'])->name('usuarios.edit.ajax');
+        Route::post('/usuarios/ajax/store',    [UsuarioController::class, 'storeAjax'])->name('usuarios.store.ajax');
 
-        // Crear usuario (form tradicional si lo usas)
-        Route::post('/usuarios/store', [UsuarioController::class, 'store'])->name('usuarios.store');
-
-        // Crear usuario (AJAX)
-        Route::post('/usuarios/ajax/store', [UsuarioController::class, 'storeAjax'])->name('usuarios.store.ajax');
-    }); 
-
-
-
-
-
-//fin admin 
+        // Semilleros (ADMIN) usando el alias para evitar colisión con el de Líder
+        Route::resource('semilleros', AdminSemilleroController::class)->except(['show']);
+    });
 
 
+
+// fin admin 
 
 Route::middleware(['auth','role:APRENDIZ'])->group(function () {
     // [dashboard-aprendiz.blade.php](http://_vscodecontentref_/2)
