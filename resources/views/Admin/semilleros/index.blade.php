@@ -2,132 +2,190 @@
 
 @section('content')
 <div class="container-fluid mt-4 px-4">
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex align-items-center justify-content-between mb-4">
     <h3 class="fw-bold" style="color:#2d572c;">Gestión de Semilleros</h3>
-    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalSemillero">
-      <i class="bi bi-plus-circle me-1"></i> Nuevo Semillero
-    </button>
   </div>
 
-  @if(session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
-  @if($errors->any())
-    <div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>
-  @endif
-
-  <form method="GET" class="card border-0 shadow-sm mb-3">
-    <div class="card-body">
-      <div class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">Buscar</label>
-          <input type="text" name="q" value="{{ request('q') }}" class="form-control" placeholder="semillero, línea, líder">
+  {{-- Filtro simple --}}
+      <div class="row g-2">
+        <div class="col-md-10">
+          <input name="q" value="{{ $q }}" class="form-control" placeholder="Buscar por semillero, línea o líder">
         </div>
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">Línea de investigación</label>
-          <input type="text" name="linea" value="{{ request('linea') }}" class="form-control" placeholder="Ej: IA, IoT…">
-        </div>
-        <div class="col-md-3">
-          <label class="form-label fw-semibold">Líder</label>
-          <input type="text" name="lider" value="{{ request('lider') }}" class="form-control" placeholder="Nombre del líder">
-        </div>
-        <div class="col-md-1 d-flex align-items-end">
-          <button class="btn btn-outline-secondary w-100">Filtrar</button>
+        <div class="col-md-2">
+          <button class="btn btn-success w-100"><i class="bi bi-search"></i> Buscar</button>
         </div>
       </div>
     </div>
   </form>
 
+  {{-- Tabla --}}
   <div class="card border-0 shadow-sm">
     <div class="table-responsive">
       <table class="table table-hover mb-0">
         <thead style="background-color:#2d572c;color:#fff;">
           <tr>
-            <th class="py-3 px-4">SEMILLERO</th>
-            <th class="py-3">LÍNEA DE INVESTIGACIÓN</th>
-            <th class="py-3">LÍDER SEMILLERO</th>
-            <th class="py-3">CORREO ELECTRÓNICO</th>
-            <th class="py-3">TELÉFONO</th>
-            <th class="py-3 text-end pe-4">ACCIONES</th>
+            <th>Semillero</th>
+            <th>Línea de investigación</th>
+            <th>Líder</th>
+            <th class="text-end">Acciones</th>
           </tr>
         </thead>
         <tbody>
-          @forelse($semilleros as $s)
-            <tr>
-              <td class="py-3 px-4">
-                <div class="fw-semibold">{{ $s->semillero ?: '—' }}</div>
-                <small class="text-muted">ID: {{ $s->id }}</small>
-              </td>
-              <td class="py-3">{{ $s->linea_investigacion ?: '—' }}</td>
-              <td class="py-3">{{ $s->lider ?: '—' }}</td>
-              <td class="py-3">{{ $s->correo ?: '—' }}</td>
-              <td class="py-3">{{ $s->telefono ?: '—' }}</td>
-              <td class="py-3 text-end pe-4">
-                <a href="{{ route('admin.semilleros.edit',$s->id) }}" class="btn btn-sm btn-outline-primary" style="border-radius:20px;padding:4px 12px;">
-                  <i class="bi bi-pencil"></i> Editar
-                </a>
-                <form action="{{ route('admin.semilleros.destroy',$s->id) }}" method="POST" class="d-inline"
-                      onsubmit="return confirm('¿Eliminar este semillero?');">
-                  @csrf @method('DELETE')
-                  <button class="btn btn-sm btn-outline-danger" style="border-radius:20px;padding:4px 12px;">
-                    <i class="bi bi-trash"></i> Eliminar
-                  </button>
-                </form>
-              </td>
-            </tr>
-          @empty
-            <tr>
-              <td colspan="6" class="text-center py-5 text-muted">
-                <i class="bi bi-diagram-3 fs-1 opacity-50 d-block mb-2"></i>
-                No hay semilleros que coincidan con tu búsqueda.
-              </td>
-            </tr>
-          @endforelse
+        @forelse($semilleros as $s)
+          <tr>
+            <td>{{ $s->nombre }}</td>
+            <td>{{ $s->linea_investigacion }}</td>
+            <td>{{ $s->lider_nombre ? $s->lider_nombre.' ('.$s->lider_correo.')' : '—' }}</td>
+            <td class="text-end">
+              <button class="btn btn-sm btn-outline-primary"
+                      data-bs-toggle="modal" data-bs-target="#modalEditarSemillero"
+                      data-id="{{ $s->id_semillero }}">
+                <i class="bi bi-pencil"></i> Editar
+              </button>
+              <form action="{{ route('admin.semilleros.destroy',$s->id_semillero) }}" method="POST" class="d-inline"
+                    onsubmit="return confirm('¿Eliminar este semillero?');">
+                @csrf @method('DELETE')
+                <button class="btn btn-sm btn-outline-danger">
+                  <i class="bi bi-trash"></i> Eliminar
+                </button>
+              </form>
+            </td>
+          </tr>
+        @empty
+          <tr><td colspan="4" class="text-center text-muted py-4">Sin registros</td></tr>
+        @endforelse
         </tbody>
       </table>
     </div>
   </div>
 
-  @if($semilleros instanceof \Illuminate\Pagination\AbstractPaginator)
-    <div class="mt-3">
-      {{ $semilleros->onEachSide(1)->links('pagination::bootstrap-5') }}
-    </div>
-  @endif
-</div>
-
-{{-- Modal crear --}}
-<div class="modal fade" id="modalSemillero" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <form class="modal-content" method="POST" action="{{ route('admin.semilleros.store') }}">
-      @csrf
-      <div class="modal-header bg-success text-white">
-        <h5 class="modal-title">Registrar Semillero</h5>
-        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Nombre del semillero</label>
-          <input name="nombre" class="form-control" value="{{ old('nombre') }}" required>
-        </div>
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Línea de investigación</label>
-          <input name="linea_investigacion" class="form-control" value="{{ old('linea_investigacion') }}" required>
-        </div>
-        <div class="mb-1">
-          <label class="form-label fw-semibold">Líder (opcional)</label>
-          <select name="id_lider_semi" class="form-select">
-            <option value="">— Sin asignar —</option>
-            @foreach($lideres as $l)
-              <option value="{{ $l->id_lider_semi }}" @selected(old('id_lider_semi')==$l->id_lider_semi)>
-                {{ $l->nombre }} ({{ $l->correo_institucional }})
-              </option>
-            @endforeach
-          </select>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button class="btn btn-success">Guardar</button>
-      </div>
-    </form>
+  <div class="mt-3">
+    {{ $semilleros->links('pagination::bootstrap-5') }}
   </div>
 </div>
+
+{{-- MODAL EDITAR --}}
+<div class="modal fade" id="modalEditarSemillero" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">Editar Semillero</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formEditarSemillero" method="POST">
+        @csrf @method('PUT')
+        <div class="modal-body">
+          <div class="row g-3">
+            {{-- Editables --}}
+            <div class="col-md-6">
+              <label class="form-label">Nombre</label>
+              <input type="text" name="nombre" id="editNombre" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Línea de investigación</label>
+              <input type="text" name="linea_investigacion" id="editLinea" class="form-control" required>
+            </div>
+
+            {{-- Solo lectura del líder actual --}}
+            <div class="col-md-6">
+              <label class="form-label">Líder actual</label>
+              <input type="text" class="form-control" id="liderNombreRO" readonly>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Correo del líder</label>
+              <input type="text" class="form-control" id="liderCorreoRO" readonly>
+            </div>
+
+            {{-- Buscador de líder disponible --}}
+            <div class="col-12">
+              <label class="form-label">Asignar nuevo líder (solo disponibles)</label>
+              <input type="text" id="buscarLider" class="form-control" placeholder="Escribe nombre o correo...">
+              <div id="resultadosLider" class="list-group mt-2" style="max-height:220px;overflow:auto;"></div>
+              <input type="hidden" name="id_lider_semi" id="editIdLider">
+              <small class="text-muted">Selecciona un líder de la lista para reemplazar al actual.</small>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const modal = document.getElementById('modalEditarSemillero');
+  const form  = document.getElementById('formEditarSemillero');
+
+  const editNombre = document.getElementById('editNombre');
+  const editLinea  = document.getElementById('editLinea');
+  const liderRO    = document.getElementById('liderNombreRO');
+  const correoRO   = document.getElementById('liderCorreoRO');
+  const idLiderInp = document.getElementById('editIdLider');
+
+  const buscarInp  = document.getElementById('buscarLider');
+  const listaRes   = document.getElementById('resultadosLider');
+
+  // Cargar datos en el modal
+  modal.addEventListener('show.bs.modal', async (e) => {
+    const id = e.relatedTarget?.dataset.id;
+    if (!id) return;
+
+    // Reset buscador
+    buscarInp.value = '';
+    listaRes.innerHTML = '';
+
+    const res  = await fetch(`{{ url('admin/semilleros') }}/${id}/edit`);
+    const data = await res.json();
+
+    form.action   = `{{ url('admin/semilleros') }}/${id}`;
+    editNombre.value = data.nombre || '';
+    editLinea.value  = data.linea_investigacion || '';
+    liderRO.value    = data.lider_nombre || '—';
+    correoRO.value   = data.lider_correo || '—';
+    idLiderInp.value = data.id_lider_semi || '';
+  });
+
+  // Buscador con debounce
+  let t;
+  buscarInp.addEventListener('input', () => {
+    clearTimeout(t);
+    t = setTimeout(async () => {
+      const q = buscarInp.value.trim();
+      if (q.length < 2) { listaRes.innerHTML = ''; return; }
+
+      const includeCurrent = idLiderInp.value ? `&include_current=${encodeURIComponent(idLiderInp.value)}` : '';
+      const url = `{{ route('admin.semilleros.lideres-disponibles') }}?q=${encodeURIComponent(q)}${includeCurrent}`;
+
+      const res = await fetch(url);
+      const items = await res.json();
+
+      listaRes.innerHTML = '';
+      if (!Array.isArray(items)) return;
+
+      items.forEach(r => {
+        const a = document.createElement('a');
+        a.href = '#';
+        a.className = 'list-group-item list-group-item-action';
+        a.innerHTML = `<div class="fw-semibold">${r.nombre}</div><small class="text-muted">${r.correo || '—'}</small>`;
+        a.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          // Reemplaza relación de líder (solo en el form; se guarda al enviar)
+          idLiderInp.value = r.id_lider_semi;
+          liderRO.value    = r.nombre;
+          correoRO.value   = r.correo || '—';
+          listaRes.innerHTML = '';
+          buscarInp.value = '';
+        });
+        listaRes.appendChild(a);
+      });
+    }, 250);
+  });
+});
+</script>
+@endpush
 @endsection

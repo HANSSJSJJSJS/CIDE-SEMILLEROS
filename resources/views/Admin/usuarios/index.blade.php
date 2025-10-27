@@ -1,5 +1,7 @@
-{{-- Si tu layout es el del líder: cambia a layouts.lider_semi --}}
+
 @extends('layouts.admin')
+
+
 
 @section('content')
 <div class="container-fluid mt-4 px-4">
@@ -11,34 +13,61 @@
     </div>
 
     <!-- (Opcional) Filtros de Búsqueda: los dejo como los tenías -->
-    <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Tipo de Documento</label>
-                    <select id="filtro-tipo-doc" class="form-select">
-                        <option value="">Todos</option>
-                        <option value="CC">CC</option>
-                        <option value="TI">TI</option>
-                        <option value="CE">CE</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold">Número de Documento</label>
-                    <input type="text" id="filtro-documento" class="form-control" placeholder="Ej: 1023456789">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Nombre</label>
-                    <input type="text" id="filtro-nombre" class="form-control" placeholder="Buscar por nombre">
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button id="btn-limpiar-filtros" class="btn btn-outline-secondary w-100">
-                        <i class="fas fa-times"></i> Limpiar
-                    </button>
-                </div>
-            </div>
+ {{-- Filtros (Rol, Semillero, Nombre) --}}
+<form method="GET" class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <div class="row g-3">
+      {{-- Rol --}}
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">Rol</label>
+        <select name="role" class="form-select">
+          <option value="">Todos</option>
+          @php
+            // $roles llega como ['ADMIN'=>'ADMIN','LIDER_GENERAL'=>'LIDER GENERAL',...]
+            $roleSelected = $roleFilter ?? request('role');
+          @endphp
+          @foreach(($roles ?? []) as $value => $label)
+            <option value="{{ $value }}" @selected($roleSelected === $value)>{{ $label }}</option>
+          @endforeach
+        </select>
+      </div>
+
+      {{-- Semillero --}}
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">Semillero</label>
+        <select name="semillero_id" class="form-select">
+          <option value="">Todos los semilleros</option>
+          @foreach(($semilleros ?? collect()) as $s)
+            <option value="{{ $s->id_semillero }}"
+              @selected( (old('semillero_id', $semilleroId ?? request('semillero_id'))) == $s->id_semillero )>
+              {{ $s->nombre }}
+            </option>
+          @endforeach
+        </select>
+      </div>
+
+      {{-- Nombre / Apellidos / Email --}}
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">Buscar por nombre</label>
+        <input type="text" name="q" class="form-control"
+               value="{{ old('q', $q ?? request('q')) }}"
+               placeholder="Nombre, apellido o email">
+      </div>
+
+      <div class="col-md-2 d-flex align-items-end">
+        <div class="w-100 d-flex gap-2">
+          <button class="btn btn-success w-100">
+            <i class="bi bi-search"></i> Buscar
+          </button>
+          <a href="{{ route('admin.usuarios.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-x"></i>
+          </a>
         </div>
+      </div>
     </div>
+  </div>
+</form>
+
 
 {{-- === ERRORES DE VALIDACIÓN (si los hay) === --}}
 @if ($errors->any())
@@ -402,4 +431,5 @@ document.addEventListener('DOMContentLoaded', function () {
 @endif
     </div>
 </div>
+
 @endsection

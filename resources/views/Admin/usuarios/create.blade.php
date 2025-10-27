@@ -1,4 +1,6 @@
+
 @extends('layouts.admin')
+
 @section('content')
 <div class="container mt-4">
   <h3 class="fw-bold mb-4" style="color:#2d572c;">Agregar usuario</h3>

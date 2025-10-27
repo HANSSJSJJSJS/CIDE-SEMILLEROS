@@ -7,31 +7,84 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use App\Http\Controllers\Controller;
-
-
-// Modelos (si no usas Eloquent para perfiles, puedes borrar estos use)
 use App\Models\User;
 
 class UsuarioController extends Controller
 {
     /**
-     * Listado de usuarios (para mostrar en el dashboard).
+     * Listado con filtros: q (nombre/apellidos/email), role, semillero_id
      */
 public function index(Request $request)
 {
-    $usuarios = User::query()
-        ->orderByDesc('created_at')
-        ->paginate(12)              // ← Esto agrega paginación real
-        ->withQueryString();        // ← Conserva filtros si los tienes
+    $q           = trim($request->get('q',''));          // buscar por nombre/apellidos/email
+    $roleFilter  = trim($request->get('role',''));       // filtro por rol (en query puede venir LIDER_GENERAL)
+    $semilleroId = $request->integer('semillero_id');    // filtro por semillero
 
-    return view('Admin.usuarios.index', compact('usuarios'));
+    // Normaliza el valor del select a como se guarda en BD
+    if ($roleFilter === 'LIDER_GENERAL') {
+        $roleFilter = 'LIDER GENERAL';
+    }
+
+    $usuarios = \App\Models\User::query()
+        // Líder de semillero: users -> lideres_semillero (por id) -> semilleros (por id_lider_semi)
+        ->leftJoin('lideres_semillero as ls', 'ls.id_lider_semi', '=', 'users.id')
+        ->leftJoin('semilleros as s', 's.id_lider_semi', '=', 'ls.id_lider_semi')
+
+        // Nota: no hay relación de semillero para LIDER GENERAL en tu esquema actual
+        ->select([
+            'users.*',
+            DB::raw('s.nombre as semillero_nombre'),
+            DB::raw('s.id_semillero as semillero_id'),
+        ])
+
+        // Buscar por nombre/apellidos/email
+        ->when($q !== '', function ($w) use ($q) {
+            $w->where(function ($s) use ($q) {
+                $s->where('users.name','like',"%{$q}%")
+                  ->orWhere('users.apellidos','like',"%{$q}%")
+                  ->orWhere('users.email','like',"%{$q}%");
+            });
+        })
+
+        // Filtro por rol
+        ->when($roleFilter !== '', fn($w) => $w->where('users.role',$roleFilter))
+
+        // Filtro por semillero (solo aplica a LIDER_SEMILLERO; otros roles quedarán fuera)
+        ->when($semilleroId, fn($w) => $w->where('s.id_semillero', $semilleroId))
+
+        ->orderByDesc('users.created_at')
+        ->paginate(12)
+        ->withQueryString();
+
+    // Para el combo de semilleros
+    $semilleros = DB::table('semilleros')
+        ->select('id_semillero','nombre')
+        ->orderBy('nombre')
+        ->get();
+
+    // Opciones del select de rol en la vista (clave = lo que se manda por query)
+    $roles = [
+        'ADMIN'           => 'ADMIN',
+        'LIDER_GENERAL'   => 'LIDER GENERAL',   // en BD es con espacio; ya lo normalizamos arriba
+        'LIDER_SEMILLERO' => 'LIDER_SEMILLERO',
+        'APRENDIZ'        => 'APRENDIZ',
+    ];
+
+    return view('Admin.usuarios.index', [
+        'usuarios'     => $usuarios,
+        'semilleros'   => $semilleros,
+        'roles'        => $roles,
+        'q'            => $q,
+        'roleFilter'   => $request->get('role',''),  // conserva el valor del select (con guion bajo)
+        'semilleroId'  => $semilleroId,
+    ]);
 }
     /**
-     * Guarda un usuario nuevo desde el formulario del modal (Dashboard Admin).
+     * Crear usuario (desde el modal).
      */
     public function store(Request $request)
     {
-        // Normalizamos el rol según tu BD (con espacios o guiones bajos)
+        // Mapa de rol del form -> valor guardado en BD
         $roleMap = [
             'ADMIN'           => 'ADMIN',
             'LIDER_GENERAL'   => 'LIDER GENERAL',   // en BD se guarda con espacio
@@ -48,20 +101,18 @@ public function index(Request $request)
             'password' => 'required|min:6',
         ];
 
-        // Líder Semillero
+        // Campos extra por rol
         if ($request->role === 'LIDER_SEMILLERO') {
             $rules = array_merge($rules, [
                 'ls_tipo_documento' => 'required|string|max:5',
                 'ls_documento'      => 'required|string|max:40',
             ]);
         }
-
-        // Aprendiz
         if ($request->role === 'APRENDIZ') {
             $rules = array_merge($rules, [
                 'ap_ficha'                => 'required|string|max:30',
                 'ap_programa'             => 'required|string|max:160',
-                'ap_tipo_documento'       => 'nullable|string|max:5', // opcional
+                'ap_tipo_documento'       => 'nullable|string|max:5',
                 'ap_documento'            => 'required|string|max:40',
                 'ap_correo_institucional' => 'required|email|max:160',
                 'ap_celular'              => 'nullable|string|max:30',
@@ -76,7 +127,7 @@ public function index(Request $request)
         try {
             DB::transaction(function () use ($data, $role) {
 
-                // 1) Crear usuario base
+                // 1) users
                 $userId = DB::table('users')->insertGetId([
                     'name'       => $data['nombre'],
                     'apellidos'  => $data['apellido'],
@@ -87,7 +138,7 @@ public function index(Request $request)
                     'updated_at' => now(),
                 ]);
 
-                // 2) Crear perfil según rol (coincidiendo con tu esquema)
+                // 2) perfiles por rol
                 switch ($role) {
                     case 'ADMIN':
                         DB::table('administradores')->insert([
@@ -124,16 +175,16 @@ public function index(Request $request)
                         break;
 
                     case 'APRENDIZ':
-                        // OJO: en tu tabla vimos que la FK puede llamarse id_usuario o user_id.
-                        $colUserFk = DB::getSchemaBuilder()->hasColumn('aprendices', 'id_usuario') ? 'id_usuario' : 'user_id';
+                        $colUserFk = DB::getSchemaBuilder()->hasColumn('aprendices', 'id_usuario')
+                            ? 'id_usuario' : 'user_id';
 
                         DB::table('aprendices')->insert([
-                            $colUserFk            => $userId,
+                            $colUserFk             => $userId,
                             'nombres'              => $data['nombre'],
                             'apellidos'            => $data['apellido'],
                             'ficha'                => $data['ap_ficha'],
                             'programa'             => $data['ap_programa'],
-                            'tipo_documento'       => $data['ap_tipo_documento'], // puede ir null
+                            'tipo_documento'       => $data['ap_tipo_documento'],
                             'documento'            => $data['ap_documento'],
                             'celular'              => $data['ap_celular'] ?? null,
                             'correo_institucional' => $data['ap_correo_institucional'],

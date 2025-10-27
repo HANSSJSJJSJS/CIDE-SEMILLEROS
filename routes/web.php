@@ -12,7 +12,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UsuarioController; // 
 use App\Http\Controllers\Admin\SemilleroController as AdminSemilleroController; 
-
+use App\Http\Controllers\Admin\SemilleroController as AdminSemilleros;
 
 
 
@@ -32,6 +32,7 @@ Route::middleware(['auth','role:ADMIN'])
     ->prefix('admin')->as('admin.')
     ->group(function () {
 
+        // Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         // Usuarios
@@ -44,10 +45,13 @@ Route::middleware(['auth','role:ADMIN'])
         Route::get('/usuarios/{id}/edit-ajax', [UsuarioController::class, 'edit'])->name('usuarios.edit.ajax');
         Route::post('/usuarios/ajax/store',    [UsuarioController::class, 'storeAjax'])->name('usuarios.store.ajax');
 
-        // Semilleros (ADMIN) usando el alias para evitar colisión con el de Líder
-        Route::resource('semilleros', AdminSemilleroController::class)->except(['show']);
-    });
+        // Semilleros (SOLO el controlador de Admin)
+        Route::get('semilleros/lideres-disponibles', [AdminSemilleros::class, 'lideresDisponibles'])
+            ->name('semilleros.lideres-disponibles');
 
+        Route::resource('semilleros', AdminSemilleros::class)
+            ->only(['index','edit','update','destroy']);
+    });
 
 
 // fin admin 

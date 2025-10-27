@@ -5,119 +5,144 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 
 class SemilleroController extends Controller
 {
     /**
-     * Muestra la lista de semilleros con filtros y unión opcional a líderes.
+     * Listado con líder actual (solo lectura).
      */
     public function index(Request $request)
     {
-        $q     = trim($request->get('q', ''));
-        $linea = trim($request->get('linea', ''));
-        $lider = trim($request->get('lider', ''));
+        $q = trim($request->get('q',''));
 
-        // 🔍 Detectar columnas reales de la tabla semilleros
-        $idCol = Schema::hasColumn('semilleros', 'id')
-            ? 'id'
-            : (Schema::hasColumn('semilleros', 'id_semillero') ? 'id_semillero' : null);
+        $semilleros = DB::table('semilleros as s')
+            ->leftJoin('lideres_semillero as l', 'l.id_lider_semi', '=', 's.id_lider_semi')
+            ->select(
+                's.id_semillero',
+                's.nombre',
+                's.linea_investigacion',
+                's.id_lider_semi',
+                DB::raw("TRIM(CONCAT(COALESCE(l.nombres,''),' ',COALESCE(l.apellidos,''))) as lider_nombre"),
+                'l.correo_institucional as lider_correo'
+            )
+            ->when($q !== '', function ($w) use ($q) {
+                $w->where(function ($s) use ($q) {
+                    $s->where('s.nombre', 'like', "%{$q}%")
+                      ->orWhere('s.linea_investigacion', 'like', "%{$q}%")
+                      ->orWhere(DB::raw("CONCAT(COALESCE(l.nombres,''),' ',COALESCE(l.apellidos,''))"), 'like', "%{$q}%");
+                });
+            })
+            ->orderBy('s.nombre')
+            ->paginate(10)
+            ->withQueryString();
 
-        $fkCol = collect(['id_lider_semi', 'id_lider', 'lider_id', 'id_lidergen'])
-            ->first(fn($c) => Schema::hasColumn('semilleros', $c));
-
-        $hasNombre  = Schema::hasColumn('semilleros', 'nombre');
-        $hasLinea   = Schema::hasColumn('semilleros', 'linea_investigacion');
-        $hasCreated = Schema::hasColumn('semilleros', 'created_at');
-
-        // 🧱 Query base
-        $query = DB::table('semilleros as s');
-
-        // JOIN solo si existe la columna de líder
-        if ($fkCol) {
-            $query->leftJoin('lideres_semillero as l', 'l.id_lider_semi', '=', DB::raw("s.$fkCol"));
-        }
-
-        // SELECT seguro, adaptable al esquema
-        $query->select([
-            DB::raw($idCol ? "s.$idCol as id" : "0 as id"),
-            DB::raw(($hasNombre ? "COALESCE(s.nombre,'')" : "''") . " as semillero"),
-            DB::raw(($hasLinea ? "COALESCE(s.linea_investigacion,'')" : "''") . " as linea_investigacion"),
-            DB::raw('TRIM(CONCAT(COALESCE(l.nombres,"")," ",COALESCE(l.apellidos,""))) as lider'),
-            DB::raw('COALESCE(l.correo_institucional,"") as correo'),
-            DB::raw('COALESCE(l.celular,"") as telefono'),
-            DB::raw($hasCreated ? "s.created_at" : "NULL as created_at"),
-        ]);
-
-        // 🔎 Filtros de búsqueda
-        if ($q !== '') {
-            $query->where(function ($w) use ($q, $hasNombre, $hasLinea, $fkCol) {
-                if ($hasNombre) $w->orWhere('s.nombre', 'like', "%{$q}%");
-                if ($hasLinea)  $w->orWhere('s.linea_investigacion', 'like', "%{$q}%");
-                if ($fkCol)     $w->orWhere(DB::raw('CONCAT(COALESCE(l.nombres,"")," ",COALESCE(l.apellidos,""))'), 'like', "%{$q}%");
-            });
-        }
-
-        if ($linea !== '' && $hasLinea) {
-            $query->where('s.linea_investigacion', 'like', "%{$linea}%");
-        }
-
-        if ($lider !== '' && $fkCol) {
-            $query->where(DB::raw('CONCAT(COALESCE(l.nombres,"")," ",COALESCE(l.apellidos,""))'), 'like', "%{$lider}%");
-        }
-
-        // 📅 Orden adaptable
-        if ($hasCreated) {
-            $query->orderByDesc('s.created_at');
-        } elseif ($idCol) {
-            $query->orderByDesc("s.$idCol");
-        } elseif ($hasNombre) {
-            $query->orderBy('s.nombre');
-        }
-
-        $semilleros = $query->paginate(12)->withQueryString();
-
-        // 📋 Obtener líderes para el modal (si la tabla existe)
-        $lideres = Schema::hasTable('lideres_semillero')
-            ? DB::table('lideres_semillero')
-                ->select(
-                    'id_lider_semi',
-                    DB::raw('TRIM(CONCAT(COALESCE(nombres,"")," ",COALESCE(apellidos,""))) as nombre'),
-                    'correo_institucional',
-                    'celular'
-                )
-                ->orderBy('nombres')
-                ->get()
-            : collect([]);
-
-        return view('Admin.semilleros.index', compact('semilleros', 'lideres'));
+        return view('Admin.semilleros.index', compact('semilleros','q'));
     }
 
-    // ─────────── Métodos futuros (create, store, edit, update, destroy) ───────────
-
-    public function create()
-    {
-        // vista para registrar nuevo semillero
-        return view('Admin.semilleros.create');
-    }
-
-    public function store(Request $request)
-    {
-        // guardar nuevo semillero
-    }
-
+    /**
+     * Devuelve datos del semillero + líder actual para llenar el modal (AJAX).
+     */
     public function edit($id)
     {
-        // mostrar formulario de edición
+        $row = DB::table('semilleros as s')
+            ->leftJoin('lideres_semillero as l', 'l.id_lider_semi', '=', 's.id_lider_semi')
+            ->where('s.id_semillero', $id)
+            ->select(
+                's.id_semillero',
+                's.nombre',
+                's.linea_investigacion',
+                's.id_lider_semi',
+                DB::raw("TRIM(CONCAT(COALESCE(l.nombres,''),' ',COALESCE(l.apellidos,''))) as lider_nombre"),
+                'l.correo_institucional as lider_correo'
+            )
+            ->first();
+
+        if (!$row) return response()->json(['error' => 'Semillero no encontrado'], 404);
+        return response()->json($row);
     }
 
+    /**
+     * Busca líderes que NO tengan semillero asignado (para el buscador).
+     * Si se pasa include_current, se permite mostrar también al líder actual.
+     */
+    public function lideresDisponibles(Request $request)
+    {
+        $q = trim($request->get('q',''));
+        $includeCurrent = $request->integer('include_current'); // id_lider_semi actual (opcional)
+
+        $query = DB::table('lideres_semillero as l')
+            ->leftJoin('semilleros as s', 's.id_lider_semi', '=', 'l.id_lider_semi')
+            ->when($includeCurrent, function($w) use ($includeCurrent) {
+                $w->where(function($x) use ($includeCurrent) {
+                    $x->whereNull('s.id_lider_semi')
+                      ->orWhere('l.id_lider_semi', $includeCurrent);
+                });
+            }, function($w) {
+                $w->whereNull('s.id_lider_semi');
+            })
+            ->when($q !== '', function ($w) use ($q) {
+                $w->where(function($s) use ($q){
+                    $s->where('l.nombres', 'like', "%{$q}%")
+                      ->orWhere('l.apellidos', 'like', "%{$q}%")
+                      ->orWhere('l.correo_institucional', 'like', "%{$q}%");
+                });
+            })
+            ->select(
+                'l.id_lider_semi',
+                DB::raw("TRIM(CONCAT(COALESCE(l.nombres,''),' ',COALESCE(l.apellidos,''))) as nombre"),
+                'l.correo_institucional as correo'
+            )
+            ->orderBy('l.nombres')
+            ->limit(20)
+            ->get();
+
+        return response()->json($query);
+    }
+
+    /**
+     * Actualiza SOLO el semillero (nombre, línea) y la relación con el líder.
+     * No modifica la tabla users ni datos del líder.
+     */
     public function update(Request $request, $id)
     {
-        // actualizar registro
+        $data = $request->validate([
+            'nombre'              => ['required','string','max:255', Rule::unique('semilleros','nombre')->ignore($id,'id_semillero')],
+            'linea_investigacion' => ['required','string','max:255'],
+            'id_lider_semi'       => ['nullable','integer','exists:lideres_semillero,id_lider_semi'],
+        ]);
+
+        // Si viene un nuevo líder, verificar que no esté ya asignado a otro semillero
+        if (!empty($data['id_lider_semi'])) {
+            $ocupado = DB::table('semilleros')
+                ->where('id_lider_semi', $data['id_lider_semi'])
+                ->where('id_semillero', '<>', $id)
+                ->exists();
+
+            if ($ocupado) {
+                return back()->withErrors(['id_lider_semi' => 'Ese líder ya tiene un semillero asignado.'])
+                             ->withInput();
+            }
+        }
+
+        DB::table('semilleros')
+            ->where('id_semillero', $id)
+            ->update([
+                'nombre'              => $data['nombre'],
+                'linea_investigacion' => $data['linea_investigacion'],
+                'id_lider_semi'       => $data['id_lider_semi'] ?? null,
+                'updated_at'          => now(),
+            ]);
+
+        return back()->with('success', 'Semillero actualizado.');
     }
 
+    /**
+     * Eliminar semillero.
+     */
     public function destroy($id)
     {
-        // eliminar registro
+        DB::table('semilleros')->where('id_semillero', $id)->delete();
+        return back()->with('success', 'Semillero eliminado.');
     }
 }
