@@ -186,12 +186,6 @@
                         <option value="otra">Otra ubicación</option>
                     </select>
                 </div>
-                
-                <div class="form-group-calendario" id="virtual-link-group" style="display: none;">
-                    <label for="event-virtual-link">Link de la reunión virtual <span class="required">*</span></label>
-                    <input type="url" id="event-virtual-link" class="form-control-calendario" placeholder="https://teams.microsoft.com/... o https://meet.google.com/...">
-                    <small class="form-help">Ingresa el enlace de Teams, Meet, Zoom u otra plataforma</small>
-                </div>
             </div>
             
             <!-- PASO 2: Configuración -->
@@ -381,16 +375,28 @@
                     <div class="drawer-label">Ubicación</div>
                     <div class="drawer-value" id="detail-ubicacion">--</div>
                 </div>
+                <div class="drawer-field" id="detail-codigo-field" style="display:none;">
+                    <div class="drawer-label">Código de reunión</div>
+                    <div class="drawer-value" id="detail-codigo">--</div>
+                </div>
                 <div class="drawer-field" id="detail-link-field" style="display:none;">
-                    <div class="drawer-label">Enlace</div>
-                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <div class="drawer-label">Enlace de la reunión</div>
+                    <div id="link-display-container" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                         <a href="#" id="detail-link" class="drawer-link" target="_blank" rel="noopener">Abrir reunión</a>
-                        <button type="button" id="detail-generate-link" class="btn-calendario btn-primary-calendario btn-small" style="display:none;">
-                            Generar enlace
+                        <button type="button" id="delete-link-btn" class="btn-calendario btn-secondary-calendario btn-small" onclick="showReplaceLinkInput()" title="Reemplazar enlace" style="display:none;">
+                            <i class="fas fa-trash"></i>
                         </button>
-                        <button type="button" id="detail-outlook-link" class="btn-calendario btn-secondary-calendario btn-small" style="display:none;">
-                            Abrir en Outlook
-                        </button>
+                    </div>
+                    <div id="replace-link-container" style="display:none; margin-top:10px;">
+                        <input type="url" id="replace-link-input" class="form-control-calendario" placeholder="Pega el nuevo enlace de Teams, Meet o Zoom..." style="width:100%; margin-bottom:8px;">
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" class="btn-calendario btn-primary-calendario btn-small" onclick="saveReplacedLink()" style="flex:1;">
+                                <i class="fas fa-save"></i> Guardar
+                            </button>
+                            <button type="button" class="btn-calendario btn-secondary-calendario btn-small" onclick="cancelReplaceLink()">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

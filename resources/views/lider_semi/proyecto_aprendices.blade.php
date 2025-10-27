@@ -85,11 +85,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function attachAprendiz(id, nombre, correo){
+        console.log('Intentando asignar aprendiz:', {id, nombre, correo, proyectoId});
         fetch(`{{ route('lider_semi.proyectos.aprendices.attach', ['proyecto' => '__ID__']) }}`.replace('__ID__', proyectoId), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token },
             body: JSON.stringify({ aprendiz_id: id })
-        }).then(r=>r.json()).then(data=>{
+        })
+        .then(r=>{
+            console.log('Respuesta del servidor:', r.status, r.statusText);
+            if(!r.ok) {
+                return r.text().then(text => {
+                    console.error('Error del servidor:', text);
+                    alert('Error al asignar aprendiz: ' + r.statusText);
+                    throw new Error(text);
+                });
+            }
+            return r.json();
+        })
+        .then(data=>{
+            console.log('Datos recibidos:', data);
             if(data && data.ok){
                 const div = document.createElement('div');
                 div.className = 'border rounded p-2 d-flex justify-content-between align-items-center';
@@ -98,7 +112,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 lista.appendChild(div);
                 resultados.style.display = 'none';
                 resultados.innerHTML = '';
+                alert('Aprendiz asignado exitosamente');
+            } else {
+                alert('No se pudo asignar el aprendiz');
             }
+        })
+        .catch(error => {
+            console.error('Error completo:', error);
         });
     }
 
@@ -117,12 +137,29 @@ document.addEventListener('DOMContentLoaded', function() {
     function crearYAdjuntar(){
         const nombre = inpNombre.value.trim();
         const correo = inpEmail.value.trim();
-        if(!nombre) return;
+        if(!nombre) {
+            alert('Por favor ingrese el nombre del aprendiz');
+            return;
+        }
+        console.log('Creando y asignando aprendiz:', {nombre, correo, proyectoId});
         fetch(`{{ route('lider_semi.proyectos.aprendices.create', ['proyecto' => '__ID__']) }}`.replace('__ID__', proyectoId), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token },
             body: JSON.stringify({ nombre_completo: nombre, correo_institucional: correo || null })
-        }).then(r=>r.json()).then(data=>{
+        })
+        .then(r=>{
+            console.log('Respuesta del servidor:', r.status, r.statusText);
+            if(!r.ok) {
+                return r.text().then(text => {
+                    console.error('Error del servidor:', text);
+                    alert('Error al crear aprendiz: ' + r.statusText);
+                    throw new Error(text);
+                });
+            }
+            return r.json();
+        })
+        .then(data=>{
+            console.log('Datos recibidos:', data);
             if(data && data.ok){
                 const ap = data.aprendiz;
                 const div = document.createElement('div');
@@ -132,7 +169,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 lista.appendChild(div);
                 inpNombre.value='';
                 inpEmail.value='';
+                alert('Aprendiz creado y asignado exitosamente');
+            } else {
+                alert('No se pudo crear el aprendiz');
             }
+        })
+        .catch(error => {
+            console.error('Error completo:', error);
         });
     }
 
