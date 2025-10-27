@@ -9,6 +9,7 @@ use Illuminate\Validation\Rule;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 
+
 class UsuarioController extends Controller
 {
     /**

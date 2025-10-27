@@ -13,7 +13,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UsuarioController; // 
 use App\Http\Controllers\Admin\SemilleroController as AdminSemilleroController; 
 use App\Http\Controllers\Admin\SemilleroController as AdminSemilleros;
-
+use App\Http\Controllers\Admin\UsuarioController;
 
 
 
