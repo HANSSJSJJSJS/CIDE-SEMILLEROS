@@ -1,3 +1,446 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}"
+    <title>Panel de Administración - CIDE SEMILLERO</title>
+    <link rel="stylesheet" href="../css/Style_layouts.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+  
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="user-info">
+            <div class="user-avatar">JC</div>
+            <span style="font-weight: 600; color: var(--gray-700);">Joaquín cañon</span>
+        </div>
+        <h1 class="header-title">Bienvenido a CIDE SEMILLERO</h1>
+        <button class="logout-btn" type="button" onclick="logout()">
+            <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+            Cerrar sesión
+        </button>
+    </header>
+
+    <!-- Formulario oculto para cerrar sesión -->
+    <form id="logout-form" method="POST" action="{{ route('logout') }}" style="display:none;">
+        @csrf
+    </form>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <nav>
+                <div class="nav-item active" onclick="showSection('dashboard')">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    Dashboard
+                </div>
+                <div class="nav-item" onclick="showSection('users')">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    Gestión de usuarios
+                </div>
+                <div class="nav-item" onclick="showSection('semilleros')">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    Gestión de semilleros
+                </div>
+                <div class="nav-item" onclick="showSection('reports')">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Reportes
+                </div>
+                <div class="nav-item" onclick="showSection('activity')">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Actividad del sistema
+                </div>
+                <div class="nav-item" onclick="showSection('settings')">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Configuración
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section active">
+                <h2 class="section-title">Panel de Administración</h2>
+                <p class="section-subtitle">Vista general del sistema CIDE SEMILLERO</p>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-value">248</div>
+                                <div class="stat-label">Total Usuarios</div>
+                            </div>
+                            <div class="stat-icon green">
+                                <svg fill="white" viewBox="0 0 24 24" width="24" height="24">
+                                    <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="stat-change positive">↑ 12% vs mes anterior</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-value">32</div>
+                                <div class="stat-label">Semilleros Activos</div>
+                            </div>
+                            <div class="stat-icon navy">
+                                <svg fill="white" viewBox="0 0 24 24" width="24" height="24">
+                                    <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="stat-change positive">↑ 3 nuevos este mes</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-value">1,847</div>
+                                <div class="stat-label">Documentos Totales</div>
+                            </div>
+                            <div class="stat-icon blue">
+                                <svg fill="white" viewBox="0 0 24 24" width="24" height="24">
+                                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="stat-change positive">↑ 156 esta semana</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div>
+                                <div class="stat-value">18</div>
+                                <div class="stat-label">Pendientes Revisión</div>
+                            </div>
+                            <div class="stat-icon yellow">
+                                <svg fill="white" viewBox="0 0 24 24" width="24" height="24">
+                                    <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="stat-change negative">↓ Requiere atención</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3 class="chart-title">Actividad de Usuarios - Últimos 7 días</h3>
+                    <div class="bar-chart">
+                        <div class="bar" style="height: 65%;">
+                            <span class="bar-value">156</span>
+                            <span class="bar-label">Lun</span>
+                        </div>
+                        <div class="bar" style="height: 80%;">
+                            <span class="bar-value">192</span>
+                            <span class="bar-label">Mar</span>
+                        </div>
+                        <div class="bar" style="height: 55%;">
+                            <span class="bar-value">132</span>
+                            <span class="bar-label">Mié</span>
+                        </div>
+                        <div class="bar" style="height: 90%;">
+                            <span class="bar-value">216</span>
+                            <span class="bar-label">Jue</span>
+                        </div>
+                        <div class="bar" style="height: 75%;">
+                            <span class="bar-value">180</span>
+                            <span class="bar-label">Vie</span>
+                        </div>
+                        <div class="bar" style="height: 40%;">
+                            <span class="bar-value">96</span>
+                            <span class="bar-label">Sáb</span>
+                        </div>
+                        <div class="bar" style="height: 35%;">
+                            <span class="bar-value">84</span>
+                            <span class="bar-label">Dom</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+{{-- Users Section --}}
+<section id="users" class="content-section">
+  <h2 class="section-title">Gestión de Usuarios</h2>
+  <p class="section-subtitle">Administra todos los usuarios del sistema</p>
+
+  {{-- Toolbar --}}
+  <div class="toolbar d-flex flex-wrap gap-2 align-items-center mb-3">
+    <div class="search-box position-relative flex-grow-1" style="max-width: 420px;">
+      <svg class="position-absolute" style="left:10px; top:50%; transform:translateY(-50%);" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input id="userSearch" type="text" class="form-control ps-5"
+             placeholder="Buscar usuarios por nombre o email...">
+    </div>
+
+    {{-- Filtro por Rol (valores EXACTOS de tu app) --}}
+    <select id="roleFilter" class="form-select" style="max-width: 220px;">
+      <option value="">Todos los roles</option>
+      <option value="ADMIN">Administrador</option>
+      <option value="LIDER_GENERAL">Líder General</option>
+      <option value="LIDER_SEMILLERO">Líder de Semillero</option>
+      <option value="APRENDIZ">Aprendiz</option>
+    </select>
+
+    {{-- Filtro por Estado (si aún no hay columna, queda en “ACTIVO” por defecto) --}}
+    <select id="statusFilter" class="form-select" style="max-width: 180px;">
+      <option value="">Todos los estados</option>
+      <option value="ACTIVO">Activo</option>
+      <option value="INACTIVO">Inactivo</option>
+    </select>
+
+    {{-- Abre el modal que ya tenemos --}}
+    <button class="btn btn-primary d-flex align-items-center gap-2"
+            data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
+      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Nuevo Usuario
+    </button>
+  </div>
+
+  {{-- Tabla --}}
+  <div class="table-container table-responsive">
+    <table id="usersTable" class="table table-striped align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Usuario</th>
+          <th>Email</th>
+          <th>Rol</th>
+          <th>Registrado</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+
+      <tbody>
+      @forelse($users as $user)
+        @php
+          $role = strtoupper($user->role ?? 'SIN ROL');
+          $roleClass = match($role) {
+              'ADMIN' => 'bg-danger',
+              'LIDER_GENERAL' => 'bg-warning text-dark',
+              'LIDER_SEMILLERO' => 'bg-primary',
+              'APRENDIZ' => 'bg-success',
+              default => 'bg-secondary'
+          };
+          $status = 'ACTIVO'; // cámbialo cuando tengas la columna en BD
+        @endphp
+
+        <tr data-role="{{ $role }}" data-status="{{ $status }}">
+          <td><strong>{{ $user->name }}</strong></td>
+          <td>{{ $user->email }}</td>
+          <td><span class="badge {{ $roleClass }}">{{ $role }}</span></td>
+          <td>{{ optional($user->created_at)->format('Y-m-d H:i') }}</td>
+          <td class="text-end">
+            <div class="d-inline-flex gap-2">
+              <a href="#" class="btn btn-sm btn-warning btn-editar" data-id="{{ $user->id }}" data-edit-url="{{ route('admin.usuarios.edit', $user->id) }}" data-update-url="{{ route('admin.usuarios.update', $user->id) }}">
+>
+  <i class="fa fa-edit"></i>
+</a>
+              <button class="btn btn-sm btn-outline-danger" title="Eliminar" disabled>🗑️</button>
+            </div>
+          </td>
+        </tr>
+      @empty
+        <tr>
+          <td colspan="5" class="text-center text-muted">No hay usuarios.</td>
+        </tr>
+      @endforelse
+      </tbody>
+    </table>
+  </div>
+
+  {{-- Paginación --}}
+  @isset($users)
+    @if(method_exists($users, 'links'))
+      <div class="mt-3">
+        {{ $users->links() }}
+      </div>
+    @endif
+  @endisset
+</section>
+
+<style>
+  #users .toolbar .form-control, #users .toolbar .form-select { height: 42px; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // --- refs del modal y form ---
+  const modalEl     = document.getElementById('modalNuevoUsuario');
+  const modalLabel  = modalEl.querySelector('#modalNuevoUsuarioLabel');
+  const form        = document.getElementById('formNuevoUsuario');
+  const selectRol   = document.getElementById('selectRol');
+  const common      = document.getElementById('commonFields');
+  const roleBlocks  = modalEl.querySelectorAll('.role-fields');
+  const submitBtn   = form.querySelector('button[type="submit"]');
+
+  // helper para mostrar/ocultar bloques por rol (creación y edición)
+  function toggleRoleFields() {
+    const role = selectRol.value || '';
+    common.classList.toggle('d-none', !role);
+    roleBlocks.forEach(b => b.classList.toggle('d-none', b.getAttribute('data-role') !== role));
+  }
+  selectRol.addEventListener('change', toggleRoleFields);
+
+  // Normalizaciones de rol (UI ↔ BD)
+  const toUiRole = (dbRole) => {
+    if (dbRole === 'LIDER GENERAL') return 'LIDER_GENERAL';
+    return dbRole; // ADMIN, LIDER_SEMILLERO, APRENDIZ quedan iguales
+  };
+
+  // --- Reset modal a modo CREAR ---
+  function resetToCreateMode() {
+    modalLabel.textContent = 'Registrar usuario';
+    submitBtn.textContent  = 'Guardar Usuario';
+    form.action            = "{{ route('admin.usuarios.store') }}";
+    // quitar _method=PUT si quedó de una edición previa
+    const _method = form.querySelector('input[name="_method"]');
+    if (_method) _method.remove();
+    form.reset();
+    selectRol.removeAttribute('disabled');
+    toggleRoleFields();
+  }
+
+  // al cerrar el modal: siempre volver a modo crear
+  modalEl.addEventListener('hidden.bs.modal', resetToCreateMode);
+
+  // --- Modo EDITAR: click en botón editar ---
+  document.querySelectorAll('.btn-editar').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const editUrl   = btn.dataset.editUrl;
+      const updateUrl = btn.dataset.updateUrl;
+
+      // 1) Traer datos (usuario + perfil)
+      let payload;
+      try {
+        const res = await fetch(editUrl, { headers: {'X-Requested-With':'XMLHttpRequest'} });
+        if (!res.ok) throw new Error('No se pudo cargar el usuario.');
+        payload = await res.json();
+      } catch (err) {
+        alert(err.message || 'Error cargando datos para editar.');
+        return;
+      }
+
+      const { usuario, perfil } = payload;
+      // 2) Cambiar modal a modo edición
+      modalLabel.textContent = 'Editar usuario';
+      submitBtn.textContent  = 'Actualizar';
+      form.action            = updateUrl;
+
+      // inyectar _method=PUT si no existe
+      if (!form.querySelector('input[name="_method"]')) {
+        const hidden = document.createElement('input');
+        hidden.type  = 'hidden';
+        hidden.name  = '_method';
+        hidden.value = 'PUT';
+        form.appendChild(hidden);
+      }
+
+      // 3) Rellenar campos comunes
+      selectRol.value = toUiRole(usuario.role);
+      selectRol.setAttribute('disabled','disabled'); // evitar cambiar rol en edición
+      toggleRoleFields();
+
+      form.querySelector('input[name="nombre"]').value   = usuario.name ?? '';
+      form.querySelector('input[name="apellido"]').value = usuario.apellidos ?? '';
+      form.querySelector('input[name="email"]').value    = usuario.email ?? '';
+      // password vacío (si quieres cambiarlo, hazlo con un flujo separado)
+
+      // 4) Rellenar por rol
+      const role = selectRol.value;
+
+      if (role === 'LIDER_GENERAL') {
+        // Sin extras obligatorios; si quieres, reflecta el institucional desde perfil
+        // (en tu schema: Correo_institucional)
+        // nada más que hacer
+      }
+
+      if (role === 'LIDER_SEMILLERO') {
+        form.querySelector('select[name="ls_tipo_documento"]').value = perfil?.tipo_documento ?? '';
+        form.querySelector('input[name="ls_documento"]').value       = perfil?.documento ?? '';
+      }
+
+      if (role === 'APRENDIZ') {
+        form.querySelector('input[name="ap_ficha"]').value                 = perfil?.ficha ?? '';
+        form.querySelector('input[name="ap_programa"]').value              = perfil?.programa ?? '';
+        form.querySelector('select[name="ap_tipo_documento"]').value       = perfil?.tipo_documento ?? '';
+        form.querySelector('input[name="ap_documento"]').value             = perfil?.documento ?? '';
+        form.querySelector('input[name="ap_celular"]').value               = perfil?.celular ?? '';
+        form.querySelector('input[name="ap_correo_institucional"]').value  = perfil?.correo_institucional ?? '';
+        form.querySelector('input[name="ap_contacto_nombre"]').value       = perfil?.contacto_nombre ?? '';
+        form.querySelector('input[name="ap_contacto_celular"]').value      = perfil?.contacto_celular ?? '';
+        // oculto: personal = login
+        const hiddenPersonal = form.querySelector('input[name="ap_correo_personal"]');
+        if (hiddenPersonal) hiddenPersonal.value = usuario.email ?? '';
+      }
+
+      // 5) Abrir modal en modo edición
+      const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      bsModal.show();
+    });
+  });
+
+  // --- Envío: si estás en modo crear aprendiz, copia email→personal si faltó ---
+  form.addEventListener('submit', function () {
+    if (!form.querySelector('input[name="_method"]') // crear
+        && selectRol.value === 'APRENDIZ') {
+      const p = form.querySelector('input[name="ap_correo_personal"]');
+      const e = form.querySelector('input[name="email"]');
+      if (p && !p.value && e && e.value) p.value = e.value;
+    }
+  });
+
+  // Inicialización
+  resetToCreateMode(); // asegura estado limpio al cargar
+});
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
             <!-- Semilleros Section -->
             <section id="semilleros" class="content-section">

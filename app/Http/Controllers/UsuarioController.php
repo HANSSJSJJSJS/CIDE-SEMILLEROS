@@ -1,13 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
-use App\Http\Controllers\Controller;
-
 
 // Modelos (si no usas Eloquent para perfiles, puedes borrar estos use)
 use App\Models\User;
@@ -17,15 +15,12 @@ class UsuarioController extends Controller
     /**
      * Listado de usuarios (para mostrar en el dashboard).
      */
-public function index(Request $request)
-{
-    $usuarios = User::query()
-        ->orderByDesc('created_at')
-        ->paginate(12)              // ← Esto agrega paginación real
-        ->withQueryString();        // ← Conserva filtros si los tienes
+    public function index()
+    {
+        $usuarios = User::latest()->get();
+        return view('admin.dashboard-admin', compact('usuarios'));
+    }
 
-    return view('Admin.usuarios.index', compact('usuarios'));
-}
     /**
      * Guarda un usuario nuevo desde el formulario del modal (Dashboard Admin).
      */
