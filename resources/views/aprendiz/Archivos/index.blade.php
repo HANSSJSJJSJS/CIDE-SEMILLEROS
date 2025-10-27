@@ -77,7 +77,7 @@
             <div class="col-lg-9">
                 <div class="upload-section">
                     <h2 class="mb-3">Subir Documentos</h2>
-                    <p class="text-muted mb-4">Carga los documentos PDF requeridos para tus proyectos (Máx. 10MB por archivo)</p>
+                    <p class="text-muted mb-4">Carga los documentos PDF requeridos para tus proyectos</p>
 
                     <!-- Formulario de Subida Integrado -->
                     <form action="{{ route('aprendiz.archivos.upload') }}" method="POST" enctype="multipart/form-data" id="uploadForm">
@@ -121,30 +121,65 @@
 
                     <h4 class="mt-5 mb-3">Documentos ya Cargados</h4>
 
-                    <div class="file-list">
-                        @forelse ($archivos as $archivo)
-                            <div class="file-item">
-                                <div class="d-flex align-items-center">
-                                    <span class="check">✓</span>
-                                    <div class="ms-1">
-                                        <span class="fw-semibold">{{ $archivo->nombre_archivo }}</span>
-                                        <small class="text-muted d-block">Proyecto: {{ $archivo->proyecto->nombre_proyecto ?? $archivo->proyecto->nombre ?? 'N/A' }}</small>
+                    <form method="GET" action="{{ route('aprendiz.archivos.index') }}" class="row g-2 align-items-end mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Proyecto</label>
+                            <select name="proyecto" class="form-select">
+                                <option value="">Todos</option>
+                                @foreach($proyectos as $p)
+                                    <option value="{{ $p->id_proyecto }}" {{ (isset($proyecto) && (string)$proyecto === (string)$p->id_proyecto) ? 'selected' : '' }}>
+                                        {{ $p->nombre_proyecto ?? $p->nombre }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Fecha</label>
+                            <input type="date" name="fecha" value="{{ $fecha }}" class="form-control" />
+                        </div>
+                        <div class="col-md-3 d-flex gap-2">
+                            <button class="btn btn-sena" type="submit">Filtrar</button>
+                            <a class="btn btn-outline-secondary" href="{{ route('aprendiz.archivos.index') }}">Limpiar</a>
+                        </div>
+                    </form>
+
+                    <div class="card shadow-sm">
+                        <div class="card-body p-0">
+                            @forelse ($archivos as $archivo)
+                                <div class="list-group list-group-flush">
+                                    <div class="list-group-item py-3">
+                                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                                            <div class="d-flex align-items-start gap-3">
+                                                <div class="rounded-circle bg-success text-white d-flex justify-content-center align-items-center" style="width:36px;height:36px;">PDF</div>
+                                                <div>
+                                                    <div class="fw-semibold">{{ $archivo->nombre_original ?? $archivo->nombre_archivo }}</div>
+                                                    <div class="text-muted small">Proyecto: {{ $archivo->proyecto->nombre_proyecto ?? $archivo->proyecto->nombre ?? 'N/A' }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-end">
+                                                @php
+                                                    $fecha = $archivo->subido_en ?? $archivo->created_at ?? null;
+                                                @endphp
+                                                <div class="small text-muted">Subido el: {{ $fecha ? \Carbon\Carbon::parse($fecha)->format('d/m/Y H:i') : '—' }}</div>
+                                                <div class="mt-1">
+                                                    @if(!empty($archivo->ruta))
+                                                        <a href="{{ Storage::url($archivo->ruta) }}" target="_blank" class="btn btn-sm btn-outline-primary">Ver</a>
+                                                    @else
+                                                        <button class="btn btn-sm btn-outline-secondary" disabled>Sin archivo</button>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="d-flex align-items-center">
-                                    <small class="text-muted me-3">Subido el: {{ $archivo->created_at->format('Y-m-d') }}</small>
-                                    <form action="{{ route('aprendiz.archivos.destroy', $archivo->id) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este documento?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
-                                            <i class="fa fa-trash"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        @empty
-                            <div class="p-3 text-center text-muted">Aún no has subidos documentos.</div>
-                        @endforelse
+                            @empty
+                                <div class="p-4 text-center text-muted">Aún no has subidos documentos.</div>
+                            @endforelse
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        {{ $archivos->links() }}
                     </div>
                 </div>
             </div>

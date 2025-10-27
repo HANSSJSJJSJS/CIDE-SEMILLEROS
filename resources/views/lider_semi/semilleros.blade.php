@@ -135,7 +135,7 @@
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
                     <div class="modal-body">
-                        <small class="text-muted">Agregue o elimine aprendices del proyecto</small>
+                        <small class="text-muted">Agregue o Elimine Aprendices del Proyecto</small>
                         <div class="row mt-2 g-2"></div>
 
                         <div class="mt-3">
@@ -342,9 +342,9 @@
                         if (countEl){
                             const m = (countEl.textContent||'0').match(/\d+/); let n = m?parseInt(m[0],10):0; n++; countEl.textContent = n + ' aprendices';
                         }
-                        notify('Aprendiz asignado correctamente','success');
-                    } else { notify('Error al asignar ('+status+')','danger'); }})
-                    .catch(()=> notify('No se pudo asignar (red/JSON)','danger'));
+                        notify('Aprendiz Asignado Correctamente','success');
+                    } else { notify('Error Al Asignar ('+status+')','danger'); }})
+                    .catch(()=> notify('No Se Pudo Asignar (red/JSON)','danger'));
             }
             function detachAprendiz(id, nodo){
                 apiFetch(route('detach', {aprendiz:id}), { method:'DELETE' })
@@ -362,8 +362,8 @@
                         if (countEl){
                             const m = (countEl.textContent||'0').match(/\d+/); let n = m?parseInt(m[0],10):0; n = Math.max(0, n-1); countEl.textContent = n + ' aprendices';
                         }
-                    } else { notify('Error al eliminar ('+status+')','danger'); }})
-                    .catch(()=> notify('No se pudo eliminar (red/JSON)','danger'));
+                    } else { notify('Error Al Eliminar ('+status+')','danger'); }})
+                    .catch(()=> notify('No se Pudo Eliminar (red/JSON)','danger'));
             }
             function crearYAdjuntar(){
                 const nombre = (inpNombre && inpNombre.value.trim()) || ''; const correo = (inpEmail && inpEmail.value.trim()) || '';
@@ -377,8 +377,8 @@
                 const tipo = (tipoDoc && tipoDoc.value.trim()) || '';
                 const num = (buscador && buscador.value.trim()) || '';
                 console.log('[SEARCH] Tipo:', tipo, '| Num:', num);
-                
-                typingTimer = setTimeout(function(){ 
+
+                typingTimer = setTimeout(function(){
                     let url = route('search') + `?tipo=${encodeURIComponent(tipo)}&num=${encodeURIComponent(num)}`;
                     console.log('[SEARCH] URL:', url);
                     apiFetch(url)
@@ -387,16 +387,16 @@
                             return r.json();
                         })
                         .then(items=>{
-                        console.log('[SEARCH] Items recibidos:', items.length, items); 
-                        resultados.innerHTML=''; 
-                        if(items && items.length){ 
-                            items.forEach(it=> resultados.appendChild(renderResultado(it))); 
-                            resultados.style.display='block'; 
-                            if(noResult) noResult.style.display='none'; 
-                        } else { 
-                            resultados.style.display='none'; 
-                            if(noResult) noResult.style.display='block'; 
-                        } 
+                        console.log('[SEARCH] Items recibidos:', items.length, items);
+                        resultados.innerHTML='';
+                        if(items && items.length){
+                            items.forEach(it=> resultados.appendChild(renderResultado(it)));
+                            resultados.style.display='block';
+                            if(noResult) noResult.style.display='none';
+                        } else {
+                            resultados.style.display='none';
+                            if(noResult) noResult.style.display='block';
+                        }
                     })
                     .catch(err => {
                         console.error('[SEARCH] Error:', err);
@@ -405,7 +405,7 @@
                             noResult.textContent = 'Error al buscar: ' + err.message;
                             noResult.style.display='block';
                         }
-                    }); 
+                    });
                 }, 250);
             }
             if (buscador) buscador.addEventListener('keyup', doSearch);

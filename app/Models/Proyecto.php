@@ -48,12 +48,27 @@ class Proyecto extends Model
 
     public function aprendices()
     {
-        // La relación se hace a través de la tabla documentos
+        // Relación mediante proyecto_user: user_id (pivot) ↔ aprendices.id_usuario (PK)
         return $this->belongsToMany(
             Aprendiz::class,
-            'documentos',
-            'id_proyecto',
-            'id_aprendiz'
+            'proyecto_user', // tabla pivote
+            'id_proyecto',   // fk en pivot hacia proyectos (según esquema)
+            'user_id',       // fk en pivot hacia aprendices (coincide con id_usuario)
+            'id_proyecto',   // clave local en proyectos
+            'id_usuario'     // clave en aprendices (PK)
+        )->distinct();
+    }
+
+    // Relación directa con usuarios a través de proyecto_user
+    public function usuarios()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'proyecto_user', // tabla pivote
+            'id_proyecto',   // fk en pivot hacia proyectos (según esquema)
+            'user_id',       // fk en pivot hacia users
+            'id_proyecto',   // clave local en proyectos
+            'id'             // clave en users
         )->distinct();
     }
     public function evidencias()
@@ -61,3 +76,4 @@ class Proyecto extends Model
     return $this->hasMany(Evidencia::class, 'id_proyecto', 'id_proyecto');
 }
 };
+
