@@ -1,0 +1,33 @@
+/* Estilos específicos para Mis Proyectos (lider_semi/semilleros.blade.php) */
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.card-project {
+  box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+  border: 0;
+  border-radius: 12px;
+}
+
+.card-project .card-header {
+  border: 0;
+  background: #00304D;
+  color: #fff;
+}
+
+.card-project .progress {
+  height: 8px;
+}
+
+.card-project .btn-details {
+  background: #35A900;
+  color: #fff;
+}
+
+.badge-status {
+  background: #14507686;
+}

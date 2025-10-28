@@ -1,0 +1,243 @@
+/* =========================
+   Formulario Institucional SENA (ligero)
+   ========================= */
+body.sena-theme {
+  background-color: #d9ecdf; /* fondo general suave */
+  color: #1a1a1a;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Contenedor principal */
+.sena-theme .card-sena {
+  background: #b2c1b7;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,.06);
+  box-shadow: 0 6px 16px rgba(0,0,0,.08);
+  max-width: 640px;
+  margin: 3rem auto;
+  padding: 2rem;
+}
+
+/* Título */
+.sena-theme .card-sena h2 {
+  background: linear-gradient(90deg, #00733b, #009e4f);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 1.4rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+}
+
+/* Etiquetas */
+.sena-theme label.form-label {
+  color: #2f463a;
+  font-weight: 600;
+}
+
+/* Inputs y selects */
+.sena-theme .form-control,
+.sena-theme .form-select {
+  background-color: #f7eeee;
+  border: 1.5px solid #575d5a;
+  border-radius: 8px;
+  padding: 10px 12px;
+  transition: box-shadow .2s, border-color .2s;
+}
+
+.sena-theme .form-control:focus,
+.sena-theme .form-select:focus {
+  border-color: #009e4f;
+  box-shadow: 0 0 0 .15rem rgba(0,158,79,.25);
+}
+
+/* Bloques internos (secciones de rol) */
+.sena-theme .p-3.border.rounded-3 {
+  background-color: #fcfaf9;
+  border-color: #d7e8de !important;
+  transition: background-color .3s;
+}
+.sena-theme .p-3.border.rounded-3:hover {
+  background-color: #eef6f0;
+}
+
+/* Subtítulos de secciones */
+.sena-theme h5.text-success {
+  color: #00733b !important;
+  font-weight: 700;
+  border-bottom: 2px solid #009e4f;
+  display: inline-block;
+  padding-bottom: 4px;
+}
+
+/* Botones */
+.sena-theme .btn-success {
+  background-color: #00733b;
+  border-color: #00733b;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 8px 22px;
+  transition: background-color .2s, box-shadow .2s;
+}
+.sena-theme .btn-success:hover {
+  background-color: #009e4f;
+  box-shadow: 0 3px 8px rgba(0,115,59,.25);
+}
+
+.sena-theme .btn-outline-secondary {
+  color: #333;
+  border-color: #aaa;
+  border-radius: 8px;
+  padding: 8px 22px;
+}
+.sena-theme .btn-outline-secondary:hover {
+  background-color: #e9efec;
+}
+
+/* Alertas */
+.sena-theme .alert-success {
+  background-color: #e7f7ee;
+  color: #0a3622;
+  border: none;
+  font-weight: 500;
+  border-radius: 8px;
+}
+
+/* Ajustes responsive */
+@media (max-width: 576px) {
+  .sena-theme .card-sena {
+    padding: 1.5rem 1rem;
+  }
+}
+
+/* Card centrada y con padding cómodo */
+.sena-theme .card.card-sena{
+  max-width: 860px;
+  margin: 2rem auto;
+  padding: 2rem 2rem 2.25rem;
+  border-radius: 16px !important;
+}
+
+/* Gutters (espacios) entre columnas/filas de Bootstrap dentro del form */
+.sena-theme form .row{
+  --bs-gutter-x: 1.25rem;   /* espacio horizontal entre cols */
+  --bs-gutter-y: 1rem;      /* espacio vertical entre filas */
+}
+
+/* Bloques condicionales (correo, admin, líder, aprendiz) con respiro */
+#box-correo,
+#box-admin,
+#box-lider,
+#box-aprendiz{
+  margin-top: 1rem;
+}
+
+/* Secciones internas (los paneles con p-3 border rounded-3) */
+.sena-theme .p-3.border.rounded-3{
+  padding: 1rem !important;
+  margin-bottom: 1rem;                 /* separa secciones */
+  background: #f7fbf8 !important;
+  border-color: #cfe6da !important;
+}
+
+/* Subtítulo de sección y línea inferior con separación correcta */
+.sena-theme h5.text-success{
+  margin: .25rem 0 .75rem;
+  border-bottom-width: 2px;
+}
+
+/* Campos: altura uniforme, ancho completo y espacio visual */
+.sena-theme .form-control,
+.sena-theme .form-select{
+  height: 44px;
+}
+.sena-theme .form-label{
+  margin-bottom: .35rem;
+}
+
+/* Grupo de acciones alineado y con gap consistente (por si el CSS del tema lo pisa) */
+.sena-theme .d-flex.gap-2{
+  gap: .75rem !important;
+  margin-top: 1rem;
+}
+
+/* En pantallas grandes: dos columnas naturales sin tocar el Blade */
+@media (min-width: 992px){
+  /* Fila de rol y correo más compacta */
+  #box-correo .col-md-6,
+  .row.g-3 .col-md-6,
+  .row.g-3 .col-md-4,
+  .row.g-3 .col-md-8{
+    /* Asegura que el gutter se perciba y no se “pegue” */
+    padding-top: .25rem;
+    padding-bottom: .25rem;
+  }
+}
+
+/* Contraste del body y de la card (mantener look institucional) */
+body.sena-theme{ background:#d7e3dd !important; }
+.sena-theme .card.card-sena{ background:#f4fbf6 !important; }
+
+.d-none { display: none !important; }
+
+/* ===== Layout y consistencia visual del formulario ===== */
+
+/* Card más ancha y centrada */
+.sena-theme .card.card-sena{
+  max-width: 920px;
+  margin: 2rem auto;
+  padding: 2rem 2rem 2.25rem;
+  border-radius: 16px !important;
+}
+
+/* Gutters cómodos en Bootstrap rows */
+.sena-theme form .row{
+  --bs-gutter-x: 1.25rem;
+  --bs-gutter-y: 1rem;
+}
+
+/* Todos los campos del MISMO tamaño */
+.sena-theme .form-control,
+.sena-theme .form-select{
+  width: 100%;
+  height: 46px;                 /* alto uniforme */
+  border-radius: 10px;
+  border: 1.5px solid #c9d3cd;
+  padding: 10px 12px;
+  transition: box-shadow .2s, border-color .2s;
+}
+
+/* Placeholders y focus */
+.sena-theme .form-control::placeholder{ color:#9aa6a0; }
+.sena-theme .form-control:focus,
+.sena-theme .form-select:focus{
+  border-color:#009e4f;
+  box-shadow:0 0 0 .2rem rgba(0,158,79,.18);
+}
+
+/* Labels con aire */
+.sena-theme .form-label{ margin-bottom:.35rem; font-weight:600; }
+
+/* Secciones (paneles de datos) con respiro */
+#box-correo, #box-admin, #box-lider, #box-aprendiz{ margin-top: 1rem; }
+.sena-theme .p-3.border.rounded-3{
+  padding: 1rem !important;
+  background:#f7fbf8 !important;
+  border-color:#cfe6da !important;
+  margin-bottom: 1rem;
+}
+
+/* Acciones con separación y alineación */
+.sena-theme .d-flex.gap-2{
+  gap:.8rem !important;
+  margin-top:1rem;
+}
+
+/* Ocultar acciones hasta que haya rol */
+.sena-theme .actions-hidden{ display:none !important; }
+
+/* Asegurar ocultamiento */
+.d-none{ display:none !important; }
+.actions-hidden { display: none !important; }

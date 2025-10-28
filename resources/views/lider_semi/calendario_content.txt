@@ -1,0 +1,106 @@
+<div class="container-fluid mt-4 px-4">
+    <header class="calendario-header-custom">
+        <h1>Calendario de Actividades</h1>
+        <p class="subtitle">Programa y gestiona reuniones y eventos con tus semilleros</p>
+    </header>
+
+    <div class="dashboard-calendario">
+        <div class="calendar-container">
+            <div class="calendar-header">
+                <div class="calendar-nav">
+                    <button id="prev-month"><i class="fas fa-chevron-left"></i></button>
+                    <button id="next-month"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div class="current-month" id="current-month">Octubre 2025</div>
+                <button class="btn-calendario btn-primary-calendario" id="add-event-btn">
+                    <i class="fas fa-plus"></i> Nueva Reunión
+                </button>
+            </div>
+
+            <div class="calendar-grid" id="calendar-grid">
+                <!-- Los días se generarán con JavaScript -->
+            </div>
+        </div>
+
+        <div class="events-sidebar">
+            <h2 class="section-title">Próximos Eventos</h2>
+            <ul class="events-list" id="events-list">
+                <!-- Los eventos se cargarán con JavaScript -->
+            </ul>
+
+            <div class="empty-state" id="empty-events" style="display: none;">
+                <i class="far fa-calendar-plus"></i>
+                <p>No hay eventos programados</p>
+                <button class="add-event-btn" id="add-event-sidebar">
+                    <i class="fas fa-plus"></i> Agregar primer evento
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar/editar eventos -->
+<div class="modal-calendario" id="event-modal">
+    <div class="modal-content-calendario">
+        <div class="modal-header-calendario">
+            <h3 class="modal-title-calendario" id="modal-title">Nueva Reunión</h3>
+            <button class="close-modal-calendario" id="close-modal">&times;</button>
+        </div>
+        <form id="event-form">
+            @csrf
+            <input type="hidden" id="event-id">
+            
+            <div class="form-group-calendario">
+                <label for="event-title">Título de la reunión *</label>
+                <input type="text" id="event-title" class="form-control-calendario" placeholder="Ej: Reunión Semillero IA" required>
+            </div>
+            
+            <div class="form-group-calendario">
+                <label for="event-proyecto">Proyecto (Opcional)</label>
+                <select id="event-proyecto" class="form-control-calendario">
+                    <option value="">Sin proyecto asignado</option>
+                    @foreach($proyectos as $proyecto)
+                        <option value="{{ $proyecto->id_proyecto }}">{{ $proyecto->nombre_proyecto }}</option>
+                    @endforeach
+                </select>
+            </div>
+            
+            <div class="form-group-calendario">
+                <label for="event-date">Fecha *</label>
+                <input type="date" id="event-date" class="form-control-calendario" required>
+            </div>
+            
+            <div class="form-group-calendario">
+                <label for="event-time">Hora *</label>
+                <input type="time" id="event-time" class="form-control-calendario" required>
+            </div>
+            
+            <div class="form-group-calendario">
+                <label for="event-duration">Duración (minutos) *</label>
+                <input type="number" id="event-duration" class="form-control-calendario" value="60" min="15" step="15" required>
+            </div>
+            
+            <div class="form-group-calendario">
+                <label for="event-description">Descripción</label>
+                <textarea id="event-description" class="form-control-calendario" rows="3" placeholder="Detalles de la reunión..."></textarea>
+            </div>
+            
+            <div class="form-group-calendario">
+                <label for="event-participants">Participantes</label>
+                <select id="event-participants" class="form-control-calendario" multiple size="5">
+                    @foreach($aprendices as $aprendiz)
+                        <option value="{{ $aprendiz->id_aprendiz }}">{{ $aprendiz->nombre_completo }}</option>
+                    @endforeach
+                </select>
+                <small class="text-muted">Mantén presionada la tecla Ctrl para seleccionar múltiples participantes</small>
+            </div>
+            
+            <div class="form-actions-calendario">
+                <button type="button" class="btn-calendario btn-secondary-calendario" id="cancel-event">Cancelar</button>
+                <button type="submit" class="btn-calendario btn-primary-calendario">
+                    <i class="fas fa-save"></i> Guardar Reunión
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

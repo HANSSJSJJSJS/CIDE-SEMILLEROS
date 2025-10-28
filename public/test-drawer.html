@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Drawer - Botones de Generar Enlace</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #5aa72e;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #374151;
+        }
+        .platform-option {
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            color: #374151;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 5px;
+        }
+        .platform-option:hover {
+            background: #e5e7eb;
+            border-color: #5aa72e;
+            color: #5aa72e;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        .status.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #81c784;
+        }
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef5350;
+        }
+        .code {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Test: Botones de Generar Enlace</h1>
+        
+        <div class="test-section">
+            <h3>1. Vista previa de los botones</h3>
+            <p>Así deberían verse los botones en el drawer:</p>
+            <div id="platform-selector" style="margin-top:15px; padding:12px; background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb;">
+                <div style="margin-bottom:10px; font-weight:600; color:#374151;">
+                    🔗 Generar enlace con:
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button type="button" class="platform-option" onclick="testClick('teams')">
+                        <i class="fab fa-microsoft"></i> Teams
+                    </button>
+                    <button type="button" class="platform-option" onclick="testClick('meet')">
+                        <i class="fab fa-google"></i> Meet
+                    </button>
+                </div>
+            </div>
+            <div id="test-result" class="status" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Verificación en tu calendario</h3>
+            <p><strong>Pasos para verificar:</strong></p>
+            <ol>
+                <li>Abre el calendario en otra pestaña</li>
+                <li>Haz clic en una reunión <strong>virtual</strong> que <strong>NO tenga enlace</strong></li>
+                <li>Abre la consola del navegador (F12)</li>
+                <li>Busca estos mensajes:</li>
+            </ol>
+            <div class="code">
+✅ [Drawer] Campo enlace VISIBLE (ubicación: virtual )
+⚠️ [Drawer] NO tiene link_virtual, mostrando selector
+✅ [Drawer] Platform selector MOSTRADO
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Si NO ves los botones, ejecuta esto en consola:</h3>
+            <div class="code">
+// Forzar mostrar selector
+const ps = document.getElementById('platform-selector');
+if (ps) {
+    ps.style.display = 'block';
+    ps.style.visibility = 'visible';
+    ps.style.opacity = '1';
+    console.log('✅ Selector forzado');
+} else {
+    console.error('❌ No existe #platform-selector');
+}
+
+// Verificar estado completo
+debugDrawerState();
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Checklist de verificación</h3>
+            <ul>
+                <li>✅ La reunión debe ser de tipo <strong>"virtual"</strong></li>
+                <li>✅ La reunión NO debe tener <code>link_virtual</code></li>
+                <li>✅ El drawer debe estar abierto</li>
+                <li>✅ El campo "Enlace" debe estar visible</li>
+                <li>✅ Los botones Teams/Meet deben aparecer debajo</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>5. Solución rápida</h3>
+            <p>Si después de recargar aún no ves los botones:</p>
+            <ol>
+                <li>Presiona <strong>Ctrl+Shift+R</strong> (forzar recarga sin caché)</li>
+                <li>Abre una reunión virtual sin enlace</li>
+                <li>Ejecuta en consola: <code>debugDrawerState()</code></li>
+                <li>Comparte el resultado conmigo</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function testClick(platform) {
+            const result = document.getElementById('test-result');
+            result.style.display = 'block';
+            result.className = 'status success';
+            result.innerHTML = `✅ Botón "${platform}" funciona correctamente!`;
+            
+            setTimeout(() => {
+                result.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

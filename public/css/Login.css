@@ -1,0 +1,324 @@
+/* Reset y Estilos Globales */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+        /* === PANEL IZQUIERDA === */
+        .left-panel {
+            left: 10%;
+            width: 30%;
+            margin-top: 15%;
+            align-items: left;
+            padding: 60px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Panel Izquierda */
+        .logo-cide img {
+            width: 800px;   /* ajusta el valor a tu gusto */
+            height: auto;   /* mantiene la proporción */
+            margin-bottom: 200px;
+        }
+
+        /* === PANEL DERECHO === */
+        .right-panel {
+            margin-top: 9%;
+            left: 20%;
+            position: relative;
+            width: 40%;
+            height: 60vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #fff; /* color de fondo base */
+            overflow: hidden;
+        }
+        
+        /* === IMAGEN DE FONDO DEL LOGIN === */
+        .login-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* mantiene proporciones del marco */
+            z-index: 0;
+        }
+
+
+
+
+        /* Formulario de Login - Centrado sobre el fondo */
+        .login-form {
+            position: relative;  /* asegura que se superponga encima del fondo */
+            width: 500px;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.85); /* opcional: fondo blanco translúcido */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            border-radius: 12px;
+            padding: 50px 60px;
+        }
+
+        /* Título del formulario */
+        .login-form h2 {
+            color: #4CAF50;
+            font-size: 32px;
+            font-weight: bold;
+            font-style: italic;
+            text-align: center;
+            margin-bottom: 40px;
+            text-decoration: underline;
+            text-decoration-color: #4CAF50;
+            text-decoration-thickness: 3px;
+        }
+
+        /* Etiquetas de los campos */
+        .login-form label {
+            display: block;
+            color: #2d5016;
+            font-size: 16px;
+            font-style: italic;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+
+        .form-title {
+            text-align: center;
+            color: #39b54a;
+            font-size: 36px;
+            font-weight: bold;
+            font-style: italic;
+            margin-bottom: 40px;
+            text-decoration: underline;
+            text-decoration-thickness: 2px;
+            text-underline-offset: 8px;
+        }
+        
+        .form-group {
+            margin-bottom: 30px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #000000;
+            font-size: 18px;
+            font-weight: 600;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 18px 20px;
+            border: 3px solid #39b54a;
+            border-radius: 15px;
+            font-size: 16px;
+            background-color: #e8f5e9;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        
+        .form-group input:focus {
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(57, 181, 74, 0.2);
+            border-color: #2d8f3a;
+        }
+
+        /* Ajustes rápidos para el icono */
+        .password-container {
+            position: relative;
+        }
+
+        .password-container input {
+            width: 100%;
+            padding-right: 40px; /* espacio para el icono */
+        }
+
+        .toggle-password {
+            position: absolute;
+            top: 70%;
+            right: 15px;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #35A900;
+            font-size: 1.6rem;
+        }
+
+        .toggle-password:hover {
+            color: #36a90096;
+        }
+    
+        
+        .btn-entrar {
+            width: 100%;
+            padding: 18px;
+            background-color: #39b54a;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 22px;
+            font-weight: bold;
+            font-style: italic;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn-entrar:hover {
+            background-color: #2d8f3a;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(57, 181, 74, 0.4);
+        }
+        
+        .btn-entrar:active {
+            transform: translateY(0);
+        }
+        
+        .forgot-password {
+            text-align: center;
+            margin-top: 25px;
+        }
+        
+        .forgot-password a {
+            color: #39b54a;
+            text-decoration: none;
+            font-weight: bold;
+            font-style: italic;
+            font-size: 16px;
+            transition: color 0.3s ease;
+        }
+        
+        .forgot-password a:hover {
+            color: #2d8f3a;
+            text-decoration: underline;
+        }
+
+        .sena-footer {
+            position: fixed;               /* Siempre visible en la esquina */
+            bottom: 0;
+            right: 0;
+            background-color: #39A900;     /* Verde institucional del SENA */
+            width: 150px;                  /* Tamaño del recuadro verde */
+            height: 120px;
+            border-top-left-radius: 110px; /* Curva en la esquina superior izquierda */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+        }
+
+        /* Imagen del logo dentro del recuadro verde */
+        .sena-footer img {
+            width: 80px;
+            height: auto;
+            filter: brightness(0) invert(1); /* Si tu logo es verde, esto lo pone blanco */
+        }
+
+        /* Alertas */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 15px;
+        }
+        
+        .alert-error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 2px solid #ef5350;
+        }
+        
+        .alert-success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 2px solid #66bb6a;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .scides-title {
+                font-size: 90px;
+            }
+        }
+        
+        @media (max-width: 968px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .left-panel {
+                padding: 40px 20px;
+                min-height: 40vh;
+            }
+            
+            .scides-title {
+                font-size: 70px;
+            }
+            
+            .right-panel {
+                border-radius: 40px 40px 0 0;
+                min-height: 60vh;
+            }
+            
+            .login-form {
+                padding: 40px 30px;
+            }
+            
+            .form-title {
+                font-size: 28px;
+            }
+            
+            .leaf-top,
+            .leaf-bottom {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .scides-title {
+                font-size: 50px;
+            }
+            
+            .login-form {
+                padding: 30px 20px;
+            }
+            
+            .form-title {
+                font-size: 24px;
+            }
+            
+            .form-group input {
+                padding: 15px;
+            }
+            
+            .btn-entrar {
+                font-size: 18px;
+                padding: 15px;
+            }
+        }
