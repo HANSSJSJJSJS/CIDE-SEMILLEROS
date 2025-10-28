@@ -15,6 +15,7 @@ class Evento extends Model
         'id_proyecto',
         'titulo',
         'tipo',
+        'linea_investigacion',
         'descripcion',
         'fecha_hora',
         'duracion',

@@ -2,6 +2,11 @@
 let currentView = 'month';
 let selectedDate = null;
 
+// Asegurarnos de que currentDate esté disponible globalmente
+if (typeof window.currentDate === 'undefined') {
+    window.currentDate = new Date();
+}
+
 // Horarios disponibles (8am a 5pm, excluyendo 12pm a 2pm)
 const AVAILABLE_HOURS = [
     '08:00', '09:00', '10:00', '11:00', 
@@ -267,7 +272,7 @@ function renderYearView() {
     if (!yearGrid) return;
     
     yearGrid.innerHTML = '';
-    const year = currentDate.getFullYear();
+    const year = window.currentDate.getFullYear();
     
     console.log(`Renderizando vista de año: ${year}`);
     
@@ -353,7 +358,7 @@ function renderWeekView() {
     
     weekContainer.innerHTML = '';
     
-    const weekStart = getWeekStart(currentDate);
+    const weekStart = getWeekStart(window.currentDate);
     const dayNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
     
     // Header

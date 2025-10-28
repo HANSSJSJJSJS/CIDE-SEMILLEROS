@@ -832,6 +832,28 @@ class SemilleroController extends Controller
         }
     }
 
+    // Helper: reglas de negocio para fecha/hora
+    private function fechaHoraPermitida(\DateTime $dt): bool
+    {
+        // Fines de semana (0=domingo, 6=sábado)
+        $w = (int) $dt->format('w');
+        if ($w === 0 || $w === 6) return false;
+
+        // Feriados configurables (YYYY-mm-dd)
+        $feriados = config('app.feriados', []);
+        $fecha = $dt->format('Y-m-d');
+        if (in_array($fecha, $feriados, true)) return false;
+
+        // Rango horario permitido 08:00 a 16:50
+        $hm = (int)$dt->format('Hi');
+        if ($hm < 800 || $hm > 1650) return false;
+
+        // Almuerzo 12:00 a 13:55 (inclusive)
+        if ($hm >= 1200 && $hm <= 1355) return false;
+
+        return true;
+    }
+
     // Guardar evidencia de avance (crea un registro en documentos)
     public function guardarEvidencia(Request $request)
     {
@@ -1168,7 +1190,7 @@ class SemilleroController extends Controller
                 ->get();
         }
 
-        return view('lider_semi.calendario', compact('aprendices', 'proyectos'));
+        return view('lider_semi.calendario_scml', compact('aprendices', 'proyectos'));
     }
 
     // Obtener eventos del mes
@@ -1204,6 +1226,7 @@ class SemilleroController extends Controller
                         'id' => $evento->id_evento,
                         'titulo' => $evento->titulo,
                         'descripcion' => $evento->descripcion,
+                        'linea_investigacion' => $evento->linea_investigacion,
                         'fecha_hora' => $evento->fecha_hora->toIso8601String(),
                         'duracion' => $evento->duracion,
                         'tipo' => $evento->tipo,
@@ -1241,6 +1264,7 @@ class SemilleroController extends Controller
             $validated = $request->validate([
                 'titulo' => 'required|string|max:255',
                 'tipo' => 'required|string',
+                'linea_investigacion' => 'nullable|string|max:255',
                 'descripcion' => 'nullable|string',
                 'fecha_hora' => 'required|date',
                 'duracion' => 'required|integer|min:15',
@@ -1252,6 +1276,14 @@ class SemilleroController extends Controller
                 'participantes.*' => 'exists:aprendices,id_aprendiz',
                 'generar_enlace' => 'nullable|string|in:teams,meet,personalizado'
             ]);
+
+            // Validaciones de negocio (horarios y días)
+            if (!$this->fechaHoraPermitida(new \DateTime($validated['fecha_hora']))) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'La fecha/hora no está permitida. No se pueden agendar fines de semana/feriados, ni fuera de 08:00-16:50, ni en almuerzo (12:00-13:55).'
+                ], 422);
+            }
             
             \Log::info('Datos validados:', $validated);
 
@@ -1271,6 +1303,7 @@ class SemilleroController extends Controller
                 'id_proyecto' => $validated['id_proyecto'] ?? null,
                 'titulo' => $validated['titulo'],
                 'tipo' => $validated['tipo'],
+                'linea_investigacion' => $validated['linea_investigacion'] ?? '',
                 'descripcion' => $validated['descripcion'] ?? null,
                 'fecha_hora' => $validated['fecha_hora'],
                 'duracion' => $validated['duracion'],
@@ -1295,6 +1328,7 @@ class SemilleroController extends Controller
                     'id' => $evento->id_evento,
                     'titulo' => $evento->titulo,
                     'descripcion' => $evento->descripcion,
+                    'linea_investigacion' => $evento->linea_investigacion,
                     'fecha_hora' => $evento->fecha_hora->toIso8601String(),
                     'duracion' => $evento->duracion,
                     'tipo' => $evento->tipo,
@@ -1334,6 +1368,7 @@ class SemilleroController extends Controller
                 'fecha_hora' => 'sometimes|required|date',
                 'duracion' => 'sometimes|required|integer|min:15',
                 'tipo' => 'nullable|string',
+                'linea_investigacion' => 'nullable|string|max:255',
                 'ubicacion' => 'nullable|string',
                 'link_virtual' => 'nullable|url',
                 'id_proyecto' => 'nullable|exists:proyectos,id_proyecto',
@@ -1342,6 +1377,14 @@ class SemilleroController extends Controller
                 'generar_enlace' => 'nullable|string|in:teams,meet,personalizado'
             ]);
 
+            if (isset($validated['fecha_hora'])) {
+                if (!$this->fechaHoraPermitida(new \DateTime($validated['fecha_hora']))) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'La fecha/hora no está permitida. No se pueden agendar fines de semana/feriados, ni fuera de 08:00-16:50, ni en almuerzo (12:00-13:55).'
+                    ], 422);
+                }
+            }
             // Generar enlace si la ubicación es virtual y no tiene enlace
             $updateData = [];
             
@@ -1362,6 +1405,9 @@ class SemilleroController extends Controller
             }
             if (isset($validated['tipo'])) {
                 $updateData['tipo'] = $validated['tipo'];
+            }
+            if (isset($validated['linea_investigacion'])) {
+                $updateData['linea_investigacion'] = $validated['linea_investigacion'];
             }
             
             if (isset($validated['ubicacion'])) {

@@ -1,12 +1,17 @@
 // Sistema de Wizard paso a paso para crear reuniones
 let currentStep = 1;
 const totalSteps = 3;
+let closeModalCallback = null;
 
 document.addEventListener('DOMContentLoaded', function() {
-    initializeWizard();
+    // Inicializar con la función global por defecto
+    initializeWizard(window.closeEventModal);
 });
 
-function initializeWizard() {
+function initializeWizard(closeEventModal) {
+    // Guardar el callback
+    closeModalCallback = closeEventModal || window.closeEventModal;
+    
     // Botones de navegación
     const btnNext = document.getElementById('btn-next-step');
     const btnPrev = document.getElementById('btn-prev-step');
@@ -15,7 +20,7 @@ function initializeWizard() {
     
     if (btnNext) btnNext.addEventListener('click', nextStep);
     if (btnPrev) btnPrev.addEventListener('click', prevStep);
-    if (btnCancel) btnCancel.addEventListener('click', closeEventModal);
+    if (btnCancel) btnCancel.addEventListener('click', () => closeModalCallback());
     if (eventForm) eventForm.addEventListener('submit', handleFormSubmit);
     
     // El enlace virtual se generará automáticamente en el backend
@@ -383,11 +388,67 @@ function handleFormSubmit(e) {
 }
 
 // Función para abrir el modal del evento (llamada desde calendario-views.js)
-function openEventModal(date) {
-    // Resetear wizard
-    currentStep = 1;
-    showStep(1);
-    updateButtons();
+function openTimeSlotModal(date, preselectedHour = null, eventId = null) {
+    const timeSlotModal = document.getElementById('time-slot-modal');
+    const container = document.getElementById('time-slots-container');
+    if (!timeSlotModal || !container) {
+        console.error('No se encontró el modal de selección de hora o su contenedor');
+        return;
+    }
+
+    // Limpiar contenedor
+    container.innerHTML = '';
+    
+    // Formatear fecha para mostrar
+    const formattedDate = date.toLocaleDateString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    
+    document.getElementById('selected-date-display').textContent = formattedDate;
+    
+    // Generar slots de tiempo disponibles
+    const timeSlots = [
+        '08:00', '09:00', '10:00', '11:00',
+        '14:00', '15:00', '16:00'
+    ];
+    
+    // Mostrar el modal
+    timeSlotModal.classList.add('active');
+    
+    timeSlots.forEach(time => {
+        const slot = document.createElement('div');
+        slot.className = 'time-slot';
+        if (time === preselectedHour) {
+            slot.classList.add('selected');
+        }
+        
+        const [hour] = time.split(':').map(Number);
+        const isBlocked = hour < 8 || hour >= 17 || (hour >= 12 && hour < 14); // Validar horario laboral
+        
+        if (isBlocked) {
+            slot.classList.add('disabled');
+        } else {
+            slot.onclick = () => {
+                if (eventId) {
+                    // Actualizar evento existente
+                    moveEvent(eventId, date, time);
+                    timeSlotModal.classList.remove('active');
+                } else {
+                    // Crear nuevo evento
+                    openEventModal(date, time);
+                    timeSlotModal.classList.remove('active');
+                }
+            };
+        }
+        
+        slot.textContent = formatTime12Hour(time);
+        container.appendChild(slot);
+    });
+    
+    modal.style.display = 'block';
     
     // Limpiar formulario
     document.getElementById('event-form').reset();
