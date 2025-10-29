@@ -9,11 +9,11 @@ use App\Http\Controllers\LiderSemillero\SemilleroController;
 use App\Http\Controllers\LiderController;
 use App\Http\Controllers\GrupoInvestigacionController;
 // Controladores Admin
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\UserController;     // <-- el del store del modal
-use App\Http\Controllers\UsuarioController;        // <-- tu listado (si NO está en Admin) controlador de gestión de usuarios en el panel
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\UsuarioController; // 
+use App\Http\Controllers\Admin\SemilleroController as AdminSemilleroController; 
+use App\Http\Controllers\Admin\SemilleroController as AdminSemilleros;
 
 // ====== PÚBLICAS / AUTH ======
 Route::get('/', fn() => view('welcome'))->name('welcome');
@@ -26,29 +26,40 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 require __DIR__.'/auth.php';
 
 // ====== ADMIN (UN SOLO BLOQUE) ======
-Route::middleware(['auth', 'role:ADMIN'])
-    ->prefix('admin')
-    ->name('admin.')
+Route::middleware(['auth','role:ADMIN'])
+    ->prefix('admin')->as('admin.')
     ->group(function () {
 
-        // Dashboard admin (una sola vez)
+        // Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-        // Gestión de usuarios (listado)
-        Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');
+        // ===== Usuarios =====
+        Route::get('/usuarios',                [UsuarioController::class, 'index'])->name('usuarios.index');
+        Route::get('/usuarios/create',         [UsuarioController::class, 'create'])->name('usuarios.create');
+        Route::post('/usuarios',               [UsuarioController::class, 'store'])->name('usuarios.store');
 
-        // Crear usuario (form tradicional si lo usas)
-        Route::post('/usuarios/store', [UsuarioController::class, 'store'])->name('usuarios.store');
+        // OJO: aquí llamas a editForm, entonces el controlador DEBE tener ese método
+        Route::get('/usuarios/{usuario}/edit', [UsuarioController::class, 'editForm'])->name('usuarios.edit');
 
-        // Crear usuario (AJAX)
-        Route::post('/usuarios/ajax/store', [UsuarioController::class, 'storeAjax'])->name('usuarios.store.ajax');
-    }); 
+        Route::put('/usuarios/{usuario}',      [UsuarioController::class, 'update'])->name('usuarios.update');
+        Route::delete('/usuarios/{usuario}',   [UsuarioController::class, 'destroy'])->name('usuarios.destroy');
+
+        // AJAX (firma edit($id) → por eso dejamos {id})
+        Route::get('/usuarios/{id}/edit-ajax', [UsuarioController::class, 'edit'])->name('usuarios.edit.ajax');
+
+        Route::post('/usuarios/ajax/store',    [UsuarioController::class, 'storeAjax'])->name('usuarios.store.ajax');
+
+        // ===== Semilleros (ADMIN) =====
+        Route::get('/semilleros/lideres-disponibles', [AdminSemilleros::class, 'lideresDisponibles'])
+            ->name('semilleros.lideres-disponibles');
+
+        Route::resource('semilleros', AdminSemilleros::class)
+            ->only(['index','edit','update','destroy'])
+            ->names('semilleros'); // genera admin.semilleros.index|edit|update|destroy
+    });
 
 
-
-
-
-//fin admin 
+// fin admin 
 
 
 
