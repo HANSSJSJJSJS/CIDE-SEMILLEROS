@@ -39,6 +39,53 @@ class SemilleroController extends Controller
 
         return view('Admin.semilleros.index', compact('semilleros','q'));
     }
+    public function store(Request $request)
+{
+    $data = $request->validate([
+        'nombre'              => ['required','string','max:255','unique:semilleros,nombre'],
+        'linea_investigacion' => ['required','string','max:255'],
+        'id_lider_semi'       => ['nullable','integer','exists:lideres_semillero,id_lider_semi'],
+    ], [
+        'required' => 'El campo :attribute es obligatorio.',
+        'unique'   => 'Ya existe un semillero con ese nombre.',
+        'exists'   => 'El líder seleccionado no es válido.',
+    ], [
+        'nombre'              => 'nombre del semillero',
+        'linea_investigacion' => 'línea de investigación',
+        'id_lider_semi'       => 'líder de semillero',
+    ]);
+
+    // Si viene líder, validar que no esté asignado a otro semillero
+    if (!empty($data['id_lider_semi'])) {
+        $ocupado = DB::table('semilleros')
+            ->where('id_lider_semi', $data['id_lider_semi'])
+            ->exists();
+
+        if ($ocupado) {
+            return back()->withErrors([
+                'id_lider_semi' => 'Ese líder ya tiene un semillero asignado.'
+            ])->withInput();
+        }
+    }
+
+    DB::table('semilleros')->insert([
+        'nombre'              => $data['nombre'],
+        'linea_investigacion' => $data['linea_investigacion'],
+        'id_lider_semi'       => $data['id_lider_semi'] ?? null,
+        // Usa los nombres de columnas de tu esquema:
+        // si tu tabla maneja "creado_en/actualizado_en" usa esas:
+        'creado_en'           => now(),
+        'actualizado_en'      => now(),
+        // si en tu esquema usas timestamps de laravel, usa en cambio:
+        // 'created_at'       => now(),
+        // 'updated_at'       => now(),
+    ]);
+
+    return redirect()
+        ->route('admin.semillero.index')
+        ->with('success', 'Semillero creado correctamente.');
+}
+
 
     /**
      * Devuelve datos del semillero + líder actual para llenar el modal (AJAX).
@@ -145,4 +192,25 @@ class SemilleroController extends Controller
         DB::table('semilleros')->where('id_semillero', $id)->delete();
         return back()->with('success', 'Semillero eliminado.');
     }
+
+public function show($id)
+{
+    // Datos del semillero (mock mientras tanto)
+    $semillero = DB::table('semilleros')
+        ->leftJoin('lideres_semillero', 'lideres_semillero.id_lider_semi', '=', 'semilleros.id_lider_semi')
+        ->select(
+            'semilleros.nombre',
+            'semilleros.linea_investigacion as linea',
+            DB::raw("CONCAT(lideres_semillero.nombres,' ',lideres_semillero.apellidos) as lider")
+        )
+        ->where('semilleros.id_semillero', $id)
+        ->first();
+
+    // Por ahora, sin proyectos reales
+    return view('Admin.semilleros.show', compact('semillero'));
+}
+
+    
+
+    
 }

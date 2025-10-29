@@ -6,6 +6,7 @@
   <a href="{{ route('admin.usuarios.index') }}" class="btn btn-secondary">Volver</a>
 </div>
 
+{{-- Mensajes de estado --}}
 @if (session('success'))
   <div class="alert alert-success">{{ session('success') }}</div>
 @endif
@@ -26,65 +27,73 @@
 
   <div class="card-body row g-3">
 
-    {{-- Nombre --}}
+    {{-- =========================================
+         CAMPOS PRINCIPALES
+    ========================================== --}}
     <div class="col-md-6">
       <label class="form-label">Nombre</label>
       <input type="text" name="nombre" class="form-control"
              value="{{ old('nombre', $usuario->name) }}" required>
     </div>
 
-    {{-- Apellido --}}
     <div class="col-md-6">
       <label class="form-label">Apellido</label>
       <input type="text" name="apellido" class="form-control"
              value="{{ old('apellido', $usuario->apellidos) }}" required>
     </div>
 
-    {{-- Email --}}
     <div class="col-md-6">
-      <label class="form-label">Email</label>
+      <label class="form-label">Correo</label>
       <input type="email" name="email" class="form-control"
              value="{{ old('email', $usuario->email) }}" required>
     </div>
 
-    {{-- Rol (lectura por defecto) --}}
+    {{-- =========================================
+         ROL (solo lectura)
+    ========================================== --}}
     <div class="col-md-6">
       <label class="form-label d-flex align-items-center gap-2">
         Rol <span class="badge text-bg-light">solo lectura</span>
       </label>
 
       @php
-        // Si el controlador pasó $roles, úsalo; si no, arma una lista por defecto:
-        $rolesList = isset($roles) ? $roles : [
-          'ADMIN'           => 'ADMIN',
-          'LIDER_GENERAL'   => 'LIDER GENERAL',
-          'LIDER_SEMILLERO' => 'LIDER_SEMILLERO',
-          'APRENDIZ'        => 'APRENDIZ',
+        // Lista de roles visibles: claves = valor real en BD, etiquetas = texto bonito
+        $rolesList = [
+          'ADMIN'           => 'Líder general',
+          'LIDER_SEMILLERO' => 'Líder semillero',
+          'APRENDIZ'        => 'Aprendiz',
         ];
-        // Normaliza valor mostrado (en BD usas 'LIDER GENERAL' con espacio)
-        $rolActual = $usuario->role === 'LIDER GENERAL' ? 'LIDER_GENERAL' : $usuario->role;
+
+        // Normaliza: si el usuario tiene role='ADMIN', el label será “Líder general”
+        $rolActual = $usuario->role;
       @endphp
 
+      {{-- Deshabilitado (solo mostrar, no editar) --}}
       <select class="form-select" disabled>
         @foreach($rolesList as $key => $label)
-          <option value="{{ $key }}" @selected($rolActual === $key)>{{ $label }}</option>
+          <option value="{{ $key }}" @selected($rolActual === $key)>
+            {{ $label }}
+          </option>
         @endforeach
       </select>
 
-      {{-- Si en el futuro quieres habilitar edición, quita "disabled" y añade name="role" --}}
-      {{-- <select name="role" class="form-select"> ... </select> --}}
+      {{-- 
+        Si en el futuro deseas permitir edición de rol, 
+        elimina “disabled” y añade name="role"
+      --}}
     </div>
 
-    {{-- Semillero (lectura por defecto) --}}
+    {{-- =========================================
+         SEMILLERO (solo lectura)
+    ========================================== --}}
     <div class="col-md-6">
       <label class="form-label d-flex align-items-center gap-2">
         Semillero <span class="badge text-bg-light">solo lectura</span>
       </label>
 
       @php
-        // Si el controlador pasó $semilleros, úsalo; si no, deja un arreglo vacío:
+        // Lista de semilleros si el controlador la pasó
         $semillerosList = isset($semilleros) ? $semilleros : collect();
-        // Busca el semillero actual si el controlador lo pasó aparte
         $semilleroIdActual = old('semillero_id', $usuario->semillero_id ?? null);
       @endphp
 
@@ -96,17 +105,16 @@
           </option>
         @endforeach
       </select>
-
-      {{-- Si en el futuro quieres habilitar edición, quita "disabled" y añade name="semillero_id" --}}
-      {{-- <select name="semillero_id" class="form-select"> ... </select> --}}
     </div>
 
-    {{-- Password opcional (si decides habilitarlo en update) --}}
+    {{-- =========================================
+         CONTRASEÑA (opcional, si habilitas cambio)
+    ========================================== --}}
     {{-- 
     <div class="col-md-6">
-      <label class="form-label">Password (opcional)</label>
+      <label class="form-label">Contraseña (opcional)</label>
       <input type="password" name="password" class="form-control">
-      <div class="form-text">Déjalo vacío para no cambiarlo.</div>
+      <div class="form-text">Déjala vacía para no cambiarla.</div>
     </div>
     --}}
   </div>

@@ -15,6 +15,9 @@ use App\Http\Controllers\Admin\UsuarioController; //
 use App\Http\Controllers\Admin\SemilleroController as AdminSemilleroController; 
 use App\Http\Controllers\Admin\SemilleroController as AdminSemilleros;
 
+
+
+
 // ====== PÚBLICAS / AUTH ======
 Route::get('/', fn() => view('welcome'))->name('welcome');
 
@@ -54,8 +57,16 @@ Route::middleware(['auth','role:ADMIN'])
             ->name('semilleros.lideres-disponibles');
 
         Route::resource('semilleros', AdminSemilleros::class)
-            ->only(['index','edit','update','destroy'])
+            ->only(['index','store','edit','update','destroy'])
             ->names('semilleros'); // genera admin.semilleros.index|edit|update|destroy
+
+                // routes/web.php (solo para probar)
+                Route::get('/semilleros/{id}', [AdminSemilleros::class, 'show'])
+    ->name('semilleros.show');
+
+
+
+
     });
 
 

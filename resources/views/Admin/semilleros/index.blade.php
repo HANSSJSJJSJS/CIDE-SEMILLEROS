@@ -6,6 +6,23 @@
     <h3 class="fw-bold" style="color:#2d572c;">Gestión de Semilleros</h3>
   </div>
 
+
+
+
+  {{-- Botón abrir modal --}}
+<button type="button" class="btn btn-primary mb-3"
+        data-bs-toggle="modal" data-bs-target="#modalNuevoSemillero">
+  <i class="fa fa-plus me-1"></i> Nuevo semillero
+</button>
+
+@include('Admin.semilleros._modal_crear')
+
+
+
+
+
+
+
   {{-- Filtro simple --}}
       <div class="row g-2">
         <div class="col-md-10">
@@ -17,6 +34,8 @@
       </div>
     </div>
   </form>
+
+
 
   {{-- Tabla --}}
   <div class="card border-0 shadow-sm">
@@ -48,6 +67,11 @@
                 <button class="btn btn-sm btn-outline-danger">
                   <i class="bi bi-trash"></i> Eliminar
                 </button>
+
+                  <a href="{{ route('admin.semilleros.show', $s->id_semillero) }}"
+                  class="btn btn-sm btn-outline-success" style="border-radius:20px;">
+                  <i class="bi bi-folder2-open"></i> Ver proyectos
+                  </a>
               </form>
             </td>
           </tr>
