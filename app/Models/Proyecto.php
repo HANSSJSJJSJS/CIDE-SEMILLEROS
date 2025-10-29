@@ -4,13 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Evidencia;
+use App\Models\Documento;
+use App\Models\User;
 
 
 class Proyecto extends Model
 {
     protected $table = 'proyectos';
     protected $primaryKey = 'id_proyecto';
-    public $timestamps = false;
+    public $incrementing = true;
+    protected $keyType = 'int';
+    public $timestamps = false; // columnas personalizadas en migración
 
     protected $fillable = [
         'id_semillero',
@@ -32,7 +36,7 @@ class Proyecto extends Model
     // Relación con semillero
     public function semillero()
     {
-        return $this->belongsTo(Semillero::class, 'id_semillero');
+        return $this->belongsTo(Semillero::class, 'id_semillero', 'id_semillero');
     }
 
     // Relación con usuarios (aprendices)
@@ -44,10 +48,11 @@ class Proyecto extends Model
     // Relación con documentos
     public function documentos()
     {
-        return $this->hasMany(Documento::class, 'id_proyecto');
+        return $this->hasMany(Documento::class, 'id_proyecto', 'id_proyecto');
     }
     public function evidencias()
 {
     return $this->hasMany(Evidencia::class, 'id_proyecto', 'id_proyecto');
 }
 }
+
