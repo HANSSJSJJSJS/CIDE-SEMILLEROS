@@ -121,7 +121,7 @@
                 </div>
               </td>
 
-              {{-- ROL --}}
+              { {-- ROL --}}
               <td class="py-3">
                 @php
                   $roleLabel = $u->role ?? ($u->rol ?? null);
