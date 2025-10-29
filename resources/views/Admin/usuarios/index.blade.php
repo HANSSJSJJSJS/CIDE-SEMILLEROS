@@ -65,10 +65,10 @@
   {{-- ==============================
        BOTÓN NUEVO USUARIO
   =============================== --}}
-  <button type="button" class="btn btn-primary mb-3"
-          data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
-    <i class="fa fa-user-plus me-1"></i> Nuevo Usuario
-  </button>
+<a href="{{ route('admin.usuarios.create') }}" class="btn btn-primary mb-3">
+  <i class="fa fa-user-plus me-1"></i> Nuevo Usuario
+</a>
+
 
   {{-- Aquí puedes mantener tu modal de creación sin tocarlo (no lo recorto para no romperlo) --}}
   @includeIf('admin.usuarios._modal_crear')
@@ -121,21 +121,26 @@
                 </div>
               </td>
 
-              <td class="py-3">
-                @php
-                  $roleLabel = $u->role ?? ($u->rol ?? null);
-                  if (!$roleLabel && method_exists($u, 'getRoleNames')) {
-                      $roleLabel = $u->getRoleNames()->implode(', ');
-                  }
-                  if ($roleLabel) {
-                      $roleLabel = str_replace('_', ' ', $roleLabel);
-                  }
-                @endphp
-                <span class="badge"
-                      style="background-color:#e8f5e9;color:#2d572c;border:1px solid #5aa72e;padding:6px 12px;border-radius:20px;">
-                  {{ $roleLabel ?? '—' }}
-                </span>
+              {{-- ROL --}}
+            <td class="py-3">
+                                @php
+                                  // Prioriza el label que viene desde el controlador (SELECT ... AS role_label)
+                                  // Si por alguna razón no vino, mapea localmente a un label bonito.
+                                  $roleLabel = $u->role_label
+                                      ?? match($u->role ?? null) {
+                                          'ADMIN'            => 'Líder general',
+                                          'LIDER_SEMILLERO'  => 'Líder semillero',
+                                          'APRENDIZ'         => 'Aprendiz',
+                                          default            => ($u->role ?? '—'),
+                                      };
+                                @endphp
+
+                                <span class="badge"
+                                      style="background-color:#e8f5e9;color:#2d572c;border:1px solid #5aa72e;padding:6px 12px;border-radius:20px;">
+                                  {{ $roleLabel }}
+                                </span>
               </td>
+
 
               {{-- SEMILLERO --}}
               <td class="py-3">
