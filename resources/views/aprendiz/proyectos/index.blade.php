@@ -61,6 +61,7 @@
                 <li class="nav-item"><a href="{{ route('aprendiz.proyectos.index') }}" class="nav-link active">📁 Mis Proyectos</a></li>
                 <li class="nav-item"><a href="{{ route('aprendiz.archivos.index') }}" class="nav-link">📤 Subir Documentos</a></li>
                 <li class="nav-item"><a href="{{ route('aprendiz.perfil.show') }}" class="nav-link">👤 Mi Perfil</a></li>
+                <li class="nav-item"><a href="{{ route('aprendiz.calendario.index') }}" class="nav-link">📅 Calendario</a></li>
             </ul>
         </aside>
 

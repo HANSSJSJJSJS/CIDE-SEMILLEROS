@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (closeModal) closeModal.addEventListener('click', closeEventModal);
     if (cancelEvent) cancelEvent.addEventListener('click', closeEventModal);
-    if (eventForm) eventForm.addEventListener('submit', saveEvent);
+    // Submit del formulario lo maneja calendario-wizard.js (handleFormSubmit). No duplicar listener aquí.
     // Cerrar drawer
     const closeDrawerBtn = document.getElementById('drawer-close-btn');
     const closeCta = document.getElementById('drawer-close-cta');
@@ -669,18 +669,30 @@ function editEvent(eventId) {
     document.getElementById('event-id').value = event.id;
     document.getElementById('event-title').value = event.titulo;
     document.getElementById('event-proyecto').value = event.proyecto?.id_proyecto || '';
+    // Tipo de reunión
+    const typeSel = document.getElementById('event-type');
+    if (typeSel) typeSel.value = event.tipo || '';
     
     const eventDate = new Date(event.fecha_hora);
     document.getElementById('event-date').value = formatDateForInput(eventDate);
     document.getElementById('event-time').value = eventDate.toTimeString().slice(0, 5);
     document.getElementById('event-duration').value = event.duracion;
     document.getElementById('event-description').value = event.descripcion || '';
-    
-    // Seleccionar participantes
-    const participantesSelect = document.getElementById('event-participants');
-    Array.from(participantesSelect.options).forEach(option => {
-        option.selected = event.participantes.some(p => p.id == option.value);
+    // Ubicación (mapear a opción existente en el select)
+    const locSel = document.getElementById('event-location');
+    if (locSel) {
+        const val = (event.ubicacion || '').toString();
+        const exists = Array.from(locSel.options).some(o => o.value === val);
+        locSel.value = exists ? val : (val === 'virtual' ? 'virtual' : (val === 'hibrido' ? 'virtual' : 'otra'));
+    }
+
+    // Seleccionar participantes (checkboxes)
+    const parts = Array.isArray(event.participantes) ? event.participantes : [];
+    const ids = parts.map(p => p.id ?? p);
+    document.querySelectorAll('.participant-checkbox-modal').forEach(cb => {
+        cb.checked = ids.includes(cb.value) || ids.includes(parseInt(cb.value));
     });
+    if (typeof updateParticipantsCount === 'function') updateParticipantsCount();
     
     eventModal.classList.add('active');
 }

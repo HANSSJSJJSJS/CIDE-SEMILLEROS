@@ -53,6 +53,9 @@
                         <a href="{{ route('aprendiz.perfil.show') }}" class="list-group-item list-group-item-action">
                             <i class="fa fa-user me-2"></i> Mi Perfil
                         </a>
+                        <a href="{{ route('aprendiz.calendario.index') }}" class="list-group-item list-group-item-action">
+                            <i class="fa fa-calendar me-2"></i> Calendario
+                        </a>
                     </div>
                 </div>
             </div>

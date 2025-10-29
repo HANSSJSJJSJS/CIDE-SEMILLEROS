@@ -16,6 +16,7 @@ use App\Http\Controllers\Aprendiz\DashboardController as AprendizDashboardContro
 use App\Http\Controllers\Aprendiz\PerfilController;
 use App\Http\Controllers\Aprendiz\ProyectoController;
 use App\Http\Controllers\Aprendiz\ArchivoController;
+use App\Http\Controllers\Aprendiz\CalendarioController;
 use App\Http\Controllers\LiderSemillero\DashboardController_semi;
 // Nota: Controladores Admin específicos
 use App\Http\Controllers\Admin\UsuarioController as AdminUsuarioController; // alias para evitar colisión
@@ -228,6 +229,10 @@ Route::middleware(['auth', 'role:APRENDIZ'])
         Route::get('/dashboard/stats', [AprendizDashboardController::class, 'stats'])
             ->name('dashboard.stats');
 
+        // Próximas reuniones para el dashboard
+        Route::get('/dashboard/proximas', [CalendarioController::class, 'proximasReuniones'])
+            ->name('dashboard.proximas');
+
         // Perfil (ver y editar datos personales)
         Route::get('/perfil', [PerfilController::class, 'show'])->name('perfil.show');
         Route::get('/perfil/edit', [PerfilController::class, 'edit'])->name('perfil.edit');
@@ -243,5 +248,8 @@ Route::middleware(['auth', 'role:APRENDIZ'])
         // Subida de archivos (manual)
         Route::get('/archivos/upload', [ArchivoController::class, 'create'])->name('archivos.upload');
         Route::post('/archivos/upload', [ArchivoController::class, 'upload'])->name('archivos.upload.post');
+
+        // Calendario (datos reales para el aprendiz)
+        Route::get('/calendario', [CalendarioController::class, 'index'])->name('calendario.index');
     });
 
