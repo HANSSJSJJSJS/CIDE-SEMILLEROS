@@ -198,7 +198,7 @@
                         @endforeach
                     </div>
                     
-                    <div class="participants-count">
+                    <div class="participants-count"> 
                         <i class="fas fa-user-check"></i>
                         <span id="selected-count">0</span> participante(s) seleccionado(s)
                     </div>

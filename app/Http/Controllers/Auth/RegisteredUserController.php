@@ -34,6 +34,7 @@ class RegisteredUserController extends Controller
             'apellidos'  => ['required','string','max:255'],
             'email'      => ['required','string','lowercase','email','max:255','unique:users,email'], // correo personal
             'password'   => ['required','confirmed', Rules\Password::defaults()],
+            'telefono'   => ['nullable','string','max:30'],
         ];
 
         // LÍDER SEMILLERO (extras)
@@ -68,6 +69,8 @@ class RegisteredUserController extends Controller
                 'email'    => $request->email,          // correo personal
                 'password' => Hash::make($request->password),
                 'role'     => $request->role,
+                // Si la columna 'telefono' existe y es NOT NULL, prevenimos error asignando valor
+                'telefono' => $request->input('telefono', ''),
             ]);
 
                 // 5) ADMINISTRADOR
@@ -83,12 +86,12 @@ class RegisteredUserController extends Controller
             // 2) LÍDER SEMILLERO
             if ($request->role === 'LIDER_SEMILLERO') {
                 LiderSemillero::create([
-                    'id_usuario'           => $user->id,
-                    'nombres'              => $request->nombres,           // ← corregido
-                    'apellidos'            => $request->apellidos,         // ← corregido
+                    'id_lider_semi'        => $user->id,
+                    'nombres'              => $request->nombres,
+                    'apellidos'            => $request->apellidos,
                     'tipo_documento'       => $request->lider_tipo_documento,
                     'documento'            => $request->lider_documento,
-                    'correo_institucional' => $user->email,                // mismo correo del user
+                    'correo_institucional' => $user->email,
                 ]);
             }
 

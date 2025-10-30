@@ -30,7 +30,6 @@
                     <li><a href="{{ route('lider_semi.semilleros') }}" class="nav-link {{ request()->routeIs('lider_semi.semilleros') ? 'active' : '' }}"><i class="bi bi-hdd-stack me-2"></i>Mis Proyectos</a></li>
                     <li><a href="{{ route('lider_semi.aprendices') }}" class="nav-link {{ request()->routeIs('lider_semi.aprendices') ? 'active' : '' }}"><i class="bi bi-person-video2 me-2"></i>Aprendices</a></li>
                     <li><a href="{{ route('lider_semi.documentos') }}" class="nav-link position-relative {{ request()->routeIs('lider_semi.documentos') ? 'active' : '' }}"><i class="bi bi-file-earmark-text me-2"></i> Documentación</a></li>
-                    <li><a href="{{ route('lider_semi.recursos') }}" class="nav-link {{ request()->routeIs('lider_semi.recursos') ? 'active' : '' }}"><i class="bi bi-journal-text me-2"></i> Recursos</a></li>
                     <li><a href="{{ route('lider_semi.calendario') }}" class="nav-link {{ request()->routeIs('lider_semi.calendario') ? 'active' : '' }}"><i class="bi bi-calendar-event me-2"></i> Calendario</a></li>
                     <li><a href="{{ route('lider_semi.perfil') }}" class="nav-link {{ request()->routeIs('lider_semi.perfil') ? 'active' : '' }}"><i class="bi bi-person-circle me-2"></i> Mi Perfil</a></li>
                 </ul>
@@ -93,7 +92,6 @@
                 <a class="btn btn-outline-success rounded-pill text-start fw-semibold" href="{{ route('lider_semi.semilleros') }}"><i class="bi bi-hdd-stack me-2"></i> Mis Proyectos</a>
                 <a class="btn btn-outline-success rounded-pill text-start fw-semibold" href="{{ route('lider_semi.aprendices') }}"><i class="bi bi-person-video2 me-2"></i> Aprendices</a>
                 <a class="btn btn-outline-success rounded-pill text-start fw-semibold" href="{{ route('lider_semi.documentos') }}"><i class="bi bi-file-earmark-text me-2"></i> Documentación</a>
-                <a class="btn btn-outline-success rounded-pill text-start fw-semibold" href="{{ route('lider_semi.recursos') }}"><i class="bi bi-journal-text me-2"></i> Recursos</a>
                 <a class="btn btn-outline-success rounded-pill text-start fw-semibold" href="{{ route('lider_semi.calendario') }}"><i class="bi bi-calendar-event me-2"></i> Calendario</a>
                 <a class="btn btn-outline-success rounded-pill text-start fw-semibold" href="{{ route('lider_semi.perfil') }}"><i class="bi bi-person-circle me-2"></i> Mi Perfil</a>
             </div>

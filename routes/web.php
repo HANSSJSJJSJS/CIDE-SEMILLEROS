@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LiderSemillero\DashboardController_semi;
 use App\Http\Controllers\AprendizController;
 use App\Http\Controllers\LiderSemillero\SemilleroController;
+use App\Http\Controllers\LiderSemillero\PerfilController as LiderSemiPerfilController;
 use App\Http\Controllers\LiderController;
 use App\Http\Controllers\GrupoInvestigacionController;
 // Controladores Admin
@@ -200,6 +201,8 @@ Route::middleware(['auth','lider.semillero'])->prefix('lider_semi')->name('lider
     
     Route::view('/recursos', 'lider_semi.recursos')->name('recursos');
     Route::view('/perfil', 'lider_semi.perfil')->name('perfil');
+    Route::put('/perfil/contacto', [LiderSemiPerfilController::class, 'updateContacto'])->name('perfil.contacto.update');
+    Route::put('/perfil/password', [LiderSemiPerfilController::class, 'updatePassword'])->name('perfil.password.update');
 });
 
 // Rutas para aprendices
