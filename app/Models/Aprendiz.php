@@ -18,7 +18,6 @@ class Aprendiz extends Model
         'id_usuario',
         'nombres',
         'apellidos',
-        'nombre_completo',
         'ficha',
         'programa',
         'id_tipo_documento',
@@ -51,15 +50,13 @@ class Aprendiz extends Model
         return $this->belongsToMany(Proyecto::class, 'aprendiz_proyecto', 'id_aprendiz', 'id_proyecto', 'id_aprendiz', 'id_proyecto');
     }
 
-    // Mutator para actualizar nombre_completo automáticamente
-    protected static function boot()
-    {
-        parent::boot();
+    // Exponer atributo virtual "nombre_completo" a partir de nombres y apellidos
+    protected $appends = ['nombre_completo'];
 
-        static::saving(function ($aprendiz) {
-            if ($aprendiz->isDirty(['nombres', 'apellidos'])) {
-                $aprendiz->nombre_completo = trim(($aprendiz->nombres ?? '') . ' ' . ($aprendiz->apellidos ?? ''));
-            }
-        });
+    public function getNombreCompletoAttribute(): string
+    {
+        $n = trim((string)($this->attributes['nombres'] ?? ''));
+        $a = trim((string)($this->attributes['apellidos'] ?? ''));
+        return trim($n . ' ' . $a);
     }
 }

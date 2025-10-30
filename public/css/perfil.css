@@ -1,0 +1,104 @@
+/* Paleta SENA personalizada */
+:root {
+  --brand-green: #35A900;
+  --brand-green-dark: #007832;
+  --brand-blue: #00304D;
+  --white: #ffffff;
+  --black: #000000;
+  --bg-soft: #f5f8fb;
+  --border-soft: #e7eef5;
+  --text-muted: #6b7a8c;
+}
+
+body {
+  background: var(--bg-soft);
+}
+
+/* Page heading */
+.profile-title {
+  color: var(--brand-blue);
+}
+.profile-subtitle {
+  color: var(--text-muted);
+}
+
+/* Cards */
+.card-profile {
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+}
+
+/* Section headers inside cards */
+.section-title {
+  color: var(--brand-blue);
+  font-weight: 700;
+}
+.section-title .icon {
+  color: var(--brand-green);
+}
+
+/* Inputs (read-only appearance) */
+.form-control[disabled] {
+  background: #fff;
+  color: #334155;
+  border: 1px solid #e5e7eb;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+}
+
+/* Alert info */
+.alert-guidance {
+  background: #e8f6ec;
+  border: 1px solid #d1ecd8;
+  color: #2b6a3f;
+  border-radius: 12px;
+}
+.alert-guidance .icon {
+  color: var(--brand-green-dark);
+}
+
+/* Buttons */
+.btn-brand-primary {
+  background: var(--brand-blue);
+  color: var(--white);
+  border: none;
+}
+.btn-brand-primary:hover { filter: brightness(1.05); }
+
+.btn-brand-success {
+  background: var(--brand-green);
+  color: var(--white);
+  border: none;
+}
+.btn-brand-success:hover { background: var(--brand-green-dark); }
+
+.btn-outline-secondary {
+  color: var(--brand-blue);
+  border-color: var(--border-soft);
+  background: var(--white);
+}
+.btn-outline-secondary:hover { background: #f2f6fa; }
+
+/* Dividers */
+.hr-soft {
+  border: 0;
+  height: 1px;
+  background: var(--border-soft);
+}
+
+/* Warning/notice card (for password change section) */
+.card-warning {
+  background: #fff8e6;
+  border: 1px solid #fde6b9;
+  border-radius: 14px;
+}
+.card-warning .section-title {
+  color: #b7791f;
+}
+
+/* Footer actions */
+.profile-actions {
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+}

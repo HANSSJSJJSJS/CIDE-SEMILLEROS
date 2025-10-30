@@ -19,7 +19,7 @@
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <nav class="col-md-2 col-lg-2 sidebar d-flex flex-column">
+            <nav class="col-md-2 col-lg-2 sidebar d-none d-md-flex flex-column">
                 <div class="px-3 mb-4">
                     <img src="{{ asset('images/logo-sena.png') }}" alt="Logo" class="logo-sena">
                     <p class="text-muted small">Sistema de Gestión Semillero</p>
@@ -40,7 +40,12 @@
             <main class="col-md-10 col-lg-10 p-0">
                 <!-- Top bar -->
                 <div class="topbar">
-                    <h5 class="fw-bold mb-0">Líder de Semillero</h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-light d-md-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu">
+                            <i class="bi bi-list"></i> Menú
+                        </button>
+                        <h5 class="fw-bold mb-0">Líder de Semillero</h5>
+                    </div>
                     <div class="profile-info">
                         <!-- Icono de notificaciones -->
                         <button class="btn btn-link text-white position-relative me-2" type="button"
@@ -73,6 +78,25 @@
                     @yield('content')
                 </div>
             </main>
+        </div>
+    </div>
+
+    <!-- Offcanvas (móvil) -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasMenu" aria-labelledby="offcanvasMenuLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="offcanvasMenuLabel"><i class="bi bi-people-fill me-2"></i> Menú</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="d-grid gap-2">
+                <a class="btn btn-outline-success rounded-pill text-start fw-semibold" href="{{ route('lider_semi.dashboard') }}"><i class="bi bi-house-fill me-2"></i> Inicio</a>
+                <a class="btn btn-outline-success rounded-pill text-start fw-semibold" href="{{ route('lider_semi.semilleros') }}"><i class="bi bi-hdd-stack me-2"></i> Mis Proyectos</a>
+                <a class="btn btn-outline-success rounded-pill text-start fw-semibold" href="{{ route('lider_semi.aprendices') }}"><i class="bi bi-person-video2 me-2"></i> Aprendices</a>
+                <a class="btn btn-outline-success rounded-pill text-start fw-semibold" href="{{ route('lider_semi.documentos') }}"><i class="bi bi-file-earmark-text me-2"></i> Documentación</a>
+                <a class="btn btn-outline-success rounded-pill text-start fw-semibold" href="{{ route('lider_semi.recursos') }}"><i class="bi bi-journal-text me-2"></i> Recursos</a>
+                <a class="btn btn-outline-success rounded-pill text-start fw-semibold" href="{{ route('lider_semi.calendario') }}"><i class="bi bi-calendar-event me-2"></i> Calendario</a>
+                <a class="btn btn-outline-success rounded-pill text-start fw-semibold" href="{{ route('lider_semi.perfil') }}"><i class="bi bi-person-circle me-2"></i> Mi Perfil</a>
+            </div>
         </div>
     </div>
 

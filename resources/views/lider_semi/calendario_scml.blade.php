@@ -55,75 +55,253 @@
     </div>
 </div>
 
-<!-- Modal para agregar/editar eventos (nuevo) -->
+<!-- Modal para agregar/editar eventos - Wizard paso a paso -->
 <div class="modal-calendario" id="event-modal">
-    <div class="modal-content-calendario">
+    <div class="modal-content-calendario wizard-modal">
         <div class="modal-header-calendario">
-            <h3 class="modal-title-calendario" id="modal-title">Nueva Reunión</h3>
+            <div class="modal-header-icon">
+                <div class="form-icon-modal">
+                    <i class="fas fa-calendar-plus"></i>
+                </div>
+                <div>
+                    <h3 class="modal-title-calendario" id="modal-title">Nueva Reunión de Semillero</h3>
+                    <p class="modal-subtitle">Completa los siguientes pasos para programar tu reunión</p>
+                </div>
+            </div>
             <button class="close-modal-calendario" id="close-modal">&times;</button>
         </div>
+        
+        <!-- Indicador de pasos -->
+        <div class="wizard-steps">
+            <div class="wizard-step active" data-step="1">
+                <div class="step-number">1</div>
+                <div class="step-label">Información Básica</div>
+            </div>
+            <div class="wizard-step" data-step="2">
+                <div class="step-number">2</div>
+                <div class="step-label">Configuración</div>
+            </div>
+            <div class="wizard-step" data-step="3">
+                <div class="step-number">3</div>
+                <div class="step-label">Detalles</div>
+            </div>
+        </div>
+        
         <form id="event-form">
             @csrf
             <input type="hidden" id="event-id">
+            <input type="hidden" id="event-date">
+            <input type="hidden" id="event-time">
             
-            <div class="form-group-calendario">
-                <label for="event-title">Título de la reunión *</label>
-                <input type="text" id="event-title" class="form-control-calendario" placeholder="Ej: Reunión Semillero IA" required>
+            <!-- PASO 1: Información Básica -->
+            <div class="wizard-content" id="step-1" style="display: block;">
+                <div class="step-header">
+                    <h4><i class="fas fa-info-circle"></i> Información Básica de la Reunión</h4>
+                    <p class="text-muted">Completa los datos principales de tu reunión</p>
+                </div>
+                
+                <div class="form-group-calendario">
+                    <label for="event-title">Título de la reunión <span class="required">*</span></label>
+                    <input type="text" id="event-title" name="titulo" class="form-control-calendario" placeholder="Ej: Reunión Semillero IA" required>
+                </div>
+                
+                <div class="form-group-calendario">
+                    <label for="event-type">Tipo de reunión <span class="required">*</span></label>
+                    <select id="event-type" name="tipo" class="form-control-calendario" required>
+                        <option value="">Seleccione el tipo</option>
+                        <option value="planificacion">Planificación de proyecto</option>
+                        <option value="seguimiento">Seguimiento proyecto</option>
+                        <option value="revision">Revisión de avances</option>
+                        <option value="entrega">Entrega de proyecto</option>
+                        <option value="capacitacion">Capacitación técnica</option>
+                        <option value="general">Reunión general</option>
+                    </select>
+                </div>
+                
+                <div class="form-grid-2">
+                    <div class="form-group-calendario">
+                        <label for="event-duration">Duración <span class="required">*</span></label>
+                        <select id="event-duration" name="duracion" class="form-control-calendario" required>
+                            <option value="30">30 minutos</option>
+                            <option value="60" selected>1 hora</option>
+                            <option value="90">1 hora 30 minutos</option>
+                            <option value="120">2 horas</option>
+                            <option value="180">3 horas</option>
+                            <option value="240">4 horas</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group-calendario">
+                        <label>Hora seleccionada</label>
+                        <div class="selected-time-display" id="selected-time-display">
+                            <i class="fas fa-clock"></i>
+                            <span id="display-time">--:-- --</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group-calendario">
+                    <label for="event-location">Ubicación <span class="required">*</span></label>
+                    <select id="event-location" name="ubicacion" class="form-control-calendario" required>
+                        <option value="">Seleccione ubicación</option>
+                        <option value="presencial">Presencial</option>
+                        <option value="virtual">Reunión Virtual</option>
+                        <option value="otra">Otra ubicación</option>
+                    </select>
+                </div>
             </div>
             
-            <div class="form-group-calendario">
-                <label for="event-proyecto">Proyecto (Opcional)</label>
-                <select id="event-proyecto" class="form-control-calendario">
-                    <option value="">Sin proyecto asignado</option>
-                    @isset($proyectos)
+            <!-- PASO 2: Configuración -->
+            <div class="wizard-content" id="step-2" style="display: none;">
+                <div class="step-header">
+                    <h4><i class="fas fa-cog"></i> Configuración de la Reunión</h4>
+                    <p class="text-muted">Selecciona el proyecto y los participantes</p>
+                </div>
+                
+                <div class="form-group-calendario">
+                    <label for="event-proyecto">Proyecto Asociado</label>
+                    <select id="event-proyecto" class="form-control-calendario">
+                        <option value="">Sin proyecto asignado</option>
                         @foreach($proyectos as $proyecto)
-                            <option value="{{ $proyecto->id_proyecto }}">{{ $proyecto->nombre_proyecto }}</option>
+                            <option value="{{ $proyecto->id_proyecto }}" data-aprendices='@json($proyecto->aprendices->pluck("id_aprendiz"))'>
+                                {{ $proyecto->nombre_proyecto }}
+                            </option>
                         @endforeach
-                    @endisset
-                </select>
-            </div>
-            
-            <div class="form-group-calendario">
-                <label for="event-date">Fecha *</label>
-                <input type="date" id="event-date" class="form-control-calendario" required>
-            </div>
-            
-            <div class="form-group-calendario">
-                <label for="event-time">Hora *</label>
-                <input type="time" id="event-time" class="form-control-calendario" required>
-            </div>
-            
-            <div class="form-group-calendario">
-                <label for="event-duration">Duración (minutos) *</label>
-                <input type="number" id="event-duration" class="form-control-calendario" value="60" min="15" step="15" required>
-            </div>
-            
-            <div class="form-group-calendario">
-                <label for="event-description">Descripción</label>
-                <textarea id="event-description" class="form-control-calendario" rows="3" placeholder="Detalles de la reunión..."></textarea>
-            </div>
-            
-            <div class="form-group-calendario">
-                <label for="event-participants">Participantes</label>
-                <select id="event-participants" class="form-control-calendario" multiple size="5">
-                    @isset($aprendices)
+                    </select>
+                    <small class="form-help">Al seleccionar un proyecto, se mostrarán sus aprendices asignados</small>
+                </div>
+                
+                <div class="form-section-calendario">
+                    <div class="participants-header">
+                        <h4 class="section-title-modal">Participantes <span class="required">*</span></h4>
+                        <button type="button" class="btn-select-all" id="select-all-participants">
+                            <i class="fas fa-users"></i> Seleccionar Todos
+                        </button>
+                    </div>
+                    
+                    <div class="participants-filter">
+                        <input type="text" id="search-participants" class="form-control-calendario" placeholder="Buscar aprendiz...">
+                    </div>
+                    
+                    <div class="participants-container-modal" id="participants-list">
                         @foreach($aprendices as $aprendiz)
-                            <option value="{{ $aprendiz->id_aprendiz }}">{{ $aprendiz->nombre_completo }}</option>
+                        @php($fullName = trim(($aprendiz->nombres ?? '').' '.($aprendiz->apellidos ?? '')))
+                        <div class="participant-item-modal" data-aprendiz-id="{{ $aprendiz->id_aprendiz }}" data-aprendiz-name="{{ strtolower($fullName ?: ($aprendiz->nombre_completo ?? '')) }}" data-doc-type="{{ strtolower($aprendiz->tipo_documento ?? '') }}" data-doc="{{ strtolower($aprendiz->documento ?? '') }}">
+                            <input type="checkbox" id="participant-{{ $aprendiz->id_aprendiz }}" 
+                                   class="participant-checkbox-modal" 
+                                   value="{{ $aprendiz->id_aprendiz }}">
+                            <label for="participant-{{ $aprendiz->id_aprendiz }}" class="participant-info-modal">
+                                <div class="participant-name-modal">{{ $fullName ?: ($aprendiz->nombre_completo ?? 'Aprendiz') }}</div>
+                                <div class="participant-role-modal">Aprendiz - Semillero</div>
+                            </label>
+                        </div>
                         @endforeach
-                    @endisset
-                </select>
-                <small class="text-muted">Mantén presionada la tecla Ctrl para seleccionar múltiples participantes</small>
+                    </div>
+                    
+                    <div class="participants-count">
+                        <i class="fas fa-user-check"></i>
+                        <span id="selected-count">0</span> participante(s) seleccionado(s)
+                    </div>
+                </div>
             </div>
             
-            <div class="form-actions-calendario">
-                <button type="button" class="btn-calendario btn-secondary-calendario" id="cancel-event">Cancelar</button>
-                <button type="submit" class="btn-calendario btn-primary-calendario">
-                    <i class="fas fa-save"></i> Guardar Reunión
+            <!-- PASO 3: Detalles -->
+            <div class="wizard-content" id="step-3" style="display: none;">
+                <div class="step-header">
+                    <h4><i class="fas fa-file-alt"></i> Detalles de la Reunión</h4>
+                    <p class="text-muted">Agrega información adicional y recordatorios</p>
+                </div>
+                
+                <div class="form-group-calendario">
+                    <label for="event-description">Descripción de la reunión</label>
+                    <textarea id="event-description" class="form-control-calendario" rows="5" placeholder="Describe los temas a tratar, objetivos de la reunión, materiales necesarios, etc."></textarea>
+                    <small class="form-help">Esta información será visible para todos los participantes</small>
+                </div>
+                
+                <div class="form-section-calendario">
+                    <h4 class="section-title-modal">Recordatorios</h4>
+                    <p class="text-muted small">Selecciona cuándo deseas recibir un recordatorio</p>
+                    <div class="notification-options-modal">
+                        <div class="notification-option-modal selected" data-value="none">
+                            <input type="radio" name="reminder" id="reminder-none" value="none" checked>
+                            <label for="reminder-none">
+                                <i class="far fa-bell-slash"></i>
+                                <span>Sin recordatorio</span>
+                            </label>
+                        </div>
+                        <div class="notification-option-modal" data-value="15">
+                            <input type="radio" name="reminder" id="reminder-15min" value="15">
+                            <label for="reminder-15min">
+                                <i class="far fa-clock"></i>
+                                <span>15 minutos antes</span>
+                            </label>
+                        </div>
+                        <div class="notification-option-modal" data-value="30">
+                            <input type="radio" name="reminder" id="reminder-30min" value="30">
+                            <label for="reminder-30min">
+                                <i class="far fa-clock"></i>
+                                <span>30 minutos antes</span>
+                            </label>
+                        </div>
+                        <div class="notification-option-modal" data-value="60">
+                            <input type="radio" name="reminder" id="reminder-1h" value="60">
+                            <label for="reminder-1h">
+                                <i class="far fa-clock"></i>
+                                <span>1 hora antes</span>
+                            </label>
+                        </div>
+                        <div class="notification-option-modal" data-value="1440">
+                            <input type="radio" name="reminder" id="reminder-1d" value="1440">
+                            <label for="reminder-1d">
+                                <i class="far fa-calendar"></i>
+                                <span>1 día antes</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Resumen de la reunión -->
+                <div class="meeting-summary">
+                    <h4><i class="fas fa-clipboard-check"></i> Resumen de la Reunión</h4>
+                    <div class="summary-item">
+                        <strong>Título:</strong> <span id="summary-title">--</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>Tipo:</strong> <span id="summary-type">--</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>Fecha y Hora:</strong> <span id="summary-datetime">--</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>Duración:</strong> <span id="summary-duration">--</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>Ubicación:</strong> <span id="summary-location">--</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>Participantes:</strong> <span id="summary-participants">--</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Botones de navegación del wizard -->
+            <div class="wizard-actions">
+                <button type="button" class="btn-calendario btn-secondary-calendario" id="btn-prev-step" style="display: none;">
+                    <i class="fas fa-arrow-left"></i> Anterior
+                </button>
+                <button type="button" class="btn-calendario btn-secondary-calendario" id="btn-cancel">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn-calendario btn-primary-calendario" id="btn-next-step">
+                    Siguiente <i class="fas fa-arrow-right"></i>
+                </button>
+                <button type="submit" class="btn-calendario btn-success-calendario" id="btn-submit" style="display: none;">
+                    <i class="fas fa-check"></i> Programar Reunión
                 </button>
             </div>
         </form>
     </div>
-    </div>
+</div>
 
 <!-- Drawer lateral de Detalle de Reunión -->
 <div id="event-detail-overlay" class="drawer-overlay" style="display:none;"></div>
@@ -191,6 +369,10 @@
         </div>
     </div>
 
+</aside>
+
+<!-- Toasts de Calendario -->
+<div id="cal-toast-container" class="cal-toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <script>
 // Estado
@@ -207,6 +389,8 @@ const ROUTES = {
   baseEventos: "{{ route('lider_semi.eventos.crear', [], false) }}"
 };
 const CSRF = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+// Mapa id->nombre de aprendices para mostrar participantes en el detalle
+const PARTICIPANTS_MAP = @json(isset($aprendices) ? $aprendices->pluck('nombre_completo','id_aprendiz') : []);
 
 // Horario permitido: 08:00 a 16:50 (sin almuerzo 12:00-13:55)
 const workHours = Array.from({ length: 9 }, (_, i) => i + 8); // 8..16
@@ -224,6 +408,10 @@ const eventForm = document.getElementById('event-form');
 const closeModal = document.getElementById('close-modal');
 const drawerCloseBtn = document.getElementById('drawer-close-btn');
 const cancelBtn = document.getElementById('cancel-event');
+const wizardCancelBtn = document.getElementById('btn-cancel');
+const wizardNextBtn = document.getElementById('btn-next-step');
+const wizardPrevBtn = document.getElementById('btn-prev-step');
+const wizardSubmitBtn = document.getElementById('btn-submit');
 const drawerCloseCta = document.getElementById('drawer-close-cta');
 const deleteBtn = document.getElementById('deleteBtn');
 const selectedDateDisplay = document.getElementById('selectedDateDisplay');
@@ -244,6 +432,9 @@ if (closeModal) closeModal.addEventListener('click', closeEventModal);
 drawerCloseBtn.addEventListener('click', closeDetailDrawer);
 drawerCloseCta.addEventListener('click', closeDetailDrawer);
 if (cancelBtn) cancelBtn.addEventListener('click', closeEventModal);
+if (wizardCancelBtn) wizardCancelBtn.addEventListener('click', closeEventModal);
+if (wizardNextBtn) wizardNextBtn.addEventListener('click', ()=> goToStep(currentWizardStep+1));
+if (wizardPrevBtn) wizardPrevBtn.addEventListener('click', ()=> goToStep(currentWizardStep-1));
 if (deleteBtn) deleteBtn.addEventListener('click', deleteEvent);
 if (eventForm) eventForm.addEventListener('submit', saveEvent);
 
@@ -251,6 +442,99 @@ viewBtns.forEach(btn => { btn.addEventListener('click', async () => { viewBtns.f
 
 if (eventModal) eventModal.addEventListener('click', (e) => { if (e.target === eventModal) closeEventModal(); });
 detailOverlay.addEventListener('click', closeDetailDrawer);
+
+// Wizard state
+let currentWizardStep = 1;
+const wizardSteps = document.querySelectorAll('.wizard-step');
+const wizardContents = [
+  document.getElementById('step-1'),
+  document.getElementById('step-2'),
+  document.getElementById('step-3')
+];
+
+// Marcar cuáles campos son realmente requeridos y alternar según el paso visible
+document.querySelectorAll('.wizard-content [required]').forEach(el=>{ el.dataset.wasRequired = 'true'; });
+
+function goToStep(step){
+  if(step<1||step>3) return;
+  currentWizardStep = step;
+  wizardSteps.forEach(s=> s.classList.toggle('active', parseInt(s.dataset.step,10)===step));
+  wizardContents.forEach((c,i)=> c.style.display = (i===step-1)?'block':'none');
+  // Alternar required: solo en el paso visible
+  wizardContents.forEach((c,i)=>{
+    const makeRequired = (i===step-1);
+    c.querySelectorAll('[data-was-required="true"]').forEach(el=>{ try{ el.required = makeRequired; }catch(_){} });
+  });
+  if (wizardPrevBtn) wizardPrevBtn.style.display = step>1? 'inline-flex':'none';
+  if (wizardNextBtn) wizardNextBtn.style.display = step<3? 'inline-flex':'none';
+  if (wizardSubmitBtn) wizardSubmitBtn.style.display = step===3? 'inline-flex':'none';
+  if(step===3) updateSummary();
+}
+
+// Participants filtering and select all
+const participantsList = document.getElementById('participants-list');
+const participantsSearch = document.getElementById('search-participants');
+const selectAllBtn = document.getElementById('select-all-participants');
+if (participantsSearch){
+  participantsSearch.addEventListener('input', ()=>{
+    const q = participantsSearch.value.trim().toLowerCase();
+    participantsList.querySelectorAll('.participant-item-modal').forEach(item=>{
+      const name = item.dataset.aprendizName || '';
+      item.style.display = name.includes(q) ? '' : 'none';
+    });
+  });
+}
+if (selectAllBtn){
+  selectAllBtn.addEventListener('click', ()=>{
+    const boxes = participantsList.querySelectorAll('.participant-checkbox-modal');
+    const allChecked = Array.from(boxes).every(b=>b.checked);
+    boxes.forEach(b=> b.checked = !allChecked);
+    updateSelectedCount();
+  });
+}
+participantsList?.addEventListener('change', (e)=>{
+  if(e.target.classList.contains('participant-checkbox-modal')) updateSelectedCount();
+});
+function updateSelectedCount(){
+  const count = participantsList ? participantsList.querySelectorAll('.participant-checkbox-modal:checked').length : 0;
+  const countEl = document.getElementById('selected-count');
+  if (countEl) countEl.textContent = String(count);
+}
+
+// Proyecto -> marcar aprendices asignados
+const proyectoSelect = document.getElementById('event-proyecto');
+if (proyectoSelect){
+  proyectoSelect.addEventListener('change', ()=>{
+    const opt = proyectoSelect.selectedOptions[0];
+    try{
+      const ids = JSON.parse(opt?.getAttribute('data-aprendices')||'[]');
+      const boxes = participantsList.querySelectorAll('.participant-checkbox-modal');
+      boxes.forEach(b=> b.checked = ids.includes(parseInt(b.value)));
+      updateSelectedCount();
+    }catch(_){ /* ignore */ }
+  });
+}
+
+// Recordatorios radio styled
+document.querySelectorAll('.notification-option-modal').forEach(opt=>{
+  opt.addEventListener('click', ()=>{
+    document.querySelectorAll('.notification-option-modal').forEach(o=> o.classList.remove('selected'));
+    opt.classList.add('selected');
+    const val = opt.getAttribute('data-value');
+    const radio = opt.querySelector('input[type="radio"]');
+    if(radio){ radio.checked = true; radio.value = val; }
+  });
+});
+
+// Ubicación: mostrar/ocultar link virtual
+const locationSelect = document.getElementById('event-location');
+const virtualGroup = document.getElementById('virtual-link-group');
+if (locationSelect){
+  locationSelect.addEventListener('change', ()=>{
+    const isVirtual = locationSelect.value === 'virtual';
+    if (virtualGroup) virtualGroup.style.display = isVirtual ? 'block' : 'none';
+  });
+}
 
 async function loadEventsForCurrentPeriod(){
   try{
@@ -261,11 +545,45 @@ async function loadEventsForCurrentPeriod(){
     const data = await res.json();
     const list = data.eventos || [];
     events = list.map(ev => {
-      const d = new Date(ev.fecha_hora);
-      const yyyy = d.toISOString().split('T')[0];
-      const hh = String(d.getHours()).padStart(2,'0');
-      const mm = String(d.getMinutes()).padStart(2,'0');
-      return { id: ev.id, date: yyyy, time: `${hh}:${mm}`, title: ev.titulo, duration: ev.duracion||60, type: ev.tipo||'general', location: ev.ubicacion||'', description: ev.descripcion||'', researchLine: ev.linea_investigacion || '', link: ev.link_virtual || '' };
+      const raw = String(ev.fecha_hora||'');
+      let datePart = '', timePart = '';
+      if (raw.includes('T')){
+        const parts = raw.split('T');
+        datePart = parts[0];
+        timePart = (parts[1]||'').slice(0,5);
+      } else if (raw.includes(' ')){
+        const parts = raw.split(' ');
+        datePart = parts[0];
+        timePart = (parts[1]||'').slice(0,5);
+      } else {
+        // fallback: usar Date pero sin toISOString
+        const d = new Date(raw);
+        datePart = formatDateLocal(d);
+        timePart = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      }
+      // Participantes: aceptar varios formatos desde backend
+      let participantsIds = [];
+      let participantsNames = [];
+      try{
+        const p = ev.participantes ?? ev.aprendices ?? ev.aprendices_asignados ?? [];
+        if (Array.isArray(p)){
+          if (p.length && typeof p[0] === 'number') {
+            participantsIds = p;
+          } else if (p.length && typeof p[0] === 'string') {
+            participantsIds = p.map(x=>parseInt(x)).filter(n=>!Number.isNaN(n));
+          } else if (p.length && typeof p[0] === 'object') {
+            participantsIds = p.map(o=> parseInt(o.id_aprendiz ?? o.id ?? o.aprendiz_id ?? o.user_id)).filter(n=>!Number.isNaN(n));
+            participantsNames = p.map(o=> String(o.nombre_completo ?? o.nombre ?? o.name ?? '').trim()).filter(Boolean);
+          }
+        } else if (typeof p === 'string' && p.length){
+          try{ const arr = JSON.parse(p); if(Array.isArray(arr)) participantsIds = arr.map(x=>parseInt(x)).filter(n=>!Number.isNaN(n)); }
+          catch{ participantsIds = p.split(',').map(x=>parseInt(x)).filter(n=>!Number.isNaN(n)); }
+        }
+      }catch(_){ /* noop */ }
+      if (!participantsNames.length && participantsIds.length){
+        participantsNames = participantsIds.map(id => PARTICIPANTS_MAP?.[id] || `Aprendiz #${id}`);
+      }
+      return { id: ev.id, date: datePart, time: timePart||'09:00', title: ev.titulo, duration: ev.duracion||60, type: ev.tipo||'general', location: ev.ubicacion||'', description: ev.descripcion||'', researchLine: ev.linea_investigacion || '', link: ev.link_virtual || '', participantsIds, participantsNames };
     });
   }catch(e){ console.error('Error cargando eventos', e); events = []; }
 }
@@ -289,7 +607,8 @@ function createDayCell(date, otherMonth){
   events.filter(e=>e.date===dateStr).forEach(event=>{ cell.appendChild(createEventElement(event)); });
   const isWeekend = date.getDay()===0 || date.getDay()===6;
   const isHoliday = HOLIDAYS.includes(formatDate(date));
-  if (isWeekend || isHoliday) {
+  const isPastDay = isPastDate(date);
+  if (isWeekend || isHoliday || isPastDay) {
     cell.classList.add('disabled');
   } else {
     cell.addEventListener('click',(e)=>{ if(e.target===cell||e.target===dayNumber){ openEventModal(date); } });
@@ -310,8 +629,9 @@ function renderWeekView(){
   weekDays.forEach(date=>{ const dayCol=document.createElement('div'); dayCol.className='week-day-column'; const dateStr=formatDate(date);
     const isWeekend = date.getDay()===0 || date.getDay()===6; const isHoliday = HOLIDAYS.includes(dateStr);
     workHours.forEach(hour=>{ const slot=document.createElement('div'); slot.className='week-time-slot'; slot.dataset.date=dateStr; slot.dataset.hour=hour;
-      const hm = hour*100; const isLunch = hm>=1200 && hm<=1355; const allowed = !isWeekend && !isHoliday && hm>=800 && hm<=1650 && !isLunch;
-      if (!allowed) { slot.classList.add('disabled'); }
+      const hm = hour*100; const isLunch = hm>=1200 && hm<=1355; const slotDt = new Date(`${dateStr}T${String(hour).padStart(2,'0')}:00`); const allowed = !isWeekend && !isHoliday && hm>=800 && hm<=1650 && !isLunch && !isInPast(slotDt);
+      const occupied = isHourOccupied(dateStr, hour);
+      if (!allowed || occupied) { slot.classList.add('disabled'); if (occupied) slot.classList.add('occupied'); }
       else {
         slot.addEventListener('click',()=>{ const eventDate=new Date(date); eventDate.setHours(hour,0,0,0); openEventModal(eventDate); });
         slot.addEventListener('dragover', handleDragOver);
@@ -330,8 +650,9 @@ function renderDayView(){
   workHours.forEach(hour=>{ const tl=document.createElement('div'); tl.className='day-time-label'; tl.textContent=formatHour(hour); timesCol.appendChild(tl); }); dayGrid.appendChild(timesCol);
   const slotsCol=document.createElement('div'); slotsCol.className='day-slots';  const isWeekend = currentDate.getDay()===0 || currentDate.getDay()===6; const isHoliday = HOLIDAYS.includes(dateStr);
   workHours.forEach(hour=>{ const slot=document.createElement('div'); slot.className='day-time-slot'; slot.dataset.date=dateStr; slot.dataset.hour=hour;
-    const hm = hour*100; const isLunch = hm>=1200 && hm<=1355; const allowed = !isWeekend && !isHoliday && hm>=800 && hm<=1650 && !isLunch;
-    if (!allowed) { slot.classList.add('disabled'); }
+    const hm = hour*100; const isLunch = hm>=1200 && hm<=1355; const slotDt = new Date(`${dateStr}T${String(hour).padStart(2,'0')}:00`); const allowed = !isWeekend && !isHoliday && hm>=800 && hm<=1650 && !isLunch && !isInPast(slotDt);
+    const occupied = isHourOccupied(dateStr, hour);
+    if (!allowed || occupied) { slot.classList.add('disabled'); if (occupied) slot.classList.add('occupied'); }
     else {
       slot.addEventListener('click',()=>{ const eventDate=new Date(currentDate); eventDate.setHours(hour,0,0,0); openEventModal(eventDate); });
       slot.addEventListener('dragover', handleDragOver); slot.addEventListener('drop',(e)=>{ const eventDate=new Date(currentDate); eventDate.setHours(hour,0,0,0); handleDrop(e,eventDate); }); slot.addEventListener('dragleave', handleDragLeave);
@@ -341,31 +662,84 @@ function renderDayView(){
 }
 
 function createEventElement(event){ const el=document.createElement('div'); el.className='event'; el.draggable=true; el.dataset.id=event.id; el.innerHTML=`<div class="event-time">${event.time}</div><div class="event-title">${event.title}</div>`; el.addEventListener('click',(e)=>{ e.stopPropagation(); showEventDetails(event); }); el.addEventListener('dragstart',(e)=>{ draggedEvent=event; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }); el.addEventListener('dragend',()=>{ el.classList.remove('dragging'); draggedEvent=null; }); return el; }
-function createWeekEventElement(event){ const el=document.createElement('div'); el.className='week-event'; el.draggable=true; el.dataset.id=event.id; const [h]=event.time.split(':').map(Number); const top=(h-8)*60+4; const height=Math.min(event.duration||60,60)-8; el.style.top=`${top}px`; el.style.height=`${height}px`; el.innerHTML=`<div style="font-weight:600;">${event.time}</div><div style="font-size:10px;">${event.title}</div>`; el.addEventListener('click',(e)=>{ e.stopPropagation(); showEventDetails(event); }); el.addEventListener('dragstart',(e)=>{ draggedEvent=event; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }); el.addEventListener('dragend',()=>{ el.classList.remove('dragging'); draggedEvent=null; }); return el; }
-function createDayEventElement(event){ const el=document.createElement('div'); el.className='day-event'; el.draggable=true; el.dataset.id=event.id; const [h]=event.time.split(':').map(Number); const top=(h-8)*80+4; const height=Math.min((event.duration||60)/60*80,80)-8; el.style.top=`${top}px`; el.style.height=`${height}px`; el.innerHTML=`<div style="font-weight:600;font-size:13px;">${event.time}</div><div style="font-size:12px;margin-top:2px;">${event.title}</div>`; el.addEventListener('click',(e)=>{ e.stopPropagation(); showEventDetails(event); }); el.addEventListener('dragstart',(e)=>{ draggedEvent=event; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }); el.addEventListener('dragend',()=>{ el.classList.remove('dragging'); draggedEvent=null; }); return el; }
+function createWeekEventElement(event){ const el=document.createElement('div'); el.className='week-event'; el.draggable=true; el.dataset.id=event.id; const [h]=event.time.split(':').map(Number); const top=(h-8)*60+4; const height=Math.max(20, ((event.duration||60)/60*60) -8); el.style.top=`${top}px`; el.style.height=`${height}px`; el.innerHTML=`<div style="font-weight:600;">${event.time}</div><div style="font-size:10px;">${event.title}</div>`; el.addEventListener('click',(e)=>{ e.stopPropagation(); showEventDetails(event); }); el.addEventListener('dragstart',(e)=>{ draggedEvent=event; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }); el.addEventListener('dragend',()=>{ el.classList.remove('dragging'); draggedEvent=null; }); return el; }
+function createDayEventElement(event){ const el=document.createElement('div'); el.className='day-event'; el.draggable=true; el.dataset.id=event.id; const [h]=event.time.split(':').map(Number); const top=(h-8)*80+4; const height=Math.max(24, ((event.duration||60)/60*80) -8); el.style.top=`${top}px`; el.style.height=`${height}px`; el.innerHTML=`<div style="font-weight:600;font-size:13px;">${event.time}</div><div style="font-size:12px;margin-top:2px;">${event.title}</div>`; el.addEventListener('click',(e)=>{ e.stopPropagation(); showEventDetails(event); }); el.addEventListener('dragstart',(e)=>{ draggedEvent=event; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }); el.addEventListener('dragend',()=>{ el.classList.remove('dragging'); draggedEvent=null; }); return el; }
 
-function handleDragOver(e){ e.preventDefault(); e.dataTransfer.dropEffect='move'; e.currentTarget.classList.add('drag-over'); }
-function handleDragLeave(e){ e.currentTarget.classList.remove('drag-over'); }
-async function handleDrop(e,newDate){ e.preventDefault(); e.currentTarget.classList.remove('drag-over'); if(!draggedEvent) return; const idx=events.findIndex(ev=>ev.id===draggedEvent.id); if(idx===-1) return; const newDateStr=formatDate(newDate); let newTime=events[idx].time; if(e.currentTarget.dataset.hour){ const hour=parseInt(e.currentTarget.dataset.hour); newTime=`${String(hour).padStart(2,'0')}:00`; }
-  const candidate = new Date(`${newDateStr}T${newTime}:00`); if(!isAllowedDateTime(candidate)) { alert('No puedes mover el evento a un horario no permitido.'); return; }
+// Indicador flotante de hora durante drag
+let dragTimeIndicatorEl=null;
+function showDragIndicator(text, clientX, clientY){
+  if(!dragTimeIndicatorEl){
+    dragTimeIndicatorEl=document.createElement('div');
+    dragTimeIndicatorEl.id='drag-time-indicator';
+    dragTimeIndicatorEl.style.position='fixed';
+    dragTimeIndicatorEl.style.zIndex='9999';
+    dragTimeIndicatorEl.style.pointerEvents='none';
+    dragTimeIndicatorEl.style.background='rgba(0,0,0,0.75)';
+    dragTimeIndicatorEl.style.color='#fff';
+    dragTimeIndicatorEl.style.padding='4px 8px';
+    dragTimeIndicatorEl.style.borderRadius='6px';
+    dragTimeIndicatorEl.style.fontSize='12px';
+    document.body.appendChild(dragTimeIndicatorEl);
+  }
+  dragTimeIndicatorEl.textContent=text;
+  dragTimeIndicatorEl.style.left=`${clientX+12}px`;
+  dragTimeIndicatorEl.style.top=`${clientY+12}px`;
+  dragTimeIndicatorEl.style.display='block';
+}
+function hideDragIndicator(){ if(dragTimeIndicatorEl){ dragTimeIndicatorEl.style.display='none'; } }
+
+function handleDragOver(e){ e.preventDefault(); e.dataTransfer.dropEffect='move'; e.currentTarget.classList.add('drag-over');
+  // Mostrar hora del slot sobre el que se arrastra
+  let hour = e.currentTarget.dataset && e.currentTarget.dataset.hour ? parseInt(e.currentTarget.dataset.hour,10) : null;
+  if(Number.isInteger(hour)){
+    const label = formatHour(hour);
+    showDragIndicator(label, e.clientX, e.clientY);
+    // Guardamos para uso en drop
+    e.currentTarget.dataset.hoverHour = String(hour);
+  }
+}
+function handleDragLeave(e){ e.currentTarget.classList.remove('drag-over'); hideDragIndicator(); if(e.currentTarget.dataset) delete e.currentTarget.dataset.hoverHour; }
+async function handleDrop(e,newDate){ e.preventDefault(); e.currentTarget.classList.remove('drag-over'); hideDragIndicator(); if(!draggedEvent) return; const idx=events.findIndex(ev=>ev.id===draggedEvent.id); if(idx===-1) return; const newDateStr=formatDate(newDate); let newTime=events[idx].time; const hAttr = (e.currentTarget.dataset && (e.currentTarget.dataset.hoverHour||e.currentTarget.dataset.hour)) || null; if(hAttr){ const hour=parseInt(hAttr,10); newTime=`${String(hour).padStart(2,'0')}:00`; }
+  const candidate = new Date(`${newDateStr}T${newTime}:00`); if(!isAllowedDateTime(candidate)) { showToast('No puedes mover el evento a un horario no permitido o en el pasado.','warning'); return; } if(hasClientConflict(candidate, events[idx].duration, draggedEvent.id)) { showToast('Ese horario ya está ocupado.','warning'); return; }
+  if(crossesLunch(candidate, events[idx].duration)) { showToast('No puedes mover la reunión cruzando el horario de almuerzo (12:00 a 13:55).','warning'); return; }
   await updateEventOnServer(events[idx].id,newDateStr,newTime); await loadEventsForCurrentPeriod(); renderCalendar(); }
 
 function openEventModal(date){
   // Permitimos abrir el modal siempre (especialmente desde vista mensual, donde la hora es 00:00)
   // La validación de horario/día se hace al guardar y en los slots/drag de semana/día.
-  selectedDate=date; editingEventId=null; modalTitle.textContent='Nueva Reunión'; if (deleteBtn) deleteBtn.style.display='none';
+  const dateOnly = formatDate(date);
+  const firstHour = getFirstAvailableHour(dateOnly);
+  const chosenHour = date.getHours() ? date.getHours() : (firstHour ?? 9);
+  const normalized = new Date(date); normalized.setHours(chosenHour,0,0,0);
+  selectedDate=normalized; editingEventId=null; modalTitle.textContent='Nueva Reunión'; if (deleteBtn) deleteBtn.style.display='none';
   if (eventForm) eventForm.reset();
   const dateInput = document.getElementById('event-date');
   const timeInput = document.getElementById('event-time');
-  if (dateInput) dateInput.value = formatDate(date);
-  if (timeInput) timeInput.value = date.getHours()? `${String(date.getHours()).padStart(2,'0')}:00` : '09:00';
+  if (dateInput) dateInput.value = formatDate(normalized);
+  if (timeInput) timeInput.value = `${String(chosenHour).padStart(2,'0')}:00`;
+  const displayTime = document.getElementById('display-time');
+  if (displayTime){
+    const h = chosenHour; const period = h>=12? 'PM':'AM'; const hh = h>12? h-12 : h; displayTime.textContent = `${String(hh).padStart(2,'0')}:00 ${period}`;
+  }
+  enforceDurationOptions();
+  currentWizardStep = 1; goToStep(1);
   if (eventModal) eventModal.classList.add('active');
 }
 function closeEventModal(){ if (eventModal) eventModal.classList.remove('active'); if (eventForm) eventForm.reset(); selectedDate=null; editingEventId=null; }
 
 async function saveEvent(e){
   e.preventDefault(); if(!selectedDate) return; const payload=buildEventPayload();
-  if(!isAllowedDateTime(new Date(payload.fecha_hora))) { alert('Horario no permitido.'); return; }
+  const titleEl = document.getElementById('event-title');
+  const titleVal = titleEl ? String(titleEl.value||'').trim() : '';
+  if(!titleVal){
+    showToast('El título es obligatorio.','warning');
+    try{ goToStep(1); titleEl?.focus(); }catch(_){/* noop */}
+    return;
+  }
+  const startDt = new Date(payload.fecha_hora);
+  if(!isAllowedDateTime(startDt)) { showToast('Horario no permitido o en el pasado.','error'); return; }
+  if(crossesLunch(startDt, payload.duracion)) { showToast('La reunión no puede cruzar el horario de almuerzo (12:00 a 13:55).','warning'); return; }
+  if(hasClientConflict(startDt, payload.duracion, editingEventId)) { showToast('El horario seleccionado ya está ocupado.','warning'); return; }
   try{
     let res;
     if(editingEventId){
@@ -373,37 +747,64 @@ async function saveEvent(e){
     } else {
       res = await fetch(ROUTES.baseEventos,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},body:JSON.stringify(payload)});
     }
-    if(!res.ok){ const txt = await res.text(); console.error('Error respuesta servidor', res.status, txt); alert('No se pudo guardar el evento. Revisa la consola para detalles.'); return; }
-    closeEventModal(); await loadEventsForCurrentPeriod(); renderCalendar();
-  }catch(err){ console.error('Error guardando evento',err); alert('Error guardando evento (red).'); }
+    if(!res.ok){ const txt = await res.text(); console.error('Error respuesta servidor', res.status, txt); showToast('No se pudo guardar el evento. Revisa la consola para detalles.','error'); return; }
+    closeEventModal(); await loadEventsForCurrentPeriod(); renderCalendar(); showToast('Evento guardado correctamente','success');
+  }catch(err){ console.error('Error guardando evento',err); showToast('Error guardando evento (red).','error'); }
 }
 
 function buildEventPayload(){
   const dateInput = document.getElementById('event-date');
   const timeInput = document.getElementById('event-time');
   const titleInput = document.getElementById('event-title');
+  const typeSelect = document.getElementById('event-type');
   const durationInput = document.getElementById('event-duration');
+  const locationSelect2 = document.getElementById('event-location');
+  const linkInput = document.getElementById('event-virtual-link');
   const descInput = document.getElementById('event-description');
   const projSelect = document.getElementById('event-proyecto');
-  const partsSelect = document.getElementById('event-participants');
   const dateStr = dateInput ? dateInput.value : formatDate(selectedDate);
   const timeStr = timeInput ? timeInput.value : '09:00';
   const fechaHora = `${dateStr}T${timeStr}:00`;
-  const participantes = partsSelect ? Array.from(partsSelect.selectedOptions).map(o=>parseInt(o.value)) : [];
+  const participantes = participantsList ? Array.from(participantsList.querySelectorAll('.participant-checkbox-modal:checked')).map(b=>parseInt(b.value)) : [];
   const idProyecto = projSelect && projSelect.value ? parseInt(projSelect.value) : null;
+  const ubicacion = locationSelect2 ? (locationSelect2.value||'') : '';
+  const link_virtual = (ubicacion==='virtual' && linkInput && linkInput.value.trim()) ? linkInput.value.trim() : null;
+  const recordatorio = (document.querySelector('input[name="reminder"]:checked')?.value)||'none';
   return {
     titulo: titleInput ? titleInput.value : '',
-    tipo: 'presencial',
+    tipo: typeSelect ? (typeSelect.value||'general') : 'general',
     linea_investigacion: '',
     descripcion: descInput ? (descInput.value||null) : null,
     fecha_hora: fechaHora,
     duracion: durationInput ? (parseInt(durationInput.value)||60) : 60,
-    ubicacion: 'presencial',
-    link_virtual: null,
-    recordatorio: 'none',
+    ubicacion: ubicacion||'presencial',
+    link_virtual,
+    recordatorio,
     id_proyecto: idProyecto,
     participantes
   };
+}
+
+function updateSummary(){
+  const title = document.getElementById('event-title')?.value||'--';
+  const type = document.getElementById('event-type')?.selectedOptions[0]?.textContent||'--';
+  const dateStr = document.getElementById('event-date')?.value||formatDate(selectedDate||new Date());
+  const timeStr = document.getElementById('event-time')?.value||'09:00';
+  const durationSel = document.getElementById('event-duration');
+  const durationText = durationSel ? durationSel.selectedOptions[0].textContent : '--';
+  const locationSel = document.getElementById('event-location');
+  const locationText = locationSel ? locationSel.selectedOptions[0].textContent : '--';
+  const parts = participantsList ? Array.from(participantsList.querySelectorAll('.participant-checkbox-modal:checked')).length : 0;
+  const dt = new Date(`${dateStr}T${timeStr}:00`);
+  const months=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const hours = dt.getHours(); const period = hours>=12? 'PM':'AM'; const hh = hours>12? hours-12: hours; const pretty = `${dt.getDate()} de ${months[dt.getMonth()]} ${dt.getFullYear()}, ${String(hh).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')} ${period}`;
+  const set = (id,val)=>{ const el=document.getElementById(id); if(el) el.textContent = val; };
+  set('summary-title', title);
+  set('summary-type', type);
+  set('summary-datetime', pretty);
+  set('summary-duration', durationText);
+  set('summary-location', locationText);
+  set('summary-participants', `${parts} seleccionado(s)`);
 }
 
 function showEventDetails(event){
@@ -412,7 +813,7 @@ function showEventDetails(event){
   document.getElementById('detail-tipo').textContent = event.type || '--';
   document.getElementById('detail-fecha').textContent = formatDateLong(new Date(event.date));
   document.getElementById('detail-hora').textContent = event.time || '--';
-  document.getElementById('detail-duracion').textContent = `${event.duration||60} minutos`;
+  document.getElementById('detail-duracion').textContent = formatDurationMinutes(event.duration||60);
   document.getElementById('detail-ubicacion').textContent = event.location || '--';
   document.getElementById('detail-descripcion').textContent = event.description || '--';
   const linkField = document.getElementById('detail-link-field');
@@ -423,19 +824,34 @@ function showEventDetails(event){
   const editorInput = document.getElementById('detail-link-input');
   const saveBtn = document.getElementById('detail-save-link');
   const cancelBtnEdit = document.getElementById('detail-cancel-edit');
-  if (linkField) linkField.style.display = 'block';
-  const hasUrl = !!(event.link && event.link.startsWith('http'));
-  if (hasUrl) {
-    if (linkA) { linkA.href = event.link; linkA.style.display = 'inline-block'; }
-    if (genBtn) genBtn.style.display = 'inline-block';
-    if (delBtn) delBtn.style.display = 'inline-block';
-    if (editorBox) editorBox.style.display = 'none';
-  } else {
-    if (linkA) linkA.style.display = 'none';
-    if (genBtn) genBtn.style.display = 'inline-block';
-    if (delBtn) delBtn.style.display = 'none';
-    if (editorBox) editorBox.style.display = 'block';
-    if (editorInput) editorInput.value = '';
+  // Si es presencial (no virtual), ocultar completamente la sección de enlace
+  const isVirtualMeeting = String(event.location||'').toLowerCase()==='virtual';
+  if (linkField) linkField.style.display = isVirtualMeeting ? 'block' : 'none';
+  if (isVirtualMeeting){
+    const hasUrl = !!(event.link && String(event.link).startsWith('http'));
+    if (hasUrl) {
+      if (linkA) { linkA.href = event.link; linkA.style.display = 'inline-block'; }
+      if (genBtn) genBtn.style.display = 'inline-block';
+      if (delBtn) delBtn.style.display = 'inline-block';
+      if (editorBox) editorBox.style.display = 'none';
+    } else {
+      if (linkA) linkA.style.display = 'none';
+      if (genBtn) genBtn.style.display = 'inline-block';
+      if (delBtn) delBtn.style.display = 'none';
+      if (editorBox) editorBox.style.display = 'block';
+      if (editorInput) editorInput.value = '';
+    }
+  }
+
+  // Participantes: chips con nombres
+  const chips = document.getElementById('detail-participantes');
+  if (chips){
+    const names = (event.participantsNames && event.participantsNames.length)
+      ? event.participantsNames
+      : (event.participantsIds||[]).map(id => PARTICIPANTS_MAP?.[id] || `Aprendiz #${id}`);
+    chips.innerHTML = names.length
+      ? names.map(n=>`<span class="chip">${n}</span>`).join(' ')
+      : '--';
   }
   if (genBtn) genBtn.onclick = async () => {
     try {
@@ -496,16 +912,16 @@ async function deleteEvent(){
   if(!editingEventId) return; if(!confirm('¿Estás seguro de que quieres eliminar esta reunión?')) return;
   try{
     const res = await fetch(`${ROUTES.baseEventos}/${editingEventId}`,{method:'DELETE',headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});
-    if(!res.ok){ const txt = await res.text(); console.error('Error eliminando', res.status, txt); alert('No se pudo eliminar.'); return; }
+    if(!res.ok){ const txt = await res.text(); console.error('Error eliminando', res.status, txt); showToast('No se pudo eliminar.','error'); return; }
     closeEventModal(); closeDetailDrawer(); await loadEventsForCurrentPeriod(); renderCalendar();
-  }catch(err){ console.error('Error eliminando evento',err); alert('Error eliminando (red).'); }
+  }catch(err){ console.error('Error eliminando evento',err); showToast('Error eliminando (red).','error'); }
 }
 
 async function updateEventOnServer(id,newDateStr,newTime){
   const fechaHora=`${newDateStr}T${newTime}:00`;
   try{
     const res = await fetch(`${ROUTES.baseEventos}/${id}`,{method:'PUT',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},body:JSON.stringify({fecha_hora:fechaHora})});
-    if(!res.ok){ const txt = await res.text(); console.error('Error al actualizar (drop)', res.status, txt); alert('No se pudo mover el evento.'); }
+    if(!res.ok){ const txt = await res.text(); console.error('Error al actualizar (drop)', res.status, txt); showToast('No se pudo mover el evento.','error'); }
   }catch(err){ console.error('Error actualizando evento',err); }
 }
 
@@ -513,11 +929,84 @@ function navigatePeriod(direction){ if(currentView==='month'){ currentDate.setMo
 function goToToday(){ currentDate = new Date(); }
 function updatePeriodDisplay(){ const months=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']; if(currentView==='month'){ currentPeriodEl.textContent=`${months[currentDate.getMonth()]} ${currentDate.getFullYear()}`; } else if(currentView==='week'){ const ws=getWeekStart(currentDate); const we=new Date(ws); we.setDate(ws.getDate()+6); currentPeriodEl.textContent=`${ws.getDate()} ${months[ws.getMonth()]} - ${we.getDate()} ${months[we.getMonth()]} ${we.getFullYear()}`; } else { currentPeriodEl.textContent=`${currentDate.getDate()} de ${months[currentDate.getMonth()]} ${currentDate.getFullYear()}`; } }
 function getWeekStart(date){ const d=new Date(date); const day=d.getDay(); const diff=d.getDate()-day; return new Date(d.setDate(diff)); }
-function formatDate(date){ return date.toISOString().split('T')[0]; }
+function formatDateLocal(date){
+  // YYYY-MM-DD en zona horaria local
+  const y = date.getFullYear();
+  const m = String(date.getMonth()+1).padStart(2,'0');
+  const d = String(date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+function formatDate(date){ return formatDateLocal(date); }
 function formatDateLong(date){ const days=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']; const months=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']; return `${days[date.getDay()]}, ${date.getDate()} de ${months[date.getMonth()]} ${date.getFullYear()}`; }
 function getDayName(date){ const days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']; return days[date.getDay()]; }
 function formatHour(hour){ const period = hour>=12? 'PM':'AM'; const displayHour = hour>12? hour-12: hour; return `${displayHour}:00 ${period}`; }
 function isToday(date){ const t=new Date(); return date.getDate()===t.getDate() && date.getMonth()===t.getMonth() && date.getFullYear()===t.getFullYear(); }
-function isAllowedDateTime(dt){ const d=dt.getDay(); if(d===0||d===6) return false; const dateStr=formatDate(dt); if(HOLIDAYS.includes(dateStr)) return false; const hm=dt.getHours()*100 + dt.getMinutes(); if(hm<800 || hm>1650) return false; if(hm>=1200 && hm<=1355) return false; return true; }
+function isAllowedDateTime(dt){ const d=dt.getDay(); if(d===0||d===6) return false; const dateStr=formatDate(dt); if(HOLIDAYS.includes(dateStr)) return false; const now=new Date(); if(dt.getTime() < now.getTime()) return false; const hm=dt.getHours()*100 + dt.getMinutes(); if(hm<800 || hm>1650) return false; if(hm>=1200 && hm<=1355) return false; return true; }
+function isPastDate(date){ const today = new Date(); const d = new Date(date.getFullYear(), date.getMonth(), date.getDate()); const t = new Date(today.getFullYear(), today.getMonth(), today.getDate()); return d.getTime() < t.getTime(); }
+function isInPast(dt){ const now = new Date(); return dt.getTime() < now.getTime(); }
+
+// Helpers de conflicto/ocupación en cliente
+function crossesLunch(startDt, durationMinutes){
+  const m = parseInt(durationMinutes||0,10); if(!m) return false; const end = new Date(startDt.getTime() + m*60000);
+  const ymd = formatDate(startDt);
+  const lunchStart = new Date(`${ymd}T12:00:00`);
+  const lunchEnd = new Date(`${ymd}T13:55:00`);
+  return (startDt < lunchEnd) && (end > lunchStart);
+}
+function enforceDurationOptions(){
+  const dInput = document.getElementById('event-date'); const tInput = document.getElementById('event-time'); const durSel = document.getElementById('event-duration');
+  if(!dInput || !tInput || !durSel) return; const ds=dInput.value; const ts=tInput.value; if(!ds || !ts) return; const start = new Date(`${ds}T${ts}:00`);
+  Array.from(durSel.options).forEach(opt=>{ const val=parseInt(opt.value||0,10); if(!val) return; opt.disabled = crossesLunch(start, val); });
+}
+function formatDurationMinutes(min){ const m = parseInt(min||0,10); const h = Math.floor(m/60); const rest = m % 60; if(h<=0) return `${m} min`; if(rest===0) return h===1? '1 hora' : `${h} horas`; return `${h} h ${rest} min`; }
+function isHourOccupied(dateStr, hour){
+  return events.some(ev=> ev.date===dateStr && parseInt((ev.time||'09:00').split(':')[0])===hour);
+}
+function hasClientConflict(startDt, durationMinutes, ignoreId){
+  const start = startDt.getTime();
+  const end = start + (parseInt(durationMinutes||60)*60000);
+  return events.some(ev=>{
+    if(ignoreId && ev.id===ignoreId) return false;
+    if(formatDate(startDt)!==ev.date) return false;
+    const [h,m] = (ev.time||'09:00').split(':').map(Number);
+    const evStart = new Date(`${ev.date}T${String(h).padStart(2,'0')}:${String(m||0).padStart(2,'0')}:00`).getTime();
+    const evEnd = evStart + ((ev.duration||60)*60000);
+    return (start < evEnd) && (end > evStart);
+  });
+}
+function getFirstAvailableHour(dateStr){
+  const today = formatDateLocal(new Date());
+  const now = new Date();
+  const minHour = (dateStr===today) ? Math.max(8, now.getHours()+1) : 8;
+  for(const h of workHours){
+    if (h < minHour) continue;
+    const hm = h*100; const isLunch = hm>=1200 && hm<=1355; const weekendOrHoliday = (()=>{ const d = new Date(`${dateStr}T00:00:00`); return d.getDay()===0||d.getDay()===6||HOLIDAYS.includes(dateStr); })();
+    if (weekendOrHoliday) return null;
+    const allowed = hm>=800 && hm<=1650 && !isLunch;
+    const slotDt = new Date(`${dateStr}T${String(h).padStart(2,'0')}:00`);
+    if(allowed && !isHourOccupied(dateStr,h) && !isInPast(slotDt)) return h;
+  }
+  return null;
+}
+
+// Toasts accesibles (definición global)
+function showToast(message, type='info'){
+  try{
+    const container = document.getElementById('cal-toast-container');
+    if(!container){ console.warn('Toast container no encontrado'); return; }
+    const toast = document.createElement('div');
+    toast.className = `cal-toast ${type}`;
+    toast.setAttribute('role','status');
+    toast.innerHTML = `
+      <div class="cal-toast-icon">${type==='success'?'✅':type==='error'?'⛔':type==='warning'?'⚠️':'ℹ️'}</div>
+      <div class="cal-toast-message">${message}</div>
+      <button class="cal-toast-close" aria-label="Cerrar">×</button>
+    `;
+    const close = ()=>{ toast.classList.add('hide'); setTimeout(()=> toast.remove(), 200); };
+    toast.querySelector('.cal-toast-close')?.addEventListener('click', close);
+    container.appendChild(toast);
+    setTimeout(close, 4000);
+  }catch(e){ console.error('showToast error', e); }
+}
 </script>
 @endsection
