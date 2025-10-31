@@ -2,6 +2,7 @@
 
 @section('styles')
 <link rel="stylesheet" href="{{ asset('css/mis-proyectos.css') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 @endsection
 
 @section('content')
@@ -36,7 +37,7 @@
                     </div>
 
                     <div class="mt-3 text-center">
-                        <button type="button" class="btn btn-details w-100" data-bs-toggle="modal" data-bs-target="#detalleSemillero{{ $loop->index }}">Ver Detalles</button>
+                        <button type="button" class="btn btn-details w-100" data-bs-toggle="modal" data-bs-target="#detalleSemillero{{ $loop->index }}"><i class="bi bi-eye me-1"></i>Ver Detalles</button>
                     </div>
                 </div>
             </div>
@@ -45,7 +46,7 @@
         <div class="modal fade" id="detalleSemillero{{ $loop->index }}" tabindex="-1" aria-labelledby="detalleSemilleroLabel{{ $loop->index }}" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-scrollable">
                 <div class="modal-content">
-                    <div class="modal-header" style="background-color:#5aa72e; color:#fff;">
+                    <div class="modal-header brand-header">
                         <h5 class="modal-title fw-bold" id="detalleSemilleroLabel{{ $loop->index }}">{{ $semillero->nombre }}</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
@@ -92,9 +93,9 @@
                                     $items = isset($semillero->aprendices_items) && is_iterable($semillero->aprendices_items) ? $semillero->aprendices_items : [];
                                 @endphp
                                 @forelse($items as $ap)
-                                    <div class="col-md-6" data-id="{{ $ap['id_aprendiz'] ?? '' }}">
+                                    <div class="col-md-6" data-isan servid="{{ $ap['id_aprendiz'] ?? '' }}">
                                         <div class="border rounded p-3 d-flex align-items-center gap-3">
-                                            <div class="rounded-circle d-flex justify-content-center align-items-center" style="width:48px;height:48px;background-color:#5aa72e;color:#fff;font-weight:700;">
+                                            <div class="avatar-initials">
                                                 {{ strtoupper(substr($ap['nombre'] ?? 'A',0,1)) }}{{ strtoupper(substr(explode(' ', $ap['nombre'] ?? 'M')[1] ?? 'M',0,1)) }}
                                             </div>
                                             <div>
@@ -111,16 +112,17 @@
                     </div>
                     <div class="modal-footer d-flex justify-content-between">
                         @php
-                            // Priorizar id_proyecto si existe (estamos en vista de proyectos)
-                            $idProj = $semillero->id_proyecto ?? null;
+                            // Priorizar id_proyecto si existe (vista de proyectos). Fallback a ->id si viene así.
+                            $idProj = $semillero->id_proyecto ?? ($semillero->id ?? null);
+                            // Si no hay proyecto, usar semillero (fallback a ->id si es listado de semilleros)
                             $idSem = !$idProj ? ($semillero->id_semillero ?? ($semillero->id ?? null)) : null;
                         @endphp
                         @if(!empty($idSem) || !empty($idProj))
-                            <button type="button" id="open-edit-{{ $loop->index }}" class="btn" style="background-color:#5aa72e;color:#fff;">Editar Aprendices</button>
+                            <button type="button" id="open-edit-{{ $loop->index }}" class="btn btn-brand" data-refproj="{{ (int)($idProj ?? 0) }}" data-refsem="{{ (int)($idSem ?? 0) }}"><i class="bi bi-people me-1"></i>Editar Aprendices</button>
                         @else
-                            <button type="button" class="btn" style="background-color:#5aa72e;color:#fff;" disabled>Editar Aprendices</button>
+                            <button type="button" class="btn btn-brand" disabled><i class="bi bi-people me-1"></i>Editar Aprendices</button>
                         @endif
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Cerrar</button>
                     </div>
                 </div>
             </div>
@@ -130,7 +132,7 @@
         <div class="modal fade" id="editApr{{ $loop->index }}" tabindex="-1" aria-labelledby="editAprLabel{{ $loop->index }}" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
-                    <div class="modal-header" style="background-color:#5aa72e; color:#fff;">
+                    <div class="modal-header brand-header">
                         <h5 class="modal-title fw-bold" id="editAprLabel{{ $loop->index }}">{{ $semillero->nombre }}</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
@@ -173,7 +175,7 @@
                                             <div class="fw-semibold">{{ $ap['nombre'] ?? '' }}</div>
                                             <small class="text-muted">{{ $ap['programa'] ?? 'Sin programa' }}</small>
                                         </div>
-                                        <button class="btn btn-sm btn-danger btn-eliminar">Eliminar</button>
+                                        <button class="btn btn-sm btn-danger btn-eliminar"><i class="bi bi-trash me-1"></i>Eliminar</button>
                                     </div>
                                 @endforeach
                             </div>
@@ -184,8 +186,8 @@
                         </form>
                     </div>
                     <div class="modal-footer d-flex justify-content-between">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                        <button id="btn-guardar-{{ $loop->index }}" class="btn btn-success">Guardar Cambios</button>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Cancelar</button>
+                        <button id="btn-guardar-{{ $loop->index }}" class="btn btn-brand"><i class="bi bi-check2-circle me-1"></i>Guardar Cambios</button>
                     </div>
                 </div>
             </div>
@@ -245,6 +247,12 @@
                 const btn = document.getElementById('open-edit-' + idx);
                 if (!btn) return;
                 btn.addEventListener('click', function(){
+                    // Override dinámico de contexto por si Blade no trajo IDs esperados
+                    const dp = parseInt(btn.dataset.refproj||'0',10) || 0;
+                    const ds = parseInt(btn.dataset.refsem||'0',10) || 0;
+                    if (dp > 0){ window['isSem'+idx] = false; window['refId'+idx] = dp; }
+                    else if (ds > 0){ window['isSem'+idx] = true; window['refId'+idx] = ds; }
+
                     const detEl = document.getElementById('detalleSemillero' + idx);
                     const editEl = document.getElementById('editApr' + idx);
                     if (!detEl || !editEl) return;
@@ -286,9 +294,10 @@
                         update: `{{ route('lider_semi.proyectos.aprendices.update', ['proyecto' => '__ID__']) }}`,
                         create: `{{ route('lider_semi.proyectos.aprendices.create', ['proyecto' => '__ID__']) }}`,
                     }
-                }[isSem ? 'sem' : 'proj'];
+                }[(window['isSem'+idx] ?? isSem) ? 'sem' : 'proj'];
+                const REF = (window['refId'+idx] ?? refId);
                 let url = r[name] || '#';
-                url = url.replace('__ID__', refId).replace('__SID__', refId).replace('__PID__', refId);
+                url = url.replace('__ID__', REF).replace('__SID__', REF).replace('__PID__', REF);
                 if (params && params.aprendiz) url = url.replace('__AID__', params.aprendiz);
                 return url;
             }
@@ -303,7 +312,18 @@
                 cb.className = 'form-check-input mt-1';
                 // Marcar si ya está asignado
                 if (lista && lista.querySelector(`[data-id="${item.id_aprendiz}"]`)) cb.checked = true;
-                cb.addEventListener('change', function(){
+                cb.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); });
+                row.addEventListener('click', function(e){
+                    e.preventDefault(); e.stopPropagation();
+                    cb.checked = !cb.checked;
+                    if (cb.checked) {
+                        attachAprendiz(item.id_aprendiz, item.nombre_completo, item.programa);
+                    } else {
+                        const nodo = lista.querySelector(`[data-id="${item.id_aprendiz}"]`);
+                        if (nodo) detachAprendiz(item.id_aprendiz, nodo);
+                    }
+                });
+                cb.addEventListener('change', function(e){ e.preventDefault(); e.stopPropagation();
                     if (cb.checked) {
                         attachAprendiz(item.id_aprendiz, item.nombre_completo, item.programa);
                     } else {
@@ -419,10 +439,22 @@
             }
             if (lista) lista.addEventListener('click', function(e){ const btn = e.target.closest('.btn-eliminar'); if(!btn) return; const cont = btn.closest('[data-id]'); const id = cont.dataset.id; if(id) detachAprendiz(id, cont); });
             if (btnCrearAgregar) btnCrearAgregar.addEventListener('click', function(e){ e.preventDefault(); crearYAdjuntar(); });
-            if (btnGuardar) btnGuardar.addEventListener('click', function(){
-                if (!formSync) return; formSync.setAttribute('action', route('update')); formSync.innerHTML = `@csrf @method('PUT')`;
-                Array.from(lista.querySelectorAll('[data-id]')).forEach(n=>{ const i=document.createElement('input'); i.type='hidden'; i.name='aprendices_ids[]'; i.value=n.dataset.id; formSync.appendChild(i); });
-                formSync.submit();
+            if (btnGuardar) btnGuardar.addEventListener('click', function(e){
+                e.preventDefault();
+                const ids = Array.from(lista.querySelectorAll('[data-id]')).map(n=> parseInt(n.dataset.id,10)).filter(Boolean);
+                apiFetch(route('update'), { method:'PUT', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ aprendices_ids: ids }) })
+                    .then(async r=>{ let data; try{ data = await r.json(); }catch(_){ data=null; } return {ok:r.ok,status:r.status,data}; })
+                    .then(({ok,status,data})=>{
+                        if(ok && data && data.ok){
+                            notify('Cambios guardados','success');
+                            const editEl = document.getElementById('editApr' + idx);
+                            const edit = editEl ? (bootstrap.Modal.getInstance(editEl) || new bootstrap.Modal(editEl)) : null;
+                            if (edit) edit.hide();
+                        } else {
+                            notify('Error al guardar ('+status+')','danger');
+                        }
+                    })
+                    .catch(()=> notify('No se pudo guardar (red/JSON)','danger'));
             });
         });
         </script>

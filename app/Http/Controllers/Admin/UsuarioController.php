@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Schema;
 
 
 // Modelos (si no usas Eloquent para perfiles, puedes borrar estos use)
@@ -195,57 +196,85 @@ public function index(Request $request)
             'nombre'   => 'required|string|max:255',
             'apellido' => 'required|string|max:255',
             'email'    => ['required','email','max:255', Rule::unique('users','email')->ignore($id)],
+            'role'     => 'nullable|in:ADMIN,LIDER_GENERAL,LIDER_SEMILLERO,APRENDIZ',
+            'estado'   => 'nullable|in:Activo,Inactivo'
         ];
         $data = $request->validate($rules);
 
         DB::transaction(function () use ($user, $data, $id) {
-            // User
-            $user->update([
-                'name'       => $data['nombre'],
-                'apellidos'  => $data['apellido'],
-                'email'      => $data['email'],
+            // Mapear rol (posible cambio)
+            $roleMap = [
+                'ADMIN' => 'ADMIN',
+                'LIDER_GENERAL' => 'LIDER GENERAL',
+                'LIDER_SEMILLERO' => 'LIDER_SEMILLERO',
+                'APRENDIZ' => 'APRENDIZ',
+            ];
+
+            $finalRole = !empty($data['role']) ? ($roleMap[$data['role']] ?? $user->role) : $user->role;
+
+            // Users
+            $payload = [
+                'name'       => trim(($data['nombre'] ?? '').' '.($data['apellido'] ?? '')),
+                'email'      => $data['email'] ?? $user->email,
                 'updated_at' => now(),
-            ]);
+                'role'       => $finalRole,
+            ];
+            $user->update($payload);
 
-            // Perfil
-            switch ($user->role) {
-                case 'ADMIN':
-                    DB::table('administradores')->where('id_usuario', $id)->update([
-                        'nombres'        => $data['nombre'],
-                        'apellidos'      => $data['apellido'],
-                        'actualizado_en' => now(),
-                    ]);
-                    break;
+            // ADMINISTRADORES
+            if ($finalRole === 'ADMIN') {
+                $adminIdCol = Schema::hasColumn('administradores','id_usuario') ? 'id_usuario' : 'user_id';
+                $nCol = Schema::hasColumn('administradores','nombres') ? 'nombres' : (Schema::hasColumn('administradores','nombre') ? 'nombre' : null);
+                $upd = [ 'apellidos' => $data['apellido'] ?? null, 'actualizado_en' => now() ];
+                if ($nCol) $upd[$nCol] = $data['nombre'] ?? null;
+                DB::table('administradores')->where($adminIdCol, $id)->update($upd);
+            }
 
-                case 'LIDER GENERAL':
-                    DB::table('lider_general')->where('id_lidergen', $id)->update([
-                        'nombres'              => $data['nombre'],
-                        'apellidos'            => $data['apellido'],
-                        'Correo_institucional' => $data['email'],
-                        'actualizado_en'       => now(),
-                    ]);
-                    break;
+            // LIDER GENERAL
+            if ($finalRole === 'LIDER GENERAL') {
+                $lgIdCol = Schema::hasColumn('lider_general','id_usuario') ? 'id_usuario' : (Schema::hasColumn('lider_general','id_lidergen') ? 'id_lidergen' : 'id_usuario');
+                $nCol = Schema::hasColumn('lider_general','nombres') ? 'nombres' : (Schema::hasColumn('lider_general','nombre') ? 'nombre' : null);
+                $emailCol = Schema::hasColumn('lider_general','Correo_institucional') ? 'Correo_institucional' : (Schema::hasColumn('lider_general','correo_institucional') ? 'correo_institucional' : null);
+                $upd = [ 'apellidos' => $data['apellido'] ?? null, 'actualizado_en' => now() ];
+                if ($nCol) $upd[$nCol] = $data['nombre'] ?? null;
+                if ($emailCol) $upd[$emailCol] = $data['email'] ?? null;
+                DB::table('lider_general')->where($lgIdCol, $id)->update($upd);
+            }
 
-                case 'LIDER_SEMILLERO':
-                    DB::table('lideres_semillero')->where('id_lider_semi', $id)->update([
-                        'nombres'              => $data['nombre'],
-                        'apellidos'            => $data['apellido'],
-                        'correo_institucional' => $data['email'],
-                        'actualizado_en'       => now(),
-                    ]);
-                    break;
+            // LIDER SEMILLERO
+            if ($finalRole === 'LIDER_SEMILLERO') {
+                $lsIdCol = Schema::hasColumn('lideres_semillero','id_usuario') ? 'id_usuario' : (Schema::hasColumn('lideres_semillero','id_lider_semi') ? 'id_lider_semi' : 'id_usuario');
+                $nCol = Schema::hasColumn('lideres_semillero','nombres') ? 'nombres' : (Schema::hasColumn('lideres_semillero','nombre') ? 'nombre' : null);
+                $upd = [ 'apellidos' => $data['apellido'] ?? null, 'actualizado_en' => now() ];
+                if ($nCol) $upd[$nCol] = $data['nombre'] ?? null;
+                if (Schema::hasColumn('lideres_semillero','correo_institucional')) $upd['correo_institucional'] = $data['email'] ?? null;
+                DB::table('lideres_semillero')->where($lsIdCol, $id)->update($upd);
+            }
 
-                case 'APRENDIZ':
-                    $colUserFk = DB::getSchemaBuilder()->hasColumn('aprendices', 'id_usuario') ? 'id_usuario' : 'user_id';
-                    DB::table('aprendices')->where($colUserFk, $id)->update([
-                        'nombres'         => $data['nombre'],
-                        'apellidos'       => $data['apellido'],
-                        'correo_personal' => $data['email'],
-                        'actualizado_en'  => now(),
-                    ]);
-                    break;
+            // APRENDIZ
+            if ($finalRole === 'APRENDIZ') {
+                $colUserFk = Schema::hasColumn('aprendices', 'id_usuario') ? 'id_usuario' : 'user_id';
+                $nCol = Schema::hasColumn('aprendices','nombres') ? 'nombres' : (Schema::hasColumn('aprendices','nombre') ? 'nombre' : null);
+                $aprUpdate = [ 'apellidos' => $data['apellido'] ?? null, 'correo_personal' => $data['email'] ?? null, 'actualizado_en' => now() ];
+                if ($nCol) $aprUpdate[$nCol] = $data['nombre'] ?? null;
+                if (!empty($data['estado']) && Schema::hasColumn('aprendices', 'estado')) $aprUpdate['estado'] = $data['estado'];
+                DB::table('aprendices')->where($colUserFk, $id)->update($aprUpdate);
             }
         });
+
+        if ($request->ajax()) {
+            return response()->json([
+                'ok' => true,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $request->input('nombre'),
+                    'apellidos' => $request->input('apellido'),
+                    'email' => $request->input('email'),
+                    'role' => $request->input('role'),
+                    'estado' => $request->input('estado'),
+                ]
+            ]);
+        }
 
         return back()->with('success', 'Usuario actualizado correctamente.');
     }

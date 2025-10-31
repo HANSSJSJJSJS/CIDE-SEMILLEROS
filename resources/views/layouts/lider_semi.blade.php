@@ -40,19 +40,26 @@
             <main class="col-md-10 col-lg-10 p-0">
                 <!-- Top bar -->
                 <div class="topbar">
-                    <h5 class="fw-bold mb-0">Líder de Semillero</h5>
+                    <h5 class="fw-bold mb-0">Bienvenido a CIDE SEMILLERO</h5>
                     <div class="profile-info">
-                        <!-- Icono de notificaciones -->
-                        <button class="btn btn-link text-white position-relative me-2" type="button"
-                            aria-label="Notificaciones">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-                                class="bi bi-bell" viewBox="0 0 16 16">
-                                <path
-                                    d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2M8 1.918l-.797.161A4 4 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4 4 0 0 0-3.203-3.92zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6c0-2.42 1.72-4.44 4.005-4.901a1 1 0 1 1 1.99 0A5 5 0 0 1 13 6c0 .88.32 4.2 1.22 6" />
-                            </svg>
-                            <span
-                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">3</span>
-                        </button>
+                        <!-- Notificaciones -->
+                        <div class="dropdown me-2">
+                            <button class="btn btn-link position-relative" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notificaciones">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-bell" viewBox="0 0 16 16">
+                                    <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2M8 1.918l-.797.161A4 4 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4 4 0 0 0-3.203-3.92zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6c0-2.42 1.72-4.44 4.005-4.901a1 1 0 1 1 1.99 0A5 5 0 0 1 13 6c0 .88.32 4.2 1.22 6"/>
+                                </svg>
+                                <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end p-0 shadow notif-menu" aria-labelledby="notifDropdown" style="min-width: 360px;">
+                                <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+                                    <strong>Notificaciones</strong>
+                                    <button type="button" class="btn btn-sm btn-link" id="markAllRead">Marcar todas como leídas</button>
+                                </div>
+                                <div id="notifList" style="max-height: 320px; overflow:auto">
+                                    <div class="p-3 text-muted small">Cargando...</div>
+                                </div>
+                            </div>
+                        </div>
                         <div class="avatar">
                             {{ strtoupper(substr(Auth::user()->name ?? 'JC', 0, 2)) }}
                         </div>
@@ -64,19 +71,59 @@
 
                         <form method="POST" action="{{ route('logout') }}" class="ms-3">
                             @csrf
-                            <button class="btn btn-light btn-sm">Cerrar sesión</button>
+                            <button class="btn btn-navy btn-sm">Cerrar sesión</button>
                         </form>
                     </div>
                 </div>
 
                 <div class="p-4">
-                    @yield('content')
+                    <div class="content-shell">
+                        @yield('content')
+                    </div>
                 </div>
             </main>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    (function(){
+        const badge = document.getElementById('notifBadge');
+        const list = document.getElementById('notifList');
+        const markAll = document.getElementById('markAllRead');
+        if(!badge || !list) return;
+        const ENDPOINT = '{{ url('/admin/notifications') }}?demo=1';
+        const READ_ALL = '{{ url('/admin/notifications/read-all') }}';
+
+        async function fetchNotifs(){
+            try{
+                const res = await fetch(ENDPOINT, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+                if(!res.ok) throw 0;
+                const data = await res.json();
+                const items = data.notifications || [];
+                const unread = data.unread_count ?? items.filter(n=>!n.read).length;
+                if(unread>0){ badge.textContent = unread; badge.classList.remove('d-none'); } else { badge.classList.add('d-none'); }
+                if(items.length===0){ list.innerHTML = '<div class="p-3 text-muted small">Sin notificaciones</div>'; return; }
+                list.innerHTML = items.map(n=>{
+                    const url = n.url ? `href="${n.url}"` : '';
+                    return `<a ${url} class="d-flex text-decoration-none p-3 border-bottom ${n.read?'bg-white':'bg-light'}">
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold text-navy">${escapeHtml(n.title||'Notificación')}</div>
+                                    <div class="text-muted small">${escapeHtml(n.body||'')}</div>
+                                </div>
+                                <small class="text-muted ms-2">${escapeHtml(n.time||'')}</small>
+                            </a>`;
+                }).join('');
+            }catch(e){ }
+        }
+        function escapeHtml(s){ return String(s).replace(/[&<>\"]/g, (c)=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+        markAll?.addEventListener('click', async ()=>{
+            try{ await fetch(READ_ALL,{method:'POST', headers:{'X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content}}); fetchNotifs(); }catch(e){}
+        });
+        fetchNotifs();
+        setInterval(fetchNotifs, 30000);
+    })();
+    </script>
 </body>
 
 </html>

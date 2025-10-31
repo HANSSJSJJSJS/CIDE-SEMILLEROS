@@ -42,7 +42,7 @@
             <div class="col-lg-3 mb-3">
                 <div class="sidebar">
                     <div class="d-flex align-items-center mb-3">
-                        <img src="{{ asset('images/sena-logo.png') }}" alt="SENA" class="top-left-logo me-3">
+                        <img src="{{ asset('images/logo-sena.png') }}" alt="SENA" class="top-left-logo me-3" style="width:40px;height:40px;object-fit:contain">
                         <div>
                             <div style="font-weight:700;">Sistema de Gestión</div>
                             <div style="color:var(--muted);font-size:0.9rem;">Semillero</div>

@@ -2,9 +2,16 @@
    GESTIÓN DE DOCUMENTACIÓN - ESTILOS
    ============================================ */
 
+:root{
+  --brand-primary:#39A900; /* Verde institucional */
+  --brand-secondary:#007832; /* Verde secundario */
+  --brand-navy:#00304D; /* Azul institucional */
+  --gray-900:#111827; --gray-700:#374151; --gray-300:#E5E7EB; --gray-100:#F3F4F6;
+}
+
 /* Header Principal */
 .documentos-header {
-    background: linear-gradient(135deg, #1e4620 0%, #2d572c 100%);
+    background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-primary) 100%);
     padding: 30px;
     border-radius: 12px;
     color: #fff;
@@ -35,7 +42,7 @@
 
 /* Títulos de Secciones */
 .seccion-titulo {
-    color: #1e4620;
+    color: var(--brand-navy);
     font-weight: 700;
     margin-bottom: 1.5rem;
 }
@@ -98,7 +105,7 @@
 .estadistica-numero {
     font-size: 28px;
     font-weight: 700;
-    color: #5aa72e;
+    color: var(--brand-primary);
     line-height: 1;
 }
 
@@ -110,7 +117,7 @@
 
 /* Botones */
 .btn-ver-entregas {
-    background-color: #5aa72e;
+    background-color: var(--brand-primary);
     color: #fff;
     border-radius: 8px;
     border: none;
@@ -120,7 +127,7 @@
 }
 
 .btn-ver-entregas:hover {
-    background-color: #4a8f25;
+    filter: brightness(.92);
     color: #fff;
 }
 
@@ -206,7 +213,7 @@
 
 /* Título del Modal */
 .modal-evidencia h2 {
-    color: #1e4620;
+    color: var(--brand-navy);
     font-weight: 700;
     font-size: 2rem;
     margin-bottom: 2rem;
@@ -214,7 +221,7 @@
 
 /* Labels de Formulario */
 .form-label-evidencia {
-    color: #1e4620;
+    color: var(--brand-navy);
     font-weight: 700;
     font-size: 1rem;
     margin-bottom: 0.5rem;
@@ -236,8 +243,8 @@
 .form-control-evidencia:focus,
 .form-select-evidencia:focus {
     outline: none;
-    border-color: #5aa72e;
-    box-shadow: 0 0 0 3px rgba(90, 167, 46, 0.1);
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px rgba(57, 169, 0, 0.12);
 }
 
 .form-control-evidencia::placeholder {
@@ -264,9 +271,9 @@
 
 .form-control-evidencia[type="file"]::file-selector-button {
     padding: 8px 16px;
-    border: 2px solid #1e4620;
+    border: 2px solid var(--brand-navy);
     background-color: transparent;
-    color: #1e4620;
+    color: var(--brand-navy);
     border-radius: 6px;
     font-weight: 600;
     cursor: pointer;
@@ -275,7 +282,7 @@
 }
 
 .form-control-evidencia[type="file"]::file-selector-button:hover {
-    background-color: #1e4620;
+    background-color: var(--brand-navy);
     color: #fff;
 }
 
@@ -287,7 +294,7 @@
 }
 
 #campo-evidencia-container small.text-success {
-    color: #5aa72e !important;
+    color: var(--brand-primary) !important;
     font-weight: 600;
 }
 
@@ -301,9 +308,9 @@
 .btn-cancelar-modal {
     flex: 1;
     padding: 14px;
-    border: 2px solid #1e4620;
+    border: 2px solid var(--brand-navy);
     background-color: transparent;
-    color: #1e4620;
+    color: var(--brand-navy);
     border-radius: 8px;
     font-weight: 600;
     font-size: 1rem;
@@ -319,7 +326,7 @@
     flex: 1;
     padding: 14px;
     border: none;
-    background-color: #5aa72e;
+    background-color: var(--brand-primary);
     color: #fff;
     border-radius: 8px;
     font-weight: 600;
@@ -329,7 +336,7 @@
 }
 
 .btn-guardar-modal:hover {
-    background-color: #4a8f25;
+    filter: brightness(.92);
 }
 
 .btn-guardar-modal:disabled {
@@ -376,12 +383,12 @@
 }
 
 .modal-entregas .btn-cerrar-modal:hover {
-    color: #1e4620;
+    color: var(--brand-navy);
 }
 
 /* Título del Modal de Entregas */
 .modal-entregas h2 {
-    color: #1e4620;
+    color: var(--brand-navy);
     font-weight: 700;
     font-size: 1.75rem;
     margin-bottom: 2rem;
@@ -400,8 +407,8 @@
 }
 
 .entrega-card:hover {
-    border-color: #5aa72e;
-    box-shadow: 0 4px 12px rgba(90, 167, 46, 0.15);
+    border-color: var(--brand-primary);
+    box-shadow: 0 4px 12px rgba(57, 169, 0, 0.15);
     transform: translateY(-2px);
 }
 
@@ -410,7 +417,7 @@
     position: absolute;
     top: 16px;
     right: 16px;
-    background-color: #5aa72e;
+    background-color: var(--brand-primary);
     color: white;
     border: none;
     border-radius: 50%;
@@ -426,7 +433,7 @@
 }
 
 .btn-editar-entrega:hover {
-    background-color: #4a8f26;
+    filter: brightness(.92);
     transform: scale(1.1);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
@@ -440,7 +447,7 @@
     position: absolute;
     top: 16px;
     right: 16px;
-    background-color: #28a745;
+    background-color: var(--brand-primary);
     color: white;
     border-radius: 50%;
     width: 36px;
@@ -466,7 +473,7 @@
 }
 
 .entrega-nombre {
-    color: #1e4620;
+    color: var(--brand-navy);
     font-weight: 700;
     font-size: 1.25rem;
     margin: 0;
@@ -519,7 +526,7 @@
 }
 
 .btn-aprobar {
-    background-color: #5aa72e;
+    background-color: var(--brand-primary);
     color: #fff;
     border: none;
     padding: 10px 20px;
@@ -530,13 +537,13 @@
 }
 
 .btn-aprobar:hover {
-    background-color: #4a8f25;
+    filter: brightness(.92);
 }
 
 .btn-rechazar {
     background-color: transparent;
-    color: #1e4620;
-    border: 2px solid #1e4620;
+    color: var(--brand-navy);
+    border: 2px solid var(--brand-navy);
     padding: 10px 20px;
     border-radius: 8px;
     font-weight: 600;
@@ -550,8 +557,8 @@
 
 .btn-ver-documento {
     background-color: transparent;
-    color: #5aa72e;
-    border: 2px solid #5aa72e;
+    color: var(--brand-primary);
+    border: 2px solid var(--brand-primary);
     padding: 10px 20px;
     border-radius: 8px;
     font-weight: 600;
@@ -563,7 +570,7 @@
 }
 
 .btn-ver-documento:hover {
-    background-color: #5aa72e;
+    background-color: var(--brand-primary);
     color: #fff;
 }
 

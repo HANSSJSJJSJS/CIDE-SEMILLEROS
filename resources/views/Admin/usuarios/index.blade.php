@@ -3,39 +3,44 @@
 
 @section('content')
 <div class="container-fluid mt-4 px-4">
-    <div class="d-flex align-items-center justify-content-between mb-4">
-        <h3 class="fw-bold" style="color:#2d572c;">Gestión de Usuarios</h3>
 
-    
-       
-    </div>
-
-    <!-- (Opcional) Filtros de Búsqueda: los dejo como los tenías -->
-    <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body">
-            <div class="row g-3">
+    <!-- Panel principal con header y filtros tipo pill -->
+    <div class="panel-card mb-3">
+        <div class="panel-header d-flex align-items-center justify-content-between">
+            <div>
+                <h4 class="mb-0 fw-bold text-navy">Gestión de Usuarios</h4>
+                <small class="text-muted">Administra todos los usuarios del sistema</small>
+            </div>
+            <button type="button" class="btn btn-success rounded-pill"
+                data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
+                <i class="fa fa-user-plus me-1"></i> Nuevo Usuario
+            </button>
+        </div>
+        <div class="panel-body">
+            <div class="row g-3 filters-bar">
+                <div class="col-md-5">
+                    <div class="input-icon">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="filtro-nombre" class="form-control pill-input" placeholder="Buscar usuario por nombre,email o documento...">
+                    </div>
+                </div>
                 <div class="col-md-3">
-                    <label class="form-label fw-semibold">Tipo de Documento</label>
-                    <select id="filtro-tipo-doc" class="form-select">
-                        <option value="">Todos</option>
-                        <option value="CC">CC</option>
-                        <option value="TI">TI</option>
-                        <option value="CE">CE</option>
+                    <select id="filtro-rol" class="form-select pill-select">
+                        <option value="">Todos los roles</option>
+                        <option value="ADMIN">ADMIN</option>
+                        <option value="LIDER_GENERAL">LIDER GENERAL</option>
+                        <option value="LIDER_SEMILLERO">LIDER SEMILLERO</option>
+                        <option value="APRENDIZ">APRENDIZ</option>
                     </select>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold">Número de Documento</label>
-                    <input type="text" id="filtro-documento" class="form-control" placeholder="Ej: 1023456789">
+                <div class="col-md-2">
+                    <select id="filtro-estado" class="form-select pill-select">
+                        <option value="">Todos los estados</option>
+                        <option value="ACTIVO">Activo</option>
+                        <option value="INACTIVO">Inactivo</option>
+                    </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Nombre</label>
-                    <input type="text" id="filtro-nombre" class="form-control" placeholder="Buscar por nombre">
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button id="btn-limpiar-filtros" class="btn btn-outline-secondary w-100">
-                        <i class="fas fa-times"></i> Limpiar
-                    </button>
-                </div>
+                <div class="col-md-2"></div>
             </div>
         </div>
     </div>
@@ -52,16 +57,13 @@
 @endif
 
 {{-- === BOTÓN: abre modal === --}}
-<button type="button" class="btn btn-primary mb-3"
-        data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
-  <i class="fa fa-user-plus me-1"></i> Nuevo Usuario
-</button>
+
 
 {{-- === MODAL NUEVO USUARIO === --}}
 <div class="modal fade" id="modalNuevoUsuario" tabindex="-1" aria-labelledby="modalNuevoUsuarioLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-0 shadow rounded-4">
-      <div class="modal-header bg-primary text-white">
+      <div class="modal-header text-white" style="background: var(--sena-navy);">
         <h5 class="modal-title fw-semibold" id="modalNuevoUsuarioLabel">Registrar usuario</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
@@ -76,7 +78,7 @@
             <div class="card border-0 shadow-sm mb-3">
               <div class="card-body">
                 <label class="form-label fw-semibold mb-1">Rol</label>
-                <select name="role" id="selectRol" class="form-select" required>
+                <select name="role" id="selectRol" class="form-select form-underline" required>
                   <option value="">Seleccione un rol...</option>
                   <option value="ADMIN" {{ old('role')=='ADMIN'?'selected':'' }}>Administrador</option>
                   <option value="LIDER_GENERAL" {{ old('role')=='LIDER_GENERAL'?'selected':'' }}>Líder General</option>
@@ -93,21 +95,21 @@
                   <div class="row g-3">
                     <div class="col-md-6">
                       <label class="form-label">Nombre</label>
-                      <input type="text" name="nombre" class="form-control" value="{{ old('nombre') }}" placeholder="María">
+                      <input type="text" name="nombre" class="form-control form-underline" value="{{ old('nombre') }}" placeholder="María">
                     </div>
                     <div class="col-md-6">
                       <label class="form-label">Apellidos</label>
-                      <input type="text" name="apellido" class="form-control" value="{{ old('apellido') }}" placeholder="Gómez Pérez">
+                      <input type="text" name="apellido" class="form-control form-underline" value="{{ old('apellido') }}" placeholder="Gómez Pérez">
                     </div>
 
                     <div class="col-md-6">
                       <label class="form-label">Correo (login)</label>
-                      <input type="email" name="email" id="emailLogin" class="form-control" value="{{ old('email') }}" placeholder="correo@ejemplo.com">
+                      <input type="email" name="email" id="emailLogin" class="form-control form-underline" value="{{ old('email') }}" placeholder="correo@ejemplo.com">
                       <small id="emailHint" class="text-muted"></small>
                     </div>
                     <div class="col-md-6">
                       <label class="form-label">Contraseña</label>
-                      <input type="password" name="password" class="form-control" placeholder="Mínimo 6 caracteres">
+                      <input type="password" name="password" class="form-control form-underline" placeholder="Mínimo 6 caracteres">
                     </div>
                   </div>
                 </div>
@@ -126,7 +128,7 @@
                   <div class="row g-3">
                     <div class="col-md-4">
                       <label class="form-label">Tipo documento</label>
-                      <select name="ls_tipo_documento" class="form-select">
+                      <select name="ls_tipo_documento" class="form-select form-underline">
                         <option value="">Seleccione</option>
                         <option value="CC" {{ old('ls_tipo_documento')=='CC'?'selected':'' }}>CC</option>
                         <option value="TI" {{ old('ls_tipo_documento')=='TI'?'selected':'' }}>TI</option>
@@ -135,7 +137,7 @@
                     </div>
                     <div class="col-md-8">
                       <label class="form-label">Número documento</label>
-                      <input type="text" name="ls_documento" class="form-control" value="{{ old('ls_documento') }}">
+                      <input type="text" name="ls_documento" class="form-control form-underline" value="{{ old('ls_documento') }}">
                     </div>
                   </div>
                 </div>
@@ -149,15 +151,15 @@
                   <div class="row g-3">
                     <div class="col-md-4">
                       <label class="form-label">Ficha</label>
-                      <input type="text" name="ap_ficha" class="form-control" value="{{ old('ap_ficha') }}">
+                      <input type="text" name="ap_ficha" class="form-control form-underline" value="{{ old('ap_ficha') }}">
                     </div>
                     <div class="col-md-8">
                       <label class="form-label">Programa</label>
-                      <input type="text" name="ap_programa" class="form-control" value="{{ old('ap_programa') }}">
+                      <input type="text" name="ap_programa" class="form-control form-underline" value="{{ old('ap_programa') }}">
                     </div>
                     <div class="col-md-4">
                       <label class="form-label">Tipo documento</label>
-                      <select name="ap_tipo_documento" class="form-select">
+                      <select name="ap_tipo_documento" class="form-select form-underline">
                         <option value="">Seleccione</option>
                         <option value="CC" {{ old('ap_tipo_documento')=='CC'?'selected':'' }}>CC</option>
                         <option value="TI" {{ old('ap_tipo_documento')=='TI'?'selected':'' }}>TI</option>
@@ -166,23 +168,23 @@
                     </div>
                     <div class="col-md-4">
                       <label class="form-label">Número documento</label>
-                      <input type="text" name="ap_documento" class="form-control" value="{{ old('ap_documento') }}">
+                      <input type="text" name="ap_documento" class="form-control form-underline" value="{{ old('ap_documento') }}">
                     </div>
                     <div class="col-md-4">
                       <label class="form-label">Celular</label>
-                      <input type="text" name="ap_celular" class="form-control" value="{{ old('ap_celular') }}">
+                      <input type="text" name="ap_celular" class="form-control form-underline" value="{{ old('ap_celular') }}">
                     </div>
                     <div class="col-md-12">
                       <label class="form-label">Correo institucional</label>
-                      <input type="email" name="ap_correo_institucional" class="form-control" value="{{ old('ap_correo_institucional') }}" placeholder="usuario@sena.edu.co">
+                      <input type="email" name="ap_correo_institucional" class="form-control form-underline" value="{{ old('ap_correo_institucional') }}" placeholder="usuario@sena.edu.co">
                     </div>
                     <div class="col-md-6">
                       <label class="form-label">Contacto emergencia (nombre)</label>
-                      <input type="text" name="ap_contacto_nombre" class="form-control" value="{{ old('ap_contacto_nombre') }}">
+                      <input type="text" name="ap_contacto_nombre" class="form-control form-underline" value="{{ old('ap_contacto_nombre') }}">
                     </div>
                     <div class="col-md-6">
                       <label class="form-label">Celular de contacto</label>
-                      <input type="text" name="ap_contacto_celular" class="form-control" value="{{ old('ap_contacto_celular') }}">
+                      <input type="text" name="ap_contacto_celular" class="form-control form-underline" value="{{ old('ap_contacto_celular') }}">
                     </div>
 
                     {{-- Personal = login (oculto) --}}
@@ -257,6 +259,67 @@ document.addEventListener('DOMContentLoaded', function () {
   } else {
     showByRole(selectRol?.value || '');
   }
+  // Submit AJAX del modal de edición
+  const formEdit = document.getElementById('formEditUsuario');
+  if (formEdit) {
+    formEdit.addEventListener('submit', async function(e){
+      e.preventDefault();
+      const url = this.action;
+      const formData = new FormData(this);
+      const headers = {'X-Requested-With':'XMLHttpRequest','Accept':'application/json'};
+      const meta = document.querySelector('meta[name="csrf-token"]');
+      if (meta) headers['X-CSRF-TOKEN'] = meta.content;
+      const res = await fetch(url, { method:'POST', headers, body: formData});
+      if(!res.ok){ showToast('Error al guardar cambios', 'danger'); return; }
+      let data = null;
+      const ct = res.headers.get('content-type') || '';
+      if (ct.includes('application/json')) {
+        data = await res.json().catch(()=>null);
+      }
+      if (data && data.ok === false) { showToast('No se pudo actualizar', 'danger'); return; }
+
+      // Actualizar fila (nombre, email, rol, estado)
+      const id = formData.get('id');
+      const row = document.querySelector(`button.btn-open-edit[data-id="${id}"]`)?.closest('tr');
+      if (row) {
+        const full = `${formData.get('nombre')||''} ${formData.get('apellido')||''}`.trim();
+        row.querySelector('td:nth-child(1) .fw-semibold').textContent = full;
+        row.querySelector('td:nth-child(1) small').textContent = formData.get('email');
+
+        const roleCell = row.querySelector('td:nth-child(2)');
+        if (roleCell) {
+          const raw = (formData.get('role')||'').toUpperCase();
+          let cls = 'role-aprendiz';
+          if (raw==='ADMIN') cls='role-admin';
+          else if (raw==='LIDER_GENERAL' || raw==='LIDER_SEMILLERO') cls='role-lider';
+          roleCell.innerHTML = `<span class="role-badge ${cls}">${(raw||'').replace(/_/g,' ')}</span>`;
+        }
+
+        const stateCell = row.querySelector('td:nth-child(4)');
+        if (stateCell) {
+          const s = (formData.get('estado')||'').toLowerCase();
+          if (s==='activo') stateCell.innerHTML = '<span class="badge bg-success" style="padding:6px 12px;border-radius:20px;">Activo</span>';
+          else stateCell.innerHTML = '<span class="badge bg-danger" style="padding:6px 12px;border-radius:20px;">Inactivo</span>';
+        }
+      }
+
+      // Cerrar modal y notificar
+      bootstrap.Modal.getInstance(editModalEl)?.hide();
+      showToast('Cambios guardados correctamente','success');
+    });
+  }
+
+  // Toast helper minimalista
+  function showToast(msg, variant='success'){
+    const wrap = document.getElementById('toastWrap') || (()=>{ const d=document.createElement('div'); d.id='toastWrap'; d.style.position='fixed'; d.style.top='20px'; d.style.right='20px'; d.style.zIndex='1080'; document.body.appendChild(d); return d; })();
+    const el = document.createElement('div');
+    el.className = `toast align-items-center text-bg-${variant} border-0 show`;
+    el.role = 'alert';
+    el.style.minWidth = '260px';
+    el.innerHTML = `<div class="d-flex"><div class="toast-body">${msg}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+    wrap.appendChild(el);
+    setTimeout(()=> el.remove(), 3000);
+  }
 });
 </script>
 @endpush
@@ -266,11 +329,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     {{-- Tabla de Usuarios (modificada) --}}
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
+    <div class="panel-card">
+        <div class="panel-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
-                    <thead style="background-color:#2d572c;color:#fff;">
+                    <thead>
                         <tr>
                             <th class="py-3 px-4">USUARIO</th>
                             <th class="py-3">ROL</th>
@@ -325,10 +388,13 @@ document.addEventListener('DOMContentLoaded', function () {
                                         }
                                     @endphp
 
-                                    <span class="badge"
-                                        style="background-color:#e8f5e9;color:#2d572c;border:1px solid #5aa72e;padding:6px 12px;border-radius:20px;">
-                                        {{ $roleLabel ?? '—' }}
-                                    </span>
+                                    @php
+                                        $roleClass = 'role-aprendiz';
+                                        $raw = strtoupper(trim((string)($roleLabel ?? '')));
+                                        if ($raw === 'ADMIN') $roleClass = 'role-admin';
+                                        elseif (in_array($raw, ['LIDER_GENERAL','LIDER SEMILLERO','LIDER_SEMILLERO'])) $roleClass = 'role-lider';
+                                    @endphp
+                                    <span class="role-badge {{ $roleClass }}">{{ $roleLabel ?? '—' }}</span>
                                 </td>
 
                             {{-- SEMILLERO --}}
@@ -362,10 +428,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
                             {{-- ACCIONES --}}
                             <td class="py-3 text-end pe-4">
-                                <a href="{{ route('admin.usuarios.edit', $u->id ?? $u) }}"
-                                   class="btn btn-sm btn-outline-primary" style="border-radius:20px;padding:4px 12px;">
+                                @php
+                                    $roleRaw = strtoupper(str_replace('_',' ', (string)($u->role ?? $u->rol ?? $roleLabel ?? '')));
+                                    $isActiveText = ($u->estado === 'Activo' || ($u->is_active ?? false)) ? 'Activo' : 'Inactivo';
+                                @endphp
+                                <button type="button"
+                                   class="btn btn-sm btn-outline-primary btn-open-edit"
+                                   style="border-radius:20px;padding:4px 12px;"
+                                   data-id="{{ $u->id ?? '' }}"
+                                   data-nombre="{{ $nombre }}"
+                                   data-email="{{ $u->email ?? '' }}"
+                                   data-rol="{{ $roleRaw }}"
+                                   data-estado="{{ $isActiveText }}">
                                     <i class="bi bi-pencil"></i> Editar
-                                </a>
+                                </button>
 
                                 <form action="{{ route('admin.usuarios.destroy', $u->id ?? $u) }}"
                                       method="POST" class="d-inline"
@@ -403,3 +479,141 @@ document.addEventListener('DOMContentLoaded', function () {
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const qInput = document.getElementById('filtro-nombre');
+  const rolSel = document.getElementById('filtro-rol');
+  const estSel = document.getElementById('filtro-estado');
+  const tbody  = document.querySelector('table tbody');
+  if(!tbody) return;
+
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+
+  function norm(s){ return (s||'').toString().toLowerCase().trim(); }
+
+  function apply(){
+    const q   = norm(qInput?.value);
+    const rol = (rolSel?.value||'').toUpperCase().replace(/_/g,' ');
+    const est = norm(estSel?.value);
+
+    let visible = 0;
+    rows.forEach(tr =>{
+      const userCell = tr.querySelector('td:nth-child(1)');
+      const roleCell = tr.querySelector('td:nth-child(2)');
+      const stateCell= tr.querySelector('td:nth-child(4)');
+      if(!userCell||!roleCell||!stateCell){ tr.style.display=''; visible++; return; }
+
+      const name  = norm(userCell.querySelector('.fw-semibold')?.textContent);
+      const email = norm(userCell.querySelector('small')?.textContent);
+      const roleT = (roleCell.textContent||'').replace(/\s+/g,' ').trim().toUpperCase();
+      const stateT= norm(stateCell.textContent);
+
+      const matchQ   = !q || name.includes(q) || email.includes(q);
+      const matchRol = !rol || roleT.includes(rol);
+      const matchEst = !est || stateT.includes(est);
+
+      const ok = matchQ && matchRol && matchEst;
+      tr.style.display = ok ? '' : 'none';
+      if(ok) visible++;
+    });
+  }
+
+  qInput?.addEventListener('input', apply);
+  rolSel?.addEventListener('change', apply);
+  estSel?.addEventListener('change', apply);
+
+  // ===== Modal de edición =====
+  const editModalEl = document.getElementById('modalEditUsuario');
+  if (editModalEl) {
+    const editModal = new bootstrap.Modal(editModalEl);
+    document.querySelectorAll('.btn-open-edit').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.dataset.id;
+        const nombreFull = btn.dataset.nombre||'';
+        const parts = nombreFull.trim().split(/\s+/);
+        const nombre = parts.shift() || '';
+        const apellido = parts.join(' ') || '';
+        const email = btn.dataset.email||'';
+        const rol = (btn.dataset.rol||'').replace(/\s+/g,'_');
+        const estado = btn.dataset.estado||'';
+
+        editModalEl.querySelector('#edit-id').value = id;
+        editModalEl.querySelector('#edit-nombre').value = nombre;
+        const apField = editModalEl.querySelector('#edit-apellido');
+        if(apField) apField.value = apellido;
+        editModalEl.querySelector('#edit-email').value = email;
+        editModalEl.querySelector('#edit-rol').value = rol;
+        editModalEl.querySelector('#edit-estado').value = estado;
+
+        const form = editModalEl.querySelector('#formEditUsuario');
+        form.action = `{{ url('admin/usuarios') }}/${id}`;
+
+        // Cerrar el modal de "Nuevo Usuario" si estuviera abierto para evitar doble backdrop
+        const newUserEl = document.getElementById('modalNuevoUsuario');
+        if (newUserEl && bootstrap.Modal.getInstance(newUserEl)) {
+          bootstrap.Modal.getInstance(newUserEl).hide();
+        }
+        document.querySelectorAll('.modal-backdrop').forEach(b=>b.remove());
+
+        editModal.show();
+      });
+    });
+  }
+});
+</script>
+@endpush
+
+{{-- Modal Editar Usuario --}}
+<div class="modal fade admin-modal" id="modalEditUsuario" tabindex="-1" aria-labelledby="modalEditUsuarioLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalEditUsuarioLabel">Editar usuario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <form id="formEditUsuario" method="POST" action="#">
+        @csrf
+        @method('PUT')
+        <input type="hidden" id="edit-id" name="id">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Nombre</label>
+              <input type="text" class="form-control form-underline" id="edit-nombre" name="nombre" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Apellidos</label>
+              <input type="text" class="form-control form-underline" id="edit-apellido" name="apellido" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Correo</label>
+              <input type="email" class="form-control form-underline" id="edit-email" name="email" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Rol</label>
+              <select id="edit-rol" name="role" class="form-select form-underline" required>
+                <option value="ADMIN">Administrador</option>
+                <option value="LIDER_GENERAL">Líder General</option>
+                <option value="LIDER_SEMILLERO">Líder Semillero</option>
+                <option value="APRENDIZ">Aprendiz</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Estado</label>
+              <select id="edit-estado" name="estado" class="form-select form-underline">
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  </div>

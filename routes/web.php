@@ -18,9 +18,12 @@ use App\Http\Controllers\Aprendiz\ProyectoController;
 use App\Http\Controllers\Aprendiz\ArchivoController;
 use App\Http\Controllers\Aprendiz\CalendarioController;
 use App\Http\Controllers\LiderSemillero\DashboardController_semi;
+use App\Http\Controllers\LiderSemillero\ProyectoController as LiderProyectoController;
+use App\Http\Controllers\LiderSemillero\SemilleroAprendizController;
 // Nota: Controladores Admin específicos
 use App\Http\Controllers\Admin\UsuarioController as AdminUsuarioController; // alias para evitar colisión
 use App\Http\Controllers\Admin\SemilleroController as AdminSemilleroController;
+use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 
 
 // ---------------------------------------------
@@ -38,6 +41,44 @@ Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('l
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')->name('logout');
+
+// ---------------------------------------------
+// RUTAS LÍDER SEMILLERO - Proyectos (JSON inicial)
+// ---------------------------------------------
+Route::middleware(['auth'])->group(function(){
+    Route::get('/lider_semillero/proyectos/listado', [LiderProyectoController::class, 'listadoJson'])
+        ->name('lider_semi.proyectos.listado');
+    Route::get('/lider_semillero/proyectos/{id}', [LiderProyectoController::class, 'showJson'])
+        ->whereNumber('id')->name('lider_semi.proyectos.show');
+    Route::get('/lider_semillero/proyectos/{id}/participantes', [LiderProyectoController::class, 'participantesJson'])
+        ->whereNumber('id')->name('lider_semi.proyectos.participantes');
+    Route::post('/lider_semillero/proyectos/{id}/participantes', [LiderProyectoController::class, 'assignParticipant'])
+        ->whereNumber('id')->name('lider_semi.proyectos.participantes.assign');
+    Route::delete('/lider_semillero/proyectos/{id}/participantes/{user}', [LiderProyectoController::class, 'removeParticipant'])
+        ->whereNumber('id')->whereNumber('user')->name('lider_semi.proyectos.participantes.remove');
+    Route::get('/lider_semillero/proyectos/{id}/candidatos', [LiderProyectoController::class, 'candidatosJson'])
+        ->whereNumber('id')->name('lider_semi.proyectos.candidatos');
+
+    // Rutas compatibles con el modal de resources/views/lider_semi/semilleros.blade.php
+    Route::get('/lider_semillero/proyectos/{proyecto}/aprendices/search', [LiderProyectoController::class, 'searchAprendices'])
+        ->whereNumber('proyecto')->name('lider_semi.proyectos.aprendices.search');
+    Route::post('/lider_semillero/proyectos/{proyecto}/aprendices', [LiderProyectoController::class, 'assignParticipant'])
+        ->whereNumber('proyecto')->name('lider_semi.proyectos.aprendices.attach');
+    Route::delete('/lider_semillero/proyectos/{proyecto}/aprendices/{aprendiz}', [LiderProyectoController::class, 'removeParticipant'])
+        ->whereNumber('proyecto')->whereNumber('aprendiz')->name('lider_semi.proyectos.aprendices.detach');
+    Route::put('/lider_semillero/proyectos/{proyecto}/aprendices', [LiderProyectoController::class, 'updateParticipants'])
+        ->whereNumber('proyecto')->name('lider_semi.proyectos.aprendices.update');
+
+    // Versión por Semillero (deriva al proyecto activo del semillero)
+    Route::get('/lider_semillero/semilleros/{semillero}/aprendices/search', [SemilleroAprendizController::class, 'search'])
+        ->whereNumber('semillero')->name('lider_semi.semilleros.aprendices.search');
+    Route::post('/lider_semillero/semilleros/{semillero}/aprendices', [SemilleroAprendizController::class, 'attach'])
+        ->whereNumber('semillero')->name('lider_semi.semilleros.aprendices.attach');
+    Route::delete('/lider_semillero/semilleros/{semillero}/aprendices/{aprendiz}', [SemilleroAprendizController::class, 'detach'])
+        ->whereNumber('semillero')->whereNumber('aprendiz')->name('lider_semi.semilleros.aprendices.detach');
+    Route::put('/lider_semillero/semilleros/{semillero}/aprendices', [SemilleroAprendizController::class, 'update'])
+        ->whereNumber('semillero')->name('lider_semi.semilleros.aprendices.update');
+});
 
 require __DIR__.'/auth.php';
 
@@ -63,6 +104,10 @@ Route::middleware(['auth', 'role:ADMIN'])
 
         // Semilleros (ADMIN)
         Route::resource('semilleros', AdminSemilleroController::class)->except(['show']);
+
+        // Notificaciones (UI topbar)
+        Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/read-all', [AdminNotificationController::class, 'readAll'])->name('notifications.read_all');
     });
 
 

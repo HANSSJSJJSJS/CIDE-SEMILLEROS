@@ -1,4 +1,4 @@
-@extends('layouts.lider_semi')
+@extends('layouts.admin-lider')
 
 @section('content')
 <div class="container-fluid mt-4 px-4">
@@ -113,10 +113,10 @@
         </div>
         <div class="mb-1">
           <label class="form-label fw-semibold">Líder (opcional)</label>
-          <select name="id_lider_semi" class="form-select">
+          <select name="id_lider_usuario" class="form-select">
             <option value="">— Sin asignar —</option>
             @foreach($lideres as $l)
-              <option value="{{ $l->id_lider_semi }}" @selected(old('id_lider_semi')==$l->id_lider_semi)>
+              <option value="{{ $l->id_usuario }}" @selected(old('id_lider_usuario')==$l->id_usuario)>
                 {{ $l->nombre }} ({{ $l->correo_institucional }})
               </option>
             @endforeach
@@ -130,4 +130,73 @@
     </form>
   </div>
 </div>
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const modalEl = document.getElementById('modalSemillero');
+  const form = modalEl?.querySelector('form');
+  const tbody = document.querySelector('table.table tbody');
+  const BASE = '{{ url('admin/semilleros') }}';
+  if(!form || !tbody) return;
+
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    const url = this.action;
+    const fd = new FormData(this);
+    const headers = {'X-Requested-With':'XMLHttpRequest','Accept':'application/json'};
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if(meta) headers['X-CSRF-TOKEN'] = meta.content;
+
+    try{
+      const res = await fetch(url, {method:'POST', headers, body: fd});
+      if(!res.ok){ showToast('No se pudo crear el semillero','danger'); return; }
+      const data = await res.json().catch(()=>null);
+      if(!data || data.ok!==true){ showToast('Error al crear','danger'); return; }
+
+      const it = data.item || {};
+      // Agregar fila al inicio
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="py-3 px-4">
+          <div class="fw-semibold">${escapeHtml(it.semillero||'')}</div>
+          <small class="text-muted">ID: ${escapeHtml(String(it.id||''))}</small>
+        </td>
+        <td class="py-3">${escapeHtml(it.linea_investigacion||'')}</td>
+        <td class="py-3">${escapeHtml(it.lider||'')}</td>
+        <td class="py-3">${escapeHtml(it.correo||'')}</td>
+        <td class="py-3">${escapeHtml(it.telefono||'')}</td>
+        <td class="py-3 text-end pe-4">
+          <a href="${BASE}/${it.id}/edit" class="btn btn-sm btn-outline-primary" style="border-radius:20px;padding:4px 12px;"><i class="bi bi-pencil"></i> Editar</a>
+          <form action="${BASE}/${it.id}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar este semillero?');">
+            <input type="hidden" name="_token" value="${meta?meta.content:''}">
+            <input type="hidden" name="_method" value="DELETE">
+            <button class="btn btn-sm btn-outline-danger" style="border-radius:20px;padding:4px 12px;"><i class="bi bi-trash"></i> Eliminar</button>
+          </form>
+        </td>`;
+      tbody.prepend(tr);
+
+      // Cerrar modal, limpiar y toast
+      bootstrap.Modal.getInstance(modalEl)?.hide();
+      document.querySelectorAll('.modal-backdrop').forEach(b=>b.remove());
+      form.reset();
+      showToast('Semillero creado','success');
+    }catch(err){
+      showToast('Error de red','danger');
+    }
+  });
+
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, (c)=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+  function showToast(msg, variant='success'){
+    const wrap = document.getElementById('toastWrap') || (()=>{ const d=document.createElement('div'); d.id='toastWrap'; d.style.position='fixed'; d.style.top='20px'; d.style.right='20px'; d.style.zIndex='1080'; document.body.appendChild(d); return d; })();
+    const el = document.createElement('div');
+    el.className = `toast align-items-center text-bg-${variant} border-0 show`;
+    el.role = 'alert';
+    el.style.minWidth = '260px';
+    el.innerHTML = `<div class="d-flex"><div class="toast-body">${msg}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+    wrap.appendChild(el);
+    setTimeout(()=> el.remove(), 3000);
+  }
+});
+</script>
+@endpush
 @endsection

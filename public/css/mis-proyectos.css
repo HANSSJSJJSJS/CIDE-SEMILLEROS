@@ -1,33 +1,47 @@
-/* Estilos específicos para Mis Proyectos (lider_semi/semilleros.blade.php) */
+/* Estilos institucionales para Líder Semillero */
 
-.page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+:root{
+  --brand-primary: #39A900; /* Verde institucional */
+  --brand-secondary: #007832; /* Verde secundario */
+  --brand-navy: #00304D; /* Azul institucional */
+  --gray-900: #111827;
+  --gray-700: #374151;
+  --gray-300: #E5E7EB;
+  --gray-100: #F3F4F6;
 }
 
-.card-project {
-  box-shadow: 0 3px 8px rgba(0,0,0,0.06);
-  border: 0;
-  border-radius: 12px;
-}
+.page-header{display:flex;align-items:center;justify-content:space-between;gap:1rem}
 
-.card-project .card-header {
-  border: 0;
-  background: #00304D;
-  color: #fff;
-}
+/* Cards de proyectos */
+.card-project{box-shadow:0 4px 14px rgba(0,0,0,.08);border:0;border-radius:12px;overflow:hidden}
+.card-project .card-header{border:0;background:var(--brand-primary);color:#fff}
+.card-project .progress{height:8px;background:var(--gray-300)}
+.card-project .progress-bar{background:var(--brand-primary)}
+.card-project .btn-details{background:var(--brand-primary);color:#fff;border:0}
+.card-project .btn-details:hover{filter:brightness(.92)}
 
-.card-project .progress {
-  height: 8px;
-}
+/* Badges de estado */
+.badge-status{background:var(--brand-primary);color:#fff;border:0;font-weight:700;border-radius:20px;padding:.25rem .6rem}
 
-.card-project .btn-details {
-  background: #35A900;
-  color: #fff;
-}
+/* Modales y botones de marca */
+.brand-header{background:var(--brand-primary)!important;color:#fff!important}
+.btn-brand{background:var(--brand-primary)!important;color:#fff!important;border:0}
+.btn-brand:hover{filter:brightness(.92)}
+.btn-brand-outline{background:#fff;color:var(--brand-primary);border:1px solid var(--brand-primary)}
+.btn-brand-outline:hover{background:rgba(57,169,0,.06)}
 
-.badge-status {
-  background: #14507686;
-}
+/* Lista y resultados */
+.list-group-item{cursor:pointer}
+.list-group-item:hover{background:var(--gray-100)}
+
+/* Avatar iniciales */
+.avatar-initials{width:48px;height:48px;border-radius:999px;background:var(--brand-primary);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center}
+
+/* Alerts como toasts simples */
+.alert{border:0;border-radius:10px}
+
+/* Contenedor de resultados en modales */
+.results-pane{max-height:260px;overflow:auto}
+
+/* Badges genéricas */
+.badge{border-radius:8px;padding:.35rem .6rem}

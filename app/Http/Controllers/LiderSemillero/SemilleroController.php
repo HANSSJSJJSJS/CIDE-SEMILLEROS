@@ -64,15 +64,16 @@ class SemilleroController extends Controller
                 if (!empty($pivot)) {
                     $ids = $proyectos->pluck('id_proyecto')->filter()->values()->all();
                     if (!empty($ids)) {
-                        // JOIN correcto según si la pivote usa id_aprendiz o id_usuario
-                        $joinCol = ($pivot['aprCol'] === 'id_usuario' && Schema::hasColumn('aprendices', 'id_usuario')) ? 'id_usuario' : 'id_aprendiz';
+                        // JOIN correcto según si la pivote usa id_aprendiz o id_usuario/user_id
+                        $useUserId = in_array($pivot['aprCol'], ['id_usuario','user_id']);
+                        $joinCol = ($useUserId && Schema::hasColumn('aprendices', 'id_usuario')) ? 'id_usuario' : 'id_aprendiz';
                         $rows = DB::table($pivot['table'])
                             ->join('aprendices', 'aprendices.'.$joinCol, '=', DB::raw($pivot['table'].'.'.$pivot['aprCol']))
                             ->whereIn(DB::raw($pivot['table'].'.'.$pivot['projCol']), $ids)
                             ->select(
                                 DB::raw($pivot['table'].'.'.$pivot['projCol'].' as pid'),
-                                'aprendices.id_aprendiz',
-                                'aprendices.nombre_completo',
+                                DB::raw('aprendices.id_usuario as id_aprendiz'),
+                                DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),
                                 'aprendices.correo_institucional',
                                 'aprendices.programa'
                             )->get();
@@ -346,7 +347,7 @@ class SemilleroController extends Controller
     {
         // Priorizar tabla pivote tradicional para obtener aprendices asignados
         $pivotCandidates = [
-            'aprendiz_proyecto', 'aprendices_proyectos', 'aprendiz_proyectos', 'proyecto_aprendiz', 'proyectos_aprendices', 'proyecto_aprendices'
+            'proyecto_user', 'aprendiz_proyecto', 'aprendices_proyectos', 'aprendiz_proyectos', 'proyecto_aprendiz', 'proyectos_aprendices', 'proyecto_aprendices'
         ];
         $table = null;
         foreach ($pivotCandidates as $cand) {
@@ -355,7 +356,7 @@ class SemilleroController extends Controller
         
         if ($table) {
             $projCols = ['id_proyecto','proyecto_id','idProyecto'];
-            $aprCols  = ['id_aprendiz','aprendiz_id','idAprendiz','id_usuario'];
+            $aprCols  = ['id_aprendiz','aprendiz_id','idAprendiz','id_usuario','user_id'];
             $pivotProjCol = null; $pivotAprCol = null;
             foreach ($projCols as $c) { if (Schema::hasColumn($table, $c)) { $pivotProjCol = $c; break; } }
             foreach ($aprCols as $c) { if (Schema::hasColumn($table, $c)) { $pivotAprCol = $c; break; } }
@@ -672,46 +673,39 @@ class SemilleroController extends Controller
     {
         $userId = auth()->id();
         
-        // Verificar si existe la tabla de proyectos
         if (!Schema::hasTable('proyectos')) {
             return view('lider_semi.documentos', ['proyectos' => collect([])]);
         }
 
-        // Obtener proyectos
-        $proyectos = DB::table('proyectos')
+        // Solo proyectos del líder autenticado (según semillero propietario)
+        $proyectos = DB::table('proyectos as p')
+            ->join('semilleros as s', 's.id_semillero', '=', 'p.id_semillero')
+            ->where('s.id_lider_usuario', $userId)
             ->select(
-                'id_proyecto',
-                DB::raw('COALESCE(nombre_proyecto, "Proyecto") as nombre'),
-                DB::raw('COALESCE(descripcion, "") as descripcion'),
-                DB::raw('COALESCE(estado, "ACTIVO") as estado')
+                'p.id_proyecto',
+                DB::raw('COALESCE(p.nombre_proyecto, "Proyecto") as nombre'),
+                DB::raw('COALESCE(p.descripcion, "") as descripcion'),
+                DB::raw('COALESCE(p.estado, "ACTIVO") as estado')
             )
             ->get();
 
-        // Contar documentos reales por proyecto desde la tabla documentos
-        $proyectos->transform(function($proyecto) {
+        // Contadores por proyecto desde documentos
+        $proyectos->transform(function($proyecto){
             if (Schema::hasTable('documentos')) {
-                // Verificar si existe la columna estado
-                $hasEstado = Schema::hasColumn('documentos', 'estado');
-                
-                // Contar total de entregas (incluyendo placeholders/evidencias creadas por el líder)
                 $proyecto->entregas = DB::table('documentos')
                     ->where('id_proyecto', $proyecto->id_proyecto)
                     ->count();
-                
-                if ($hasEstado) {
-                    // Contar pendientes
+
+                if (Schema::hasColumn('documentos', 'estado')) {
                     $proyecto->pendientes = DB::table('documentos')
                         ->where('id_proyecto', $proyecto->id_proyecto)
                         ->where('estado', 'pendiente')
                         ->count();
-                    
-                    // Contar aprobadas
                     $proyecto->aprobadas = DB::table('documentos')
                         ->where('id_proyecto', $proyecto->id_proyecto)
                         ->where('estado', 'aprobado')
                         ->count();
                 } else {
-                    // Si no existe columna estado, todas son pendientes
                     $proyecto->pendientes = $proyecto->entregas;
                     $proyecto->aprobadas = 0;
                 }
@@ -720,39 +714,22 @@ class SemilleroController extends Controller
                 $proyecto->pendientes = 0;
                 $proyecto->aprobadas = 0;
             }
-            
             return $proyecto;
         });
 
-        // Separar proyectos activos y completados
-        // Un proyecto se considera activo si:
-        // 1. Su estado es ACTIVO, EN_EJECUCION, etc. O
-        // 2. Tiene evidencias pendientes de revisión
-        $proyectosActivos = $proyectos->filter(function($p) {
+        // Clasificación básica
+        $proyectosActivos = $proyectos->filter(function($p){
             $estadoUpper = strtoupper($p->estado);
-            $esEstadoActivo = in_array($estadoUpper, ['ACTIVO', 'EN_EJECUCION', 'EN EJECUCION', 'EJECUCION', 'EN_FORMULACION', 'EN FORMULACION', 'FORMULACION']);
-            
-            // Si tiene pendientes, siempre es activo
-            if ($p->pendientes > 0) {
-                return true;
-            }
-            
-            // Si no tiene pendientes pero su estado es activo, también es activo
-            return $esEstadoActivo;
+            $esEstadoActivo = in_array($estadoUpper, ['ACTIVO','EN_EJECUCION','EN EJECUCION','EJECUCION','EN_FORMULACION','EN FORMULACION','FORMULACION']);
+            return ($p->pendientes ?? 0) > 0 || $esEstadoActivo;
+        });
+        $proyectosCompletados = $proyectos->filter(function($p){
+            $estadoUpper = strtoupper($p->estado);
+            $esEstadoCompletado = in_array($estadoUpper, ['COMPLETADO','FINALIZADO','TERMINADO','CERRADO']);
+            return $esEstadoCompletado && (($p->pendientes ?? 0) === 0);
         });
 
-        // Un proyecto se considera completado si:
-        // 1. Su estado es COMPLETADO, FINALIZADO, etc. Y
-        // 2. NO tiene evidencias pendientes (todas están aprobadas o rechazadas)
-        $proyectosCompletados = $proyectos->filter(function($p) {
-            $estadoUpper = strtoupper($p->estado);
-            $esEstadoCompletado = in_array($estadoUpper, ['COMPLETADO', 'FINALIZADO', 'TERMINADO', 'CERRADO']);
-            
-            // Solo es completado si su estado es completado Y no tiene pendientes
-            return $esEstadoCompletado && $p->pendientes === 0;
-        });
-
-        return view('lider_semi.documentos', compact('proyectosActivos', 'proyectosCompletados'));
+        return view('lider_semi.documentos', compact('proyectosActivos','proyectosCompletados'));
     }
 
     // Listar proyectos para el select del modal
