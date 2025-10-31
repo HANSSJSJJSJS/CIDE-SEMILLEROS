@@ -28,7 +28,7 @@
                     <li><a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"><i class="bi bi-house-fill me-2"></i> Inicio</a></li>
                     <li><a href="{{ route('admin.usuarios.index') }}" class="nav-link {{ request()->routeIs('admin.usuarios.*') ? 'active' : '' }}"><i class="bi bi-people-fill me-2"></i> Gestión de Usuarios</a></li>
                     <li><a href="{{ route('admin.semilleros.index') }}" class="nav-link {{ request()->routeIs('admin.semilleros.*') ? 'active' : '' }}">  <i class="bi bi-diagram-3 me-2"></i> Gestión de semilleros </a></li>
-                    <li><a href="{{ route('lider_semi.documentos') }}" class="nav-link position-relative {{ request()->routeIs('lider_semi.documentos') ? 'active' : '' }}"><i class="bi bi-file-earmark-text me-2"></i> Actividad de usuarios</a></li>
+                    <li> <a href="{{ route('admin.reuniones-lideres.index') }}" class="nav-link {{ request()->routeIs('admin.reuniones-lideres.*') ? 'active' : '' }}"> <i class="bi bi-calendar-event me-2"></i> Reuniones </a> </li>
                     <li><a href="{{ route('lider_semi.recursos') }}" class="nav-link {{ request()->routeIs('lider_semi.recursos') ? 'active' : '' }}"><i class="bi bi-journal-text me-2"></i> Recursos</a></li>
                     <li><a href="{{ route('lider_semi.perfil') }}" class="nav-link {{ request()->routeIs('lider_semi.perfil') ? 'active' : '' }}"><i class="bi bi-person-circle me-2"></i> Mi Perfil</a></li>
                 </ul>

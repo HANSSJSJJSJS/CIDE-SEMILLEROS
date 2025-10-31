@@ -2,7 +2,6 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LiderSemillero\DashboardController_semi;
 use App\Http\Controllers\AprendizController;
 use App\Http\Controllers\LiderSemillero\SemilleroController;
@@ -13,8 +12,9 @@ use App\Http\Controllers\GrupoInvestigacionController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UsuarioController; // 
-use App\Http\Controllers\Admin\SemilleroController as AdminSemilleroController; 
 use App\Http\Controllers\Admin\SemilleroController as AdminSemilleros;
+use App\Http\Controllers\Admin\ReunionesLideresController;
+
 
 
 
@@ -61,10 +61,15 @@ Route::middleware(['auth','role:ADMIN'])
             ->only(['index','store','edit','update','destroy'])
             ->names('semilleros'); // genera admin.semilleros.index|edit|update|destroy
 
+           // ===== Reuniones (Líder General) =====
+        Route::get('/reuniones-lideres', [ReunionesLideresController::class, 'index'])
+            ->name('reuniones-lideres.index');
+
+
                 // routes/web.php (solo para probar)
                 Route::get('/semilleros/{id}', [AdminSemilleros::class, 'show'])
     ->name('semilleros.show');
-
+    
 
 
 

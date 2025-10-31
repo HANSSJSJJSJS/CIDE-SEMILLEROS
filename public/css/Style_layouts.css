@@ -32,7 +32,7 @@
 
         /* Header */
         .header {
-            background: var(--white);
+            background: var(--gray-600);
             padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
@@ -107,7 +107,7 @@
         /* Sidebar */
         .sidebar {
             width: 280px;
-            background: var(--white);
+            background: var(--gray-50);
             border-radius: 16px;
             padding: 1.5rem;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
