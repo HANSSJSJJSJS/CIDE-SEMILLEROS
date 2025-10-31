@@ -67,7 +67,7 @@ Route::middleware(['auth','role:ADMIN'])
             ->name('semilleros.lideres-disponibles');
 
         Route::resource('semilleros', AdminSemilleros::class)
-            ->only(['index','edit','update','destroy'])
+            ->only(['index','store','edit','update','destroy'])
             ->names('semilleros'); // genera admin.semilleros.index|edit|update|destroy
 
         // Página “Funciones del administrador” (opcional si se usa)

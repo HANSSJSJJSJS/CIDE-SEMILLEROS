@@ -72,7 +72,9 @@ class SemilleroController extends Controller
                             ->select(
                                 DB::raw($pivot['table'].'.'.$pivot['projCol'].' as pid'),
                                 'aprendices.id_aprendiz',
-                                'aprendices.nombre_completo',
+                                'aprendices.nombres',
+                                'aprendices.apellidos',
+                                DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),
                                 'aprendices.correo_institucional',
                                 'aprendices.programa'
                             )->get();
@@ -86,6 +88,8 @@ class SemilleroController extends Controller
                                     $items[] = [
                                         'id_aprendiz' => $r->id_aprendiz ?? null,
                                         'nombre' => $r->nombre_completo,
+                                        'nombres' => $r->nombres ?? '',
+                                        'apellidos' => $r->apellidos ?? '',
                                         'email'  => $r->correo_institucional,
                                         'programa' => $r->programa ?? 'Sin programa',
                                     ];
@@ -160,7 +164,7 @@ class SemilleroController extends Controller
                     ->select('id_semillero')
                     ->where('id_semillero', $s->id_semillero)
                     ->with(['aprendices' => function($q){
-                        $q->select('aprendices.id_aprendiz','aprendices.nombre_completo','aprendices.correo_institucional','aprendices.programa');
+                        $q->select('aprendices.id_aprendiz','aprendices.nombres','aprendices.apellidos','aprendices.correo_institucional','aprendices.programa');
                     }])->first();
                 $items = [];
                 if ($rel) {
@@ -168,6 +172,8 @@ class SemilleroController extends Controller
                         $items[] = [
                             'id_aprendiz' => $ap->id_aprendiz,
                             'nombre' => $ap->nombre_completo,
+                            'nombres' => $ap->nombres ?? '',
+                            'apellidos' => $ap->apellidos ?? '',
                             'email'  => $ap->correo_institucional,
                             'programa' => $ap->programa ?? 'Sin programa',
                         ];
@@ -217,13 +223,17 @@ class SemilleroController extends Controller
     {
         $semillero = Semillero::where('id_semillero', $semilleroId)
             ->with(['aprendices' => function($q){
-                $q->select('aprendices.id_aprendiz','aprendices.nombre_completo','aprendices.correo_institucional');
+                $q->select('aprendices.id_aprendiz','aprendices.nombres','aprendices.apellidos','aprendices.correo_institucional');
             }])->firstOrFail();
 
         $asignadosIds = $semillero->aprendices->pluck('id_aprendiz')->all();
 
-        $aprendices = Aprendiz::select('id_aprendiz','nombre_completo','correo_institucional')
-            ->orderBy('nombre_completo')
+        $aprendices = Aprendiz::select(
+                'id_aprendiz',
+                DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo"),
+                'correo_institucional'
+            )
+            ->orderByRaw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))")
             ->get();
 
         return view('lider_semi.semillero_aprendices', compact('semillero','aprendices','asignadosIds'));
@@ -259,7 +269,11 @@ class SemilleroController extends Controller
             ->firstOrFail();
         $excluir = $semillero->aprendices->pluck('id_aprendiz')->all();
 
-        $query = Aprendiz::select('id_aprendiz','nombre_completo','correo_institucional','tipo_documento','documento','programa','ficha');
+        $query = Aprendiz::select(
+            'id_aprendiz','nombres','apellidos',
+            DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo"),
+            'correo_institucional','tipo_documento','documento','programa','ficha'
+        );
         
         // Aplicar filtros si existen
         if ($tipo !== '') {
@@ -268,7 +282,7 @@ class SemilleroController extends Controller
         if ($num !== '') {
             $query->where(function($w) use ($num){
                 $w->where('documento','like',"%{$num}%")
-                  ->orWhere('nombre_completo','like',"%{$num}%")
+                  ->orWhere(DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))"),'like',"%{$num}%")
                   ->orWhere('ficha','like',"%{$num}%");
             });
         }
@@ -277,7 +291,7 @@ class SemilleroController extends Controller
             $query->where(function($w) use ($q){
                 $w->where('tipo_documento','like',"%{$q}%")
                   ->orWhere('documento','like',"%{$q}%")
-                  ->orWhere('nombre_completo','like',"%{$q}%")
+                  ->orWhere(DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))"),'like',"%{$q}%")
                   ->orWhere('ficha','like',"%{$q}%");
             });
         }
@@ -285,7 +299,7 @@ class SemilleroController extends Controller
         if (!empty($excluir)) {
             $query->whereNotIn('id_aprendiz', $excluir);
         }
-        $res = $query->orderBy('nombre_completo')->limit(20)->get();
+        $res = $query->orderByRaw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))").limit(20)->get();
         return response()->json($res);
     }
 
@@ -300,7 +314,7 @@ class SemilleroController extends Controller
             $semillero->aprendices = $semillero->aprendices()->count();
             $semillero->save();
         }
-        $ap = Aprendiz::select('id_aprendiz','nombre_completo','correo_institucional','programa')->find($data['aprendiz_id']);
+        $ap = Aprendiz::select('id_aprendiz',DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo"),'correo_institucional','programa')->find($data['aprendiz_id']);
         return response()->json(['ok'=>true,'aprendiz'=>$ap]);
     }
 
@@ -318,11 +332,13 @@ class SemilleroController extends Controller
     public function createAndAttachAprendiz(Request $request, $semilleroId)
     {
         $data = $request->validate([
-            'nombre_completo' => ['required','string','max:255'],
+            'nombres' => ['required','string','max:255'],
+            'apellidos' => ['required','string','max:255'],
             'correo_institucional' => ['nullable','email','max:255'],
         ]);
         $ap = new Aprendiz();
-        $ap->nombre_completo = $data['nombre_completo'];
+        $ap->nombres = $data['nombres'];
+        $ap->apellidos = $data['apellidos'];
         if (isset($data['correo_institucional'])) {
             $ap->correo_institucional = $data['correo_institucional'];
         }
@@ -383,8 +399,8 @@ class SemilleroController extends Controller
         $rows = DB::table($pivot['table'])
             ->join('aprendices','aprendices.id_aprendiz','=',DB::raw($pivot['table'].'.'.$pivot['aprCol']))
             ->where(DB::raw($pivot['table'].'.'.$pivot['projCol']), $proyectoId)
-            ->select('aprendices.id_aprendiz','aprendices.nombre_completo','aprendices.correo_institucional')
-            ->orderBy('aprendices.nombre_completo')
+            ->select('aprendices.id_aprendiz', DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),'aprendices.correo_institucional')
+            ->orderByRaw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))")
             ->get();
         // Simular relación para la vista
         $proyecto->aprendices = $rows;
@@ -454,7 +470,11 @@ class SemilleroController extends Controller
                 ->where($pivot['projCol'], $proyectoId)
                 ->pluck('aprendices.id_aprendiz')->all();
         }
-        $query = Aprendiz::select('id_aprendiz','nombre_completo','correo_institucional','tipo_documento','documento','programa','ficha');
+        $query = Aprendiz::select(
+            'id_aprendiz','nombres','apellidos',
+            DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo"),
+            'correo_institucional','tipo_documento','documento','programa','ficha'
+        );
         
         // Aplicar filtros si existen
         if ($tipo !== '') {
@@ -463,7 +483,7 @@ class SemilleroController extends Controller
         if ($num !== '') {
             $query->where(function($w) use ($num){
                 $w->where('documento','like',"%{$num}%")
-                  ->orWhere('nombre_completo','like',"%{$num}%")
+                  ->orWhere(DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))"),'like',"%{$num}%")
                   ->orWhere('ficha','like',"%{$num}%");
             });
         }
@@ -472,13 +492,13 @@ class SemilleroController extends Controller
             $query->where(function($w) use ($q){
                 $w->where('tipo_documento','like',"%{$q}%")
                   ->orWhere('documento','like',"%{$q}%")
-                  ->orWhere('nombre_completo','like',"%{$q}%")
+                  ->orWhere(DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))"),'like',"%{$q}%")
                   ->orWhere('ficha','like',"%{$q}%");
             });
         }
         
         if (!empty($asignados)) $query->whereNotIn('id_aprendiz', $asignados);
-        return response()->json($query->orderBy('nombre_completo')->limit(20)->get());
+        return response()->json($query->orderByRaw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))")->limit(20)->get());
     }
 
     public function attachProyectoAprendiz(Request $request, $proyectoId)
@@ -488,7 +508,7 @@ class SemilleroController extends Controller
         if (empty($pivot)) return response()->json(['ok'=>false], 400);
         
         // Seleccionar columnas que existen
-        $selectCols = ['id_aprendiz','nombre_completo','correo_institucional'];
+        $selectCols = ['id_aprendiz','nombres','apellidos','correo_institucional'];
         if (Schema::hasColumn('aprendices', 'id_usuario')) {
             $selectCols[] = 'id_usuario';
         }
@@ -561,11 +581,13 @@ class SemilleroController extends Controller
     public function createAndAttachProyectoAprendiz(Request $request, $proyectoId)
     {
         $data = $request->validate([
-            'nombre_completo' => ['required','string','max:255'],
+            'nombres' => ['required','string','max:255'],
+            'apellidos' => ['required','string','max:255'],
             'correo_institucional' => ['nullable','email','max:255'],
         ]);
         $ap = new Aprendiz();
-        $ap->nombre_completo = $data['nombre_completo'];
+        $ap->nombres = $data['nombres'];
+        $ap->apellidos = $data['apellidos'];
         if (isset($data['correo_institucional'])) $ap->correo_institucional = $data['correo_institucional'];
         $ap->save();
         $pivot = $this->pivotProyectoAprendiz();
@@ -589,7 +611,6 @@ class SemilleroController extends Controller
         // Obtener aprendices básicos usando Query Builder para evitar problemas con columnas faltantes
         $selectCols = [
             'id_aprendiz',
-            'nombre_completo',
             'tipo_documento',
             'documento',
             'celular',
@@ -603,7 +624,12 @@ class SemilleroController extends Controller
         if (Schema::hasColumn('aprendices', 'id_usuario')) {
             $selectCols[] = 'id_usuario';
         }
-        $aprendices = DB::table('aprendices')->select($selectCols)->orderBy('nombre_completo')->get();
+        $aprendices = DB::table('aprendices')
+            ->select(array_merge($selectCols, [
+                DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo")
+            ]))
+            ->orderByRaw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))")
+            ->get();
 
         $aprendicesIds = $aprendices->pluck('id_aprendiz')->toArray();
 
@@ -852,6 +878,44 @@ class SemilleroController extends Controller
         if ($hm >= 1200 && $hm <= 1355) return false;
 
         return true;
+    }
+
+    // Helper: detectar conflicto con otros eventos del mismo líder (solapamiento)
+    // Regla: no permitir más de una cita en la misma hora del mismo día ni rangos solapados
+    private function hayConflicto(\DateTime $inicio, int $duracionMin, ?int $ignorarId = null): bool
+    {
+        // Fin del nuevo evento
+        $fin = (clone $inicio)->modify("+{$duracionMin} minutes");
+
+        // Convertir a strings para la consulta
+        $iniStr = $inicio->format('Y-m-d H:i:s');
+        $finStr = $fin->format('Y-m-d H:i:s');
+
+        // Buscar eventos del mismo líder cuyo rango [inicio, fin) solape
+        $q = Evento::where('id_lider', auth()->id());
+        if ($ignorarId) {
+            $q->where('id_evento', '!=', $ignorarId);
+        }
+
+        // Condición de solape: a.ini < b.fin && a.fin > b.ini
+        $existeSolape = $q->where(function($w) use ($iniStr, $finStr) {
+                $w->where('fecha_hora', '<', $finStr)
+                  ->whereRaw("DATE_ADD(fecha_hora, INTERVAL duracion MINUTE) > ?", [$iniStr]);
+            })
+            ->exists();
+
+        return $existeSolape;
+    }
+
+    // Helper: validar que el intervalo no cruza la franja de almuerzo (12:00 a 13:55)
+    private function cruzaAlmuerzo(\DateTime $inicio, int $duracionMin): bool
+    {
+        $fin = (clone $inicio)->modify("+{$duracionMin} minutes");
+        $fecha = $inicio->format('Y-m-d');
+        $almuerzoIni = new \DateTime("{$fecha} 12:00:00");
+        $almuerzoFin = new \DateTime("{$fecha} 13:55:00");
+        // solape entre [inicio, fin) y [almuerzoIni, almuerzoFin]
+        return ($inicio < $almuerzoFin) && ($fin > $almuerzoIni);
     }
 
     // Guardar evidencia de avance (crea un registro en documentos)
@@ -1175,8 +1239,11 @@ class SemilleroController extends Controller
         
         if (Schema::hasTable('aprendices')) {
             $aprendices = Aprendiz::where('documento', '!=', 'SIN_ASIGNAR')
-                ->select('id_aprendiz', 'nombre_completo')
-                ->orderBy('nombre_completo')
+                ->select(
+                    'id_aprendiz','nombres','apellidos','tipo_documento','documento',
+                    DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo")
+                )
+                ->orderByRaw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))")
                 ->get();
         }
 
@@ -1184,7 +1251,7 @@ class SemilleroController extends Controller
         $proyectos = collect([]);
         
         if (Schema::hasTable('proyectos')) {
-            $proyectos = Proyecto::with('aprendices:id_aprendiz,nombre_completo')
+            $proyectos = Proyecto::with('aprendices:id_aprendiz,nombres,apellidos')
                 ->select('id_proyecto', 'nombre_proyecto')
                 ->orderBy('nombre_proyecto')
                 ->get();
@@ -1210,7 +1277,7 @@ class SemilleroController extends Controller
             $anio = $request->input('anio');
 
             $query = Evento::where('id_lider', $userId)
-                ->with(['participantes:id_aprendiz,nombre_completo', 'proyecto:id_proyecto,nombre_proyecto']);
+                ->with(['participantes:id_aprendiz,nombres,apellidos', 'proyecto:id_proyecto,nombre_proyecto']);
 
             if ($mes && $anio) {
                 $query->whereYear('fecha_hora', $anio)
@@ -1284,8 +1351,24 @@ class SemilleroController extends Controller
                     'message' => 'La fecha/hora no está permitida. No se pueden agendar fines de semana/feriados, ni fuera de 08:00-16:50, ni en almuerzo (12:00-13:55).'
                 ], 422);
             }
+
+            // Validar conflictos con otros eventos del mismo líder
+            $inicio = new \DateTime($validated['fecha_hora']);
+            $duracion = (int) $validated['duracion'];
+            if ($this->hayConflicto($inicio, $duracion, null)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ya existe una reunión programada que se solapa con ese horario. Selecciona otra hora disponible.'
+                ], 422);
+            }
+            // Validar cruce con almuerzo
+            if ($this->cruzaAlmuerzo($inicio, $duracion)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'La reunión no puede cruzar el horario de almuerzo (12:00 a 13:55).'
+                ], 422);
+            }
             
-            \Log::info('Datos validados:', $validated);
 
             // Generar enlace automáticamente si la ubicación es virtual y no se proporcionó enlace
             $linkVirtual = $validated['link_virtual'] ?? null;
@@ -1318,8 +1401,8 @@ class SemilleroController extends Controller
                 $evento->participantes()->attach($validated['participantes']);
             }
 
-            // Cargar relaciones para la respuesta
-            $evento->load(['participantes:id_aprendiz,nombre_completo', 'proyecto:id_proyecto,nombre_proyecto']);
+            // Cargar relaciones para la respuesta (no seleccionar columna inexistente)
+            $evento->load(['participantes:id_aprendiz,nombres,apellidos', 'proyecto:id_proyecto,nombre_proyecto']);
 
             return response()->json([
                 'success' => true,
@@ -1345,6 +1428,12 @@ class SemilleroController extends Controller
                 ]
             ]);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al crear el evento: ' . ($e->getMessage()),
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             \Log::error('Error al crear evento: ' . $e->getMessage());
             return response()->json([
@@ -1385,6 +1474,26 @@ class SemilleroController extends Controller
                     ], 422);
                 }
             }
+
+            // Validar conflicto considerando valores nuevos o actuales
+            $inicioStr = isset($validated['fecha_hora'])
+                ? $validated['fecha_hora']
+                : ($evento->fecha_hora instanceof \DateTimeInterface ? $evento->fecha_hora->format('Y-m-d H:i:s') : (string)$evento->fecha_hora);
+            $inicioValidar = new \DateTime($inicioStr);
+            $duracionValidar = (int) ($validated['duracion'] ?? $evento->duracion);
+            if ($this->hayConflicto($inicioValidar, $duracionValidar, (int)$evento->id_evento)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El horario elegido se solapa con otra reunión existente. Selecciona otra hora disponible.'
+                ], 422);
+            }
+            // Validar cruce con almuerzo
+            if ($this->cruzaAlmuerzo($inicioValidar, $duracionValidar)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'La reunión no puede cruzar el horario de almuerzo (12:00 a 13:55).'
+                ], 422);
+            }
             // Generar enlace si la ubicación es virtual y no tiene enlace
             $updateData = [];
             
@@ -1419,7 +1528,7 @@ class SemilleroController extends Controller
             } elseif (($validated['ubicacion'] ?? $evento->ubicacion) === 'virtual' && empty($evento->link_virtual)) {
                 // Generar enlace automáticamente
                 $plataforma = $validated['generar_enlace'] ?? 'teams';
-                $updateData['link_virtual'] = $this->generarEnlaceReunion($plataforma, $validated['titulo']);
+                $updateData['link_virtual'] = $this->generarEnlaceReunion($plataforma, $validated['titulo'] ?? $evento->titulo);
                 $updateData['codigo_reunion'] = $evento->codigo_reunion ?: \Illuminate\Support\Str::random(10);
             }
 
@@ -1430,8 +1539,8 @@ class SemilleroController extends Controller
                 $evento->participantes()->sync($validated['participantes']);
             }
 
-            // Cargar relaciones para la respuesta
-            $evento->load(['participantes:id_aprendiz,nombre_completo', 'proyecto:id_proyecto,nombre_proyecto']);
+            // Cargar relaciones para la respuesta (seleccionar columnas existentes)
+            $evento->load(['participantes:id_aprendiz,nombres,apellidos', 'proyecto:id_proyecto,nombre_proyecto']);
 
             return response()->json([
                 'success' => true,
@@ -1456,6 +1565,12 @@ class SemilleroController extends Controller
                 ]
             ]);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el evento: ' . ($e->getMessage()),
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             \Log::error('Error al actualizar evento: ' . $e->getMessage());
             return response()->json([

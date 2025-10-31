@@ -50,9 +50,9 @@ class Proyecto extends Model
     {
         return $this->hasMany(Documento::class, 'id_proyecto', 'id_proyecto');
     }
-    public function evidencias()
-{
-    return $this->hasMany(Evidencia::class, 'id_proyecto', 'id_proyecto');
-}
-}
 
+    public function evidencias()
+    {
+        return $this->hasMany(Evidencia::class, 'id_proyecto', 'id_proyecto');
+    }
+}

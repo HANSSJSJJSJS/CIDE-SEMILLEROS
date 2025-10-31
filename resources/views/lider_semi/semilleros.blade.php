@@ -170,7 +170,7 @@
                                 @foreach($items as $ap)
                                     <div class="border rounded p-2 d-flex justify-content-between align-items-center" data-id="{{ $ap['id_aprendiz'] ?? '' }}">
                                         <div>
-                                            <div class="fw-semibold">{{ $ap['nombre'] ?? '' }}</div>
+                                            <div class="fw-semibold">{{ $ap['nombres'] ?? '' }} {{ $ap['apellidos'] ?? '' }}</div>
                                             <small class="text-muted">{{ $ap['programa'] ?? 'Sin programa' }}</small>
                                         </div>
                                         <button class="btn btn-sm btn-danger btn-eliminar">Eliminar</button>
@@ -305,14 +305,18 @@
                 if (lista && lista.querySelector(`[data-id="${item.id_aprendiz}"]`)) cb.checked = true;
                 cb.addEventListener('change', function(){
                     if (cb.checked) {
-                        attachAprendiz(item.id_aprendiz, item.nombre_completo, item.programa);
+                        const fallbackName = `${(item.nombres||'').trim()} ${(item.apellidos||'').trim()}`.trim();
+                        const displayName = (item.nombre_completo && String(item.nombre_completo).trim()) || fallbackName || 'Aprendiz';
+                        attachAprendiz(item.id_aprendiz, displayName, item.programa);
                     } else {
                         const nodo = lista.querySelector(`[data-id="${item.id_aprendiz}"]`);
                         if (nodo) detachAprendiz(item.id_aprendiz, nodo);
                     }
                 });
                 const info = document.createElement('div');
-                info.innerHTML = `<div class=\"fw-semibold\">${item.nombre_completo}</div><small class=\"text-muted\">${item.programa ?? 'Sin programa'}</small>`;
+                const fallbackName = `${(item.nombres||'').trim()} ${(item.apellidos||'').trim()}`.trim();
+                const displayName = (item.nombre_completo && String(item.nombre_completo).trim()) || fallbackName || 'Aprendiz';
+                info.innerHTML = `<div class=\"fw-semibold\">${displayName}</div><small class=\"text-muted\">${item.programa ?? 'Sin programa'}</small>`;
                 row.appendChild(cb);
                 row.appendChild(info);
                 return row;

@@ -84,6 +84,29 @@ return [
 
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 
+    // Fechas feriadas (YYYY-MM-DD) usadas para bloquear agendamiento en calendario
+    // Añade aquí los festivos nacionales/locales que desees bloquear
+    'feriados' => [
+        // 2025 (ejemplos Colombia)
+        '2025-01-01', // Año Nuevo
+        '2025-01-06', // Reyes Magos (trasladado)
+        '2025-03-24', // San José (trasladado)
+        '2025-04-17', // Jueves Santo
+        '2025-04-18', // Viernes Santo
+        '2025-05-01', // Día del Trabajo
+        '2025-06-02', // Ascensión del Señor (trasladado)
+        '2025-06-23', // Corpus Christi (trasladado)
+        '2025-06-30', // Sagrado Corazón (trasladado)
+        '2025-07-20', // Independencia
+        '2025-08-07', // Batalla de Boyacá
+        '2025-08-18', // Asunción (trasladado)
+        '2025-10-13', // Día de la Raza (trasladado)
+        '2025-11-03', // Todos los Santos (trasladado) — reportado por el usuario
+        '2025-11-17', // Independencia de Cartagena (trasladado)
+        '2025-12-08', // Inmaculada Concepción
+        '2025-12-25', // Navidad
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Encryption Key
