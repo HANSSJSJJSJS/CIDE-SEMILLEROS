@@ -4,21 +4,21 @@
     --verde-principal: #35A900;
     --verde-secundario: #007832;
     --azul-principal: #00304D;
-    --blanco: #FFFFFF;
+    --blanco: #011a06;
     --negro: #000000;
-    --gris-claro: #f5f5f5;
-    --gris-medio: #e0e0e0;
+    --gris-claro: #92ad95;
+    --gris-medio: #9da8a0;
     --gris-oscuro: #757575;
 }
 
 .calendario-header-custom {
-    background: #ffffff;
+    background: #7f9a85;
     color: var(--azul-principal);
     padding: 16px 20px;
     border-radius: 12px;
     margin-bottom: 20px;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
-    border: 1px solid #e5e7eb;
+    border: 1px solid #c3d0c2c8;
 }
 
 .calendario-header-custom h1 {
@@ -47,7 +47,7 @@
     border-radius: 12px;
     padding: 18px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-    border: 1px solid #e5e7eb;
+    border: 1px solid #b4c3b4;
 }
 
 .calendar-header {
@@ -66,7 +66,7 @@
 }
 
 .calendar-nav button {
-    background: #ffffff;
+    background: #80a684;
     color: #374151;
     border: 1px solid #e5e7eb;
     width: 36px;
