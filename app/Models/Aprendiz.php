@@ -8,13 +8,12 @@ class Aprendiz extends Model
 {
     protected $table = 'aprendices';
 
-    protected $primaryKey = 'id_aprendiz';
+    protected $primaryKey = 'id_usuario';
     public $incrementing = true;
 
     public $timestamps = false;
 
     protected $fillable = [
-        'id_aprendiz',
         'id_usuario',
         'nombres',
         'apellidos',

@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Proyecto;
 use App\Models\Aprendiz;
 
 class Documento extends Model
 {
+    use HasFactory;
+
     protected $table = 'documentos';
     protected $primaryKey = 'id_documento';
     public $timestamps = false;
@@ -30,7 +33,7 @@ class Documento extends Model
 
     public function proyecto()
     {
-        return $this->belongsTo(Proyecto::class, 'id_proyecto');
+        return $this->belongsTo(Proyecto::class, 'id_proyecto', 'id_proyecto');
     }
 
     public function aprendiz()

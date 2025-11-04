@@ -3,6 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Evidencia;
+use App\Models\Documento;
+use App\Models\User;
+use App\Models\Aprendiz;
+
 
 class Proyecto extends Model
 {
@@ -11,9 +16,6 @@ class Proyecto extends Model
     public $incrementing = true;
     protected $keyType = 'int';
     public $timestamps = false;
-
-    const CREATED_AT = 'creado_en';
-    const UPDATED_AT = 'actualizado_en';
 
     protected $fillable = [
         'id_semillero',
@@ -25,26 +27,53 @@ class Proyecto extends Model
         'fecha_fin',
     ];
 
+    protected $dates = [
+        'fecha_inicio',
+        'fecha_fin',
+        'creado_en',
+        'actualizado_en'
+    ];
+
+    // Relación con semillero
     public function semillero()
     {
         return $this->belongsTo(Semillero::class, 'id_semillero', 'id_semillero');
     }
 
+    // Relación con documentos
     public function documentos()
     {
         return $this->hasMany(Documento::class, 'id_proyecto', 'id_proyecto');
     }
 
+    // Relación con aprendices (por id_usuario en pivot)
     public function aprendices()
     {
-        // La relación se hace a través de la tabla documentos
         return $this->belongsToMany(
             Aprendiz::class,
-            'documentos',
+            'proyecto_user',
             'id_proyecto',
-            'id_aprendiz'
-        )
-        ->select('aprendices.id_aprendiz','aprendices.nombres','aprendices.apellidos')
-        ->distinct();
+            'user_id',
+            'id_proyecto',
+            'id_usuario'
+        )->distinct();
+    }
+
+    // Relación directa con usuarios a través de la misma pivote
+    public function usuarios()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'proyecto_user',
+            'id_proyecto',
+            'user_id',
+            'id_proyecto',
+            'id'
+        )->distinct();
+    }
+
+    public function evidencias()
+    {
+        return $this->hasMany(Evidencia::class, 'id_proyecto', 'id_proyecto');
     }
 }

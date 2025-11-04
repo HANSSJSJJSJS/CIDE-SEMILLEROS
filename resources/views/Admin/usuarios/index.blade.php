@@ -6,6 +6,7 @@
 @section('content')
 <div class="container-fluid mt-3 px-3">
 
+
   {{-- ==============================
        FILTROS + BOTONES
   =============================== --}}
@@ -31,7 +32,7 @@
           <select name="semillero_id" class="form-select">
             <option value="">Todos los semilleros</option>
             @foreach(($semilleros ?? collect()) as $s)
-              <option value="{{ $s->id_semillero }}" 
+              <option value="{{ $s->id_semillero }}"
                 @selected( (old('semillero_id', $semilleroId ?? request('semillero_id'))) == $s->id_semillero )>
                 {{ $s->nombre }}
               </option>
@@ -170,3 +171,141 @@
   @endif
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const qInput = document.getElementById('filtro-nombre');
+  const rolSel = document.getElementById('filtro-rol');
+  const estSel = document.getElementById('filtro-estado');
+  const tbody  = document.querySelector('table tbody');
+  if(!tbody) return;
+
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+
+  function norm(s){ return (s||'').toString().toLowerCase().trim(); }
+
+  function apply(){
+    const q   = norm(qInput?.value);
+    const rol = (rolSel?.value||'').toUpperCase().replace(/_/g,' ');
+    const est = norm(estSel?.value);
+
+    let visible = 0;
+    rows.forEach(tr =>{
+      const userCell = tr.querySelector('td:nth-child(1)');
+      const roleCell = tr.querySelector('td:nth-child(2)');
+      const stateCell= tr.querySelector('td:nth-child(4)');
+      if(!userCell||!roleCell||!stateCell){ tr.style.display=''; visible++; return; }
+
+      const name  = norm(userCell.querySelector('.fw-semibold')?.textContent);
+      const email = norm(userCell.querySelector('small')?.textContent);
+      const roleT = (roleCell.textContent||'').replace(/\s+/g,' ').trim().toUpperCase();
+      const stateT= norm(stateCell.textContent);
+
+      const matchQ   = !q || name.includes(q) || email.includes(q);
+      const matchRol = !rol || roleT.includes(rol);
+      const matchEst = !est || stateT.includes(est);
+
+      const ok = matchQ && matchRol && matchEst;
+      tr.style.display = ok ? '' : 'none';
+      if(ok) visible++;
+    });
+  }
+
+  qInput?.addEventListener('input', apply);
+  rolSel?.addEventListener('change', apply);
+  estSel?.addEventListener('change', apply);
+
+  // ===== Modal de edición =====
+  const editModalEl = document.getElementById('modalEditUsuario');
+  if (editModalEl) {
+    const editModal = new bootstrap.Modal(editModalEl);
+    document.querySelectorAll('.btn-open-edit').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.dataset.id;
+        const nombreFull = btn.dataset.nombre||'';
+        const parts = nombreFull.trim().split(/\s+/);
+        const nombre = parts.shift() || '';
+        const apellido = parts.join(' ') || '';
+        const email = btn.dataset.email||'';
+        const rol = (btn.dataset.rol||'').replace(/\s+/g,'_');
+        const estado = btn.dataset.estado||'';
+
+        editModalEl.querySelector('#edit-id').value = id;
+        editModalEl.querySelector('#edit-nombre').value = nombre;
+        const apField = editModalEl.querySelector('#edit-apellido');
+        if(apField) apField.value = apellido;
+        editModalEl.querySelector('#edit-email').value = email;
+        editModalEl.querySelector('#edit-rol').value = rol;
+        editModalEl.querySelector('#edit-estado').value = estado;
+
+        const form = editModalEl.querySelector('#formEditUsuario');
+        form.action = `{{ url('admin/usuarios') }}/${id}`;
+
+        // Cerrar el modal de "Nuevo Usuario" si estuviera abierto para evitar doble backdrop
+        const newUserEl = document.getElementById('modalNuevoUsuario');
+        if (newUserEl && bootstrap.Modal.getInstance(newUserEl)) {
+          bootstrap.Modal.getInstance(newUserEl).hide();
+        }
+        document.querySelectorAll('.modal-backdrop').forEach(b=>b.remove());
+
+        editModal.show();
+      });
+    });
+  }
+});
+</script>
+@endpush
+
+{{-- Modal Editar Usuario --}}
+<div class="modal fade admin-modal" id="modalEditUsuario" tabindex="-1" aria-labelledby="modalEditUsuarioLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalEditUsuarioLabel">Editar usuario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <form id="formEditUsuario" method="POST" action="#">
+        @csrf
+        @method('PUT')
+        <input type="hidden" id="edit-id" name="id">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Nombre</label>
+              <input type="text" class="form-control form-underline" id="edit-nombre" name="nombre" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Apellidos</label>
+              <input type="text" class="form-control form-underline" id="edit-apellido" name="apellido" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Correo</label>
+              <input type="email" class="form-control form-underline" id="edit-email" name="email" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Rol</label>
+              <select id="edit-rol" name="role" class="form-select form-underline" required>
+                <option value="ADMIN">Administrador</option>
+                <option value="LIDER_GENERAL">Líder General</option>
+                <option value="LIDER_SEMILLERO">Líder Semillero</option>
+                <option value="APRENDIZ">Aprendiz</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Estado</label>
+              <select id="edit-estado" name="estado" class="form-select form-underline">
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  </div>

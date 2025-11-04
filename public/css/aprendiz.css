@@ -1,0 +1,126 @@
+/* Fondo general */
+.main-bg {
+    background-image: url("../images/image.png"); /* cambia la ruta */
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+
+/* Header */
+.header-bar {
+    background: #fff;
+    border-radius: 15px;
+    margin: 15px 20px;
+}
+.brand-text {
+    color: #009639;
+}
+
+/* Sidebar */
+.sidebar {
+    background: #fff;
+    border-radius: 15px;
+    min-height: 85vh;
+    margin-left: 20px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+.user-avatar {
+    background: #002f6c;
+    color: #fff;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    font-weight: bold;
+    line-height: 60px;
+}
+.nav-link {
+    color: #333;
+    font-weight: 500;
+    border-radius: 10px;
+    padding: 10px 15px;
+    margin: 5px 0;
+    transition: all 0.3s;
+}
+.nav-link.active,
+.nav-link:hover {
+    background: #002f6c;
+    color: #fff;
+}
+
+/* Sidebar tipo tarjeta (nuevo estilo) */
+.sidebar-card{background:#fff;border:1px solid var(--gray-200);border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
+.side-link{display:block;padding:.85rem 1rem;border:1px solid #e5e7eb;border-radius:14px;background:#fff;color:#6b7280;font-weight:600;text-decoration:none;transition:.15s}
+.side-link i{color:#6b7280}
+.side-link:hover{box-shadow:0 4px 12px rgba(0,0,0,.06);color:var(--sena-green-dark);background:#e9f7ec}
+.side-link.active{background:var(--sena-green);color:#fff;border-color:var(--sena-green)}
+.side-link.active i{color:#fff}
+
+/* Contenido principal */
+.content-wrapper{background:#fff;border-radius:16px;border:1px solid var(--gray-200)}
+.container .content-wrapper{margin:0 auto}
+.project-card{border:1px solid #e9ecef;border-radius:16px;transition:.2s;position:relative;background:#fff;display:flex;flex-direction:column;min-height:100%}
+.project-card:hover{box-shadow:0 8px 24px rgba(16,24,40,.08);transform:translateY(-1px)}
+.project-head{background:linear-gradient(135deg,#15803d,#16a34a); color:#fff; border-top-left-radius:16px;border-top-right-radius:16px;padding:16px}
+.project-head h5{font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.project-body{padding:18px 18px 12px}
+.project-footer{padding:18px; padding-top:0}
+.badge.status{border-radius:999px;padding:.4rem .75rem;font-weight:700;letter-spacing:.3px}
+.status-chip{display:inline-block;background:#facc15;color:#111827;border-radius:9999px;padding:.25rem .6rem;font-weight:800;font-size:.72rem;line-height:1;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.status-chip.is-active{background:#fff;color:#15803d;border:2px solid #15803d}
+
+/* Más aire entre cards y botones grandes */
+.row.g-4{--bs-gutter-x:1.5rem;--bs-gutter-y:1.5rem}
+.btn.btn-success.btn-pill,.btn.btn-outline-success.btn-pill{padding-top:.6rem;padding-bottom:.6rem;border-radius:9999px}
+
+@media (max-width: 576px){
+  .project-head h5{font-size:.98rem}
+  .status-chip{font-size:.68rem}
+}
+.meta-title{font-size:.8rem;color:#64748b;font-weight:700;text-transform:uppercase}
+.btn-pill{border-radius:999px}
+
+/* Botones */
+.btn-success {
+    background-color: #009639;
+    border: none;
+}
+.btn-success:hover {
+    background-color: #007a2b;
+}
+.btn-outline-success {
+    border: 2px solid #009639;
+    color: #009639;
+}
+.btn-outline-success:hover {
+    background-color: #009639;
+    color: #fff;
+}
+/* Alinear contenido principal con sidebar */
+main {
+    margin-top: 0 !important;
+}
+
+/* Elimina separación extra del header */
+.header-bar {
+    margin-bottom: 10px !important;
+}
+
+/* ===== Estilos copiados del Admin para modales ===== */
+:root{--sena-green:#39A900;--sena-green-dark:#007832;--sena-navy:#00304D;--gray-100:#F3F4F6;--gray-200:#eaeaea}
+
+/* Inputs estilo subrayado (compatibles con admin) */
+.form-underline{border:0;border-bottom:2px solid #e0e0e0;border-radius:0;padding-left:0;padding-right:0;background:transparent}
+.form-underline:focus{box-shadow:none;border-color:var(--sena-navy)}
+
+/* Modales con look & feel del admin */
+.admin-modal .modal-content{border:0;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.15)}
+.admin-modal .modal-header{background:var(--sena-navy);color:#fff;border:0;border-top-left-radius:16px;border-top-right-radius:16px}
+.admin-modal .btn-close{filter:invert(1);opacity:.9}
+.admin-modal .modal-body{background:#f8f9fb}
+.admin-modal .form-label{font-weight:600}
+.admin-modal .form-control,.admin-modal .form-select{border:0;border-bottom:2px solid #e0e0e0;border-radius:0;background:transparent}
+.admin-modal .form-control:focus,.admin-modal .form-select:focus{box-shadow:none;border-color:var(--sena-navy)}
+.admin-modal .modal-footer .btn-success{background:var(--sena-green);border:0}
+.admin-modal .modal-footer .btn-success:hover{filter:brightness(.92)}
+.admin-modal .modal-footer .btn-outline-secondary{border-color:var(--sena-navy);color:var(--sena-navy)}
+.admin-modal .modal-footer .btn-outline-secondary:hover{background:#eef4f8}

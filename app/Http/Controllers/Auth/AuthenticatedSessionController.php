@@ -7,7 +7,8 @@ use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Contracts\View\View; // Importación necesaria para tipado de vistas Blade
 
 class AuthenticatedSessionController extends Controller
 {
@@ -16,7 +17,11 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): View
     {
-        return view('auth.login');
+        // Esto devuelve la vista Blade 'resources/views/auth/login.blade.php'
+        return view('auth.login', [
+            'canResetPassword' => Route::has('password.request'),
+            'status' => session('status'),
+        ]);
     }
 
     /**
@@ -25,53 +30,43 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
+
         $request->session()->regenerate();
 
         $user = Auth::user();
+        // Nota: Se recomienda normalizar el rol antes de usarlo.
         $rol = strtoupper(str_replace([' ', '-'], '_', trim($user->role ?? $user->rol ?? '')));
 
         $map = [
             'ADMIN' => 'admin.dashboard',
+
+            // CORRECCIÓN: Se incluye el rol INSTRUCTOR
             'INSTRUCTOR' => 'lider_semi.dashboard',
+
             'APRENDIZ' => 'aprendiz.dashboard',
             'LIDER_SEMILLERO' => 'lider_semi.dashboard',
-            'LIDER_GENERAL' => 'lider.dashboard',
+
+            // CORRECCIÓN: Se usa el nombre de ruta correcto 'lider_general.dashboard'
+            'LIDER_GENERAL' => 'lider_general.dashboard',
         ];
 
+        // Redirige a la ruta específica del rol, o a 'dashboard' como fallback
         $route = $map[$rol] ?? 'dashboard';
 
         return redirect()->route($route);
     }
 
-    protected function redirectTo()
-    {
-        $role = auth()->user()->role ?? auth()->user()->rol ?? '';
-        $roleKey = strtoupper(str_replace([' ', '-'], '_', trim($role)));
-
-        switch ($roleKey) {
-            case 'LIDER_SEMILLERO':
-                return '/lider_semi/dashboard';
-            case 'ADMIN':
-                return '/admin/dashboard';
-            case 'APRENDIZ':
-                return '/aprendiz/dashboard';
-            case 'LIDER_GENERAL':
-                return '/lider/dashboard';
-            default:
-                return '/home';
-        }
-    }
-
     /**
-     * Cerrar la sesión del usuario autenticado.
+     * Destroy an authenticated session.
      */
     public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
+
         $request->session()->regenerateToken();
 
-        return redirect('/login');
+        return redirect('/');
     }
 }

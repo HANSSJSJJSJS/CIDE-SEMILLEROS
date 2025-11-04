@@ -37,7 +37,7 @@
                 <div class="card-body">
                     <form action="{{ route('aprendiz.documentos.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
-                        
+
                         <div class="mb-3">
                             <label for="id_proyecto" class="form-label">Proyecto *</label>
                             <select name="id_proyecto" id="id_proyecto" class="form-select @error('id_proyecto') is-invalid @enderror" required>

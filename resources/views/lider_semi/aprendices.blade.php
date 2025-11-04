@@ -13,7 +13,7 @@
             <div class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Tipo de Documento</label>
-                    <select id="filtro-tipo-doc" class="form-select">
+                    <select id="filtro-tipo-doc" class="form-select form-underline">
                         <option value="">Todos</option>
                         <option value="CC">CC</option>
                         <option value="TI">TI</option>
@@ -22,11 +22,11 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-semibold">Número de Documento</label>
-                    <input type="text" id="filtro-documento" class="form-control" placeholder="Ej: 1023456789">
+                    <input type="text" id="filtro-documento" class="form-control form-underline" placeholder="Ej: 1023456789">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Nombre</label>
-                    <input type="text" id="filtro-nombre" class="form-control" placeholder="Buscar por nombre">
+                    <input type="text" id="filtro-nombre" class="form-control form-underline" placeholder="Buscar por nombre">
                 </div>
                 <div class="col-md-2 d-flex align-items-end">
                     <button id="btn-limpiar-filtros" class="btn btn-outline-secondary w-100">
@@ -41,7 +41,7 @@
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
-                    <thead style="background-color:#2d572c;color:#fff;">
+                    <thead>
                         <tr>
                             <th class="py-3 px-4">APRENDIZ</th>
                             <th class="py-3">PROYECTO</th>

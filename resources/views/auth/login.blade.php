@@ -16,9 +16,11 @@
 </head>
 
 <body>
+    <div class="sena-badge">
+        <img src="{{ asset('images/logo-sena.png') }}" alt="Logo SENA">
+    </div>
     <div class="container">
         <div class="left-panel">
-            <img src="{{ asset('images/logo_semillero.png') }}" alt="Logo CIDE" class="logo-cide">
         </div>
 
         <div class="right-panel">
@@ -59,13 +61,8 @@
 
                     <button type="submit" class="btn-entrar">ENTRAR</button>
                 </form>
-
                 <div class="forgot-password">
                     <a href="{{ route('password.request') }}">¿Olvidaste tu contraseña?</a>
-                </div>
-
-                <div class="sena-footer">
-                    <img src="{{ asset('images/logo-sena.png') }}" alt="Logo" class="logo-sena">
                 </div>
             </div>
         </div>

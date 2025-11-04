@@ -6,7 +6,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-
+use Illuminate\Database\Eloquent\Relations\BelongsToMany; // Importar BelongsToMany
+use App\Models\Proyecto;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -17,7 +18,7 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
-    protected $fillable = ['name','apellidos','email','password','role'];
+    protected $fillable = ['name','apellidos','email','password','role','telefono'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -41,6 +42,24 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    // --- AQUÍ AÑADIMOS LA RELACIÓN DE MUCHOS A MUCHOS ---
+
+    /**
+     * El usuario pertenece a muchos proyectos.
+     */
+    public function proyectos(): BelongsToMany
+    {
+        // Esto define la relación:
+        // 1. Con el modelo Proyecto.
+        // 2. Usando la tabla pivote 'proyecto_user'.
+        // 3. Asume que las claves son 'user_id' y 'proyecto_id' o 'id_proyecto'.
+        // Si tu clave foránea en la tabla pivote es 'id_proyecto' para la columna del proyecto,
+        // ajusta la definición de la relación aquí:
+        return $this->belongsToMany(Proyecto::class, 'proyecto_user', 'user_id', 'id_proyecto');
+    }
+
+    // ----------------------------------------------------
 
     public function redirectPath()
 {
@@ -66,6 +85,15 @@ public function aprendiz()
 public function administrador()
 {
     return $this->hasOne(Administrador::class, 'id_usuario');
+}
+
+public function evidencias()
+{
+    return $this->hasMany(Evidencias::class, 'proyecto_id', 'id_proyecto');
+}
+ public function documentos()
+{
+    return $this->hasMany(Documento::class, 'id_usuario', 'id');
 }
 
 }

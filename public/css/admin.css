@@ -1,0 +1,78 @@
+:root{--sena-green:#39A900;--sena-green-dark:#007832;--sena-navy:#00304D;--gray-100:#F3F4F6;--gray-200:#eaeaea}
+body{background:#f8f9fb}
+/* Watermark global a pantalla completa */
+body.page-wm{position:relative}
+body.page-wm::before{content:"";position:fixed;inset:0;background-position:center;background-repeat:no-repeat;background-image:var(--page-wm-image, url('/images/recurso.png'));background-size:var(--page-wm-size,80%);opacity:var(--page-wm-opacity,.06);pointer-events:none;z-index:0}
+.container-fluid{position:relative;z-index:1}
+/* Topbar tipo tarjeta */
+.topbar{background:#fff;color:var(--sena-navy);padding:.85rem 1.25rem;display:flex;align-items:center;justify-content:space-between;border:2px solid var(--gray-200);border-radius:14px;margin:16px 16px 0 16px;box-shadow:0 4px 14px rgba(0,0,0,.05)}
+.topbar h5{color:var(--sena-green);font-weight:800;letter-spacing:.3px;margin:0}
+.topbar .profile-info{gap:12px}
+.topbar .btn-link{color:var(--sena-navy)!important;text-decoration:none}
+.topbar .btn-link:hover{opacity:.85}
+.topbar .btn-link .badge{font-size:.65rem;padding:.25rem .45rem}
+.topbar .avatar{border:1px solid var(--gray-200); width:34px;height:34px;font-size:.85rem;color:var(--sena-green)}
+.btn-navy{background:var(--sena-navy);color:#fff;border:0}
+.btn-navy:hover{filter:brightness(.92);color:#fff}
+
+/* Sidebar tarjeta */
+.sidebar{height:100vh;background:#fff;border-right:2px solid var(--gray-200);padding-top:1.5rem;border-top-right-radius:18px;border-bottom-right-radius:18px}
+.sidebar .nav-link{color:#333;font-weight:500;border-radius:10px;margin-bottom:8px}
+.sidebar .nav-link.active{background:var(--sena-navy);color:#fff}
+.sidebar .nav-link:hover{background:#e9f7ec;color:var(--sena-green-dark)}
+
+/* Contenedor principal tipo tarjeta + watermark */
+.content-shell{background:#fff;border:2px solid var(--gray-200);border-radius:14px;padding:24px;position:relative;box-shadow:0 2px 8px rgba(0,0,0,.04);overflow:hidden}
+.content-shell::before{content:"";position:absolute;inset:0;background-position:center;background-repeat:no-repeat;background-image:var(--wm-image, url('/images/recurso.png'));background-size:var(--wm-size,65%);opacity:var(--wm-opacity,.05);pointer-events:none}
+
+/* Utilidad: watermark en cualquier contenedor */
+.wm{position:relative;overflow:hidden}
+.wm::before{content:"";position:absolute;inset:0;background-position:center;background-repeat:no-repeat;background-image:var(--wm-image, url('/images/recurso.png'));background-size:var(--wm-size,65%);opacity:var(--wm-opacity,.05);pointer-events:none;z-index:0}
+.wm > *{position:relative;z-index:1}
+
+/* Cabecera tabla azul institucional */
+.table thead th{background:var(--sena-navy);color:#fff;border-color:var(--sena-navy)}
+
+/* Inputs estilo subrayado */
+.form-underline{border:0;border-bottom:2px solid #e0e0e0;border-radius:0;padding-left:0;padding-right:0;background:transparent}
+.form-underline:focus{box-shadow:none;border-color:var(--sena-navy)}
+
+/* Badges de rol */
+.role-badge{border-radius:9999px;font-weight:600;padding:.15rem .5rem;border:1px solid transparent;font-size:.78rem;line-height:1}
+.role-admin{background:var(--sena-navy);color:#fff}
+.role-lider{background:var(--sena-green);color:#fff}
+.role-aprendiz{background:#fff;color:var(--sena-green-dark);border-color:var(--sena-green)}
+
+/* Badges de estado */
+.badge-success,.badge.bg-success{background:var(--sena-green)!important;color:#fff!important;border-radius:20px;padding:.2rem .6rem}
+.badge-danger,.badge.bg-danger{border-radius:20px;padding:.2rem .6rem}
+
+/* Utilidades */
+.text-navy{color:var(--sena-navy)!important}
+.rounded-pill{border-radius:9999px!important}
+
+/* Panel interno (como en mock) */
+.panel-card{background:#fff;border:2px solid var(--gray-200);border-radius:18px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.panel-card .panel-header{padding:18px 20px;border-bottom:2px solid var(--gray-200)}
+.panel-card .panel-body{padding:18px 20px}
+
+/* Barra de filtros tipo pill */
+.filters-bar .pill-input{border:2px solid var(--sena-navy);background:#fff;border-radius:9999px;padding:.55rem 1rem .55rem 2.4rem}
+.filters-bar .pill-select{border:2px solid var(--sena-navy);background:#fff;border-radius:9999px;padding:.55rem 1.25rem}
+.filters-bar .btn-pill-green{background:var(--sena-green);color:#fff;border:0;border-radius:9999px;padding:.55rem 1rem}
+.filters-bar .btn-pill-green:hover{filter:brightness(.92)}
+.filters-bar .input-icon{position:relative}
+.filters-bar .input-icon i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--sena-navy)}
+
+/* Modales Admin */
+.admin-modal .modal-content{border:0;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.15)}
+.admin-modal .modal-header{background:var(--sena-navy);color:#fff;border:0;border-top-left-radius:16px;border-top-right-radius:16px}
+.admin-modal .btn-close{filter:invert(1);opacity:.9}
+.admin-modal .modal-body{background:#f8f9fb}
+.admin-modal .form-label{font-weight:600}
+.admin-modal .form-control,.admin-modal .form-select{border:0;border-bottom:2px solid #e0e0e0;border-radius:0;background:transparent}
+.admin-modal .form-control:focus,.admin-modal .form-select:focus{box-shadow:none;border-color:var(--sena-navy)}
+.admin-modal .modal-footer .btn-success{background:var(--sena-green);border:0}
+.admin-modal .modal-footer .btn-success:hover{filter:brightness(.92)}
+.admin-modal .modal-footer .btn-outline-secondary{border-color:var(--sena-navy);color:var(--sena-navy)}
+.admin-modal .modal-footer .btn-outline-secondary:hover{background:#eef4f8}

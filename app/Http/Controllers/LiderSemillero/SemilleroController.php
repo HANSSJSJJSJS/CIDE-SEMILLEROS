@@ -64,16 +64,15 @@ class SemilleroController extends Controller
                 if (!empty($pivot)) {
                     $ids = $proyectos->pluck('id_proyecto')->filter()->values()->all();
                     if (!empty($ids)) {
-                        // JOIN correcto según si la pivote usa id_aprendiz o id_usuario
-                        $joinCol = ($pivot['aprCol'] === 'id_usuario' && Schema::hasColumn('aprendices', 'id_usuario')) ? 'id_usuario' : 'id_aprendiz';
+                        // JOIN correcto según si la pivote usa id_aprendiz o id_usuario/user_id
+                        $useUserId = in_array($pivot['aprCol'], ['id_usuario','user_id']);
+                        $joinCol = ($useUserId && Schema::hasColumn('aprendices', 'id_usuario')) ? 'id_usuario' : 'id_aprendiz';
                         $rows = DB::table($pivot['table'])
                             ->join('aprendices', 'aprendices.'.$joinCol, '=', DB::raw($pivot['table'].'.'.$pivot['aprCol']))
                             ->whereIn(DB::raw($pivot['table'].'.'.$pivot['projCol']), $ids)
                             ->select(
                                 DB::raw($pivot['table'].'.'.$pivot['projCol'].' as pid'),
-                                'aprendices.id_aprendiz',
-                                'aprendices.nombres',
-                                'aprendices.apellidos',
+                                DB::raw('aprendices.id_usuario as id_aprendiz'),
                                 DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),
                                 'aprendices.correo_institucional',
                                 'aprendices.programa'
@@ -223,12 +222,13 @@ class SemilleroController extends Controller
     {
         $semillero = Semillero::where('id_semillero', $semilleroId)
             ->with(['aprendices' => function($q){
-                $q->select('aprendices.id_aprendiz','aprendices.nombres','aprendices.apellidos','aprendices.correo_institucional');
+                $q->select('aprendices.id_usuario','aprendices.nombres','aprendices.apellidos','aprendices.correo_institucional');
             }])->firstOrFail();
 
-        $asignadosIds = $semillero->aprendices->pluck('id_aprendiz')->all();
+        $asignadosIds = $semillero->aprendices->pluck('id_usuario')->all();
 
         $aprendices = Aprendiz::select(
+                'id_usuario as id_aprendiz',
                 'id_aprendiz',
                 DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo"),
                 'correo_institucional'
@@ -306,7 +306,7 @@ class SemilleroController extends Controller
     public function attachAprendiz(Request $request, $semilleroId)
     {
         $data = $request->validate([
-            'aprendiz_id' => ['required','integer','exists:aprendices,id_aprendiz'],
+            'aprendiz_id' => ['required','integer','exists:aprendices,id_usuario'],
         ]);
         $semillero = Semillero::where('id_semillero', $semilleroId)->firstOrFail();
         $semillero->aprendices()->syncWithoutDetaching([$data['aprendiz_id']]);
@@ -362,7 +362,7 @@ class SemilleroController extends Controller
     {
         // Priorizar tabla pivote tradicional para obtener aprendices asignados
         $pivotCandidates = [
-            'aprendiz_proyecto', 'aprendices_proyectos', 'aprendiz_proyectos', 'proyecto_aprendiz', 'proyectos_aprendices', 'proyecto_aprendices'
+            'proyecto_user', 'aprendiz_proyecto', 'aprendices_proyectos', 'aprendiz_proyectos', 'proyecto_aprendiz', 'proyectos_aprendices', 'proyecto_aprendices'
         ];
         $table = null;
         foreach ($pivotCandidates as $cand) {
@@ -371,7 +371,7 @@ class SemilleroController extends Controller
         
         if ($table) {
             $projCols = ['id_proyecto','proyecto_id','idProyecto'];
-            $aprCols  = ['id_aprendiz','aprendiz_id','idAprendiz','id_usuario'];
+            $aprCols  = ['id_aprendiz','aprendiz_id','idAprendiz','id_usuario','user_id'];
             $pivotProjCol = null; $pivotAprCol = null;
             foreach ($projCols as $c) { if (Schema::hasColumn($table, $c)) { $pivotProjCol = $c; break; } }
             foreach ($aprCols as $c) { if (Schema::hasColumn($table, $c)) { $pivotAprCol = $c; break; } }
@@ -397,9 +397,9 @@ class SemilleroController extends Controller
         $proyecto = Proyecto::select('id_proyecto', DB::raw('COALESCE(nombre_proyecto, "Proyecto") as nombre'))
             ->where('id_proyecto', $proyectoId)->firstOrFail();
         $rows = DB::table($pivot['table'])
-            ->join('aprendices','aprendices.id_aprendiz','=',DB::raw($pivot['table'].'.'.$pivot['aprCol']))
+            ->join('aprendices','aprendices.id_usuario','=',DB::raw($pivot['table'].'.'.$pivot['aprCol']))
             ->where(DB::raw($pivot['table'].'.'.$pivot['projCol']), $proyectoId)
-            ->select('aprendices.id_aprendiz', DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),'aprendices.correo_institucional')
+            ->select(DB::raw('aprendices.id_usuario as id_aprendiz'), DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),'aprendices.correo_institucional')
             ->orderByRaw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))")
             ->get();
         // Simular relación para la vista
@@ -503,7 +503,7 @@ class SemilleroController extends Controller
 
     public function attachProyectoAprendiz(Request $request, $proyectoId)
     {
-        $data = $request->validate(['aprendiz_id' => ['required','integer','exists:aprendices,id_aprendiz']]);
+        $data = $request->validate(['aprendiz_id' => ['required','integer','exists:aprendices,id_usuario']]);
         $pivot = $this->pivotProyectoAprendiz();
         if (empty($pivot)) return response()->json(['ok'=>false], 400);
         
@@ -625,7 +625,8 @@ class SemilleroController extends Controller
             $selectCols[] = 'id_usuario';
         }
         $aprendices = DB::table('aprendices')
-            ->select(array_merge($selectCols, [
+            ->select(array_merge(array_diff($selectCols, ['id_aprendiz']), [
+                'id_usuario as id_aprendiz',
                 DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo")
             ]))
             ->orderByRaw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))")
@@ -639,18 +640,15 @@ class SemilleroController extends Controller
             $pivot = $this->pivotProyectoAprendiz();
             if (!empty($pivot)) {
                 try {
+                    $aprColJoin = Schema::hasColumn('aprendices', 'id_usuario') ? 'id_usuario' : 'id_aprendiz';
                     $proyectosRelaciones = DB::table($pivot['table'])
                         ->join('proyectos', 'proyectos.id_proyecto', '=', DB::raw($pivot['table'].'.'.$pivot['projCol']))
-                        ->join('aprendices', function($join) use ($pivot) {
-                            if ($pivot['aprCol'] === 'id_usuario' && Schema::hasColumn('aprendices', 'id_usuario')) {
-                                $join->on('aprendices.id_usuario', '=', DB::raw($pivot['table'].'.'.$pivot['aprCol']));
-                            } else {
-                                $join->on('aprendices.id_aprendiz', '=', DB::raw($pivot['table'].'.'.$pivot['aprCol']));
-                            }
+                        ->join('aprendices', function($join) use ($pivot, $aprColJoin) {
+                            $join->on(DB::raw('aprendices.'.$aprColJoin), '=', DB::raw($pivot['table'].'.'.$pivot['aprCol']));
                         })
-                        ->whereIn('aprendices.id_aprendiz', $aprendicesIds)
+                        ->whereIn(DB::raw('aprendices.'.$aprColJoin), $aprendicesIds)
                         ->select(
-                            'aprendices.id_aprendiz',
+                            DB::raw('aprendices.'.$aprColJoin.' as id_aprendiz'),
                             DB::raw('COALESCE(proyectos.nombre_proyecto, "Proyecto") as proyecto_nombre')
                         )
                         ->get()
@@ -704,46 +702,39 @@ class SemilleroController extends Controller
     {
         $userId = auth()->id();
         
-        // Verificar si existe la tabla de proyectos
         if (!Schema::hasTable('proyectos')) {
             return view('lider_semi.documentos', ['proyectos' => collect([])]);
         }
 
-        // Obtener proyectos
-        $proyectos = DB::table('proyectos')
+        // Solo proyectos del líder autenticado (según semillero propietario)
+        $proyectos = DB::table('proyectos as p')
+            ->join('semilleros as s', 's.id_semillero', '=', 'p.id_semillero')
+            ->where('s.id_lider_usuario', $userId)
             ->select(
-                'id_proyecto',
-                DB::raw('COALESCE(nombre_proyecto, "Proyecto") as nombre'),
-                DB::raw('COALESCE(descripcion, "") as descripcion'),
-                DB::raw('COALESCE(estado, "ACTIVO") as estado')
+                'p.id_proyecto',
+                DB::raw('COALESCE(p.nombre_proyecto, "Proyecto") as nombre'),
+                DB::raw('COALESCE(p.descripcion, "") as descripcion'),
+                DB::raw('COALESCE(p.estado, "ACTIVO") as estado')
             )
             ->get();
 
-        // Contar documentos reales por proyecto desde la tabla documentos
-        $proyectos->transform(function($proyecto) {
+        // Contadores por proyecto desde documentos
+        $proyectos->transform(function($proyecto){
             if (Schema::hasTable('documentos')) {
-                // Verificar si existe la columna estado
-                $hasEstado = Schema::hasColumn('documentos', 'estado');
-                
-                // Contar total de entregas (incluyendo placeholders/evidencias creadas por el líder)
                 $proyecto->entregas = DB::table('documentos')
                     ->where('id_proyecto', $proyecto->id_proyecto)
                     ->count();
-                
-                if ($hasEstado) {
-                    // Contar pendientes
+
+                if (Schema::hasColumn('documentos', 'estado')) {
                     $proyecto->pendientes = DB::table('documentos')
                         ->where('id_proyecto', $proyecto->id_proyecto)
                         ->where('estado', 'pendiente')
                         ->count();
-                    
-                    // Contar aprobadas
                     $proyecto->aprobadas = DB::table('documentos')
                         ->where('id_proyecto', $proyecto->id_proyecto)
                         ->where('estado', 'aprobado')
                         ->count();
                 } else {
-                    // Si no existe columna estado, todas son pendientes
                     $proyecto->pendientes = $proyecto->entregas;
                     $proyecto->aprobadas = 0;
                 }
@@ -752,39 +743,22 @@ class SemilleroController extends Controller
                 $proyecto->pendientes = 0;
                 $proyecto->aprobadas = 0;
             }
-            
             return $proyecto;
         });
 
-        // Separar proyectos activos y completados
-        // Un proyecto se considera activo si:
-        // 1. Su estado es ACTIVO, EN_EJECUCION, etc. O
-        // 2. Tiene evidencias pendientes de revisión
-        $proyectosActivos = $proyectos->filter(function($p) {
+        // Clasificación básica
+        $proyectosActivos = $proyectos->filter(function($p){
             $estadoUpper = strtoupper($p->estado);
-            $esEstadoActivo = in_array($estadoUpper, ['ACTIVO', 'EN_EJECUCION', 'EN EJECUCION', 'EJECUCION', 'EN_FORMULACION', 'EN FORMULACION', 'FORMULACION']);
-            
-            // Si tiene pendientes, siempre es activo
-            if ($p->pendientes > 0) {
-                return true;
-            }
-            
-            // Si no tiene pendientes pero su estado es activo, también es activo
-            return $esEstadoActivo;
+            $esEstadoActivo = in_array($estadoUpper, ['ACTIVO','EN_EJECUCION','EN EJECUCION','EJECUCION','EN_FORMULACION','EN FORMULACION','FORMULACION']);
+            return ($p->pendientes ?? 0) > 0 || $esEstadoActivo;
+        });
+        $proyectosCompletados = $proyectos->filter(function($p){
+            $estadoUpper = strtoupper($p->estado);
+            $esEstadoCompletado = in_array($estadoUpper, ['COMPLETADO','FINALIZADO','TERMINADO','CERRADO']);
+            return $esEstadoCompletado && (($p->pendientes ?? 0) === 0);
         });
 
-        // Un proyecto se considera completado si:
-        // 1. Su estado es COMPLETADO, FINALIZADO, etc. Y
-        // 2. NO tiene evidencias pendientes (todas están aprobadas o rechazadas)
-        $proyectosCompletados = $proyectos->filter(function($p) {
-            $estadoUpper = strtoupper($p->estado);
-            $esEstadoCompletado = in_array($estadoUpper, ['COMPLETADO', 'FINALIZADO', 'TERMINADO', 'CERRADO']);
-            
-            // Solo es completado si su estado es completado Y no tiene pendientes
-            return $esEstadoCompletado && $p->pendientes === 0;
-        });
-
-        return view('lider_semi.documentos', compact('proyectosActivos', 'proyectosCompletados'));
+        return view('lider_semi.documentos', compact('proyectosActivos','proyectosCompletados'));
     }
 
     // Listar proyectos para el select del modal
@@ -841,9 +815,9 @@ class SemilleroController extends Controller
 
             // Obtener información de los aprendices
             $aprendices = DB::table('aprendices')
-                ->whereIn('id_aprendiz', $aprendizIds)
+                ->whereIn('id_usuario', $aprendizIds)
                 ->where('documento', '!=', 'SIN_ASIGNAR') // Excluir el aprendiz "Sin Asignar"
-                ->select('id_aprendiz', 'nombre_completo')
+                ->select(DB::raw('id_usuario as id_aprendiz'), DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo"))
                 ->orderBy('nombre_completo')
                 ->get();
 
@@ -924,7 +898,7 @@ class SemilleroController extends Controller
         try {
             $request->validate([
                 'proyecto_id' => 'required|integer|exists:proyectos,id_proyecto',
-                'aprendiz_id' => 'nullable|integer|exists:aprendices,id_aprendiz',
+                'aprendiz_id' => 'nullable|integer|exists:aprendices,id_usuario',
                 'titulo' => 'required|string|max:255',
                 'descripcion' => 'required|string',
                 'tipo_evidencia' => 'required|string',
@@ -1238,9 +1212,13 @@ class SemilleroController extends Controller
         $aprendices = collect([]);
         
         if (Schema::hasTable('aprendices')) {
+            $hasNombreCompleto = Schema::hasColumn('aprendices', 'nombre_completo');
+            $nameExpr = $hasNombreCompleto
+                ? 'nombre_completo'
+                : "CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))";
             $aprendices = Aprendiz::where('documento', '!=', 'SIN_ASIGNAR')
                 ->select(
-                    'id_aprendiz','nombres','apellidos','tipo_documento','documento',
+                    'id_usuario as id_aprendiz','nombres','apellidos','tipo_documento','documento',
                     DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo")
                 )
                 ->orderByRaw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))")
@@ -1276,6 +1254,9 @@ class SemilleroController extends Controller
             $mes = $request->input('mes');
             $anio = $request->input('anio');
 
+            $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
+                ? 'nombre_completo'
+                : "CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))";
             $query = Evento::where('id_lider', $userId)
                 ->with(['participantes:id_aprendiz,nombres,apellidos', 'proyecto:id_proyecto,nombre_proyecto']);
 
@@ -1304,7 +1285,8 @@ class SemilleroController extends Controller
                         'proyecto' => $evento->proyecto ? $evento->proyecto->nombre_proyecto : null,
                         'participantes' => $evento->participantes->map(function($p) {
                             return [
-                                'id' => $p->id_aprendiz,
+                                // Compatibilidad: si existe alias id_aprendiz úsalo; de lo contrario id_usuario
+                                'id' => $p->id_aprendiz ?? $p->id_usuario,
                                 'nombre_completo' => $p->nombre_completo
                             ];
                         })
@@ -1340,7 +1322,7 @@ class SemilleroController extends Controller
                 'recordatorio' => 'nullable|string',
                 'id_proyecto' => 'nullable|exists:proyectos,id_proyecto',
                 'participantes' => 'nullable|array',
-                'participantes.*' => 'exists:aprendices,id_aprendiz',
+                'participantes.*' => 'exists:aprendices,id_usuario',
                 'generar_enlace' => 'nullable|string|in:teams,meet,personalizado'
             ]);
 
@@ -1369,6 +1351,17 @@ class SemilleroController extends Controller
                 ], 422);
             }
             
+
+            // Evitar colisión exacta por líder y fecha_hora
+            $exists = Evento::where('id_lider', auth()->id())
+                ->where('fecha_hora', $validated['fecha_hora'])
+                ->exists();
+            if ($exists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ya existe una reunión programada para ese horario.'
+                ], 422);
+            }
 
             // Generar enlace automáticamente si la ubicación es virtual y no se proporcionó enlace
             $linkVirtual = $validated['link_virtual'] ?? null;
@@ -1401,8 +1394,16 @@ class SemilleroController extends Controller
                 $evento->participantes()->attach($validated['participantes']);
             }
 
-            // Cargar relaciones para la respuesta (no seleccionar columna inexistente)
-            $evento->load(['participantes:id_aprendiz,nombres,apellidos', 'proyecto:id_proyecto,nombre_proyecto']);
+            // Cargar relaciones para la respuesta (con alias seguro)
+            $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
+                ? 'nombre_completo'
+                : "CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))";
+            $evento->load([
+                'participantes' => function($q) use ($nameExpr){
+                    $q->selectRaw("id_usuario as id_aprendiz, $nameExpr as nombre_completo");
+                },
+                'proyecto:id_proyecto,nombre_proyecto'
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -1421,7 +1422,7 @@ class SemilleroController extends Controller
                     'proyecto' => $evento->proyecto ? $evento->proyecto->nombre_proyecto : null,
                     'participantes' => $evento->participantes->map(function($p) {
                         return [
-                            'id' => $p->id_aprendiz,
+                            'id' => $p->id_aprendiz ?? $p->id_usuario,
                             'nombre' => $p->nombre_completo
                         ];
                     })
@@ -1462,18 +1463,9 @@ class SemilleroController extends Controller
                 'link_virtual' => 'nullable|url',
                 'id_proyecto' => 'nullable|exists:proyectos,id_proyecto',
                 'participantes' => 'nullable|array',
-                'participantes.*' => 'exists:aprendices,id_aprendiz',
+                'participantes.*' => 'exists:aprendices,id_usuario',
                 'generar_enlace' => 'nullable|string|in:teams,meet,personalizado'
             ]);
-
-            if (isset($validated['fecha_hora'])) {
-                if (!$this->fechaHoraPermitida(new \DateTime($validated['fecha_hora']))) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'La fecha/hora no está permitida. No se pueden agendar fines de semana/feriados, ni fuera de 08:00-16:50, ni en almuerzo (12:00-13:55).'
-                    ], 422);
-                }
-            }
 
             // Validar conflicto considerando valores nuevos o actuales
             $inicioStr = isset($validated['fecha_hora'])
@@ -1539,8 +1531,16 @@ class SemilleroController extends Controller
                 $evento->participantes()->sync($validated['participantes']);
             }
 
-            // Cargar relaciones para la respuesta (seleccionar columnas existentes)
-            $evento->load(['participantes:id_aprendiz,nombres,apellidos', 'proyecto:id_proyecto,nombre_proyecto']);
+            // Cargar relaciones para la respuesta (con alias seguro)
+            $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
+                ? 'nombre_completo'
+                : "CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))";
+            $evento->load([
+                'participantes' => function($q) use ($nameExpr){
+                    $q->selectRaw("id_usuario as id_aprendiz, $nameExpr as nombre_completo");
+                },
+                'proyecto:id_proyecto,nombre_proyecto'
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -1691,7 +1691,13 @@ class SemilleroController extends Controller
             case 'teams':
                 $tenant = config('app.teams_tenant_id', 'public');
                 $oid = auth()->id();
-                return "https://teams.microsoft.com/l/meetup-join/19%3Ameeting_{$codigo}%40thread.v2/0?context=%7B%22Tid%22%3A%22{$tenant}%22%2C%22Oid%22%3A%22{$oid}%22%7D&subject={$tituloCodificado}";
+                return sprintf(
+                    'https://teams.microsoft.com/l/meetup-join/19%%3Ameeting_%s%%40thread.v2/0?context=%%7B%%22Tid%%22%%3A%%22%s%%22%%2C%%22Oid%%22%%3A%%22%s%%22%%7D&subject=%s',
+                    $codigo,
+                    $tenant,
+                    $oid,
+                    $tituloCodificado
+                );
             case 'meet':
                 return "https://meet.google.com/{$codigo}";
             case 'personalizado':

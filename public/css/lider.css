@@ -1,8 +1,8 @@
         :root {
-            --sena-green: #39A900;
-            --sena-dark: #2E8900;
+            --sena-green: #39A900; /* Verde institucional */
+            --sena-green-dark: #007832; /* Verde secundario */
+            --sena-navy: #00304D; /* Azul institucional */
             --gray-bg: #f8f9fb;
-            --nav-dark: #0D1B2A;
         }
 
         body {
@@ -34,6 +34,8 @@
             background: #fff;
             border-right: 2px solid #eaeaea;
             padding-top: 1.5rem;
+            border-top-right-radius: 18px;
+            border-bottom-right-radius: 18px;
         }
 
         .sidebar .nav-link {
@@ -44,23 +46,27 @@
         }
 
         .sidebar .nav-link.active {
-            background: var(--sena-green);
+            background: var(--sena-navy);
             color: #fff;
+            box-shadow: none;
         }
 
         .sidebar .nav-link:hover {
             background: #e9f7ec;
-            color: var(--sena-dark);
+            color: var(--sena-green-dark);
         }
 
         .topbar {
-            background: var(--sena-green);
-            color: #fff;
-            padding: 1rem 2rem;
+            background: #fff;
+            color: var(--sena-navy);
+            padding: 1rem 1.5rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-radius: 0 0 15px 15px;
+            border: 2px solid #eaeaea;
+            border-radius: 14px;
+            margin: 16px 16px 0 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.04);
         }
 
         .profile-info {
@@ -80,6 +86,39 @@
             align-items: center;
             justify-content: center;
         }
+        .topbar h5{color: var(--sena-green); font-weight:800; letter-spacing:.2px}
+
+        /* Botón azul institucional */
+        .btn-navy {
+            background: var(--sena-navy);
+            color: #fff;
+            border: 0;
+        }
+        .btn-navy:hover { filter: brightness(.92); color:#fff; }
+
+        /* Cabeceras de tablas estilo azul institucional */
+        .table thead th { background: var(--sena-navy); color:#fff; border-color: var(--sena-navy); }
+        .badge-success, .badge.bg-success { background: var(--sena-green)!important; color:#fff!important; border-radius: 20px; padding:.2rem .6rem; }
+
+        /* Contenedor principal tipo tarjeta + watermark */
+        .content-shell{
+            background:#fff; border:2px solid #eaeaea; border-radius:14px; padding:24px; position:relative;
+            box-shadow:0 2px 8px rgba(0,0,0,.04);
+            overflow:hidden;
+        }
+        .content-shell::before{
+            content:""; position:absolute; inset:0; background:url('/images/Loginfondo.png') center/60% no-repeat; opacity:.05; pointer-events:none;
+        }
+
+        /* Inputs estilo subrayado */
+        .form-underline{ border:0; border-bottom:2px solid #e0e0e0; border-radius:0; padding-left:0; padding-right:0; background:transparent; }
+        .form-underline:focus{ box-shadow:none; border-color: var(--sena-navy); }
+
+        /* Badges por rol */
+        .role-badge{ border-radius:20px; font-weight:700; padding:.2rem .6rem; border:1px solid transparent; }
+        .role-admin{ background: var(--sena-navy); color:#fff; }
+        .role-lider{ background: var(--sena-green); color:#fff; }
+        .role-aprendiz{ background: #e9f7ec; color: var(--sena-green-dark); border-color: var(--sena-green); }
 
         .card-metric {
             border: none;
