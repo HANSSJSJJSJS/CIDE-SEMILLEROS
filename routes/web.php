@@ -29,49 +29,53 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 require __DIR__.'/auth.php';
 
 // ====== ADMIN (UN SOLO BLOQUE) ======
-Route::middleware(['auth','role:ADMIN'])
-    ->prefix('admin')->as('admin.')
+Route::middleware(['auth', 'role:ADMIN'])
+    ->prefix('admin')
+    ->as('admin.')
     ->group(function () {
 
         // Dashboard
-        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('dashboard', [DashboardController::class, 'index'])
+            ->name('dashboard');
 
         // ===== Usuarios =====
-        Route::get('/usuarios',                [UsuarioController::class, 'index'])->name('usuarios.index');
-        Route::get('/usuarios/create',         [UsuarioController::class, 'create'])->name('usuarios.create');
-        Route::post('/usuarios',               [UsuarioController::class, 'store'])->name('usuarios.store');
-
-        // OJO: aquí llamas a editForm, entonces el controlador DEBE tener ese método
-        Route::get('/usuarios/{usuario}/edit', [UsuarioController::class, 'editForm'])->name('usuarios.edit');
-
-        Route::put('/usuarios/{usuario}',      [UsuarioController::class, 'update'])->name('usuarios.update');
-        Route::delete('/usuarios/{usuario}',   [UsuarioController::class, 'destroy'])->name('usuarios.destroy');
-
-        // AJAX (firma edit($id) → por eso dejamos {id})
-        Route::get('/usuarios/{id}/edit-ajax', [UsuarioController::class, 'edit'])->name('usuarios.edit.ajax');
-
-        Route::post('/usuarios/ajax/store',    [UsuarioController::class, 'storeAjax'])->name('usuarios.store.ajax');
+        Route::get('usuarios',               [UsuarioController::class, 'index'])->name('usuarios.index');
+        Route::get('usuarios/create',        [UsuarioController::class, 'create'])->name('usuarios.create');
+        Route::post('usuarios',              [UsuarioController::class, 'store'])->name('usuarios.store');
+        Route::get('usuarios/{usuario}/edit',[UsuarioController::class, 'editForm'])->name('usuarios.edit');
+        Route::put('usuarios/{usuario}',     [UsuarioController::class, 'update'])->name('usuarios.update');
+        Route::delete('usuarios/{usuario}',  [UsuarioController::class, 'destroy'])->name('usuarios.destroy');
+        Route::get('usuarios/{id}/edit-ajax',[UsuarioController::class, 'edit'])
+            ->whereNumber('id')->name('usuarios.edit.ajax');
+        Route::post('usuarios/ajax/store',   [UsuarioController::class, 'storeAjax'])->name('usuarios.store.ajax');
 
         // ===== Semilleros (ADMIN) =====
-        Route::get('/semilleros/lideres-disponibles', [AdminSemilleros::class, 'lideresDisponibles'])
+        Route::get('semilleros/lideres-disponibles', [AdminSemilleros::class, 'lideresDisponibles'])
             ->name('semilleros.lideres-disponibles');
 
         Route::resource('semilleros', AdminSemilleros::class)
-            ->only(['index','store','edit','update','destroy'])
-            ->names('semilleros'); // genera admin.semilleros.index|edit|update|destroy
+            ->only(['index', 'store', 'edit', 'update', 'destroy'])
+            ->names('semilleros');
 
-           // ===== Reuniones (Líder General) =====
-        Route::get('/reuniones-lideres', [ReunionesLideresController::class, 'index'])
+        Route::get('semilleros/{id}', [AdminSemilleros::class, 'show'])
+            ->whereNumber('id')->name('semilleros.show');
+
+        // ===== Reuniones (Líder General) =====
+        Route::get('reuniones-lideres', [ReunionesLideresController::class, 'index'])
             ->name('reuniones-lideres.index');
 
+        Route::prefix('reuniones-lideres')->as('reuniones-lideres.')->group(function () {
+            Route::get('obtener',    [ReunionesLideresController::class, 'obtener'])->name('obtener');
+            Route::get('semilleros', [ReunionesLideresController::class, 'semilleros'])->name('semilleros');
+            Route::get('lideres',    [ReunionesLideresController::class, 'lideres'])->name('lideres');
 
-                // routes/web.php (solo para probar)
-                Route::get('/semilleros/{id}', [AdminSemilleros::class, 'show'])
-    ->name('semilleros.show');
-    
+            Route::post('',          [ReunionesLideresController::class, 'store'])->name('store');
+            Route::put('{id}',       [ReunionesLideresController::class, 'update'])->whereNumber('id')->name('update');
+            Route::delete('{id}',    [ReunionesLideresController::class, 'destroy'])->whereNumber('id')->name('destroy');
 
-
-
+            Route::post('{id}/generar-enlace', [ReunionesLideresController::class, 'generarEnlace'])
+                ->whereNumber('id')->name('generar-enlace');
+        });
     });
 
 

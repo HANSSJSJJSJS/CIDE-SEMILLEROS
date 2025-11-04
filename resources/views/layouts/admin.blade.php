@@ -49,9 +49,9 @@
       </a>
 
       <a href="{{ route('admin.reuniones-lideres.index') }}"
-         class="nav-link {{ request()->routeIs('admin.reuniones-lideres.*') ? 'active' : '' }}">
-        <i class="bi bi-calendar-event me-2"></i> <span>Reuniones</span>
-      </a>
+      class="nav-link {{ request()->routeIs('admin.reuniones-lideres.*') ? 'active' : '' }}">
+      <i class="bi bi-calendar-event me-2"></i> <span>Reuniones</span>
+    </a>
 
       <a href="{{ route('lider_semi.recursos') }}"
          class="nav-link {{ request()->routeIs('lider_semi.recursos') ? 'active' : '' }}">
@@ -114,6 +114,9 @@
     </div>
   </div>
 
+
+
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   <!-- 👇 Reemplaza tu script anterior por este -->
@@ -156,10 +159,6 @@
     });
   })();
   </script>
-
-  @stack('scripts')
-  @yield('scripts')
-</body>
 
   @stack('scripts')
   @yield('scripts')
