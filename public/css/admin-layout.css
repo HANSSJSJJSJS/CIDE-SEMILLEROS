@@ -1,0 +1,131 @@
+/* =========================================================
+   ADMIN LAYOUT (solo estructura visual del panel)
+   - Sidebar, Topbar, fondo decorativo, brand, menú lateral
+   - No incluye estilos de tablas, botones ni formularios
+   ========================================================= */
+
+/* Paleta base */
+:root{
+  --blue-900:#0b2e4d;        /* azul institucional */
+  --green-sena:#77B900;      /* verde SENA */
+  --green-soft:#b6e6a8;      /* verde suave para estados activos del menú */
+  --text:#0b1b2b;            /* texto general */
+  --muted:#6b7a90;           /* texto secundario */
+}
+
+/* Contenedor general del layout */
+.adm-body{ background:#f7f9fc; color:var(--text); }
+.adm-shell{ display:grid; grid-template-columns:280px 1fr; min-height:100vh; }
+
+/* ---------- Sidebar ---------- */
+.adm-sidebar{
+  background:var(--blue-900);
+  color:#e8f0f7;
+  padding:16px 14px 18px;
+  display:flex; flex-direction:column; gap:14px;
+  z-index:1020;
+}
+
+/* Brand (logo + nombre del sistema) */
+.adm-sidebar .adm-brand{ display:flex; align-items:center; gap:12px; padding-bottom:16px; border-bottom:1px solid rgba(255,255,255,.08); }
+.brand-logo{ width:42px; height:42px; object-fit:contain; }
+.brand-system{ font-size:.95rem; color:#cfe6ff; }
+
+/* Variante “brand grande” apilada (logo arriba, texto abajo) */
+.brand-large{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:8px 6px 14px; border-bottom:1px solid rgba(255,255,255,.08); }
+.brand-logo-lg{ width:86px; height:86px; object-fit:contain; }
+.brand-system-lg{ font-size:1.08rem; line-height:1.2; color:#eaf3ff; font-weight:700; }
+
+/* Menú lateral con tarjeta semitransparente */
+.menu-card{
+  margin-top:12px;
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.22);
+  border-radius:14px;
+  padding:10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.12) inset;
+  backdrop-filter: blur(2px);
+}
+.adm-nav{ display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+.menu-card .nav-link{
+  display:flex; align-items:center; gap:10px;
+  color:#e6eef7; text-decoration:none;
+  padding:10px 12px; border-radius:10px;
+  transition:.15s background,.15s color;
+}
+.menu-card .nav-link:hover{ background:rgba(255,255,255,.12); color:#fff; }
+.menu-card .nav-link.active{
+  background:#59b54a; color:#fff; font-weight:700; border-radius:14px;
+}
+.menu-card .nav-link.active i{ filter: brightness(0) invert(1); }
+
+/* ---------- Topbar ---------- */
+.adm-topbar{
+  background:#08273f; color:#fff;
+  padding:10px 16px;
+  display:flex; align-items:center; justify-content:space-between;
+  position:sticky; top:0; z-index:1010;
+}
+.title-green{ color:var(--green-sena); font-weight:800; letter-spacing:.2px; }
+.profile-info{ display:flex; align-items:center; gap:10px; }
+.avatar{ width:34px; height:34px; border-radius:50%; display:grid; place-items:center; background:#0b3f66; color:#fff; font-weight:700; }
+
+/* ---------- Área de página con fondo decorativo ---------- */
+.adm-content{ background:#f7f9fc; }
+.adm-page{ position:relative; padding:20px; isolation:isolate; z-index:0; }
+.adm-page::before{
+  content:""; position:absolute; inset:0; z-index:-1;
+  background:url("../images/bg-semillero.png") no-repeat center 80px / 900px auto;
+  opacity:.10; pointer-events:none;
+}
+.adm-page-head{ margin:4px 4px 16px; }
+.page-title{ margin:0; font-size:1.6rem; font-weight:800; }
+.page-subtitle{ margin:6px 0 0; color:var(--muted); }
+
+/* ---------- Responsive layout ---------- */
+@media (max-width: 991.98px){
+  .adm-shell{ grid-template-columns:1fr; }
+  .adm-sidebar{ position:fixed; inset:0 auto 0 0; width:82vw; transform:translateX(-100%); transition:transform .2s; }
+  .adm-sidebar.show{ transform:translateX(0); }
+}
+
+/* Botón hamburguesa */
+.btn-outline-light#sidebarToggle {
+  width: 40px; height: 40px; border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-color: rgba(255,255,255,.4);
+}
+
+/* Overlay móvil para el sidebar */
+.sidebar-overlay{
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.35);
+  backdrop-filter: blur(1.5px);
+  z-index: 1015;          /* debajo del sidebar (1020) y encima del contenido */
+  display: none;
+}
+.sidebar-overlay.show{ display:block; }
+
+/* Sidebar móvil deslizante */
+@media (max-width: 991.98px){
+  .adm-sidebar{
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: 82vw; max-width: 340px;
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+    overflow-y: auto;
+    z-index: 1020;
+  }
+  .adm-sidebar.show{ transform: translateX(0); }
+
+  /* Topbar sticky SOLO en móvil */
+  .adm-topbar{ position: sticky; top: 0; z-index: 1005; }
+}
+
+/* En escritorio la topbar NO es sticky (se desplaza con la página) */
+@media (min-width: 992px){
+  .adm-topbar{ position: static; }
+}
+
+/* Bloquea scroll de fondo cuando el menú está abierto en móvil */
+.noscroll{ overflow: hidden; height: 100vh; }

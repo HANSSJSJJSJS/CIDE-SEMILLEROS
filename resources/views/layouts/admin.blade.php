@@ -1,131 +1,167 @@
 <!doctype html>
 <html lang="es">
-
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title> Panel del Administrador </title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>@yield('title','Panel del Administrador')</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="{{ asset('css/lider.css') }}" rel="stylesheet">
-    <link href="{{ asset('css/admin.css') }}" rel="stylesheet">
-    @stack('styles')
-    @yield('styles')
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  {{-- NUEVO tema admin --}}
+  {{-- CSS del layout (estructura) --}}
+<link href="{{ asset('css/admin-layout.css') }}?v={{ time() }}" rel="stylesheet">
+{{-- CSS de vistas (componentes reutilizables) --}}
+<link href="{{ asset('css/admin-views.css') }}?v={{ time() }}" rel="stylesheet">
+
+
+  @stack('styles')
+  @yield('styles')
 </head>
+<body class="adm-body">
+  <div class="adm-shell">
+    {{-- Sidebar --}}
+   <aside id="admSidebar" class="adm-sidebar">
+  {{-- Brand más grande, texto debajo --}}
+  <div class="adm-brand brand-large">
+    <img src="{{ asset('images/logo-sena.png') }}" alt="Logo SENA" class="brand-logo-lg">
+    <div class="brand-system-lg">Sistema de Gestión Semillero</div>
+  </div>
 
-<body class="page-wm" style="--page-wm-image: url('{{ asset('images/recurso.png') }}'); --page-wm-size: 85%; --page-wm-opacity: .07;">
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <nav class="col-md-2 col-lg-2 sidebar d-flex flex-column">
-                <div class="px-3 mb-4">
-                    <img src="{{ asset('images/logo-sena.png') }}" alt="Logo" class="logo-sena">
-                </div>
-                <ul class="nav flex-column px-2">
-                    <li><a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"><i class="bi bi-house-fill me-2"></i> Inicio</a></li>
-                    <li><a href="{{ route('admin.usuarios.index') }}" class="nav-link {{ request()->routeIs('admin.usuarios.*') ? 'active' : '' }}"><i class="bi bi-people-fill me-2"></i> Gestión de Usuarios</a></li>
-                    <li><a href="{{ route('admin.semilleros.index') }}" class="nav-link {{ request()->routeIs('admin.semilleros.*') ? 'active' : '' }}">  <i class="bi bi-diagram-3 me-2"></i> Gestión de semilleros </a></li>
-                    <li> <a href="{{ route('admin.reuniones-lideres.index') }}" class="nav-link {{ request()->routeIs('admin.reuniones-lideres.*') ? 'active' : '' }}"> <i class="bi bi-calendar-event me-2"></i> Reuniones </a> </li>
-                    <li><a href="{{ route('lider_semi.recursos') }}" class="nav-link {{ request()->routeIs('lider_semi.recursos') ? 'active' : '' }}"><i class="bi bi-journal-text me-2"></i> Recursos</a></li>
-                    <li><a href="{{ route('lider_semi.perfil') }}" class="nav-link {{ request()->routeIs('lider_semi.perfil') ? 'active' : '' }}"><i class="bi bi-person-circle me-2"></i> Mi Perfil</a></li>
-                </ul>
-            </nav>
+  {{-- Contenedor semitransparente para el menú --}}
+  <div class="menu-card">
+    <nav class="adm-nav">
+      <a href="{{ route('admin.dashboard') }}"
+         class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+        <i class="bi bi-house-fill me-2"></i> <span>Inicio</span>
+      </a>
 
-            <!-- Main content -->
-            <main class="col-md-10 col-lg-10 p-0">
-                <!-- Top bar -->
-                <div class="topbar">
-                    <h5 class="fw-bold mb-0">Bienvenido a CIDE Administrador</h5>
-                    <div class="profile-info">
-                        <!-- Notificaciones -->
-                        <div class="dropdown me-2">
-                            <button class="btn btn-link position-relative" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notificaciones">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-bell" viewBox="0 0 16 16">
-                                    <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2M8 1.918l-.797.161A4 4 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4 4 0 0 0-3.203-3.92zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6c0-2.42 1.72-4.44 4.005-4.901a1 1 0 1 1 1.99 0A5 5 0 0 1 13 6c0 .88.32 4.2 1.22 6"/>
-                                </svg>
-                                <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-end p-0 shadow notif-menu" aria-labelledby="notifDropdown" style="min-width: 360px;">
-                                <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
-                                    <strong>Notificaciones</strong>
-                                    <button type="button" class="btn btn-sm btn-link" id="markAllRead">Marcar todas como leídas</button>
-                                </div>
-                                <div id="notifList" style="max-height: 320px; overflow:auto">
-                                    <div class="p-3 text-muted small">Cargando...</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="avatar">
-                            {{ strtoupper(substr(Auth::user()->name ?? 'JC', 0, 2)) }}
-                        </div>
-                        <div>
-                            <div>{{ Auth::user()->name }}</div>
-                            <small>Líder General</small>
-                        </div>
+      <a href="{{ route('admin.usuarios.index') }}"
+         class="nav-link {{ request()->routeIs('admin.usuarios.*') ? 'active' : '' }}">
+        <i class="bi bi-people-fill me-2"></i> <span>Gestión de Usuarios</span>
+      </a>
 
+      <a href="{{ route('admin.semilleros.index') }}"
+         class="nav-link {{ request()->routeIs('admin.semilleros.*') ? 'active' : '' }}">
+        <i class="bi bi-diagram-3 me-2"></i> <span>Gestión de semilleros</span>
+      </a>
 
-                        <form method="POST" action="{{ route('logout') }}" class="ms-3">
-                            @csrf
-                            <button class="btn btn-navy btn-sm">Cerrar sesión</button>
-                        </form>
-                    </div>
-                </div>
+      <a href="{{ route('admin.reuniones-lideres.index') }}"
+         class="nav-link {{ request()->routeIs('admin.reuniones-lideres.*') ? 'active' : '' }}">
+        <i class="bi bi-calendar-event me-2"></i> <span>Reuniones</span>
+      </a>
 
-                <div class="p-4">
-                    <div class="content-shell">
-                        @yield('content')
-                    </div>
-                </div>
-            </main>
+      <a href="{{ route('lider_semi.recursos') }}"
+         class="nav-link {{ request()->routeIs('lider_semi.recursos') ? 'active' : '' }}">
+        <i class="bi bi-journal-text me-2"></i> <span>Recursos</span>
+      </a>
+
+      <a href="{{ route('lider_semi.perfil') }}"
+         class="nav-link {{ request()->routeIs('lider_semi.perfil') ? 'active' : '' }}">
+        <i class="bi bi-person-circle me-2"></i> <span>Mi Perfil</span>
+      </a>
+    </nav>
+  </div>
+</aside>
+
+      <div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
+
+    {{-- Contenido --}}
+    <div class="adm-content">
+      {{-- Top bar --}}
+      <header class="adm-topbar">
+        <div class="d-flex align-items-center gap-2">
+          <button id="sidebarToggle" class="btn btn-outline-light d-lg-none">
+            <i class="bi bi-list"></i>
+          </button>
+          <h1 class="h5 m-0 title-green">Líder General</h1>
         </div>
+
+        <div class="profile-info">
+          <button class="btn btn-link text-white position-relative me-2" type="button" aria-label="Notificaciones">
+            <i class="bi bi-bell fs-5"></i>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">3</span>
+          </button>
+
+          <div class="avatar">{{ strtoupper(substr(Auth::user()->name ?? 'AD', 0, 2)) }}</div>
+          <div class="me-2 text-end d-none d-sm-block">
+            <div class="fw-semibold">{{ Auth::user()->name }}</div>
+            <small class="opacity-75">Líder General</small>
+          </div>
+
+          <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button class="btn btn-light btn-sm">
+              <i class="bi bi-box-arrow-right me-1"></i> Cerrar sesión
+            </button>
+          </form>
+        </div>
+      </header>
+
+      {{-- Área de página con fondo decorativo --}}
+      <main class="adm-page">
+        <div class="adm-page-head">
+          <h2 class="page-title">@yield('module-title','')</h2>
+          <p class="page-subtitle">@yield('module-subtitle','')</p>
+        </div>
+
+        <div class="adm-page-body">
+          @yield('content')
+        </div>
+      </main>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-    (function(){
-        const badge = document.getElementById('notifBadge');
-        const list = document.getElementById('notifList');
-        const markAll = document.getElementById('markAllRead');
-        if(!badge || !list) return;
-        const ENDPOINT = '{{ url('/admin/notifications') }}?demo=1';
-        const READ_ALL = '{{ url('/admin/notifications/read-all') }}';
+  </div>
 
-        async function fetchNotifs(){
-            try{
-                const res = await fetch(ENDPOINT, {headers:{'X-Requested-With':'XMLHttpRequest'}});
-                if(!res.ok) throw 0;
-                const data = await res.json();
-                const items = data.notifications || [];
-                const unread = data.unread_count ?? items.filter(n=>!n.read).length;
-                if(unread>0){ badge.textContent = unread; badge.classList.remove('d-none'); } else { badge.classList.add('d-none'); }
-                if(items.length===0){ list.innerHTML = '<div class="p-3 text-muted small">Sin notificaciones</div>'; return; }
-                list.innerHTML = items.map(n=>{
-                    const url = n.url ? `href="${n.url}"` : '';
-                    return `<a ${url} class="d-flex text-decoration-none p-3 border-bottom ${n.read?'bg-white':'bg-light'}">
-                                <div class="flex-grow-1">
-                                    <div class="fw-semibold text-navy">${escapeHtml(n.title||'Notificación')}</div>
-                                    <div class="text-muted small">${escapeHtml(n.body||'')}</div>
-                                </div>
-                                <small class="text-muted ms-2">${escapeHtml(n.time||'')}</small>
-                            </a>`;
-                }).join('');
-            }catch(e){
-                // Silencioso si aún no hay endpoint
-            }
-        }
-        function escapeHtml(s){ return String(s).replace(/[&<>\"]/g, (c)=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
-        markAll?.addEventListener('click', async ()=>{
-            try{ await fetch(READ_ALL,{method:'POST', headers:{'X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content}}); fetchNotifs(); }catch(e){}
-        });
-        fetchNotifs();
-        setInterval(fetchNotifs, 30000);
-    })();
-    </script>
-        @stack('scripts')
-        @yield('scripts')
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+  <!-- 👇 Reemplaza tu script anterior por este -->
+  <script>
+  (function () {
+    const sidebar   = document.getElementById('admSidebar');
+    const overlay   = document.getElementById('sidebarOverlay');
+    const toggleBtn = document.getElementById('sidebarToggle');
+    const body      = document.body;
+    const MQ_LG     = 992; // breakpoint Bootstrap lg
+
+    const isMobile = () => window.innerWidth < MQ_LG;
+
+    function openSidebar() {
+      if (!isMobile()) return;
+      sidebar.classList.add('show');
+      overlay.classList.add('show');
+      toggleBtn?.setAttribute('aria-expanded', 'true');
+      body.classList.add('noscroll');
+    }
+    function closeSidebar() {
+      sidebar.classList.remove('show');
+      overlay.classList.remove('show');
+      toggleBtn?.setAttribute('aria-expanded', 'false');
+      body.classList.remove('noscroll');
+    }
+    function toggleSidebar() {
+      if (!isMobile()) return;
+      sidebar.classList.contains('show') ? closeSidebar() : openSidebar();
+    }
+
+    toggleBtn?.addEventListener('click', toggleSidebar);
+    overlay?.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
+    window.addEventListener('resize', () => { if (!isMobile()) closeSidebar(); });
+
+    // Cerrar al hacer click en un link del menú (en móvil)
+    sidebar?.addEventListener('click', (e) => {
+      if (e.target.closest('a.nav-link') && isMobile()) closeSidebar();
+    });
+  })();
+  </script>
+
+  @stack('scripts')
+  @yield('scripts')
 </body>
 
+  @stack('scripts')
+  @yield('scripts')
+</body>
 </html>
