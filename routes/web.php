@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UsuarioController as AdminUsuarioController;
 use App\Http\Controllers\Admin\SemilleroController as AdminSemilleroController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
+use App\Http\Controllers\Admin\ReunionesLideresController;
 // Lider semillero
 use App\Http\Controllers\LiderSemillero\SemilleroController;
 use App\Http\Controllers\LiderSemillero\DashboardController_semi;
@@ -105,6 +106,9 @@ Route::middleware(['auth', 'role:ADMIN'])
         // Semilleros (ADMIN)
         Route::resource('semilleros', AdminSemilleroController::class);
         Route::get('/semilleros/lideres-disponibles', [AdminSemilleroController::class, 'lideresDisponibles'])->name('semilleros.lideres-disponibles');
+
+        // Reuniones de líderes (ADMIN)
+        Route::get('/reuniones-lideres', [ReunionesLideresController::class, 'index'])->name('reuniones-lideres.index');
 
         // Notificaciones (UI topbar)
         Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');

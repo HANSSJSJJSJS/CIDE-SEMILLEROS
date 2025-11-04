@@ -6,24 +6,32 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 
 class PerfilController extends Controller
 {
     public function show()
-{
-    $user = Auth::user();
+    {
+        $user = Auth::user();
 
-    // Buscar el aprendiz vinculado al usuario actual
-    $aprendiz = \DB::table('aprendices')
-        ->where('id_usuario', $user->id)
-        ->first();
+        // Buscar el aprendiz vinculado al usuario actual sin asumir columnas específicas
+        $aprendiz = null;
+        if (Schema::hasTable('aprendices')) {
+            if (Schema::hasColumn('aprendices', 'id_usuario')) {
+                $aprendiz = DB::table('aprendices')->where('id_usuario', $user->id)->first();
+            } elseif (Schema::hasColumn('aprendices', 'user_id')) {
+                $aprendiz = DB::table('aprendices')->where('user_id', $user->id)->first();
+            } elseif (Schema::hasColumn('aprendices', 'email')) {
+                $aprendiz = DB::table('aprendices')->where('email', $user->email)->first();
+            }
+        }
 
-    return view('aprendiz.perfil.show', [
-        'user' => $user,
-        'aprendiz' => $aprendiz
-    ]);
-}
+        return view('aprendiz.perfil.show', [
+            'user' => $user,
+            'aprendiz' => $aprendiz
+        ]);
+    }
 
 
     public function edit()

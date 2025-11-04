@@ -7,7 +7,7 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css" rel="stylesheet" />
-    @vite('resources/css/aprendiz/style.css')
+    <link rel="stylesheet" href="{{ asset('css/aprendiz/style.css') }}">
     <link rel="stylesheet" href="{{ asset('css/aprendiz-calendario.css') }}">
 
 </head>

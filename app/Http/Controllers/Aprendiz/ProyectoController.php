@@ -9,6 +9,8 @@ use App\Models\Evidencia;
 use App\Models\Archivo;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 class ProyectoController extends Controller
 {
@@ -16,12 +18,13 @@ class ProyectoController extends Controller
     {
         $user = Auth::user();
 
-        // Obtener proyectos donde el aprendiz está asignado
-        $proyectos = Proyecto::whereHas('aprendices', function($q) use ($user) {
-            $q->where('aprendices.id_usuario', $user->id);
-        })
-        ->with(['semillero'])
-        ->get();
+        // IDs de proyectos asignados al usuario (robusto sin suponer pivote fija)
+        $ids = $this->proyectoIdsUsuario((int)$user->id);
+        $proyectos = empty($ids)
+            ? collect([])
+            : Proyecto::whereIn('id_proyecto', $ids)
+                ->with(['semillero'])
+                ->get();
 
         return view('aprendiz.proyectos.index', compact('proyectos'));
     }
@@ -29,12 +32,14 @@ class ProyectoController extends Controller
     public function show($id)
     {
         $user = Auth::user();
-        // Cargar proyecto solo si el usuario está asignado
+        // Verificar pertenencia del usuario al proyecto
+        $ids = $this->proyectoIdsUsuario((int)$user->id);
+        if (!in_array((int)$id, array_map('intval', $ids), true)) {
+            abort(404);
+        }
+        // Cargar proyecto
         $proyecto = Proyecto::with(['semillero', 'aprendices', 'evidencias'])
             ->where('id_proyecto', $id)
-            ->whereHas('aprendices', function($q) use ($user) {
-                $q->where('aprendices.id_usuario', $user->id);
-            })
             ->firstOrFail();
 
         // Compañeros (otros aprendices asignados al proyecto)
@@ -97,6 +102,90 @@ class ProyectoController extends Controller
             ->get();
 
         return view('aprendiz.proyectos.show', compact('proyecto', 'companeros', 'lider', 'evidencias', 'fecha', 'nombre', 'nombreError', 'archivos'));
+    }
+
+    private function proyectoIdsUsuario(int $userId): array
+    {
+        // Intentar con pivotes conocidas
+        $pivotTables = ['proyecto_user', 'aprendiz_proyecto', 'aprendices_proyectos', 'aprendiz_proyectos', 'proyecto_aprendiz', 'proyectos_aprendices', 'proyecto_aprendices'];
+        $projCols   = ['id_proyecto','proyecto_id','idProyecto'];
+        $userCols   = ['user_id','id_usuario','id_aprendiz','aprendiz_id','idAprendiz'];
+
+        foreach ($pivotTables as $tbl) {
+            if (!Schema::hasTable($tbl)) continue;
+            $pcol = null; $ucol = null;
+            foreach ($projCols as $c) { if (Schema::hasColumn($tbl, $c)) { $pcol = $c; break; } }
+            foreach ($userCols as $c) { if (Schema::hasColumn($tbl, $c)) { $ucol = $c; break; } }
+            if ($pcol && $ucol) {
+                try {
+                    return DB::table($tbl)
+                        ->where($ucol, $userId)
+                        ->distinct()
+                        ->pluck($pcol)
+                        ->map(fn($v)=> (int)$v)
+                        ->all();
+                } catch (\Exception $e) {
+                    // probar siguiente
+                }
+            }
+        }
+
+        // Fallback: documentos como relación implícita proyecto-usuario/aprendiz
+        if (Schema::hasTable('documentos')) {
+            // Priorizar documentos.id_usuario si existe
+            if (Schema::hasColumn('documentos','id_usuario') && Schema::hasColumn('documentos','id_proyecto')) {
+                try {
+                    return DB::table('documentos')
+                        ->where('id_usuario', $userId)
+                        ->distinct()
+                        ->pluck('id_proyecto')
+                        ->map(fn($v)=> (int)$v)
+                        ->all();
+                } catch (\Exception $e) {}
+            }
+            // Si no, intentar mapear via aprendices -> documentos.id_aprendiz
+            if (Schema::hasColumn('documentos','id_aprendiz') && Schema::hasTable('aprendices')) {
+                $aprId = null;
+                // Determinar columnas PK disponibles realmente en 'aprendices'
+                $aprPkCols = [];
+                if (Schema::hasColumn('aprendices','id_aprendiz')) { $aprPkCols[] = 'id_aprendiz'; }
+                if (Schema::hasColumn('aprendices','id')) { $aprPkCols[] = 'id'; }
+                // Intentar resolver por id_usuario, luego user_id, luego email
+                if (Schema::hasColumn('aprendices','id_usuario')) {
+                    foreach ($aprPkCols as $pk) {
+                        $aprId = DB::table('aprendices')->where('id_usuario', $userId)->value($pk);
+                        if (!is_null($aprId)) break;
+                    }
+                }
+                if (is_null($aprId) && Schema::hasColumn('aprendices','user_id')) {
+                    foreach ($aprPkCols as $pk) {
+                        $aprId = DB::table('aprendices')->where('user_id', $userId)->value($pk);
+                        if (!is_null($aprId)) break;
+                    }
+                }
+                if (is_null($aprId) && Schema::hasColumn('aprendices','email')) {
+                    $email = DB::table('users')->where('id', $userId)->value('email');
+                    if ($email) {
+                        foreach ($aprPkCols as $pk) {
+                            $aprId = DB::table('aprendices')->where('email', $email)->value($pk);
+                            if (!is_null($aprId)) break;
+                        }
+                    }
+                }
+                if ($aprId) {
+                    try {
+                        return DB::table('documentos')
+                            ->where('id_aprendiz', $aprId)
+                            ->distinct()
+                            ->pluck('id_proyecto')
+                            ->map(fn($v)=> (int)$v)
+                            ->all();
+                    } catch (\Exception $e) {}
+                }
+            }
+        }
+
+        return [];
     }
 }
 

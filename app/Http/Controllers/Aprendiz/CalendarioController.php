@@ -21,9 +21,9 @@ class CalendarioController extends Controller
             return view('aprendiz.calendario.index', compact('reuniones'));
         }
 
-        // Proyectos asignados al usuario (relación ya usada en otros módulos)
-        $proyectos = method_exists($user, 'proyectos') ? ($user->proyectos ?? collect()) : collect();
-        $proyectosIds = $proyectos->pluck('id_proyecto')->filter()->values();
+        // Obtener IDs de proyectos del usuario sin asumir pivote fija
+        $ids = $this->proyectoIdsUsuario((int)$user->id);
+        $proyectosIds = collect($ids);
 
         // Traer eventos:
         // - donde el evento registre id_usuario = usuario actual
@@ -36,14 +36,38 @@ class CalendarioController extends Controller
 
         $uid = $user->id;
 
-        $query->where(function ($q) use ($uid, $proyectosIds) {
-            $q->where('id_usuario', $uid);
-            if ($proyectosIds->isNotEmpty()) {
-                $q->orWhereIn('id_proyecto', $proyectosIds);
+        // Determinar posibles IDs del aprendiz en la pivote (user id o id_aprendiz)
+        $aprendizIdsPivot = [$uid];
+        if (Schema::hasTable('aprendices')) {
+            $aprPkCols = [];
+            if (Schema::hasColumn('aprendices','id_aprendiz')) { $aprPkCols[] = 'id_aprendiz'; }
+            if (Schema::hasColumn('aprendices','id')) { $aprPkCols[] = 'id'; }
+            $aprId = null;
+            if (Schema::hasColumn('aprendices','id_usuario')) {
+                foreach ($aprPkCols as $pk) { $aprId = DB::table('aprendices')->where('id_usuario', $uid)->value($pk); if (!is_null($aprId)) break; }
+            } elseif (Schema::hasColumn('aprendices','user_id')) {
+                foreach ($aprPkCols as $pk) { $aprId = DB::table('aprendices')->where('user_id', $uid)->value($pk); if (!is_null($aprId)) break; }
+            } elseif (Schema::hasColumn('aprendices','email')) {
+                $email = DB::table('users')->where('id', $uid)->value('email');
+                if ($email) {
+                    foreach ($aprPkCols as $pk) { $aprId = DB::table('aprendices')->where('email', $email)->value($pk); if (!is_null($aprId)) break; }
+                }
             }
-        })->orWhereHas('participantes', function ($p) use ($uid) {
-            // Filtrar por el valor en la pivote: evento_participantes.id_aprendiz (almacenamos id_usuario del aprendiz)
-            $p->where('evento_participantes.id_aprendiz', $uid);
+            if (!is_null($aprId)) { $aprendizIdsPivot[] = $aprId; }
+        }
+
+        $hasEventoUsuario = Schema::hasColumn('eventos','id_usuario');
+        $hasEventoLider = Schema::hasColumn('eventos','id_lider');
+        $query->where(function ($q) use ($uid, $proyectosIds, $hasEventoUsuario, $hasEventoLider) {
+            // iniciar grupo seguro
+            $q->whereRaw('1=0');
+            if ($hasEventoUsuario) { $q->orWhere('id_usuario', $uid); }
+            if ($hasEventoLider) { $q->orWhere('id_lider', $uid); }
+            if ($proyectosIds->isNotEmpty()) { $q->orWhereIn('id_proyecto', $proyectosIds); }
+        })->orWhereExists(function ($sub) use ($aprendizIdsPivot) {
+            $sub->from('evento_participantes as ep')
+                ->whereColumn('ep.id_evento', 'eventos.id_evento')
+                ->whereIn('ep.id_aprendiz', $aprendizIdsPivot);
         });
 
         // Evitar duplicados y ordenar
@@ -59,8 +83,13 @@ class CalendarioController extends Controller
                 ? 'aprendices.nombre_completo'
                 : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
 
+            // Determinar columna de unión disponible
+            $joinCol = null;
+            foreach (['id_usuario','user_id','id_aprendiz','id'] as $cand) {
+                if (Schema::hasColumn('aprendices', $cand)) { $joinCol = $cand; break; }
+            }
             $rows = DB::table('evento_participantes')
-                ->join('aprendices', 'aprendices.id_usuario', '=', 'evento_participantes.id_aprendiz')
+                ->join('aprendices', DB::raw('aprendices.' . $joinCol), '=', 'evento_participantes.id_aprendiz')
                 ->whereIn('evento_participantes.id_evento', $ids)
                 ->select('evento_participantes.id_evento', DB::raw($nameExpr.' as nombre'))
                 ->get();
@@ -99,6 +128,75 @@ class CalendarioController extends Controller
         });
 
         return view('aprendiz.calendario.index', compact('reuniones'));
+    }
+
+    private function proyectoIdsUsuario(int $userId): array
+    {
+        // Intentar con pivotes conocidas
+        $pivotTables = ['proyecto_user', 'aprendiz_proyecto', 'aprendices_proyectos', 'aprendiz_proyectos', 'proyecto_aprendiz', 'proyectos_aprendices', 'proyecto_aprendices'];
+        $projCols   = ['id_proyecto','proyecto_id','idProyecto'];
+        $userCols   = ['user_id','id_usuario','id_aprendiz','aprendiz_id','idAprendiz'];
+
+        foreach ($pivotTables as $tbl) {
+            if (!Schema::hasTable($tbl)) continue;
+            $pcol = null; $ucol = null;
+            foreach ($projCols as $c) { if (Schema::hasColumn($tbl, $c)) { $pcol = $c; break; } }
+            foreach ($userCols as $c) { if (Schema::hasColumn($tbl, $c)) { $ucol = $c; break; } }
+            if ($pcol && $ucol) {
+                try {
+                    return DB::table($tbl)
+                        ->where($ucol, $userId)
+                        ->distinct()
+                        ->pluck($pcol)
+                        ->map(fn($v)=> (int)$v)
+                        ->all();
+                } catch (\Exception $e) {}
+            }
+        }
+
+        // Fallback: documentos como relación implícita
+        if (Schema::hasTable('documentos')) {
+            if (Schema::hasColumn('documentos','id_usuario') && Schema::hasColumn('documentos','id_proyecto')) {
+                try {
+                    return DB::table('documentos')
+                        ->where('id_usuario', $userId)
+                        ->distinct()
+                        ->pluck('id_proyecto')
+                        ->map(fn($v)=> (int)$v)
+                        ->all();
+                } catch (\Exception $e) {}
+            }
+            if (Schema::hasColumn('documentos','id_aprendiz') && Schema::hasTable('aprendices')) {
+                $aprId = null;
+                $aprPkCols = [];
+                if (Schema::hasColumn('aprendices','id_aprendiz')) { $aprPkCols[] = 'id_aprendiz'; }
+                if (Schema::hasColumn('aprendices','id')) { $aprPkCols[] = 'id'; }
+                if (Schema::hasColumn('aprendices','id_usuario')) {
+                    foreach ($aprPkCols as $pk) { $aprId = DB::table('aprendices')->where('id_usuario', $userId)->value($pk); if (!is_null($aprId)) break; }
+                }
+                if (is_null($aprId) && Schema::hasColumn('aprendices','user_id')) {
+                    foreach ($aprPkCols as $pk) { $aprId = DB::table('aprendices')->where('user_id', $userId)->value($pk); if (!is_null($aprId)) break; }
+                }
+                if (is_null($aprId) && Schema::hasColumn('aprendices','email')) {
+                    $email = DB::table('users')->where('id', $userId)->value('email');
+                    if ($email) {
+                        foreach ($aprPkCols as $pk) { $aprId = DB::table('aprendices')->where('email', $email)->value($pk); if (!is_null($aprId)) break; }
+                    }
+                }
+                if ($aprId) {
+                    try {
+                        return DB::table('documentos')
+                            ->where('id_aprendiz', $aprId)
+                            ->distinct()
+                            ->pluck('id_proyecto')
+                            ->map(fn($v)=> (int)$v)
+                            ->all();
+                    } catch (\Exception $e) {}
+                }
+            }
+        }
+
+        return [];
     }
 
     // Próximas 5 reuniones del aprendiz para el dashboard

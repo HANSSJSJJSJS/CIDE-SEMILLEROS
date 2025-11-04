@@ -1394,10 +1394,6 @@ class SemilleroController extends Controller
                 $evento->participantes()->attach($validated['participantes']);
             }
 
-<<<<<<< HEAD
-            // Cargar relaciones para la respuesta (no seleccionar columna inexistente)
-            $evento->load(['participantes:id_aprendiz,nombres,apellidos', 'proyecto:id_proyecto,nombre_proyecto']);
-=======
             // Cargar relaciones para la respuesta (con alias seguro)
             $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
                 ? 'nombre_completo'
@@ -1408,7 +1404,6 @@ class SemilleroController extends Controller
                 },
                 'proyecto:id_proyecto,nombre_proyecto'
             ]);
->>>>>>> Fusionmain
 
             return response()->json([
                 'success' => true,
@@ -1472,7 +1467,6 @@ class SemilleroController extends Controller
                 'generar_enlace' => 'nullable|string|in:teams,meet,personalizado'
             ]);
 
-<<<<<<< HEAD
             // Validar conflicto considerando valores nuevos o actuales
             $inicioStr = isset($validated['fecha_hora'])
                 ? $validated['fecha_hora']
@@ -1537,8 +1531,16 @@ class SemilleroController extends Controller
                 $evento->participantes()->sync($validated['participantes']);
             }
 
-            // Cargar relaciones para la respuesta (seleccionar columnas existentes)
-            $evento->load(['participantes:id_aprendiz,nombres,apellidos', 'proyecto:id_proyecto,nombre_proyecto']);
+            // Cargar relaciones para la respuesta (con alias seguro)
+            $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
+                ? 'nombre_completo'
+                : "CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))";
+            $evento->load([
+                'participantes' => function($q) use ($nameExpr){
+                    $q->selectRaw("id_usuario as id_aprendiz, $nameExpr as nombre_completo");
+                },
+                'proyecto:id_proyecto,nombre_proyecto'
+            ]);
 
             return response()->json([
                 'success' => true,
