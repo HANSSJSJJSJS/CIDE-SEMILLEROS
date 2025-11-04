@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Aprendiz;
 use App\Http\Controllers\Controller;
 use App\Models\Archivo;
 use App\Models\Proyecto;
+use App\Models\Evidencia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
@@ -12,49 +13,97 @@ use App\Models\User; // Asegúrate de importar el modelo User si no lo está
 
 class ArchivoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         // 1. Obtener el usuario autenticado.
         $user = Auth::user();
 
-        // 2. CORRECCIÓN: Obtener los proyectos a través de la relación de muchos a muchos.
-        // Esto le dice a Laravel que use la tabla pivote (proyecto_user).
+        // 2. Obtener los proyectos del usuario (pivot proyecto_user)
         $proyectos = $user->proyectos;
 
-        // 3. El resto de la lógica para archivos está bien, ya que Archivo sí tiene user_id.
-        $archivos = Archivo::where('user_id', $user->id)->get();
+        // 3. Filtros simples
+        $proyecto = $request->query('proyecto');
+        $fecha = $request->query('fecha');
 
-        return view('aprendiz.archivos.index', compact('proyectos', 'archivos'));
+        // 4. Consulta con filtros y paginación
+        $archivos = Archivo::with(['proyecto'])
+            ->where('user_id', $user->id)
+            ->when($proyecto, fn($q)=> $q->where('proyecto_id', $proyecto))
+            ->when($fecha, fn($q)=> $q->whereDate('subido_en', $fecha))
+            ->orderByDesc('subido_en')
+            ->paginate(10)
+            ->appends(['proyecto'=>$proyecto, 'fecha'=>$fecha]);
+
+        return view('aprendiz.archivos.index', compact('proyectos', 'archivos', 'proyecto', 'fecha'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('aprendiz.archivos.upload');
+        $user = Auth::user();
+        $proyectos = $user->proyectos ?? collect();
+        $proyectoSeleccionado = $request->query('proyecto');
+        return view('aprendiz.archivos.upload', compact('proyectos', 'proyectoSeleccionado'));
     }
 
     public function upload(Request $request)
     {
         $request->validate([
-            // Asegúrate de que el proyecto realmente pertenece al usuario antes de permitir la subida
-            'proyecto_id' => 'required|exists:proyectos,id_proyecto', // Nota: Usé 'id_proyecto' si esa es tu clave primaria
-            'documentos' => 'required|array',
-            'documentos.*' => 'required|mimes:pdf|max:10240'
+            'proyecto_id' => 'required|exists:proyectos,id_proyecto',
+            'documentos' => 'required', // puede ser array o archivo único
+            'documentos.*' => 'mimes:pdf|max:10240',
         ]);
 
-        foreach ($request->file('documentos') as $documento) {
-            $ruta = $documento->store('documentos', 'public');
+        $files = [];
+        if ($request->hasFile('documentos')) {
+            $files = is_array($request->file('documentos'))
+                ? $request->file('documentos')
+                : [$request->file('documentos')];
+        }
 
-            Archivo::create([
-                'nombre_archivo' => $documento->getClientOriginalName(),
+        $resultados = [];
+        foreach ($files as $documento) {
+            if (!$documento) { continue; }
+            $nombreOriginal = $documento->getClientOriginalName();
+            $nombreAlmacenado = uniqid().'_'.$nombreOriginal;
+            $ruta = $documento->storeAs('documentos', $nombreAlmacenado, 'public');
+
+            $registro = Archivo::create([
+                'nombre_original' => $nombreOriginal,
+                'nombre_almacenado' => $nombreAlmacenado,
                 'ruta' => $ruta,
                 'proyecto_id' => $request->proyecto_id,
-                'user_id' => Auth::id()
+                'user_id' => Auth::id(),
+                'estado' => 'aprobado',
+                'mime_type' => $documento->getClientMimeType(),
+                'subido_en' => now(),
             ]);
+
+            // Crear evidencia asociada para reflejarse en el detalle del proyecto
+            Evidencia::create([
+                'id_proyecto' => $request->proyecto_id,
+                'id_usuario'  => Auth::id(),
+                'nombre'      => $nombreOriginal,
+                'estado'      => 'pendiente',
+            ]);
+
+            $resultados[] = [
+                'id' => $registro->id ?? null,
+                'nombre_original' => $registro->nombre_original,
+                'ruta' => Storage::disk('public')->url($registro->ruta),
+                'estado' => $registro->estado,
+                'mime_type' => $registro->mime_type,
+                'subido_en' => $registro->subido_en,
+            ];
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'archivos' => $resultados]);
         }
 
         return redirect()->route('aprendiz.archivos.index')
             ->with('success', 'Documentos subidos correctamente');
     }
+
 
     public function destroy(Archivo $archivo)
     {

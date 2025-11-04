@@ -1,0 +1,99 @@
+/* Calendario Aprendiz - Estilo moderno */
+:root{
+  /* Paleta SENA */
+  --cal-primary:#0d7c3f; /* Verde SENA */
+  --cal-primary-700:#0a5e30;
+  --cal-accent:#ff6f00; /* acento naranja */
+  --cal-muted:#6b7280;
+  --cal-bg:#f6f8f5;
+  --cal-card:#ffffff;
+  --cal-border:#e6ebe7;
+  --cal-navy:#0b2a3b; /* Azul oscuro encabezados */
+  --cal-navy-600:#082130;
+  --cal-success:#16a34a;
+}
+
+body{background:var(--cal-bg)}
+
+/* Card del calendario */
+#calendar{border:none!important}
+.fc{--fc-border-color: var(--cal-border);}
+.fc .fc-toolbar{gap:.75rem;}
+.fc .fc-toolbar-title{font-weight:800; letter-spacing:.2px;}
+
+/* Botones toolbar */
+.fc .fc-button{background:var(--cal-primary); border:1px solid var(--cal-primary);
+  font-weight:600; border-radius:10px; padding:.4rem .7rem; box-shadow:none}
+.fc .fc-button:hover{background:var(--cal-primary-700); border-color:var(--cal-primary-700)}
+.fc .fc-button:focus{box-shadow:0 0 0 .2rem rgba(14,165,233,.25)}
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active{background:var(--cal-primary-700); border-color:var(--cal-primary-700)}
+
+/* Toolbar título centrado y botones a los lados como en Líder */
+.fc .fc-toolbar.fc-header-toolbar{align-items:center; gap:.75rem}
+.fc .fc-toolbar-chunk:first-child .fc-button{background:#fff;color:#111827;border-color:var(--cal-border)}
+.fc .fc-toolbar-chunk:first-child .fc-button:hover{background:#f3f4f6}
+.fc .fc-toolbar-title{font-weight:800; letter-spacing:.2px}
+
+/* Vista mes celdas */
+.fc a{ text-decoration:none }
+.fc-theme-standard td, .fc-theme-standard th{border-color:var(--cal-border)}
+/* Quitar "raya" inferior en días y encabezados */
+.fc .fc-daygrid-day{transition:background .2s ease; border-bottom: none}
+.fc .fc-col-header-cell{border-bottom:none; background:var(--cal-navy); color:#fff}
+.fc .fc-col-header-cell-cushion, .fc .fc-daygrid-day-number{ text-decoration:none }
+.fc .fc-daygrid-day:hover{background:#f3f4f6}
+.fc .fc-col-header-cell-cushion{font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:.6px}
+.fc .fc-daygrid-day-top{align-items:center;padding:.35rem}
+.fc .fc-daygrid-day-number{font-weight:700;color:#111827}
+.fc .fc-daygrid-day.fc-day-today{background:#e8f5ee}
+
+/* Eventos */
+.fc .fc-event{border-radius:10px; padding:2px 6px; border:none; background:var(--cal-primary)!important; color:#fff}
+.fc .fc-daygrid-event{margin:2px 0}
+.fc .fc-list-event-dot{border-color:var(--cal-primary)}
+.fc .fc-list{border-radius:12px; overflow:hidden}
+.fc .fc-list-table td{padding:.6rem .8rem}
+
+/* Vista lista/Agenda estilo Líder */
+.fc .fc-list{border-radius:12px; overflow:hidden}
+.fc .fc-list-table tr{border-bottom:1px solid var(--cal-border)}
+/* Encabezado de cada día en azul oscuro */
+.fc .fc-list-day-cushion{background:var(--cal-navy); color:#fff; font-weight:800}
+.fc .fc-list-day-text{color:#fff}
+.fc .fc-list-day-side-text{color:#e5e7eb}
+/* Filas de eventos blancas, sin barra verde sólida */
+.fc .fc-list .fc-event{background:transparent!important;}
+.fc .fc-list-table td{background:#fff; color:#111827}
+.fc .fc-list-event-title a{color:#111827}
+.fc .fc-list-event-time{color:#1f2937; font-weight:600}
+.fc .fc-list-event:hover td{background:#f8fafc}
+.fc .fc-list-event-dot{border-color:var(--cal-primary)}
+.fc .fc-list-table tr:last-child{border-bottom:none}
+
+/* Bordes y tarjetas */
+.fc .fc-scrollgrid, .fc .fc-daygrid, .fc .fc-timegrid{border-radius:12px; overflow:hidden}
+
+/* Filtros */
+.filters-card{background:var(--cal-card); border:1px solid var(--cal-border); border-radius:12px}
+.filters-card .form-select{border-radius:10px}
+#btnAgenda{border-radius:10px}
+#btnResetFiltros{border-radius:10px}
+
+/* Modal */
+.modal-content{border-radius:14px}
+.modal-title{font-weight:800}
+#eventoParticipantes .badge{font-weight:600}
+
+/* Badges */
+.badge.text-bg-primary{background:var(--cal-primary)!important}
+.badge.text-bg-secondary{background:#0f172a!important}
+
+/* Enlaces del modal */
+#eventoEnlace{color:var(--cal-accent); font-weight:600}
+#eventoEnlace:hover{color:#e66000}
+
+/* Sidebar coherence */
+.sidebar{background:var(--cal-card); border:1px solid var(--cal-border); border-radius:14px; padding:16px}
+.list-group-item{border:none; border-radius:10px; margin-bottom:6px}
+.list-group-item.active{background:var(--cal-primary); border-color:var(--cal-primary)}

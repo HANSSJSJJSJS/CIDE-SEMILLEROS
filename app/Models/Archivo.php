@@ -27,7 +27,8 @@ class Archivo extends Model
     // 🔹 Relaciones
     public function proyecto()
     {
-        return $this->belongsTo(Proyecto::class);
+        // FK local: proyecto_id, PK del otro modelo: id_proyecto
+        return $this->belongsTo(Proyecto::class, 'proyecto_id', 'id_proyecto');
     }
 
     public function user()

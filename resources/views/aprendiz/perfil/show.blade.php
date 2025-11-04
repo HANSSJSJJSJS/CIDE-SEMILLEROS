@@ -33,7 +33,7 @@
             <div class="col-lg-3 mb-3">
                 <div class="sidebar">
                     <div class="d-flex align-items-center mb-3">
-                        <img src="{{ asset('images/sena-logo.png') }}" alt="SENA" style="height:48px; object-fit:contain;" class="me-3">
+                        <img src="{{ asset('images/logo-sena.png') }}" alt="SENA" style="height:48px; object-fit:contain;" class="me-3">
                         <div>
                             <div style="font-weight:700;">Sistema de Gestión</div>
                             <div style="color:var(--muted);font-size:0.9rem;">Semillero</div>
@@ -52,6 +52,9 @@
                         </a>
                         <a href="{{ route('aprendiz.perfil.show') }}" class="list-group-item list-group-item-action">
                             <i class="fa fa-user me-2"></i> Mi Perfil
+                        </a>
+                        <a href="{{ route('aprendiz.calendario.index') }}" class="list-group-item list-group-item-action">
+                            <i class="fa fa-calendar me-2"></i> Calendario
                         </a>
                     </div>
                 </div>

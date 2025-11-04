@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Evidencia;
 use App\Models\Documento;
 use App\Models\User;
+use App\Models\Aprendiz;
 
 
 class Proyecto extends Model
@@ -14,7 +15,7 @@ class Proyecto extends Model
     protected $primaryKey = 'id_proyecto';
     public $incrementing = true;
     protected $keyType = 'int';
-    public $timestamps = false; // columnas personalizadas en migración
+    public $timestamps = false;
 
     protected $fillable = [
         'id_semillero',
@@ -23,7 +24,7 @@ class Proyecto extends Model
         'descripcion',
         'estado',
         'fecha_inicio',
-        'fecha_fin'
+        'fecha_fin',
     ];
 
     protected $dates = [
@@ -39,16 +40,36 @@ class Proyecto extends Model
         return $this->belongsTo(Semillero::class, 'id_semillero', 'id_semillero');
     }
 
-    // Relación con usuarios (aprendices)
-    public function aprendices()
-    {
-        return $this->belongsToMany(User::class, 'proyecto_user', 'id_proyecto', 'user_id');
-    }
-
     // Relación con documentos
     public function documentos()
     {
         return $this->hasMany(Documento::class, 'id_proyecto', 'id_proyecto');
+    }
+
+    // Relación con aprendices (por id_usuario en pivot)
+    public function aprendices()
+    {
+        return $this->belongsToMany(
+            Aprendiz::class,
+            'proyecto_user',
+            'id_proyecto',
+            'user_id',
+            'id_proyecto',
+            'id_usuario'
+        )->distinct();
+    }
+
+    // Relación directa con usuarios a través de la misma pivote
+    public function usuarios()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'proyecto_user',
+            'id_proyecto',
+            'user_id',
+            'id_proyecto',
+            'id'
+        )->distinct();
     }
 
     public function evidencias()

@@ -345,6 +345,13 @@ function handleFormSubmit(e) {
     const url = eventId ? `/lider_semi/eventos/${eventId}` : '/lider_semi/eventos';
     const method = eventId ? 'PUT' : 'POST';
     
+    // Deshabilitar botones para evitar doble envío
+    const btnSubmit = document.getElementById('btn-submit');
+    const btnNext = document.getElementById('btn-next-step');
+    const btnPrev = document.getElementById('btn-prev-step');
+    const btnCancel = document.getElementById('btn-cancel');
+    [btnSubmit, btnNext, btnPrev, btnCancel].forEach(b=>{ if(b){ b.disabled = true; b.classList.add('is-loading'); }});
+
     console.log('Enviando datos:', formData); // Debug
     
     fetch(url, {
@@ -384,6 +391,9 @@ function handleFormSubmit(e) {
     .catch(error => {
         console.error('Error completo:', error);
         mostrarNotificacion('Error al programar la reunión: ' + error.message, 'error');
+    })
+    .finally(()=>{
+        [btnSubmit, btnNext, btnPrev, btnCancel].forEach(b=>{ if(b){ b.disabled = false; b.classList.remove('is-loading'); }});
     });
 }
 

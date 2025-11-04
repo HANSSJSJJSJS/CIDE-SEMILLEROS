@@ -8,13 +8,12 @@ class Evidencia extends Model
 {
     protected $table = 'evidencias';
     protected $primaryKey = 'id_evidencia';
-    public $timestamps = false;
+    public $timestamps = true;
 
     protected $fillable = [
         'id_proyecto',
-        'nombre_evidencia',
-        'descripcion',
-        'ruta_archivo',
+        'id_usuario',
+        'nombre',
         'estado',
     ];
 
@@ -22,5 +21,11 @@ class Evidencia extends Model
     public function proyecto()
     {
         return $this->belongsTo(Proyecto::class, 'id_proyecto', 'id_proyecto');
+    }
+
+    // Autor (Aprendiz) que subió la evidencia
+    public function autor()
+    {
+        return $this->belongsTo(Aprendiz::class, 'id_usuario', 'id_usuario');
     }
 }

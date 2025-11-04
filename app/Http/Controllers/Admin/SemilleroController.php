@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 class SemilleroController extends Controller
@@ -40,52 +41,50 @@ class SemilleroController extends Controller
         return view('Admin.semilleros.index', compact('semilleros','q'));
     }
     public function store(Request $request)
-{
-    $data = $request->validate([
-        'nombre'              => ['required','string','max:255','unique:semilleros,nombre'],
-        'linea_investigacion' => ['required','string','max:255'],
-        'id_lider_semi'       => ['nullable','integer','exists:lideres_semillero,id_lider_semi'],
-    ], [
-        'required' => 'El campo :attribute es obligatorio.',
-        'unique'   => 'Ya existe un semillero con ese nombre.',
-        'exists'   => 'El líder seleccionado no es válido.',
-    ], [
-        'nombre'              => 'nombre del semillero',
-        'linea_investigacion' => 'línea de investigación',
-        'id_lider_semi'       => 'líder de semillero',
-    ]);
+    {
+        $data = $request->validate([
+            'nombre'              => ['required','string','max:255','unique:semilleros,nombre'],
+            'linea_investigacion' => ['required','string','max:255'],
+            'id_lider_semi'       => ['nullable','integer','exists:lideres_semillero,id_lider_semi'],
+        ], [
+            'required' => 'El campo :attribute es obligatorio.',
+            'unique'   => 'Ya existe un semillero con ese nombre.',
+            'exists'   => 'El líder seleccionado no es válido.',
+        ], [
+            'nombre'              => 'nombre del semillero',
+            'linea_investigacion' => 'línea de investigación',
+            'id_lider_semi'       => 'líder de semillero',
+        ]);
 
-    // Si viene líder, validar que no esté asignado a otro semillero
-    if (!empty($data['id_lider_semi'])) {
-        $ocupado = DB::table('semilleros')
-            ->where('id_lider_semi', $data['id_lider_semi'])
-            ->exists();
+        // Si viene líder, validar que no esté asignado a otro semillero
+        if (!empty($data['id_lider_semi'])) {
+            $ocupado = DB::table('semilleros')
+                ->where('id_lider_semi', $data['id_lider_semi'])
+                ->exists();
 
-        if ($ocupado) {
-            return back()->withErrors([
-                'id_lider_semi' => 'Ese líder ya tiene un semillero asignado.'
-            ])->withInput();
+            if ($ocupado) {
+                return back()->withErrors([
+                    'id_lider_semi' => 'Ese líder ya tiene un semillero asignado.'
+                ])->withInput();
+            }
         }
+
+        DB::table('semilleros')->insert([
+            'nombre'              => $data['nombre'],
+            'linea_investigacion' => $data['linea_investigacion'],
+            'id_lider_semi'       => $data['id_lider_semi'] ?? null,
+            // Usa los nombres de columnas de tu esquema:
+            // si tu tabla maneja "creado_en/actualizado_en" usa esas:
+            'creado_en'           => now(),
+            'actualizado_en'      => now(),
+            // si en tu esquema usas timestamps de laravel, usa en cambio:
+            // 'created_at'       => now(),
+            // 'updated_at'       => now(),
+        ]);
+
+        return redirect()->route('admin.semilleros.index')
+            ->with('success', 'Semillero creado correctamente.');
     }
-
-    DB::table('semilleros')->insert([
-        'nombre'              => $data['nombre'],
-        'linea_investigacion' => $data['linea_investigacion'],
-        'id_lider_semi'       => $data['id_lider_semi'] ?? null,
-        // Usa los nombres de columnas de tu esquema:
-        // si tu tabla maneja "creado_en/actualizado_en" usa esas:
-        'creado_en'           => now(),
-        'actualizado_en'      => now(),
-        // si en tu esquema usas timestamps de laravel, usa en cambio:
-        // 'created_at'       => now(),
-        // 'updated_at'       => now(),
-    ]);
-
-    return redirect()
-        ->route('admin.semillero.index')
-        ->with('success', 'Semillero creado correctamente.');
-}
-
 
     /**
      * Devuelve datos del semillero + líder actual para llenar el modal (AJAX).
@@ -153,35 +152,36 @@ class SemilleroController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $data = $request->validate([
-            'nombre'              => ['required','string','max:255', Rule::unique('semilleros','nombre')->ignore($id,'id_semillero')],
-            'linea_investigacion' => ['required','string','max:255'],
-            'id_lider_semi'       => ['nullable','integer','exists:lideres_semillero,id_lider_semi'],
+        $validated = $request->validate([
+            'nombre'              => 'required|string|max:150',
+            'linea_investigacion' => 'required|string|max:255',
+            'id_lider_usuario'    => 'nullable|integer|exists:lideres_semillero,id_usuario',
         ]);
 
-        // Si viene un nuevo líder, verificar que no esté ya asignado a otro semillero
-        if (!empty($data['id_lider_semi'])) {
-            $ocupado = DB::table('semilleros')
-                ->where('id_lider_semi', $data['id_lider_semi'])
-                ->where('id_semillero', '<>', $id)
-                ->exists();
+        $tbl = 'semilleros';
+        $idCol = Schema::hasColumn($tbl, 'id') ? 'id' : (Schema::hasColumn($tbl, 'id_semillero') ? 'id_semillero' : null);
+        if(!$idCol) return back()->withErrors('No se puede determinar la PK de semilleros');
 
-            if ($ocupado) {
-                return back()->withErrors(['id_lider_semi' => 'Ese líder ya tiene un semillero asignado.'])
-                             ->withInput();
-            }
-        }
+        $colNombre = Schema::hasColumn($tbl, 'nombre') ? 'nombre'
+                    : (Schema::hasColumn($tbl, 'nombre_semillero') ? 'nombre_semillero' : null);
+        $colLinea  = Schema::hasColumn($tbl, 'linea_investigacion') ? 'linea_investigacion'
+                    : (Schema::hasColumn($tbl, 'línea_investigación') ? 'línea_investigación' : null);
+        $colLider  = Schema::hasColumn($tbl, 'id_lider_usuario') ? 'id_lider_usuario'
+                    : (Schema::hasColumn($tbl, 'id_lider_semi') ? 'id_lider_semi' : null);
+        $hasUpdated = Schema::hasColumn($tbl, 'updated_at');
+        $hasActual  = Schema::hasColumn($tbl, 'actualizado_en');
 
-        DB::table('semilleros')
-            ->where('id_semillero', $id)
-            ->update([
-                'nombre'              => $data['nombre'],
-                'linea_investigacion' => $data['linea_investigacion'],
-                'id_lider_semi'       => $data['id_lider_semi'] ?? null,
-                'updated_at'          => now(),
-            ]);
+        $update = [];
+        if ($colNombre) $update[$colNombre] = $validated['nombre'];
+        if ($colLinea)  $update[$colLinea]  = $validated['linea_investigacion'];
+        if ($colLider)  $update[$colLider]  = $validated['id_lider_usuario'] ?? null;
+        if ($hasUpdated) $update['updated_at'] = now();
+        if ($hasActual)  $update['actualizado_en'] = now();
 
-        return back()->with('success', 'Semillero actualizado.');
+        DB::table($tbl)->where($idCol, $id)->update($update);
+
+        if ($request->wantsJson()) return response()->json(['ok'=>true]);
+        return back()->with('success', 'Semillero actualizado correctamente.');
     }
 
     /**
@@ -189,7 +189,9 @@ class SemilleroController extends Controller
      */
     public function destroy($id)
     {
-        DB::table('semilleros')->where('id_semillero', $id)->delete();
+        $tbl = 'semilleros';
+        $idCol = Schema::hasColumn($tbl, 'id') ? 'id' : (Schema::hasColumn($tbl, 'id_semillero') ? 'id_semillero' : null);
+        if($idCol){ DB::table($tbl)->where($idCol, $id)->delete(); }
         return back()->with('success', 'Semillero eliminado.');
     }
 

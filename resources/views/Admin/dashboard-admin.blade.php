@@ -1,3 +1,7 @@
+<<<<<<< HEAD:resources/views/Admin/dashboard-admin.blade.php
+=======
+<<<<<<< HEAD:resources/views/Admin/dashboard-admin.blade.php
+>>>>>>> Fusionmain:resources/views/Admin/copia.html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -285,6 +289,11 @@
   #users .toolbar .form-control, #users .toolbar .form-select { height: 42px; }
 </style>
 
+<<<<<<< HEAD:resources/views/Admin/dashboard-admin.blade.php
+=======
+=======
+>>>>>>> origin/main:resources/views/Admin/copia.html
+>>>>>>> Fusionmain:resources/views/Admin/copia.html
 
             <!-- Semilleros Section -->
             <section id="semilleros" class="content-section">
