@@ -8,6 +8,12 @@
         body {
             font-family: Arial, sans-serif;
             background-color: #ffffff;
+            /* Imagen de fondo para el login */
+            background-image: url('../images/Recurso.png');
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-attachment: fixed;
+            background-size: cover;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -20,47 +26,42 @@
             width: 100%;
             height: 100vh;
             position: relative;
+            z-index: 2;
         }
         /* === PANEL IZQUIERDA === */
         .left-panel {
-            left: 10%;
-            width: 30%;
-            margin-top: 15%;
-            align-items: left;
-            padding: 60px 40px;
+            top: -80px;
+            width: 50%;
+            height: 100vh;
             position: relative;
-            overflow: hidden;
-        }
-
-        /* Panel Izquierda */
-        .logo-cide img {
-            width: 800px;   /* ajusta el valor a tu gusto */
-            height: auto;   /* mantiene la proporción */
-            margin-bottom: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Ilustración grande */
+            background-image: url('../images/bg-semillero.png');
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-size: 70%;
         }
 
         /* === PANEL DERECHO === */
         .right-panel {
-            margin-top: 9%;
-            left: 20%;
             position: relative;
-            width: 40%;
-            height: 60vh;
+            width: 50%;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: #fff; /* color de fondo base */
             overflow: hidden;
         }
         
         /* === IMAGEN DE FONDO DEL LOGIN === */
         .login-background {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: contain; /* mantiene proporciones del marco */
+            top: 20%;
+            left: 20%;
+            width: 60%;
+            height: 60%;
             z-index: 0;
         }
 
@@ -70,12 +71,12 @@
         /* Formulario de Login - Centrado sobre el fondo */
         .login-form {
             position: relative;  /* asegura que se superponga encima del fondo */
-            width: 500px;
+            width: 420px;
             z-index: 1;
-            background: rgba(255, 255, 255, 0.85); /* opcional: fondo blanco translúcido */
+            background: #ffffff; /* fondo blanco como en la maqueta */
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            border-radius: 12px;
-            padding: 50px 60px;
+            border-radius: 16px;
+            padding: 40px 40px;
         }
 
         /* Título del formulario */
@@ -163,12 +164,56 @@
             color: #35A900;
             font-size: 1.6rem;
         }
-
+        
         .toggle-password:hover {
             color: #36a90096;
         }
-    
         
+        .btn-entrar:active {
+            transform: translateY(0);
+        }
+        
+        .forgot-password {
+            text-align: center;
+            margin-top: 25px;
+        }
+        
+        .forgot-password a {
+            color: #000000;
+            text-decoration: underline;
+            font-weight: bold;
+            font-style: italic;
+            font-size: 16px;
+            transition: color 0.3s ease;
+        }
+        
+        .forgot-password a:hover {
+            color: #2d8f3a;
+            text-decoration: underline;
+        }
+
+        /* Badge superior izquierdo con logo SENA */
+        .sena-badge {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 150px;
+            height: 150px;
+            background-color: #123A4C;
+            border-bottom-right-radius: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+        
+        .sena-badge img {
+            width: 90px;
+            height: auto;
+            filter: brightness(0) invert(1);
+        }
+
+        /* Botón principal */
         .btn-entrar {
             width: 100%;
             padding: 18px;
@@ -184,35 +229,6 @@
             margin-top: 20px;
             text-transform: uppercase;
             letter-spacing: 1px;
-        }
-        
-        .btn-entrar:hover {
-            background-color: #2d8f3a;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(57, 181, 74, 0.4);
-        }
-        
-        .btn-entrar:active {
-            transform: translateY(0);
-        }
-        
-        .forgot-password {
-            text-align: center;
-            margin-top: 25px;
-        }
-        
-        .forgot-password a {
-            color: #39b54a;
-            text-decoration: none;
-            font-weight: bold;
-            font-style: italic;
-            font-size: 16px;
-            transition: color 0.3s ease;
-        }
-        
-        .forgot-password a:hover {
-            color: #2d8f3a;
-            text-decoration: underline;
         }
 
         .sena-footer {
@@ -261,9 +277,8 @@
         
         /* Responsive */
         @media (max-width: 1200px) {
-            .scides-title {
-                font-size: 90px;
-            }
+            .left-panel { background-size: 70%; }
+            .login-form { width: 400px; }
         }
         
         @media (max-width: 968px) {
@@ -273,52 +288,55 @@
             }
             
             .left-panel {
-                padding: 40px 20px;
+                width: 100%;
                 min-height: 40vh;
-            }
-            
-            .scides-title {
-                font-size: 70px;
+                height: auto;
+                background-size: 65%;
             }
             
             .right-panel {
-                border-radius: 40px 40px 0 0;
+                width: 100%;
                 min-height: 60vh;
             }
             
             .login-form {
-                padding: 40px 30px;
+                padding: 32px 28px;
+                width: 92%;
+                max-width: 420px;
             }
             
-            .form-title {
-                font-size: 28px;
+            /* Centrar/escala el marco azul en móviles medianos */
+            .login-background {
+                top: 50%;
+                left: 50%;
+                width: 90%;
+                height: auto;
+                transform: translate(-50%, -50%);
             }
-            
-            .leaf-top,
-            .leaf-bottom {
-                display: none;
-            }
-        }
         
+            .form-title { font-size: 28px; }
+        }
+
+        /* Tablets */
+        @media (max-width: 768px) {
+            .left-panel { min-height: 35vh; background-size: 75%; }
+            .right-panel { min-height: 65vh; }
+            .login-form { width: 94%; max-width: 380px; padding: 28px 24px; }
+            .btn-entrar { font-size: 20px; }
+            .sena-badge { width: 110px; height: 110px; }
+            .sena-badge img { width: 58px; }
+        }
+
         @media (max-width: 480px) {
-            .scides-title {
-                font-size: 50px;
-            }
-            
-            .login-form {
-                padding: 30px 20px;
-            }
-            
-            .form-title {
-                font-size: 24px;
-            }
-            
-            .form-group input {
-                padding: 15px;
-            }
-            
-            .btn-entrar {
-                font-size: 18px;
-                padding: 15px;
-            }
+            /* Evita problemas de background fijo en móviles */
+            body { background-attachment: scroll; }
+            .left-panel { min-height: 30vh; background-size: 80%; }
+            .right-panel { min-height: 70vh; }
+            .login-background { width: 95%; }
+            .login-form { width: 95%; max-width: 360px; padding: 24px 20px; }
+            .form-title { font-size: 24px; }
+            .form-group input { padding: 14px; }
+            .btn-entrar { font-size: 18px; padding: 14px; }
+            .sena-badge { width: 90px; height: 90px; }
+            .sena-badge img { width: 48px; }
         }

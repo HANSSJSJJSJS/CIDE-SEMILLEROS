@@ -5,7 +5,18 @@
 -- Servidor: 127.0.0.1
 -- Tiempo de generación: 30-10-2025 a las 22:17:53
 -- Versión del servidor: 10.4.32-MariaDB
--- Versión de PHP: 8.4.13
+-- relaciones que no se observando en el diseño 
+
+ALTER TABLE `documentos`
+  ADD CONSTRAINT `fk_documentos_aprendices`
+    FOREIGN KEY (`id_aprendiz`)
+    REFERENCES `aprendices` (`id_aprendiz`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_documentos_proyectos`
+    FOREIGN KEY (`id_proyecto`)
+    REFERENCES `proyectos` (`id_proyecto`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
