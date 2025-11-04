@@ -29,12 +29,10 @@
             <div class="login-form">
                 <h2 class="login-title">INICIO DE SESIÓN</h2>
 
-                @if ($errors->has('error'))
-                    <div class="alert alert-error">{{ $errors->first('error') }}</div>
-                @endif
+                
 
-                @if (session('success'))
-                    <div class="alert alert-success">{{ session('success') }}</div>
+                @if (session('error'))
+                    <div class="alert alert-error">{{ session('error') }}</div>
                 @endif
 
                 <form method="POST" action="{{ route('login') }}">
