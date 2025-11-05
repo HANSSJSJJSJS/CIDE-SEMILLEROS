@@ -8,13 +8,14 @@ class Aprendiz extends Model
 {
     protected $table = 'aprendices';
 
-    protected $primaryKey = 'id_usuario';
+    protected $primaryKey = 'id_aprendiz';
     public $incrementing = true;
 
     public $timestamps = false;
 
     protected $fillable = [
-        'id_usuario',
+        'id_aprendiz',
+        'id_user',
         'nombres',
         'apellidos',
         'ficha',
@@ -31,7 +32,7 @@ class Aprendiz extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'id_usuario');
+        return $this->belongsTo(User::class, 'id_user');
     }
 
     public function grupos()
