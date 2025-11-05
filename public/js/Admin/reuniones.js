@@ -645,8 +645,25 @@
     openDetailDrawer();
   }
 
-  function openDetailDrawer()  { detailOverlay.style.display = 'block'; detailDrawer.style.display = 'block'; }
-  function closeDetailDrawer() { detailOverlay.style.display = 'none';  detailDrawer.style.display = 'none'; }
+  function openDetailDrawer()  {
+    if (detailOverlay) detailOverlay.style.display = 'block';
+    if (detailDrawer) {
+      detailDrawer.style.display = 'block';
+      detailDrawer.setAttribute('aria-hidden', 'false');
+    }
+  }
+  function closeDetailDrawer() {
+    if (detailDrawer) {
+      // Si algún elemento dentro del drawer tiene el foco, quitarlo antes de ocultar
+      const active = document.activeElement;
+      if (active && detailDrawer.contains(active)) {
+        try { active.blur(); } catch (_) {}
+      }
+      detailDrawer.setAttribute('aria-hidden', 'true');
+      detailDrawer.style.display = 'none';
+    }
+    if (detailOverlay) detailOverlay.style.display = 'none';
+  }
 
   function editEvent(event) {
     selectedDate   = new Date(event.date + 'T' + event.time);

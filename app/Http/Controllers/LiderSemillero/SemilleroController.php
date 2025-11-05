@@ -1405,7 +1405,8 @@ class SemilleroController extends Controller
                 'fecha_hora' => 'required|date',
                 'duracion' => 'required|integer|min:15',
                 'ubicacion' => 'required|string',
-                'link_virtual' => 'nullable|url',
+                // Aceptar string y normalizar más adelante (coherente con actualizarEvento)
+                'link_virtual' => 'nullable|string|max:1000',
                 'recordatorio' => 'nullable|string',
                 'id_proyecto' => 'nullable|exists:proyectos,id_proyecto',
                 'participantes' => 'nullable|array',
@@ -1490,17 +1491,22 @@ class SemilleroController extends Controller
 
             // Cargar relaciones para la respuesta (con alias seguro)
             $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
-                ? 'nombre_completo'
-                : "CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))";
+                ? 'aprendices.nombre_completo'
+                : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
             $evento->load([
-                'participantes' => function($q){
+                'participantes' => function($q) use ($nameExpr){
                     $q->select(
-                        'id_aprendiz',
-                        DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo")
+                        DB::raw('aprendices.id_aprendiz as id_aprendiz'),
+                        DB::raw($nameExpr.' as nombre_completo')
                     );
                 },
                 'proyecto:id_proyecto,nombre_proyecto'
             ]);
+
+            // Formatear fecha_hora de forma segura
+            $fechaIso = $evento->fecha_hora instanceof \DateTimeInterface
+                ? $evento->fecha_hora->format(DATE_ATOM)
+                : (\is_string($evento->fecha_hora) ? date(DATE_ATOM, strtotime($evento->fecha_hora)) : (string)$evento->fecha_hora);
 
             return response()->json([
                 'success' => true,
@@ -1510,7 +1516,7 @@ class SemilleroController extends Controller
                     'titulo' => $evento->titulo,
                     'descripcion' => $evento->descripcion,
                     'linea_investigacion' => $evento->linea_investigacion,
-                    'fecha_hora' => $evento->fecha_hora->toIso8601String(),
+                    'fecha_hora' => $fechaIso,
                     'duracion' => $evento->duracion,
                     'tipo' => $evento->tipo,
                     'ubicacion' => $evento->ubicacion,
@@ -1545,9 +1551,19 @@ class SemilleroController extends Controller
     public function actualizarEvento(Request $request, $id)
     {
         try {
-            $evento = Evento::where('id_evento', $id)
-                ->where('id_lider', auth()->id())
-                ->firstOrFail();
+            // Detectar columna de líder si existe; si no, no filtrar por líder
+            $leaderCol = null;
+            if (Schema::hasColumn('eventos','id_lider_semi')) $leaderCol = 'id_lider_semi';
+            elseif (Schema::hasColumn('eventos','id_lider_usuario')) $leaderCol = 'id_lider_usuario';
+            elseif (Schema::hasColumn('eventos','id_lider')) $leaderCol = 'id_lider';
+
+            $eventoQ = Evento::where('id_evento', $id);
+            if ($leaderCol) { $eventoQ->where($leaderCol, auth()->id()); }
+            $evento = $eventoQ->first();
+            if (!$evento) {
+                // Fallback: cargar por id_evento únicamente (caso: columna líder existe pero está null o distinta)
+                $evento = Evento::where('id_evento', $id)->firstOrFail();
+            }
 
             $validated = $request->validate([
                 'titulo' => 'sometimes|required|string|max:255',
@@ -1557,31 +1573,45 @@ class SemilleroController extends Controller
                 'tipo' => 'nullable|string',
                 'linea_investigacion' => 'nullable|string|max:255',
                 'ubicacion' => 'nullable|string',
-                'link_virtual' => 'nullable|url',
+                // Permitir cualquier string y normalizar; muchas plataformas no pasan estrictamente el validador url
+                'link_virtual' => 'nullable|string|max:1000',
                 'id_proyecto' => 'nullable|exists:proyectos,id_proyecto',
                 'participantes' => 'nullable|array',
                 'participantes.*' => 'exists:aprendices,id_aprendiz',
                 'generar_enlace' => 'nullable|string|in:teams,meet,personalizado'
             ]);
 
-            // Validar conflicto considerando valores nuevos o actuales
-            $inicioStr = isset($validated['fecha_hora'])
-                ? $validated['fecha_hora']
-                : ($evento->fecha_hora instanceof \DateTimeInterface ? $evento->fecha_hora->format('Y-m-d H:i:s') : (string)$evento->fecha_hora);
-            $inicioValidar = new \DateTime($inicioStr);
-            $duracionValidar = (int) ($validated['duracion'] ?? $evento->duracion);
-            if ($this->hayConflicto($inicioValidar, $duracionValidar, (int)$evento->id_evento)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'El horario elegido se solapa con otra reunión existente. Selecciona otra hora disponible.'
-                ], 422);
-            }
-            // Validar cruce con almuerzo
-            if ($this->cruzaAlmuerzo($inicioValidar, $duracionValidar)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'La reunión no puede cruzar el horario de almuerzo (12:00 a 13:55).'
-                ], 422);
+            // Determinar si solo se está actualizando el enlace sin cambiar horario/duración
+            $onlyLinkUpdate = array_key_exists('link_virtual', $validated)
+                && !array_key_exists('fecha_hora', $validated)
+                && !array_key_exists('duracion', $validated)
+                && !array_key_exists('titulo', $validated)
+                && !array_key_exists('ubicacion', $validated)
+                && !array_key_exists('tipo', $validated)
+                && !array_key_exists('linea_investigacion', $validated)
+                && !array_key_exists('id_proyecto', $validated)
+                && !array_key_exists('participantes', $validated);
+
+            if (!$onlyLinkUpdate) {
+                // Validar conflicto considerando valores nuevos o actuales
+                $inicioStr = isset($validated['fecha_hora'])
+                    ? $validated['fecha_hora']
+                    : ($evento->fecha_hora instanceof \DateTimeInterface ? $evento->fecha_hora->format('Y-m-d H:i:s') : (string)$evento->fecha_hora);
+                $inicioValidar = new \DateTime($inicioStr);
+                $duracionValidar = (int) ($validated['duracion'] ?? $evento->duracion);
+                if ($this->hayConflicto($inicioValidar, $duracionValidar, (int)$evento->id_evento)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'El horario elegido se solapa con otra reunión existente. Selecciona otra hora disponible.'
+                    ], 422);
+                }
+                // Validar cruce con almuerzo
+                if ($this->cruzaAlmuerzo($inicioValidar, $duracionValidar)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'La reunión no puede cruzar el horario de almuerzo (12:00 a 13:55).'
+                    ], 422);
+                }
             }
             // Generar enlace si la ubicación es virtual y no tiene enlace
             $updateData = [];
@@ -1612,8 +1642,18 @@ class SemilleroController extends Controller
                 $updateData['ubicacion'] = $validated['ubicacion'];
             }
             
-            if (isset($validated['link_virtual'])) {
-                $updateData['link_virtual'] = $validated['link_virtual'];
+            // Permitir limpiar el enlace cuando venga explícitamente como null
+            if (array_key_exists('link_virtual', $validated)) {
+                $link = $validated['link_virtual'];
+                if (\is_string($link)) {
+                    $trim = trim($link);
+                    if ($trim !== '' && !preg_match('/^https?:\/\//i', $trim)) {
+                        $trim = 'https://' . $trim; // normalizar si faltó esquema
+                    }
+                    $updateData['link_virtual'] = $trim === '' ? null : $trim;
+                } else {
+                    $updateData['link_virtual'] = $link; // null u otro
+                }
             } elseif (($validated['ubicacion'] ?? $evento->ubicacion) === 'virtual' && empty($evento->link_virtual)) {
                 // Generar enlace automáticamente
                 $plataforma = $validated['generar_enlace'] ?? 'teams';
@@ -1630,14 +1670,22 @@ class SemilleroController extends Controller
 
             // Cargar relaciones para la respuesta (con alias seguro)
             $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
-                ? 'nombre_completo'
-                : "CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))";
+                ? 'aprendices.nombre_completo'
+                : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
             $evento->load([
                 'participantes' => function($q) use ($nameExpr){
-                    $q->selectRaw("id_usuario as id_aprendiz, $nameExpr as nombre_completo");
+                    $q->select(
+                        DB::raw('aprendices.id_aprendiz as id_aprendiz'),
+                        DB::raw($nameExpr.' as nombre_completo')
+                    );
                 },
                 'proyecto:id_proyecto,nombre_proyecto'
             ]);
+
+            // Formatear fecha_hora de forma segura (puede ser string en algunos esquemas)
+            $fechaIso = $evento->fecha_hora instanceof \DateTimeInterface
+                ? $evento->fecha_hora->format(DATE_ATOM)
+                : (\is_string($evento->fecha_hora) ? date(DATE_ATOM, strtotime($evento->fecha_hora)) : (string)$evento->fecha_hora);
 
             return response()->json([
                 'success' => true,
@@ -1646,7 +1694,7 @@ class SemilleroController extends Controller
                     'id' => $evento->id_evento,
                     'titulo' => $evento->titulo,
                     'descripcion' => $evento->descripcion,
-                    'fecha_hora' => $evento->fecha_hora->toIso8601String(),
+                    'fecha_hora' => $fechaIso,
                     'duracion' => $evento->duracion,
                     'tipo' => $evento->tipo,
                     'ubicacion' => $evento->ubicacion,
