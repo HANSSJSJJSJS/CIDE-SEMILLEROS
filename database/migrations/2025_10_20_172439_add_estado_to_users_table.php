@@ -11,16 +11,24 @@ return new class extends Migration
      */
     public function up(): void
 {
-    Schema::table('aprendices', function (Blueprint $table) {
-        $table->enum('estado', ['Activo', 'Inactivo'])->default('Activo')->after('id_usuario');
-    });
+    if (Schema::hasTable('aprendices') && !Schema::hasColumn('aprendices', 'estado')) {
+        Schema::table('aprendices', function (Blueprint $table) {
+            if (Schema::hasColumn('aprendices', 'id_usuario')) {
+                $table->enum('estado', ['Activo', 'Inactivo'])->default('Activo')->after('id_usuario');
+            } else {
+                $table->enum('estado', ['Activo', 'Inactivo'])->default('Activo');
+            }
+        });
+    }
 }
 
 public function down(): void
 {
-    Schema::table('aprendices', function (Blueprint $table) {
-        $table->dropColumn('estado');
-    });
+    if (Schema::hasTable('aprendices') && Schema::hasColumn('aprendices', 'estado')) {
+        Schema::table('aprendices', function (Blueprint $table) {
+            $table->dropColumn('estado');
+        });
+    }
 }
 
 };

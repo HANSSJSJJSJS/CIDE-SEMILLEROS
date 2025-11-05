@@ -22,8 +22,15 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('eventos', function (Blueprint $table) {
-            $table->dropColumn('link_virtual');
+            if (!Schema::hasColumn('eventos', 'link_virtual')) {
+                $table->string('link_virtual')->nullable()->after('ubicacion');
+            }
+        
+            if (!Schema::hasColumn('eventos', 'descripcion')) {
+                $table->text('descripcion')->nullable()->after('link_virtual');
+            }
         });
+
     }
 };
 
