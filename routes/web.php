@@ -18,6 +18,8 @@ use App\Http\Controllers\Admin\UsuarioController as AdminUsuarioController;
 use App\Http\Controllers\Admin\SemilleroController as AdminSemilleroController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Admin\ReunionesLideresController;
+use App\Http\Controllers\Admin\RecursoController;
+use App\Http\Controllers\Admin\PerfilController as AdminPerfilController;
 
 // Líder semillero
 use App\Http\Controllers\LiderSemillero\SemilleroController as LiderSemilleroUIController;
@@ -104,22 +106,24 @@ Route::middleware(['auth', 'role:ADMIN'])
 
         // Dashboard
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-
+        // Endpoints JSON para KPI y gráficas
+        Route::get('/dashboard/stats',  [AdminDashboardController::class, 'stats'])->name('dashboard.stats');
+        Route::get('/dashboard/charts', [AdminDashboardController::class, 'charts'])->name('dashboard.charts');
         // Usuarios
         Route::resource('usuarios', AdminUsuarioController::class);
         Route::get('/usuarios/{id}/edit-ajax', [AdminUsuarioController::class, 'editAjax'])->whereNumber('id')->name('usuarios.edit.ajax');
         Route::post('/usuarios/ajax/store', [AdminUsuarioController::class, 'storeAjax'])->name('usuarios.store.ajax');
 
-        // Página “Funciones del administrador”
+        // Funciones admin
         Route::get('/funciones', [AdminController::class, 'index'])->name('functions');
         Route::get('/crear', fn () => view('admin.crear'))->name('crear');
 
-        // Semilleros (ADMIN)
+        // Semilleros
         Route::resource('semilleros', AdminSemilleroController::class);
         Route::get('/semilleros/lideres-disponibles', [AdminSemilleroController::class, 'lideresDisponibles'])
             ->name('semilleros.lideres-disponibles');
 
-        // Reuniones de líderes (ADMIN)
+        // Reuniones de líderes
         Route::get('/reuniones-lideres', [ReunionesLideresController::class, 'index'])->name('reuniones-lideres.index');
         Route::prefix('reuniones-lideres')->as('reuniones-lideres.')->group(function () {
             Route::get('obtener',    [ReunionesLideresController::class, 'obtener'])->name('obtener');
@@ -130,12 +134,29 @@ Route::middleware(['auth', 'role:ADMIN'])
             Route::delete('{id}',    [ReunionesLideresController::class, 'destroy'])->whereNumber('id')->name('destroy');
             Route::post('{id}/generar-enlace', [ReunionesLideresController::class, 'generarEnlace'])
                 ->whereNumber('id')->name('generar-enlace');
+       
+            }); 
+        // Recursos
+        Route::prefix('recursos')->as('recursos.')->group(function () {
+            Route::get('/',               [RecursoController::class, 'index'])->name('index');      // vista
+            Route::get('/listar',         [RecursoController::class, 'listar'])->name('listar');    // JSON
+            Route::post('/',              [RecursoController::class, 'store'])->name('store');      // subir
+            Route::get('/{recurso}/dl',   [RecursoController::class, 'download'])->name('download');// descargar
+            Route::delete('/{recurso}',   [RecursoController::class, 'destroy'])->name('destroy');  // eliminar
+        });
+        
+        // Mi Perfil (Admin)  
+        Route::prefix('perfil')->as('perfil.')->group(function () {
+            Route::get('/',            [AdminPerfilController::class, 'edit'])->name('edit');
+            Route::put('/',            [AdminPerfilController::class, 'update'])->name('update');
+            Route::put('/password',    [AdminPerfilController::class, 'updatePassword'])->name('password.update');
         });
 
-        // Notificaciones (UI topbar)
+        // Notificaciones
         Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');
         Route::post('/notifications/read-all', [AdminNotificationController::class, 'readAll'])->name('notifications.read_all');
     });
+
 
 /*
 |--------------------------------------------------------------------------

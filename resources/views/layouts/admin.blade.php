@@ -34,10 +34,10 @@
   <div class="menu-card">
     <nav class="adm-nav">
       <a href="{{ route('admin.dashboard') }}"
-         class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-        <i class="bi bi-house-fill me-2"></i> <span>Inicio</span>
-      </a>
-
+              class="nav-link {{ request()->routeIs('admin.dashboard*') ? 'active' : '' }}">
+              <i class="bi bi-house-fill me-2"></i>
+              <span>Inicio</span>
+            </a>
       <a href="{{ route('admin.usuarios.index') }}"
          class="nav-link {{ request()->routeIs('admin.usuarios.*') ? 'active' : '' }}">
         <i class="bi bi-people-fill me-2"></i> <span>Gestión de Usuarios</span>
@@ -53,15 +53,16 @@
       <i class="bi bi-calendar-event me-2"></i> <span>Reuniones</span>
     </a>
 
-      <a href="{{ route('lider_semi.recursos') }}"
-         class="nav-link {{ request()->routeIs('lider_semi.recursos') ? 'active' : '' }}">
-        <i class="bi bi-journal-text me-2"></i> <span>Recursos</span>
-      </a>
+      <a href="{{ route('admin.recursos.index') }}"
+      class="nav-link {{ request()->routeIs('admin.recursos.*') ? 'active' : '' }}">
+        <i class="bi bi-journal-text me-2"></i>
+        <span>Recursos</span>
+    </a>
 
-      <a href="{{ route('lider_semi.perfil') }}"
-         class="nav-link {{ request()->routeIs('lider_semi.perfil') ? 'active' : '' }}">
-        <i class="bi bi-person-circle me-2"></i> <span>Mi Perfil</span>
-      </a>
+      <a href="{{ route('admin.perfil.edit') }}"
+   class="nav-link {{ request()->routeIs('admin.perfil.*') ? 'active' : '' }}">
+  <i class="bi bi-person-circle me-2"></i> <span>Mi Perfil</span>
+</a>
     </nav>
   </div>
 </aside>
