@@ -43,6 +43,9 @@ class Semillero extends Model
     }
 }
 <<<<<<< HEAD
+=======
+<<<<<<< HEAD
 
 =======
 >>>>>>> Fusionmain
+>>>>>>> 5e1cb9273aecf3a7cfc0a8bee8f3e4ed9975e2db
