@@ -212,38 +212,49 @@ class CalendarioController extends Controller
 
             // Posibles IDs del aprendiz usados en ep.id_aprendiz (puede ser user_id o id_aprendiz)
             $aprIds = [$uid];
+            $aprId = null;
             if (Schema::hasTable('aprendices')) {
-                $aprPkCols = [];
-                if (Schema::hasColumn('aprendices','id_aprendiz')) { $aprPkCols[] = 'id_aprendiz'; }
-                if (Schema::hasColumn('aprendices','id')) { $aprPkCols[] = 'id'; }
-                $aprId = null;
-                if (Schema::hasColumn('aprendices','id_usuario')) {
-                    foreach ($aprPkCols as $pk) { $aprId = DB::table('aprendices')->where('id_usuario', $uid)->value($pk); if (!is_null($aprId)) break; }
-                } elseif (Schema::hasColumn('aprendices','user_id')) {
-                    foreach ($aprPkCols as $pk) { $aprId = DB::table('aprendices')->where('user_id', $uid)->value($pk); if (!is_null($aprId)) break; }
+                try {
+                    $aprPkCols = [];
+                    if (Schema::hasColumn('aprendices','id_aprendiz')) { $aprPkCols[] = 'id_aprendiz'; }
+                    if (Schema::hasColumn('aprendices','id')) { $aprPkCols[] = 'id'; }
+                    if (Schema::hasColumn('aprendices','id_usuario')) {
+                        foreach ($aprPkCols as $pk) { $aprId = DB::table('aprendices')->where('id_usuario', $uid)->value($pk); if (!is_null($aprId)) break; }
+                    } elseif (Schema::hasColumn('aprendices','user_id')) {
+                        foreach ($aprPkCols as $pk) { $aprId = DB::table('aprendices')->where('user_id', $uid)->value($pk); if (!is_null($aprId)) break; }
+                    } elseif (Schema::hasColumn('aprendices','email')) {
+                        $email = DB::table('users')->where('id', $uid)->value('email');
+                        if ($email) {
+                            foreach ($aprPkCols as $pk) { $aprId = DB::table('aprendices')->where('email', $email)->value($pk); if (!is_null($aprId)) break; }
+                        }
+                    }
+                } catch (\Throwable $ex) {
+                    // continuar con $aprIds por defecto
                 }
                 if (!is_null($aprId) && $aprId != $uid) { $aprIds[] = $aprId; }
             }
 
-            $hasEventoUsuario = Schema::hasColumn('eventos','id_usuario');
-            $hasEventoLider   = Schema::hasColumn('eventos','id_lider');
+            // Construir consulta evitando columnas inexistentes en eventos
+            $query = Evento::query()->with(['proyecto:id_proyecto,nombre_proyecto','lider:id,name'])
+                ->whereDate('fecha_hora', '>=', now()->startOfDay());
 
-            $query = Evento::query()
-                ->with(['proyecto:id_proyecto,nombre_proyecto','lider:id,name'])
-                ->whereDate('fecha_hora', '>=', now()->startOfDay())
-                ->where(function ($q) use ($uid, $hasEventoUsuario, $hasEventoLider, $aprIds) {
-                    $q->whereRaw('1=0');
-                    if ($hasEventoUsuario) { $q->orWhere('id_usuario', $uid); }
-                    if ($hasEventoLider)   { $q->orWhere('id_lider', $uid); }
-                    $q->orWhereExists(function ($sub) use ($aprIds) {
-                        $sub->from('evento_participantes as ep')
-                            ->whereColumn('ep.id_evento', 'eventos.id_evento')
-                            ->whereIn('ep.id_aprendiz', $aprIds);
-                    });
-                })
-                ->orderBy('fecha_hora', 'asc')
-                ->select('eventos.*')
-                ->take(10);
+            $query->where(function ($q) use ($uid) {
+                // arranque seguro
+                $q->whereRaw('1=0');
+                if (Schema::hasColumn('eventos', 'id_usuario')) { $q->orWhere('id_usuario', $uid); }
+                // columnas alternativas para líder
+                foreach (['id_lider','id_lider_semi','id_lider_usuario'] as $col) {
+                    if (Schema::hasColumn('eventos', $col)) { $q->orWhere($col, $uid); break; }
+                }
+            })
+            ->orWhereExists(function ($sub) use ($aprIds) {
+                $sub->from('evento_participantes as ep')
+                    ->whereColumn('ep.id_evento', 'eventos.id_evento')
+                    ->whereIn('ep.id_aprendiz', $aprIds);
+            })
+            ->orderBy('fecha_hora', 'asc')
+            ->select('eventos.*')
+            ->take(10);
 
             $eventos = $query->get()->unique('id_evento')->values();
 
@@ -256,18 +267,18 @@ class CalendarioController extends Controller
                     ? 'aprendices.nombre_completo'
                     : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
 
+                // Determinar columna de unión disponible (PK almacenada en ep.id_aprendiz)
                 $joinCol = null;
-                foreach (['id_usuario','user_id','id_aprendiz','id'] as $cand) {
+                foreach (['id_aprendiz','id','id_usuario','user_id'] as $cand) {
                     if (Schema::hasColumn('aprendices', $cand)) { $joinCol = $cand; break; }
                 }
-                if ($joinCol) {
-                    $rows = DB::table('evento_participantes')
-                        ->join('aprendices', DB::raw('aprendices.' . $joinCol), '=', 'evento_participantes.id_aprendiz')
-                        ->whereIn('evento_participantes.id_evento', $ids)
-                        ->select('evento_participantes.id_evento', DB::raw($nameExpr.' as nombre'))
-                        ->get();
-                    $participantesPorEvento = $rows->groupBy('id_evento')->map(fn($g) => $g->pluck('nombre')->filter()->values()->all());
-                }
+                $rows = DB::table('evento_participantes')
+                    ->join('aprendices', DB::raw('aprendices.' . $joinCol), '=', 'evento_participantes.id_aprendiz')
+                    ->whereIn('evento_participantes.id_evento', $ids)
+                    ->select('evento_participantes.id_evento', DB::raw($nameExpr.' as nombre'))
+                    ->get();
+                $participantesPorEvento = $rows->groupBy('id_evento')->map(fn($g) => $g->pluck('nombre')->filter()->values()->all());
+
             }
 
             $proximas = $eventos->map(function ($e) use ($participantesPorEvento) {

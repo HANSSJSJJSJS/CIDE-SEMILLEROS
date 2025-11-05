@@ -12,6 +12,7 @@
 .chip-semana{background:#fff7e6;color:#f08c00;border-color:#ffe0b3}
 .meet-time-urgent{color:#b91c1c}
 .btn-icon{display:inline-flex;align-items:center;gap:6px}
+<<<<<<< HEAD
 
 /* ===== Dashboard layout improvements ===== */
 /* Grid de métricas con más respiración */
@@ -85,3 +86,24 @@
 
 /* Empujar hacia abajo la sección de próximas reuniones */
 .meetings-section{ margin-top: 22px !important; }
+=======
+/* ===== SCML Top bar & Sidebar (estilo imagen) ===== */
+:root{--navy:#0b3b52;--sena-green:#2bb673;--navy-700:#0a3447;--navy-600:#12485f}
+.top-bar{background:var(--navy);color:#fff;padding:10px 0;box-shadow:0 2px 6px rgba(0,0,0,.15);}
+.top-bar h1{margin:0;color:var(--sena-green);font-weight:800;font-size:1.25rem;letter-spacing:.2px}
+.top-bar .user-avatar{width:36px;height:36px;border-radius:9999px;background:#0e3f57;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
+.top-bar .btn{border-radius:9999px}
+
+.sidebar{background:var(--navy);color:#dbe7ee;border-radius:14px;padding:16px}
+.sidebar .list-group{gap:10px;display:flex;flex-direction:column}
+.sidebar .list-group-item{background:transparent;border:0;color:#dbe7ee;border-radius:12px;padding:10px 12px}
+.sidebar .list-group-item:hover{background:rgba(255,255,255,.06)}
+.sidebar .list-group-item.active{background:#eef9f3;color:#0b3b52;font-weight:700}
+.sidebar .list-group-item i{width:18px;text-align:center}
+
+/* Contenedor principal (tarjeta blanca) */
+.dashboard-hero,.content-shell{background:#fff;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.08)}
+.metrics-grid .card-metric{border:1px solid #e9ecef;border-radius:14px;padding:14px}
+.metric-title{color:#6b7280;font-weight:600}
+.metric-value{font-size:28px;font-weight:800}
+>>>>>>> 7270b2e (avances aprendiz)

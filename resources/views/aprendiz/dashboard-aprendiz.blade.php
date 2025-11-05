@@ -4,6 +4,7 @@
 @section('module-title','')
 @section('module-subtitle','')
 
+<<<<<<< HEAD
 @push('styles')
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <link rel="stylesheet" href="{{ asset('css/aprendiz/style.css') }}">
@@ -13,6 +14,75 @@
 @section('content')
             <h2 class="fw-bold mb-1">Bienvenido(a), {{ Auth::user()->name }}</h2>
             <p class="text-muted mb-4">Gestiona tus proyectos y documentos desde tu panel de aprendiz</p>
+=======
+    <!-- Top bar -->
+    <div class="top-bar">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <img src="{{ asset('images/logo-sena.png') }}" alt="SENA" style="height:34px">
+                <h1 class="mb-0">Panel de Aprendiz</h1>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="text-white small text-end d-none d-md-block">
+                    <div style="font-size:0.78rem; opacity:0.9;">Aprendiz</div>
+                </div>
+                <div class="user-avatar" title="{{ Auth::user()->name }}">
+                    @php
+                        $name = trim(Auth::user()->name ?? '');
+                        $parts = preg_split('/\s+/', $name);
+                        $initials = strtoupper(( $parts[0][0] ?? '' ) . ( $parts[count($parts)-1][0] ?? '' ));
+                    @endphp
+                    {{ $initials }}
+                </div>
+                <div class="text-white small d-none d-md-block" style="background: rgba(255,255,255,.12); padding:6px 10px; border-radius:9999px;">
+                    {{ Auth::user()->name }}
+                </div>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="btn btn-light btn-sm">Cerrar sesión</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="container py-4">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-lg-3 mb-3">
+                <div class="sidebar">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="{{ asset('images/logo-sena.png') }}" alt="SENA" class="top-left-logo me-3" style="width:40px;height:40px;object-fit:contain">
+                        <div>
+                            <div style="font-weight:700;">Sistema de Gestión</div>
+                            <div style="color:var(--muted);font-size:0.9rem;">Semillero</div>
+                        </div>
+                    </div>
+
+                    <div class="list-group">
+                        <a href="{{ route('dashboard') }}" class="list-group-item list-group-item-action active" aria-current="true">
+                            <i class="fa fa-home me-2"></i> Inicio
+                        </a>
+                        <a href="{{ route('aprendiz.proyectos.index') }}" class="list-group-item list-group-item-action">
+                            <i class="fa fa-folder-open me-2"></i> Mis Proyectos
+                        </a>
+                        <a href="{{ route('aprendiz.archivos.index') }}" class="list-group-item list-group-item-action">
+                            <i class="fa fa-file-upload me-2"></i> Subir Documentos
+                        </a>
+                        <a href="{{ route('aprendiz.perfil.show') }}" class="list-group-item list-group-item-action">
+                            <i class="fa fa-user me-2"></i> Mi Perfil
+                        </a>
+                        <a href="{{ route('aprendiz.calendario.index') }}" class="list-group-item list-group-item-action">
+                            <i class="fa fa-calendar me-2"></i> Calendario
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main content -->
+            <div class="col-lg-9">
+                <h2 class="fw-bold mb-1">Bienvenido(a), {{ Auth::user()->name }}</h2>
+                <p class="text-muted mb-4">Gestiona tus proyectos y documentos desde tu panel de aprendiz</p>
+>>>>>>> 7270b2e (avances aprendiz)
 
                 <!-- Metric cards -->
                 <div class="row metrics-grid mb-4 gx-4">
