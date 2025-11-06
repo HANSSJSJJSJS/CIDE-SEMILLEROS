@@ -48,7 +48,7 @@ class ArchivoController extends Controller
             ]);
         }
 
-        return view('aprendiz.archivos.index', compact('proyectos', 'archivos', 'proyecto', 'fecha'));
+        return view('aprendiz.archivos.archivo', compact('proyectos', 'archivos', 'proyecto', 'fecha'));
     }
 
     public function create(Request $request)

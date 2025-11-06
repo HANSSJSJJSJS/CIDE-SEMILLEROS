@@ -1,20 +1,4 @@
-<<<<<<< HEAD
 @extends('layouts.aprendiz')
-=======
-@php
-    echo view('aprendiz.calendario_scml', [
-        'reuniones' => $reuniones ?? collect(),
-        'participantesMapa' => $participantesMapa ?? []
-    ])->render();
-    return;
-@endphp
-<!doctype html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Calendario de Reuniones</title>
->>>>>>> 7270b2e (avances aprendiz)
 
 @section('title','Calendario')
 @section('module-title','Calendario de Reuniones')

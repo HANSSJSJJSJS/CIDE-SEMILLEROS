@@ -26,7 +26,7 @@ class ProyectoController extends Controller
                 ->with(['semillero'])
                 ->get();
 
-        return view('aprendiz.proyectos.index', compact('proyectos'));
+        return view('aprendiz.proyectos.proyecto', compact('proyectos'));
     }
 
     public function show($id)
@@ -101,7 +101,7 @@ class ProyectoController extends Controller
             ->orderByDesc('subido_en')
             ->get();
 
-        return view('aprendiz.proyectos.show', compact('proyecto', 'companeros', 'lider', 'evidencias', 'fecha', 'nombre', 'nombreError', 'archivos'));
+        return view('aprendiz.proyectos.show_proyecto', compact('proyecto', 'companeros', 'lider', 'evidencias', 'fecha', 'nombre', 'nombreError', 'archivos'));
     }
 
     private function proyectoIdsUsuario(int $userId): array
@@ -188,4 +188,5 @@ class ProyectoController extends Controller
         return [];
     }
 }
+
 

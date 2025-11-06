@@ -18,7 +18,7 @@ class CalendarioController extends Controller
 
         if (!Schema::hasTable('eventos')) {
             $reuniones = collect();
-            return view('aprendiz.calendario.index', compact('reuniones'));
+            return view('aprendiz.calendario.calendario_aprendiz', compact('reuniones'));
         }
 
         // Obtener IDs de proyectos del usuario sin asumir pivote fija
@@ -127,7 +127,7 @@ class CalendarioController extends Controller
             ];
         });
 
-        return view('aprendiz.calendario.index', compact('reuniones'));
+        return view('aprendiz.calendario.calendario_aprendiz', compact('reuniones'));
     }
 
     private function proyectoIdsUsuario(int $userId): array

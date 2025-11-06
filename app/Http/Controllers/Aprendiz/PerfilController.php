@@ -27,7 +27,7 @@ class PerfilController extends Controller
             }
         }
 
-        return view('aprendiz.perfil.show', [
+        return view('aprendiz.perfil.perfil_aprendiz', [
             'user' => $user,
             'aprendiz' => $aprendiz
         ]);
@@ -36,7 +36,7 @@ class PerfilController extends Controller
 
     public function edit()
     {
-        return view('aprendiz.perfil.edit', [
+        return view('aprendiz.perfil.perfil_aprendiz', [
             'user' => Auth::user()
         ]);
     }
@@ -53,6 +53,6 @@ class PerfilController extends Controller
         $user->email = $request->email;
         $user->save();
 
-        return redirect()->route('aprendiz.perfil.show')->with('success', 'Perfil actualizado correctamente.');
+        return redirect()->route('aprendiz.perfil')->with('success', 'Perfil actualizado correctamente.');
     }
 }
