@@ -26,6 +26,7 @@ use App\Http\Controllers\LiderSemillero\SemilleroController as LiderSemilleroUIC
 use App\Http\Controllers\LiderSemillero\DashboardController_semi;
 use App\Http\Controllers\LiderSemillero\ProyectoController as LiderProyectoController;
 use App\Http\Controllers\LiderSemillero\SemilleroAprendizController;
+use App\Http\Controllers\LiderSemillero\PerfilController as LiderPerfilController;
 
 // Aprendiz
 use App\Http\Controllers\Aprendiz\DashboardController as AprendizDashboardController;
@@ -229,6 +230,8 @@ Route::middleware(['auth','lider.semillero'])
         Route::get('/aprendices', [LiderSemilleroUIController::class, 'aprendices'])->name('aprendices');
         Route::view('/recursos', 'lider_semi.recursos')->name('recursos');
         Route::view('/perfil', 'lider_semi.perfil')->name('perfil');
+        Route::put('/perfil/contacto', [LiderPerfilController::class, 'updateContacto'])->name('perfil.contacto.update');
+        Route::put('/perfil/password', [LiderPerfilController::class, 'updatePassword'])->name('perfil.password.update');
 
         // Gestión de aprendices por semillero
         Route::get('/semilleros/{semillero}/aprendices', [LiderSemilleroUIController::class, 'editAprendices'])->name('semilleros.aprendices.edit');

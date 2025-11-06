@@ -72,11 +72,15 @@
 
 /* ---------- Área de página con fondo decorativo ---------- */
 .adm-content{ background:#f7f9fc; }
-.adm-page{ position:relative; padding:20px; isolation:isolate; z-index:0; }
+.adm-page{ position:relative; padding:20px; isolation:isolate; z-index:0; min-height:100vh; }
 .adm-page::before{
   content:""; position:absolute; inset:0; z-index:-1;
-  background:url("../images/bg-semillero.png") no-repeat center 80px / 900px auto;
-  opacity:.10; pointer-events:none;
+  /* Mostrar imagen completa de forma responsiva */
+  background-image:url("../images/bg-semillero.png");
+  background-repeat:no-repeat;
+  background-position:center 90px; /* separa del topbar */
+  background-size:clamp(520px, 60vw, 1280px) auto; /* escala responsiva */
+  opacity:.12; pointer-events:none;
 }
 .adm-page-head{ margin:4px 4px 16px; }
 .page-title{ margin:0; font-size:1.6rem; font-weight:800; }
@@ -87,6 +91,14 @@
   .adm-shell{ grid-template-columns:1fr; }
   .adm-sidebar{ position:fixed; inset:0 auto 0 0; width:82vw; transform:translateX(-100%); transition:transform .2s; }
   .adm-sidebar.show{ transform:translateX(0); }
+}
+
+/* Ajustes extra para pantallas muy anchas y muy pequeñas */
+@media (min-width: 1600px){
+  .adm-page::before{ background-size: 1400px auto; }
+}
+@media (max-width: 575.98px){
+  .adm-page::before{ background-position:center 70px; background-size: 520px auto; }
 }
 
 /* Botón hamburguesa */
