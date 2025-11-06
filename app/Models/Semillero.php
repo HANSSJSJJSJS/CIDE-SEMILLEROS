@@ -8,44 +8,37 @@ class Semillero extends Model
 {
     protected $table = 'semilleros';
     protected $primaryKey = 'id_semillero';
-<<<<<<< HEAD
     public $timestamps = false;
 
     protected $fillable = [
         'nombre',
+        'linea_investigacion',
         'descripcion',
         'estado',
         'progreso',
-        'lider_id',
+        'id_lider_semi',
     ];
 
-    // Relación con proyectos
+    // Relación con proyectos (ajusta el modelo/llaves si tus nombres difieren)
     public function proyectos()
     {
-        return $this->hasMany(Proyecto::class, 'id_semillero', 'id_semillero');
+        return $this->hasMany(\App\Models\Proyecto::class, 'id_semillero', 'id_semillero');
     }
-=======
 
-    protected $fillable = [
-        'id_semillero', 'nombre', 'descripcion', 'estado', 'progreso', 'aprendices', 'lider_id',
-    ];
-
-    // Relación futura si aplica (ajustar claves cuando exista la tabla/proyectos)
-    // public function proyectos()
-    // {
-    //     return $this->hasMany(\App\Models\Proyecto::class, 'semillero_id');
-    // }
->>>>>>> Fusionmain
-
+    // Relación con aprendices vía tabla pivote
     public function aprendices()
     {
-        return $this->belongsToMany(Aprendiz::class, 'aprendiz_semillero', 'id_semillero', 'id_aprendiz', 'id_semillero', 'id_aprendiz');
+        return $this->belongsToMany(
+            \App\Models\Aprendiz::class,
+            'aprendiz_semillero',
+            'id_semillero',
+            'id_aprendiz'
+        );
+    }
+
+    // Relación con líder (si tienes el modelo LiderSemillero)
+    public function lider()
+    {
+        return $this->belongsTo(\App\Models\LiderSemillero::class, 'id_lider_semi', 'id_lider_semi');
     }
 }
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-
-=======
->>>>>>> Fusionmain
->>>>>>> 5e1cb9273aecf3a7cfc0a8bee8f3e4ed9975e2db
