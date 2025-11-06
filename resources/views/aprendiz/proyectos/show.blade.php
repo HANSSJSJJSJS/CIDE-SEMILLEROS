@@ -1,13 +1,14 @@
-<!doctype html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Detalle del Proyecto</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="{{ asset('css/aprendiz.css') }}" rel="stylesheet">
-</head>
-<body class="bg-light main-bg">
+@extends('layouts.aprendiz')
+
+@section('title','Detalle del Proyecto')
+@section('module-title','Detalle del Proyecto')
+@section('module-subtitle', $proyecto->nombre_proyecto ?? '')
+
+@push('styles')
+<link href="{{ asset('css/aprendiz.css') }}" rel="stylesheet">
+@endpush
+
+@section('content')
     <header class="header-bar shadow-sm d-flex justify-content-between align-items-center px-4 py-3 mb-3">
         <h1 class="m-0 text-success fw-bold">Detalle del Proyecto</h1>
         <div class="d-flex align-items-center gap-3">
@@ -173,6 +174,4 @@
             </div>
         </div>
     </div>
-
- </body>
- </html>
+@endsection

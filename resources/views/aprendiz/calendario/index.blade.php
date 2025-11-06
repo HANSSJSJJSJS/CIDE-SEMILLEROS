@@ -1,76 +1,17 @@
-<!doctype html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Calendario de Reuniones</title>
+@extends('layouts.aprendiz')
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="{{ asset('css/aprendiz/style.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/aprendiz-calendario.css') }}">
+@section('title','Calendario')
+@section('module-title','Calendario de Reuniones')
+@section('module-subtitle','Consulta tus eventos y reuniones')
 
-</head>
-<body>
-    <!-- Top bar -->
-    <div class="top-bar">
-        <div class="container d-flex justify-content-between align-items-center">
-            <h1>Panel del aprendiz SENA</h1>
-            <div class="d-flex align-items-center gap-3">
-                <div class="text-white small text-end">
-                    <div style="font-size:0.78rem; opacity:0.9;">Aprendiz</div>
-                </div>
-                <div class="user-avatar" title="{{ Auth::user()->name }}">
-                    @php
-                        $name = trim(Auth::user()->name ?? '');
-                        $parts = preg_split('/\s+/', $name);
-                        $initials = strtoupper(($parts[0][0] ?? '') . ($parts[count($parts)-1][0] ?? ''));
-                    @endphp
-                    {{ $initials }}
-                </div>
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="btn btn-light btn-sm">Cerrar sesión</button>
-                </form>
-            </div>
-        </div>
-    </div>
+@push('styles')
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{{ asset('css/aprendiz/style.css') }}">
+<link rel="stylesheet" href="{{ asset('css/aprendiz-calendario.css') }}">
+@endpush
 
-    <div class="container py-4">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-lg-3 mb-3">
-                <div class="sidebar">
-                    <div class="d-flex align-items-center mb-3">
-                        <img src="{{ asset('images/logo-sena.png') }}" alt="SENA" class="top-left-logo me-3" style="width:40px;height:40px;object-fit:contain">
-                        <div>
-                            <div style="font-weight:700;">Sistema de Gestión</div>
-                            <div style="color:var(--muted);font-size:0.9rem;">Semillero</div>
-                        </div>
-                    </div>
-                    <div class="list-group">
-                        <a href="{{ route('dashboard') }}" class="list-group-item list-group-item-action">
-                            <i class="fa fa-home me-2"></i> Inicio
-                        </a>
-                        <a href="{{ route('aprendiz.proyectos.index') }}" class="list-group-item list-group-item-action">
-                            <i class="fa fa-folder-open me-2"></i> Mis Proyectos
-                        </a>
-                        <a href="{{ route('aprendiz.archivos.index') }}" class="list-group-item list-group-item-action">
-                            <i class="fa fa-file-upload me-2"></i> Subir Documentos
-                        </a>
-                        <a href="{{ route('aprendiz.perfil.show') }}" class="list-group-item list-group-item-action">
-                            <i class="fa fa-user me-2"></i> Mi Perfil
-                        </a>
-                        <a href="{{ route('aprendiz.calendario.index') }}" class="list-group-item list-group-item-action active" aria-current="true">
-                            <i class="fa fa-calendar-days me-2"></i> Calendario
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Main content -->
-            <div class="col-lg-9">
-                <h2 class="fw-bold mb-3">Calendario de Reuniones</h2>
+@section('content')
+                <h2 class="fw-bold mb-3 d-none">Calendario de Reuniones</h2>
                 <div class="card shadow-sm mb-3">
                     <div class="card-body">
                         <div class="row g-2 align-items-end">
@@ -94,14 +35,17 @@
                     </div>
                 </div>
 
+                <!-- Aviso de reuniones próximas -->
+                <div id="prox-notice-cal" class="alert alert-info py-2 px-3 d-none" role="alert" style="font-size:.95rem">
+                    Tienes reuniones virtuales próximas.
+                </div>
+
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <div id='calendar'></div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
+@endsection
 
 <!-- Modal Detalle -->
 <div class="modal fade" id="eventoModal" tabindex="-1" aria-hidden="true">
@@ -140,7 +84,7 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+@push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 <script>
     @php
@@ -197,6 +141,10 @@
             locale: 'es',
             buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día', list: 'Agenda' },
             height: 'auto',
+            editable: false,
+            selectable: false,
+            eventStartEditable: false,
+            eventDurationEditable: false,
             // Horario laboral como en Líder
             businessHours: [
                 { daysOfWeek: [1,2,3,4,5], startTime: '08:00', endTime: '17:00' }
@@ -337,7 +285,39 @@
         document.getElementById('btnAgenda').addEventListener('click', ()=>{
             calendar.changeView('listWeek');
         });
+
+        // Notificación silenciosa de reuniones virtuales próximas (<30 min; urgente <=5 min)
+        function actualizarNotificacionSilenciosaCal(){
+            const el = document.getElementById('prox-notice-cal');
+            if (!el) return;
+            const now = Date.now();
+            let show = false;
+            let urgent5 = false;
+            (reuniones||[]).forEach(ev=>{
+                try{
+                    const hasLink = !!(ev?.extendedProps?.link);
+                    if (!hasLink) return;
+                    const t = ev?.start ? new Date(ev.start).getTime() : NaN;
+                    if (!isFinite(t)) return;
+                    const diff = (t - now) / 60000; // minutos hasta inicio
+                    if (diff >= 0 && diff <= 30) {
+                        show = true;
+                        if (diff <= 5) urgent5 = true;
+                    }
+                }catch{}
+            });
+            if (show){
+                el.textContent = urgent5
+                    ? 'Una reunión virtual comienza en menos de 5 minutos.'
+                    : 'Tienes reuniones virtuales que comienzan en menos de 30 minutos.';
+                el.classList.remove('d-none');
+            } else {
+                el.classList.add('d-none');
+            }
+        }
+
+        actualizarNotificacionSilenciosaCal();
+        setInterval(actualizarNotificacionSilenciosaCal, 60000);
     });
 </script>
-</body>
-</html>
+@endpush

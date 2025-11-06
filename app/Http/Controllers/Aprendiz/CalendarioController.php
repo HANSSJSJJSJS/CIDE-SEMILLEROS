@@ -199,7 +199,7 @@ class CalendarioController extends Controller
         return [];
     }
 
-    // Próximas 5 reuniones del aprendiz para el dashboard
+    // Próximas 5 reuniones del aprendiz para el dashboard (robusto a esquemas variables)
     public function proximasReuniones()
     {
         try {
@@ -209,30 +209,37 @@ class CalendarioController extends Controller
             }
 
             $uid = $user->id;
-            // Determinar posibles IDs almacenados en la pivote (id_usuario o id_aprendiz)
+
+            // Posibles IDs del aprendiz usados en ep.id_aprendiz (puede ser user_id o id_aprendiz)
             $aprIds = [$uid];
             if (Schema::hasTable('aprendices')) {
-                try {
-                    $aprRow = DB::table('aprendices')->where('id_usuario', $uid)->first();
-                    if ($aprRow && property_exists($aprRow, 'id_aprendiz') && !empty($aprRow->id_aprendiz) && $aprRow->id_aprendiz != $uid) {
-                        $aprIds[] = $aprRow->id_aprendiz;
-                    }
-                } catch (\Throwable $ex) {
-                    // continuar con $aprIds por defecto
+                $aprPkCols = [];
+                if (Schema::hasColumn('aprendices','id_aprendiz')) { $aprPkCols[] = 'id_aprendiz'; }
+                if (Schema::hasColumn('aprendices','id')) { $aprPkCols[] = 'id'; }
+                $aprId = null;
+                if (Schema::hasColumn('aprendices','id_usuario')) {
+                    foreach ($aprPkCols as $pk) { $aprId = DB::table('aprendices')->where('id_usuario', $uid)->value($pk); if (!is_null($aprId)) break; }
+                } elseif (Schema::hasColumn('aprendices','user_id')) {
+                    foreach ($aprPkCols as $pk) { $aprId = DB::table('aprendices')->where('user_id', $uid)->value($pk); if (!is_null($aprId)) break; }
                 }
+                if (!is_null($aprId) && $aprId != $uid) { $aprIds[] = $aprId; }
             }
+
+            $hasEventoUsuario = Schema::hasColumn('eventos','id_usuario');
+            $hasEventoLider   = Schema::hasColumn('eventos','id_lider');
 
             $query = Evento::query()
                 ->with(['proyecto:id_proyecto,nombre_proyecto','lider:id,name'])
                 ->whereDate('fecha_hora', '>=', now()->startOfDay())
-                ->where(function ($q) use ($uid) {
-                    $q->where('id_usuario', $uid)
-                      ->orWhere('id_lider', $uid)
-                      ->orWhereExists(function ($sub) use ($uid) {
-                          $sub->from('evento_participantes as ep')
-                              ->whereColumn('ep.id_evento', 'eventos.id_evento')
-                              ->where('ep.id_aprendiz', $uid);
-                      });
+                ->where(function ($q) use ($uid, $hasEventoUsuario, $hasEventoLider, $aprIds) {
+                    $q->whereRaw('1=0');
+                    if ($hasEventoUsuario) { $q->orWhere('id_usuario', $uid); }
+                    if ($hasEventoLider)   { $q->orWhere('id_lider', $uid); }
+                    $q->orWhereExists(function ($sub) use ($aprIds) {
+                        $sub->from('evento_participantes as ep')
+                            ->whereColumn('ep.id_evento', 'eventos.id_evento')
+                            ->whereIn('ep.id_aprendiz', $aprIds);
+                    });
                 })
                 ->orderBy('fecha_hora', 'asc')
                 ->select('eventos.*')
@@ -240,7 +247,7 @@ class CalendarioController extends Controller
 
             $eventos = $query->get()->unique('id_evento')->values();
 
-            // Participantes por evento (nombres)
+            // Participantes por evento (nombres) con join dinámico
             $participantesPorEvento = collect();
             if (Schema::hasTable('evento_participantes') && Schema::hasTable('aprendices') && $eventos->isNotEmpty()) {
                 $ids = $eventos->pluck('id_evento')->filter()->values();
@@ -248,12 +255,19 @@ class CalendarioController extends Controller
                 $nameExpr = $hasNombreCompleto
                     ? 'aprendices.nombre_completo'
                     : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
-                $rows = DB::table('evento_participantes')
-                    ->join('aprendices', 'aprendices.id_usuario', '=', 'evento_participantes.id_aprendiz')
-                    ->whereIn('evento_participantes.id_evento', $ids)
-                    ->select('evento_participantes.id_evento', DB::raw($nameExpr.' as nombre'))
-                    ->get();
-                $participantesPorEvento = $rows->groupBy('id_evento')->map(fn($g) => $g->pluck('nombre')->filter()->values()->all());
+
+                $joinCol = null;
+                foreach (['id_usuario','user_id','id_aprendiz','id'] as $cand) {
+                    if (Schema::hasColumn('aprendices', $cand)) { $joinCol = $cand; break; }
+                }
+                if ($joinCol) {
+                    $rows = DB::table('evento_participantes')
+                        ->join('aprendices', DB::raw('aprendices.' . $joinCol), '=', 'evento_participantes.id_aprendiz')
+                        ->whereIn('evento_participantes.id_evento', $ids)
+                        ->select('evento_participantes.id_evento', DB::raw($nameExpr.' as nombre'))
+                        ->get();
+                    $participantesPorEvento = $rows->groupBy('id_evento')->map(fn($g) => $g->pluck('nombre')->filter()->values()->all());
+                }
             }
 
             $proximas = $eventos->map(function ($e) use ($participantesPorEvento) {

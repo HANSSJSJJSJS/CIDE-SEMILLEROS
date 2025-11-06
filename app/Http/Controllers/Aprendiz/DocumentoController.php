@@ -119,10 +119,11 @@ class DocumentoController extends Controller
             return back()->with('error', 'El archivo no existe en el servidor');
         }
         
-        return Storage::disk('public')->download(
-            $documento->ruta_archivo,
-            basename($documento->ruta_archivo)
-        );
+        $absPath = storage_path('app/public/'.$documento->ruta_archivo);
+        if (!file_exists($absPath)) {
+            return back()->with('error', 'El archivo no existe en el servidor');
+        }
+        return response()->download($absPath, basename($documento->ruta_archivo));
     }
     
     /**

@@ -103,10 +103,16 @@ class ArchivoController extends Controller
                 'estado'      => 'pendiente',
             ]);
 
+            // Construir URL pública (local public disk): usa /storage symlink
+            $publicUrl = null;
+            if (!empty($registro->ruta)) {
+                $publicUrl = asset('storage/'.$registro->ruta);
+            }
+
             $resultados[] = [
                 'id' => $registro->id ?? null,
                 'nombre_original' => $registro->nombre_original,
-                'ruta' => Storage::disk('public')->url($registro->ruta),
+                'ruta' => $publicUrl,
                 'estado' => $registro->estado,
                 'mime_type' => $registro->mime_type,
                 'subido_en' => $registro->subido_en,

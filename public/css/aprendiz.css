@@ -1,9 +1,6 @@
-/* Fondo general */
+/* Fondo general - sin imagen (evitamos doble fondo); el watermark irá en el contenedor */
 .main-bg {
-    background-image: url("../images/image.png"); /* cambia la ruta */
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
+    background-image: none;
 }
 
 /* Header */
@@ -124,3 +121,18 @@ main {
 .admin-modal .modal-footer .btn-success:hover{filter:brightness(.92)}
 .admin-modal .modal-footer .btn-outline-secondary{border-color:var(--sena-navy);color:var(--sena-navy)}
 .admin-modal .modal-footer .btn-outline-secondary:hover{background:#eef4f8}
+
+/* ===== Watermark grande SOLO para Aprendiz =====
+   Sobrescribe el watermark del layout para usar la ilustración grande
+   y que se vea completa detrás del contenido */
+.adm-page::before{
+  /* Tamaño y desplazamiento totalmente responsivos */
+  --wm-size: clamp(600px, 55vw, 1100px);
+  --wm-offset: clamp(16px, 6vh, 48px);
+  /* Desplazar un poco hacia la izquierda (X) y hacia arriba (Y) */
+  --wm-shift-x: clamp(72px, 12vw, 320px);
+  background: url("../images/logo_semillero.png") no-repeat calc(50% - var(--wm-shift-x)) calc(var(--wm-offset) - 112px) / var(--wm-size) auto !important;
+  opacity: .40 !important;
+  filter: brightness(0.45) contrast(0.90);
+}
+

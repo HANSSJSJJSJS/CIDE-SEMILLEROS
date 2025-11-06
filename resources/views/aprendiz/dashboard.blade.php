@@ -1,8 +1,8 @@
-<div>
-<h3>Contenido del archivo: /CIDE-SEMILLEROS/CIDE-SEMILLEROS/resources/views/aprendiz/dashboard.blade.php</h3>
-</div>
+@extends('layouts.aprendiz')
 
-@extends('layouts.app')
+@section('title','Panel del Aprendiz')
+@section('module-title','Panel del Aprendiz')
+@section('module-subtitle','Resumen y accesos rápidos')
 
 @section('content')
 <div class="container">

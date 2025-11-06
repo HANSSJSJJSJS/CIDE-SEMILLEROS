@@ -1,6 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.aprendiz')
 
 @section('title', 'Mis Documentos')
+@section('module-title','Mis Documentos')
+@section('module-subtitle','Gestión y subida de archivos')
 
 @section('content')
 <div class="container-fluid py-4">
