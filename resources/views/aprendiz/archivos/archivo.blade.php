@@ -5,83 +5,89 @@
 @section('module-subtitle','Consulta y filtra tus archivos subidos')
 
 @section('content')
-<div class="container-fluid py-3">
-  <div class="card shadow-sm mb-3">
-    <div class="card-body">
-      <form method="GET" class="row g-2 align-items-end">
-        <div class="col-12 col-md-6 col-xl-4">
-          <label class="form-label mb-1">Proyecto</label>
-          <select name="proyecto" class="form-select">
-            <option value="">Todos</option>
-            @foreach(($proyectos ?? collect()) as $p)
-              <option value="{{ $p->id_proyecto }}" {{ (string)$p->id_proyecto === (string)($proyecto ?? '') ? 'selected' : '' }}>
-                {{ $p->nombre_proyecto ?? ('Proyecto #'.$p->id_proyecto) }}
-              </option>
-            @endforeach
-          </select>
-        </div>
-        <div class="col-6 col-md-3 col-xl-2">
-          <label class="form-label mb-1">Fecha</label>
-          <input type="date" name="fecha" value="{{ $fecha }}" class="form-control">
-        </div>
-        <div class="col-6 col-md-3 col-xl-2">
-          <button class="btn btn-success w-100">Filtrar</button>
-        </div>
-      </form>
-    </div>
-  </div>
+<div class="container-fluid py-3 documentos-page">
+  <div class="glass-box p-4">
+    <form id="uploadForm" method="POST" action="{{ route('aprendiz.documentos.store') }}" enctype="multipart/form-data">
+      @csrf
+      <!-- Selección de proyecto -->
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Selecciona un proyecto</label>
+        <select name="id_proyecto" id="projectSelect" class="form-select" required>
+          <option value="">Selecciona un proyecto</option>
+          @foreach(($proyectos ?? collect()) as $p)
+            <option value="{{ $p->id_proyecto }}">{{ $p->nombre_proyecto ?? ('Proyecto #'.$p->id_proyecto) }}</option>
+          @endforeach
+        </select>
+      </div>
 
-  <div class="card shadow-sm">
-    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-      <h5 class="m-0">Resultados</h5>
-      <span class="badge bg-light text-primary">{{ method_exists($archivos,'total') ? $archivos->total() : ($archivos->count() ?? 0) }} registro(s)</span>
-    </div>
-    <div class="card-body">
-      @if(method_exists($archivos,'count') ? $archivos->count() === 0 : ($archivos->isEmpty() ?? true))
-        <div class="text-center text-muted py-5">No se encontraron documentos</div>
-      @else
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
-            <thead>
-              <tr>
-                <th>Proyecto</th>
-                <th>Nombre</th>
-                <th>Tipo</th>
-                <th>Estado</th>
-                <th>Fecha</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              @foreach($archivos as $a)
-                <tr>
-                  <td>{{ optional($a->proyecto)->nombre_proyecto ?? '—' }}</td>
-                  <td>{{ $a->nombre_original ?? '—' }}</td>
-                  <td><span class="badge text-bg-secondary">{{ $a->mime_type ?? '—' }}</span></td>
-                  <td>
-                    <span class="badge {{ ($a->estado ?? '') === 'aprobado' ? 'text-bg-success' : (($a->estado ?? '') === 'rechazado' ? 'text-bg-danger' : 'text-bg-warning') }}">
-                      {{ strtoupper($a->estado ?? 'PENDIENTE') }}
-                    </span>
-                  </td>
-                  <td class="text-muted small">{{ optional($a->subido_en)->format('d/m/Y H:i') ?? (\Carbon\Carbon::parse($a->subido_en)->format('d/m/Y H:i') ?? '—') }}</td>
-                  <td>
-                    @php $url = $a->ruta ? \Illuminate\Support\Facades\Storage::disk('public')->url($a->ruta) : null; @endphp
-                    @if($url)
-                      <a href="{{ $url }}" target="_blank" class="btn btn-sm btn-outline-primary">Ver</a>
-                    @else
-                      <button class="btn btn-sm btn-outline-secondary" disabled>Sin archivo</button>
-                    @endif
-                  </td>
-                </tr>
-              @endforeach
-            </tbody>
-          </table>
+      <!-- Dropzone verde -->
+      <div class="dropzone-box my-3">
+        <div class="dz-content">
+          <i class="bi bi-file-earmark-arrow-up"></i>
+          <div class="fw-bold fs-5">Arrastra archivo aquí</div>
+          <small>O haz clic para seleccionar PDF</small>
         </div>
-        @if(method_exists($archivos,'links'))
-          <div class="mt-3">{{ $archivos->links() }}</div>
-        @endif
-      @endif
-    </div>
+        <input id="fileInput" type="file" name="archivo" accept="application/pdf,.pdf" class="dropzone-input" required>
+      </div>
+
+      <!-- Lista de documentos cargados (maqueta) -->
+      <div class="mt-3" id="filesList">
+        <div class="fw-bold mb-2">Documentos Cargados</div>
+        <div class="list-group" id="filesGroup"></div>
+      </div>
+
+      <!-- Botón guardar -->
+      <div class="mt-3">
+        <button id="saveBtn" type="submit" class="btn btn-success w-100">Guardar Documentos</button>
+      </div>
+    </form>
   </div>
+  
 </div>
 @endsection
+
+@push('scripts')
+<script>
+  (function(){
+    const input = document.getElementById('fileInput');
+    const list  = document.getElementById('filesGroup');
+    const save  = document.getElementById('saveBtn');
+    function fmtSize(bytes){
+      if(!bytes && bytes !== 0) return '';
+      const u=['B','KB','MB','GB']; let i=0; let v=bytes; while(v>=1024 && i<u.length-1){ v/=1024; i++; }
+      return v.toFixed(2)+' '+u[i];
+    }
+    input?.addEventListener('change', (e)=>{
+      const f = input.files && input.files[0];
+      list.innerHTML = '';
+      if(!f){ save.disabled = true; return; }
+      const isPdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+      const tooBig = f.size > 10*1024*1024; // 10MB
+      if(!isPdf){
+        list.innerHTML = '<div class="list-group-item text-danger">Solo se permiten archivos PDF</div>';
+        input.value = '';
+        save.disabled = true;
+        return;
+      }
+      if(tooBig){
+        list.innerHTML = '<div class="list-group-item text-danger">El archivo supera 10MB</div>';
+        input.value = '';
+        save.disabled = true;
+        return;
+      }
+      const now = new Date();
+      const li = document.createElement('div');
+      li.className = 'list-group-item d-flex justify-content-between align-items-center';
+      li.innerHTML = '<div>'+
+        '<div class="fw-semibold"><i class="bi bi-check2-circle text-success me-2"></i>' + (f.name || 'archivo.pdf') + '</div>'+
+        '<small class="text-muted">' + fmtSize(f.size) + ' – ' + now.toISOString().slice(0,10) + '</small>'+
+      '</div>'+
+      '<button type="button" class="btn btn-sm btn-outline-secondary" aria-label="Quitar">×</button>';
+      li.querySelector('button')?.addEventListener('click', ()=>{ input.value=''; list.innerHTML=''; save.disabled=true; });
+      list.appendChild(li);
+      // Habilitar guardar si hay archivo válido; el 'required' del select validará proyecto al enviar
+      save.disabled = false;
+    });
+  })();
+</script>
+@endpush

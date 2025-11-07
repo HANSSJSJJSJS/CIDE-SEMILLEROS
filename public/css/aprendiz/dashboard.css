@@ -18,7 +18,7 @@
 
 /* Topbar del layout */
 .adm-topbar{background:var(--navy)!important;color:#fff}
-.adm-topbar .title-green{color:var(--sena-green)!important;font-weight:800}
+.adm-topbar .title-green{color:#43A047!important;font-weight:800}
 .adm-topbar .avatar{background:#0e3f57;color:#fff}
 .adm-topbar .btn{border-radius:9999px}
 
@@ -33,19 +33,104 @@
 
 /* Métricas como en la imagen (3 tarjetas) */
 .metrics-grid{row-gap:20px}
-.card-metric{border:1px solid #e9ecef;border-radius:14px;padding:14px;min-height:110px;display:flex;flex-direction:column;justify-content:center;text-align:left}
-.metric-title{color:#6b7280;font-weight:600}
-.metric-value{font-size:28px;font-weight:800}
+.card-metric{
+  border:1px solid #e9ecef;
+  border-radius:28px;
+  padding:18px 20px;
+  min-height:120px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  text-align:left;
+  box-shadow:0 8px 24px rgba(16,24,40,.08);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+.metric-title{color:#6b7280;font-weight:600;letter-spacing:.2px}
+.metric-value{font-size:36px;font-weight:900;line-height:1}
 
-/* Colores por posición: 1 blanca, 2 verde, 3 azul */
-.metrics-grid > .col-md-4:nth-child(1) .card-metric{background:#ffffff}
-.metrics-grid > .col-md-4:nth-child(2) .card-metric{background:rgba(43,182,115,.85); color:#0b1b2b}
-.metrics-grid > .col-md-4:nth-child(2) .card-metric .metric-title{color:#0a2c13}
-.metrics-grid > .col-md-4:nth-child(2) .card-metric .metric-value{color:#0a2c13}
+/* Colores por posición: 1 blanca, 2 verde (superpuesta), 3 azul */
+.metrics-grid > .col-md-4:nth-child(1) .card-metric{
+  background:rgba(255,255,255,0.55);
+  color:#0f172a;
+  border-color:rgba(233,236,239,0.35);
+}
+.metrics-grid > .col-md-4:nth-child(2) .card-metric{
+  /* Verde más vivo como en la imagen */
+  background: rgba(67, 160, 71, 0.75); /* ~ #43A047 con 75% opacidad */
+  color:#0b1b2b;
+  border-color: rgba(56, 134, 60, 0.35);
+}
+.metrics-grid > .col-md-4:nth-child(2) .card-metric .metric-title,
+.metrics-grid > .col-md-4:nth-child(2) .card-metric .metric-value,
 .metrics-grid > .col-md-4:nth-child(2) .card-metric .metric-aux a{color:#0a2c13 !important}
-.metrics-grid > .col-md-4:nth-child(3) .card-metric{background:rgba(66,102,122,0.68); border-color:rgba(58,89,106,0.78); color:#eef7fb}
+
+.metrics-grid > .col-md-4:nth-child(3) .card-metric{
+  background:rgba(66,102,122,0.55);
+  border-color:rgba(58,89,106,0.35);
+  color:#eef7fb;
+}
+
+/* Espaciado uniforme de tarjetas en pantallas md+ (sin superposición) */
+@media (min-width: 768px){
+  .metrics-grid{position:static}
+  .metrics-grid > .col-md-4{position:static}
+  .metrics-grid > .col-md-4 .card-metric{margin-left:0}
+}
 
 /* Steps */
-.steps-section{border:1px solid #e9ecef;border-radius:12px;background:#fff}
-.step-chip{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.05rem;background:#3e5f72;color:#fff}
-.chip-green,.chip-amber,.chip-blue{ background:#3e5f72 !important; color:#fff !important; }
+.steps-section{
+  border:1px solid rgba(0,0,0,0.10);
+  border-radius:16px;
+  background:rgba(255,255,255,0.65);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  box-shadow:0 6px 18px rgba(16,24,40,0.06);
+  padding:16px 18px;
+}
+.adm-page-body > .steps-section{
+  border:1px solid rgba(0,0,0,0.10) !important;
+  border-radius:16px !important;
+  background:rgba(255,255,255,0.65) !important;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  box-shadow:0 6px 18px rgba(16,24,40,0.06) !important;
+  padding:16px 18px !important;
+}
+.steps-section h5{font-weight:800;color:#374151}
+.step-chip{
+  width:36px;height:36px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:1rem;
+  background: var(--navy-600); color:#fff;
+  box-shadow:0 2px 6px rgba(0,0,0,.12);
+}
+.chip-green,.chip-amber,.chip-blue{ background: var(--navy-600) !important; color:#fff !important; }
+.steps-section .fw-bold{font-weight:800 !important;color:#1f2937}
+
+/* Quitar la caja general alrededor del bloque superior del dashboard */
+.adm-page-body > .dashboard-hero{background:transparent!important;box-shadow:none!important;border:0!important;border-radius:0!important;padding:0!important}
+
+/* Próximas reuniones como contenedor translúcido (incluye el header y el listado) */
+.meetings-section{
+  border:1px solid rgba(0,0,0,0.10) !important;
+  border-radius:16px !important;
+  background: rgba(255,255,255,0.65) !important;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  box-shadow: 0 6px 18px rgba(16,24,40,0.06) !important;
+  padding: 12px 14px;
+}
+.meetings-section .card{ background: transparent !important; border:0 !important; box-shadow:none !important; }
+.meetings-section .card-body{ background: transparent !important; padding-top: 0.5rem; }
+.meetings-section h5{font-weight:800;color:#374151}
+
+/* (Revertido) Mantener 'Próximas reuniones' con ancho por defecto */
+
+/* Alinear bordes con las tarjetas superiores (gx-4 => 1.5rem, mitad = 0.75rem) */
+@media (min-width: 768px){
+  .meetings-section{
+    margin-left: -0.75rem;
+    margin-right: -0.75rem;
+  }
+}

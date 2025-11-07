@@ -53,17 +53,66 @@
 .side-link.active i{color:#fff}
 
 /* Contenido principal */
-.content-wrapper{background:#fff;border-radius:16px;border:1px solid var(--gray-200)}
+.content-wrapper{
+  background: rgba(255,255,255,0.65) !important;
+  border-radius:20px !important;
+  border:1px solid rgba(0,0,0,0.10) !important;
+  -webkit-backdrop-filter: blur(3px) !important;
+  backdrop-filter: blur(3px) !important;
+  box-shadow:0 8px 24px rgba(16,24,40,.08) !important;
+}
 .container .content-wrapper{margin:0 auto}
-.project-card{border:1px solid #e9ecef;border-radius:16px;transition:.2s;position:relative;background:#fff;display:flex;flex-direction:column;min-height:100%}
-.project-card:hover{box-shadow:0 8px 24px rgba(16,24,40,.08);transform:translateY(-1px)}
-.project-head{background:linear-gradient(135deg,#15803d,#16a34a); color:#fff; border-top-left-radius:16px;border-top-right-radius:16px;padding:16px}
+.glass-box{
+  background: rgba(255,255,255,0.65) !important;
+  border-radius:20px !important;
+  border:1px solid rgba(0,0,0,0.10) !important;
+  -webkit-backdrop-filter: blur(3px) !important;
+  backdrop-filter: blur(3px) !important;
+  box-shadow:0 8px 24px rgba(16,24,40,.08) !important;
+}
+/* Override explícito para contenedor de Mis Proyectos dentro del layout */
+.adm-page-body > .content-wrapper,
+.adm-page-body .content-wrapper{
+  background: rgba(255,255,255,0.65) !important;
+  border-radius:20px !important;
+  border:1px solid rgba(0,0,0,0.10) !important;
+  -webkit-backdrop-filter: blur(3px) !important;
+  backdrop-filter: blur(3px) !important;
+  box-shadow:0 8px 24px rgba(16,24,40,.08) !important;
+  padding: 1.25rem !important;
+}
+.project-card{
+  border:1px solid rgba(0,0,0,0.10) !important;
+  border-radius:24px !important;
+  transition:.2s;position:relative;
+  background: rgba(255,255,255,0.65) !important;
+  -webkit-backdrop-filter: blur(3px) !important;
+  backdrop-filter: blur(3px) !important;
+  display:flex;flex-direction:column;min-height:100%;
+  box-shadow:0 8px 24px rgba(16,24,40,.08) !important;
+}
+.project-card:hover{box-shadow:0 12px 28px rgba(16,24,40,.12);transform:translateY(-1px)}
+.project-head{
+  background: transparent !important;
+  color:#0f172a !important;
+  border-top-left-radius:24px !important; border-top-right-radius:24px !important;
+  padding:18px 18px 0 !important;
+}
 .project-head h5{font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
-.project-body{padding:18px 18px 12px}
+.project-body{padding:12px 18px 12px}
 .project-footer{padding:18px; padding-top:0}
 .badge.status{border-radius:999px;padding:.4rem .75rem;font-weight:700;letter-spacing:.3px}
-.status-chip{display:inline-block;background:#facc15;color:#111827;border-radius:9999px;padding:.25rem .6rem;font-weight:800;font-size:.72rem;line-height:1;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.08)}
-.status-chip.is-active{background:#fff;color:#15803d;border:2px solid #15803d}
+.status-chip{
+  display:inline-block;
+  background:#43A047; /* verde tarjeta */
+  color:#fff;
+  border-radius:14px;
+  padding:.25rem .6rem;
+  font-weight:800;font-size:.72rem;line-height:1;white-space:nowrap;
+  box-shadow:0 2px 6px rgba(0,0,0,.12);
+  position:absolute; top:16px; left:16px;
+}
+.status-chip.is-active{background:#2bb673;color:#0b1b2b}
 
 /* Más aire entre cards y botones grandes */
 .row.g-4{--bs-gutter-x:1.5rem;--bs-gutter-y:1.5rem}
@@ -75,6 +124,36 @@
 }
 .meta-title{font-size:.8rem;color:#64748b;font-weight:700;text-transform:uppercase}
 .btn-pill{border-radius:999px}
+
+/* ===== Módulo: Subir Documentos (vista documentos.blade.php) ===== */
+.documentos-page .card{
+  background: rgba(255,255,255,0.65) !important;
+  border:1px solid rgba(0,0,0,0.10) !important;
+  border-radius:20px !important;
+  -webkit-backdrop-filter: blur(3px) !important;
+  backdrop-filter: blur(3px) !important;
+  box-shadow:0 8px 24px rgba(16,24,40,.08) !important;
+}
+.documentos-page .card-header{
+  background: transparent !important;
+  color:#0f172a !important;
+  border-bottom: 0 !important;
+}
+.documentos-page .dropzone-box{
+  position: relative;
+  background: rgba(67,160,71,0.85); /* verde intenso */
+  border-radius:28px;
+  min-height:160px;
+  display:flex;align-items:center;justify-content:center;
+  color:#0b1b2b;
+  text-align:center;
+  padding:16px;
+}
+.documentos-page .dropzone-box .dz-content{color:#0b1b2b}
+.documentos-page .dropzone-box .dz-content i{font-size:42px; display:block; margin-bottom:8px}
+.documentos-page .dropzone-input{
+  position:absolute; inset:0; opacity:0; cursor:pointer;
+}
 
 /* Botones */
 .btn-success {
@@ -132,7 +211,7 @@ main {
   /* Desplazar un poco hacia la izquierda (X) y hacia arriba (Y) */
   --wm-shift-x: clamp(72px, 12vw, 320px);
   background: url("../images/logo_semillero.png") no-repeat calc(50% - var(--wm-shift-x)) calc(var(--wm-offset) - 112px) / var(--wm-size) auto !important;
-  opacity: .40 !important;
-  filter: brightness(0.45) contrast(0.90);
+  opacity: .45 !important;
+  filter: brightness(0.25) contrast(0.90);
 }
 

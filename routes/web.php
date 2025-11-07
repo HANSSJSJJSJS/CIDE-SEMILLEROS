@@ -303,6 +303,7 @@ Route::middleware(['auth', 'role:APRENDIZ'])
         Route::resource('archivos', ArchivoController::class);
         Route::get('/archivos/upload', [ArchivoController::class, 'create'])->name('archivos.upload');
         Route::post('/archivos/upload', [ArchivoController::class, 'upload'])->name('archivos.upload.post');
+        Route::get('/archivos/list-by-project', [ArchivoController::class, 'listByProject'])->name('archivos.list-by-project');
 
         // Documentos
         Route::get('/documentos', [DocumentoController::class, 'index'])->name('documentos.index');

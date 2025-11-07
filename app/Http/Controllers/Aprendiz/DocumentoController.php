@@ -62,10 +62,10 @@ class DocumentoController extends Controller
             'descripcion' => 'nullable|string|max:255',
         ]);
         
-        // Verificar que el aprendiz está asignado al proyecto
-        $asignado = DB::table('documentos')
+        // Verificar que el usuario (aprendiz) está asignado al proyecto mediante el pivot proyecto_user
+        $asignado = DB::table('proyecto_user')
+            ->where('user_id', $userId)
             ->where('id_proyecto', $request->id_proyecto)
-            ->where('id_aprendiz', $aprendiz->id_aprendiz)
             ->exists();
         
         if (!$asignado) {

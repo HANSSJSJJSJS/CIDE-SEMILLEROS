@@ -14,6 +14,7 @@
   <link href="{{ asset('css/admin-views.css') }}?v={{ time() }}" rel="stylesheet">
   <link href="{{ asset('css/aprendiz.css') }}?v={{ time() }}" rel="stylesheet">
 
+
   @stack('styles')
   @yield('styles')
 </head>
