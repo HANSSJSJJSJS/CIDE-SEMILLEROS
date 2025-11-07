@@ -27,12 +27,20 @@
 }
 
 /* Brand (logo + nombre del sistema) */
-.adm-sidebar .adm-brand{ display:flex; align-items:center; gap:12px; padding-bottom:16px; border-bottom:1px solid rgba(255,255,255,.08); }
+.adm-sidebar .adm-brand{
+  display:flex; align-items:center; gap:12px;
+  padding-bottom:16px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
 .brand-logo{ width:42px; height:42px; object-fit:contain; }
 .brand-system{ font-size:.95rem; color:#cfe6ff; }
 
 /* Variante “brand grande” apilada (logo arriba, texto abajo) */
-.brand-large{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:8px 6px 14px; border-bottom:1px solid rgba(255,255,255,.08); }
+.brand-large{
+  display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px;
+  padding:8px 6px 14px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
 .brand-logo-lg{ width:86px; height:86px; object-fit:contain; }
 .brand-system-lg{ font-size:1.08rem; line-height:1.2; color:#eaf3ff; font-weight:700; }
 
@@ -86,7 +94,10 @@
 /* ---------- Responsive layout ---------- */
 @media (max-width: 991.98px){
   .adm-shell{ grid-template-columns:1fr; }
-  .adm-sidebar{ position:fixed; inset:0 auto 0 0; width:82vw; transform:translateX(-100%); transition:transform .2s; }
+  .adm-sidebar{
+    position:fixed; inset:0 auto 0 0; width:82vw;
+    transform:translateX(-100%); transition:transform .2s;
+  }
   .adm-sidebar.show{ transform:translateX(0); }
 }
 
@@ -131,3 +142,29 @@
 
 /* Bloquea scroll de fondo cuando el menú está abierto en móvil */
 .noscroll{ overflow: hidden; height: 100vh; }
+
+/* =========================================================
+   FIX: Oscurecimiento o bloqueo de pantalla al usar modales
+   ========================================================= */
+
+/* Quita overlay del sidebar si un modal está abierto */
+body.modal-open .sidebar-overlay {
+  display: none !important;
+}
+
+/* Prioridad correcta de z-index para evitar superposiciones */
+.modal-backdrop {
+  z-index: 2000 !important;
+  background-color: rgba(0,0,0,0.45) !important; /* transparencia del fondo del modal */
+}
+
+.modal {
+  z-index: 2050 !important;
+}
+
+/* Asegura que el cuerpo vuelva a scroll normal después del modal */
+body.modal-open {
+  overflow: hidden !important;
+}
+
+.modal-backdrop{ display:none !important; opacity:0 !important; }

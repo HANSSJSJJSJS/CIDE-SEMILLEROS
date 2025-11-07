@@ -6,86 +6,73 @@
     <h3 class="fw-bold" style="color:#2d572c;">Gestión de Semilleros</h3>
   </div>
 
-
-
-
   {{-- Botón abrir modal --}}
-<button type="button" class="btn btn-primary mb-3"
-        data-bs-toggle="modal" data-bs-target="#modalNuevoSemillero">
-  <i class="fa fa-plus me-1"></i> Nuevo semillero
-</button>
+  <button type="button" class="btn btn-primary mb-3"
+          data-bs-toggle="modal" data-bs-target="#modalNuevoSemillero">
+    <i class="fa fa-plus me-1"></i> Nuevo semillero
+  </button>
 
-@include('Admin.semilleros._modal_crear')
-
-
-
-
-
-
+  @include('Admin.semilleros._modal_crear')
 
   {{-- Filtro simple --}}
-      <div class="row g-2">
-        <div class="col-md-10">
-          <input name="q" value="{{ $q }}" class="form-control" placeholder="Buscar por semillero, línea o líder">
-        </div>
-        <div class="col-md-2">
-          <button class="btn btn-success w-100"><i class="bi bi-search"></i> Buscar</button>
-        </div>
-      </div>
+  <div class="row g-2">
+    <div class="col-md-10">
+      <input name="q" value="{{ $q }}" class="form-control" placeholder="Buscar por semillero, línea o líder">
     </div>
-  </form>
+    <div class="col-md-2">
+      <button class="btn btn-success w-100"><i class="bi bi-search"></i> Buscar</button>
+    </div>
+  </div>
+</div>
 
-
-
-  {{-- Tabla --}}
-  <div class="card border-0 shadow-sm">
-    <div class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead style="background-color:#2d572c;color:#fff;">
-          <tr>
-            <th>Semillero</th>
-            <th>Línea de investigación</th>
-            <th>Líder</th>
-            <th class="text-end">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-        @forelse($semilleros as $s)
-          <tr>
-            <td>{{ $s->nombre }}</td>
-            <td>{{ $s->linea_investigacion }}</td>
-            <td>{{ $s->lider_nombre ? $s->lider_nombre.' ('.$s->lider_correo.')' : '—' }}</td>
-            <td class="text-end">
-              <button class="btn btn-sm btn-outline-primary"
-                      data-bs-toggle="modal" data-bs-target="#modalEditarSemillero"
-                      data-id="{{ $s->id_semillero }}">
-                <i class="bi bi-pencil"></i> Editar
+{{-- Tabla --}}
+<div class="card border-0 shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead style="background-color:#2d572c;color:#fff;">
+        <tr>
+          <th>Semillero</th>
+          <th>Línea de investigación</th>
+          <th>Líder</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+      @forelse($semilleros as $s)
+        <tr>
+          <td>{{ $s->nombre }}</td>
+          <td>{{ $s->linea_investigacion }}</td>
+          <td>{{ $s->lider_nombre ? $s->lider_nombre.' ('.$s->lider_correo.')' : '—' }}</td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-primary"
+                    data-bs-toggle="modal" data-bs-target="#modalEditarSemillero"
+                    data-id="{{ $s->id_semillero }}">
+              <i class="bi bi-pencil"></i> Editar
+            </button>
+            <form action="{{ route('admin.semilleros.destroy',$s->id_semillero) }}" method="POST" class="d-inline"
+                  onsubmit="return confirm('¿Eliminar este semillero?');">
+              @csrf @method('DELETE')
+              <button class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-trash"></i> Eliminar
               </button>
-              <form action="{{ route('admin.semilleros.destroy',$s->id_semillero) }}" method="POST" class="d-inline"
-                    onsubmit="return confirm('¿Eliminar este semillero?');">
-                @csrf @method('DELETE')
-                <button class="btn btn-sm btn-outline-danger">
-                  <i class="bi bi-trash"></i> Eliminar
-                </button>
 
-                  <a href="{{ route('admin.semilleros.show', $s->id_semillero) }}"
-                  class="btn btn-sm btn-outline-success" style="border-radius:20px;">
-                  <i class="bi bi-folder2-open"></i> Ver proyectos
-                  </a>
-              </form>
-            </td>
-          </tr>
-        @empty
-          <tr><td colspan="4" class="text-center text-muted py-4">Sin registros</td></tr>
-        @endforelse
-        </tbody>
-      </table>
-    </div>
+                      <a class="btn btn-outline-info btn-sm"
+            href="{{ route('admin.semilleros.proyectos.index', $s->id_semillero) }}">
+            <i class="bi bi-folder2-open"></i> Ver proyectos
+          </a>
+            </form>
+          </td>
+        </tr>
+      @empty
+        <tr><td colspan="4" class="text-center text-muted py-4">Sin registros</td></tr>
+      @endforelse
+      </tbody>
+    </table>
   </div>
+</div>
 
-  <div class="mt-3">
-    {{ $semilleros->links('pagination::bootstrap-5') }}
-  </div>
+<div class="mt-3">
+  {{ $semilleros->links('pagination::bootstrap-5') }}
 </div>
 
 {{-- MODAL EDITAR --}}
@@ -156,6 +143,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Cargar datos en el modal
   modal.addEventListener('show.bs.modal', async (e) => {
+    // 🔹 Cierra el de "Nuevo" si estuviera abierto (evita glitches)
+    const mNuevo = document.getElementById('modalNuevoSemillero');
+    const instNuevo = mNuevo ? bootstrap.Modal.getInstance(mNuevo) : null;
+    instNuevo?.hide();
+
     const id = e.relatedTarget?.dataset.id;
     if (!id) return;
 
@@ -209,6 +201,16 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }, 250);
   });
+
+
+  const cleanupBackdrop = () => {
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('padding-right');
+    document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+  };
+  modal.addEventListener('hidden.bs.modal', cleanupBackdrop);
+  const modalNuevo = document.getElementById('modalNuevoSemillero');
+  modalNuevo?.addEventListener('hidden.bs.modal', cleanupBackdrop);
 });
 </script>
 @endpush

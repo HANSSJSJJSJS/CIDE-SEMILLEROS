@@ -2,9 +2,25 @@
 
 @push('styles')
 <style>
+  :root {
+    --blue-900: #0b2e4d; /* tu color personalizado */
+  }
+
   .kpi-card { border-radius: 14px; }
   .kpi-value { font-size: 1.8rem; font-weight: 700; }
   .kpi-label { color: #6c757d; }
+
+  /* 🔵 Encabezados azul oscuro personalizados */
+  .card-header {
+    background-color: var(--blue-900) !important;
+    color: #fff !important;
+    border-bottom: none;
+  }
+
+  /* Opcional: resaltar texto dentro del header */
+  .card-header strong {
+    color: #fff !important;
+  }
 </style>
 @endpush
 
@@ -56,16 +72,17 @@
     </div>
   </div>
 
+  {{-- Gráficas --}}
   <div class="row g-3 mt-1">
     <div class="col-lg-6">
       <div class="card shadow-sm">
-        <div class="card-header bg-white"><strong>Aprendices por semillero (Top 10)</strong></div>
+        <div class="card-header"><strong>Aprendices por semillero (Top 10)</strong></div>
         <div class="card-body"><canvas id="chartAprSem" height="140"></canvas></div>
       </div>
     </div>
     <div class="col-lg-6">
       <div class="card shadow-sm">
-        <div class="card-header bg-white"><strong>Proyectos por estado</strong></div>
+        <div class="card-header"><strong>Proyectos por estado</strong></div>
         <div class="card-body"><canvas id="chartProjEstado" height="140"></canvas></div>
       </div>
     </div>
@@ -74,13 +91,13 @@
   <div class="row g-3 mt-1">
     <div class="col-lg-6">
       <div class="card shadow-sm">
-        <div class="card-header bg-white"><strong>Proyectos creados por mes (últimos 12)</strong></div>
+        <div class="card-header"><strong>Proyectos creados por mes (últimos 12)</strong></div>
         <div class="card-body"><canvas id="chartProjMes" height="140"></canvas></div>
       </div>
     </div>
     <div class="col-lg-6">
       <div class="card shadow-sm">
-        <div class="card-header bg-white"><strong>Recursos por categoría</strong></div>
+        <div class="card-header"><strong>Recursos por categoría</strong></div>
         <div class="card-body"><canvas id="chartRecCat" height="140"></canvas></div>
       </div>
     </div>
@@ -107,43 +124,32 @@
   fetch("{{ route('admin.dashboard.charts') }}")
     .then(r => r.json())
     .then(d => {
-      // Bar: Aprendices por semillero
       new Chart(document.getElementById('chartAprSem'), {
         type: 'bar',
-        data: {
-          labels: d.aprendicesPorSemillero.labels,
-          datasets: [{ label: 'Aprendices', data: d.aprendicesPorSemillero.data }]
-        },
+        data: { labels: d.aprendicesPorSemillero.labels,
+                datasets: [{ label: 'Aprendices', data: d.aprendicesPorSemillero.data }] },
         options: { responsive: true, maintainAspectRatio: false }
       });
 
-      // Pie: Proyectos por estado
       new Chart(document.getElementById('chartProjEstado'), {
         type: 'pie',
-        data: {
-          labels: d.proyectosPorEstado.labels,
-          datasets: [{ data: d.proyectosPorEstado.data }]
-        },
+        data: { labels: d.proyectosPorEstado.labels,
+                datasets: [{ data: d.proyectosPorEstado.data }] },
         options: { responsive: true, maintainAspectRatio: false }
       });
 
-      // Line: Proyectos por mes
       new Chart(document.getElementById('chartProjMes'), {
         type: 'line',
-        data: {
-          labels: d.proyectosPorMes.labels,
-          datasets: [{ label: 'Proyectos', data: d.proyectosPorMes.data, tension: .3, fill: false }]
-        },
+        data: { labels: d.proyectosPorMes.labels,
+                datasets: [{ label: 'Proyectos', data: d.proyectosPorMes.data,
+                             tension: .3, fill: false }] },
         options: { responsive: true, maintainAspectRatio: false }
       });
 
-      // Bar: Recursos por categoría
       new Chart(document.getElementById('chartRecCat'), {
         type: 'bar',
-        data: {
-          labels: d.recursosPorCategoria.labels,
-          datasets: [{ label: 'Recursos', data: d.recursosPorCategoria.data }]
-        },
+        data: { labels: d.recursosPorCategoria.labels,
+                datasets: [{ label: 'Recursos', data: d.recursosPorCategoria.data }] },
         options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false }
       });
     })

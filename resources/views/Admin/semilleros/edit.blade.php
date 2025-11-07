@@ -1,24 +1,29 @@
-{{-- Botón Editar en cada fila (ya lo tienes) --}}
+{{-- Botón Editar en cada fila --}}
 <button class="btn btn-sm btn-outline-primary"
         data-bs-toggle="modal" data-bs-target="#modalEditarSemillero"
         data-id="{{ $s->id_semillero }}">
   <i class="bi bi-pencil"></i> Editar
 </button>
 
-{{-- MODAL EDITAR (campos editable: nombre/linea; solo lectura: líder nombre/correo; buscador líderes) --}}
-<div class="modal fade" id="modalEditarSemillero" tabindex="-1" aria-hidden="true">
+{{-- MODAL EDITAR (único en la página) --}}
+<div class="modal fade"
+     id="modalEditarSemillero"
+     tabindex="-1"
+     aria-hidden="true"
+     data-bs-backdrop="false"
+     data-bs-keyboard="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content border-0 shadow">
       <div class="modal-header bg-primary text-white">
         <h5 class="modal-title">Editar Semillero</h5>
-        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
+
       <form id="formEditarSemillero" method="POST">
         @csrf @method('PUT')
+
         <div class="modal-body">
           <div class="row g-3">
-
-<<<<<<< HEAD
             {{-- Editables --}}
             <div class="col-md-6">
               <label class="form-label">Nombre del semillero</label>
@@ -47,43 +52,14 @@
               <input type="hidden" name="id_lider_semi" id="editIdLider">
               <small class="text-muted">Al seleccionar uno, se asignará como nuevo líder del semillero.</small>
             </div>
-
           </div>
         </div>
+
         <div class="modal-footer bg-light">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button class="btn btn-primary">Guardar cambios</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary" onclick="this.disabled=true; this.form.submit();">Guardar cambios</button>
         </div>
       </form>
-=======
-  <form class="card border-0 shadow-sm p-3"
-        action="{{ route('admin.semilleros.update',$id) }}" method="POST">
-    @csrf @method('PUT')
-    <div class="row g-3">
-      <div class="col-md-6">
-        <label class="form-label fw-semibold">Nombre</label>
-        <input name="nombre" class="form-control" value="{{ old('nombre',$nombre) }}" required>
-      </div>
-      <div class="col-md-6">
-        <label class="form-label fw-semibold">Línea de investigación</label>
-        <input name="linea_investigacion" class="form-control" value="{{ old('linea_investigacion',$linea) }}" required>
-      </div>
-      <div class="col-md-6">
-        <label class="form-label fw-semibold">Líder</label>
-        <select name="id_lider_usuario" class="form-select">
-          <option value="">— Sin asignar —</option>
-          @foreach($lideres as $l)
-            <option value="{{ $l->id_usuario }}" @selected(old('id_lider_usuario',$lider_id)==$l->id_usuario)>
-              {{ $l->nombre }} {{ isset($l->correo_institucional) && $l->correo_institucional ? '(' . $l->correo_institucional . ')' : '' }}
-            </option>
-          @endforeach
-        </select>
-      </div>
-      <div class="col-12 mt-2">
-        <button class="btn btn-success">Guardar cambios</button>
-        <a href="{{ route('admin.semilleros.index') }}" class="btn btn-secondary">Volver</a>
-      </div>
->>>>>>> Fusionmain
     </div>
   </div>
 </div>
@@ -91,78 +67,118 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const modal = document.getElementById('modalEditarSemillero');
-  const form  = document.getElementById('formEditarSemillero');
+  const modalEl = document.getElementById('modalEditarSemillero');
+  const form    = document.getElementById('formEditarSemillero');
 
-  const editNombre = document.getElementById('editNombre');
-  const editLinea  = document.getElementById('editLinea');
-  const liderRO    = document.getElementById('liderNombreRO');
-  const correoRO   = document.getElementById('liderCorreoRO');
-  const idLiderInp = document.getElementById('editIdLider');
+  const nombre  = document.getElementById('editNombre');
+  const linea   = document.getElementById('editLinea');
+  const lidNom  = document.getElementById('liderNombreRO');
+  const lidCor  = document.getElementById('liderCorreoRO');
+  const lidId   = document.getElementById('editIdLider');
+  const buscar  = document.getElementById('buscarLider');
+  const lista   = document.getElementById('resultadosLider');
 
-  const buscarInp  = document.getElementById('buscarLider');
-  const listaRes   = document.getElementById('resultadosLider');
+  // Helper: elimina cualquier backdrop residual
+  const killBackdrops = () => {
+    document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+    document.body.classList.remove('modal-open','noscroll');
+    document.body.style.removeProperty('padding-right');
+  };
 
-  // Cargar datos al abrir modal
-  modal.addEventListener('show.bs.modal', async (e) => {
+  // Fuerza instancia SIEMPRE sin backdrop
+  const ensureNoBackdrop = () => {
+    // crea o reutiliza instancia, obligando opciones
+    const inst = bootstrap.Modal.getOrCreateInstance(modalEl, {
+      backdrop: false,
+      keyboard: true,
+      focus: true
+    });
+    // por si otro modal ensució el DOM
+    killBackdrops();
+    return inst;
+  };
+
+  // Delegación: antes de abrir (click en botón editar), limpia overlays y fuerza opciones
+  document.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('[data-bs-target="#modalEditarSemillero"]');
+    if (!btn) return;
+    // apaga overlay del sidebar (móvil)
+    document.getElementById('sidebarOverlay')?.classList.remove('show');
+    document.body.classList.remove('noscroll');
+    // mata cualquier backdrop previo
+    killBackdrops();
+    // asegura instancia sin backdrop
+    ensureNoBackdrop();
+  });
+
+  // Cargar datos del semillero al abrir
+  modalEl.addEventListener('show.bs.modal', async (e) => {
+    ensureNoBackdrop(); // asegura backdrop:false incluso si Bootstrap re-instancia
+    killBackdrops();    // limpia si algo alcanzó a inyectar
     const id = e.relatedTarget?.dataset.id;
     if (!id) return;
 
-    // Limpia buscador
-    buscarInp.value = '';
-    listaRes.innerHTML = '';
+    try {
+      const res  = await fetch(`{{ url('admin/semilleros') }}/${id}/edit`, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) throw new Error('No se pudo cargar el semillero');
+      const data = await res.json();
 
-    // Carga datos
-    const res  = await fetch(`{{ url('admin/semilleros') }}/${id}/edit`);
-    const data = await res.json();
+      form.action  = `{{ url('admin/semilleros') }}/${id}`;
+      nombre.value = data.nombre ?? '';
+      linea.value  = data.linea_investigacion ?? '';
+      lidNom.value = data.lider_nombre ?? '—';
+      lidCor.value = data.lider_correo ?? '—';
+      lidId.value  = data.id_lider_semi ?? '';
+    } catch (err) {
+      console.error(err);
+    }
+  });
 
-    // Set form action
-    form.action = `{{ url('admin/semilleros') }}/${id}`;
-
-    // Rellena campos
-    editNombre.value = data.nombre ?? '';
-    editLinea.value  = data.linea_investigacion ?? '';
-
-    liderRO.value  = data.lider_nombre ?? '—';
-    correoRO.value = data.lider_correo ?? '—';
-
-    idLiderInp.value = data.id_lider_semi ?? '';
+  // Durante y después de abrir/cerrar: limpieza agresiva de backdrops
+  modalEl.addEventListener('shown.bs.modal',  killBackdrops);
+  modalEl.addEventListener('hide.bs.modal',   killBackdrops);
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    killBackdrops();
+    // limpia buscador
+    buscar.value = '';
+    lista.innerHTML = '';
   });
 
   // Buscador con debounce
   let t;
-  buscarInp.addEventListener('input', () => {
+  buscar.addEventListener('input', () => {
     clearTimeout(t);
     t = setTimeout(async () => {
-      const q = buscarInp.value.trim();
-      if (q.length < 2) { listaRes.innerHTML = ''; return; }
+      const q = buscar.value.trim();
+      if (q.length < 2) { lista.innerHTML = ''; return; }
 
-      // Puedes incluir el líder actual para re-seleccionarlo si quieres
-      const includeCurrent = idLiderInp.value ? `&include_current=${encodeURIComponent(idLiderInp.value)}` : '';
+      const includeCurrent = lidId.value ? `&include_current=${encodeURIComponent(lidId.value)}` : '';
       const url = `{{ route('admin.semilleros.lideres-disponibles') }}?q=${encodeURIComponent(q)}${includeCurrent}`;
 
-      const res = await fetch(url);
-      const rows = await res.json();
+      try {
+        const res  = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) throw new Error('Error cargando líderes');
+        const rows = await res.json();
 
-      listaRes.innerHTML = '';
-      if (!Array.isArray(rows)) return;
-
-      rows.forEach(r => {
-        const a = document.createElement('a');
-        a.href = '#';
-        a.className = 'list-group-item list-group-item-action';
-        a.innerHTML = `<div class="fw-semibold">${r.nombre}</div><small class="text-muted">${r.correo ?? '—'}</small>`;
-        a.addEventListener('click', (ev) => {
-          ev.preventDefault();
-          // Asigna nuevo líder (solo relación)
-          idLiderInp.value = r.id_lider_semi;
-          liderRO.value    = r.nombre;
-          correoRO.value   = r.correo ?? '—';
-          listaRes.innerHTML = '';
-          buscarInp.value = '';
+        lista.innerHTML = '';
+        (rows || []).forEach(r => {
+          const a = document.createElement('a');
+          a.href = '#';
+          a.className = 'list-group-item list-group-item-action';
+          a.innerHTML = `<div class="fw-semibold">${r.nombre}</div><small class="text-muted">${r.correo ?? '—'}</small>`;
+          a.addEventListener('click', (ev) => {
+            ev.preventDefault();
+            lidId.value  = r.id_lider_semi;
+            lidNom.value = r.nombre;
+            lidCor.value = r.correo ?? '—';
+            lista.innerHTML = '';
+            buscar.value = '';
+          });
+          lista.appendChild(a);
         });
-        listaRes.appendChild(a);
-      });
+      } catch (err) {
+        console.error(err);
+      }
     }, 250);
   });
 });
