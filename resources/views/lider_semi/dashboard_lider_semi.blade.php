@@ -109,19 +109,9 @@
       <div class="actions-card p-4">
         <h5 class="fw-bold mb-3">Acciones Rápidas</h5>
         <div class="d-grid gap-3">
-<<<<<<< HEAD
           <a href="{{ route('lider_semi.documentos') }}" class="btn-block btn-green"><i class="bi bi-plus-circle me-2"></i> Crear Evidencia</a>
           <a href="{{ route('lider_semi.semilleros') }}" class="btn-block btn-dark"><i class="bi bi-person-plus me-2"></i> Asignar Aprendiz</a>
           <a href="{{ route('lider_semi.calendario') }}" class="btn-block btn-outline-blue"><i class="bi bi-calendar-plus me-2"></i> Programar Reunión</a>
-=======
-          <button class="btn btn-success"><i class="bi bi-plus-circle me-2"></i> Crear Semillero</button>
-          <button class="btn btn-dark"><i class="bi bi-person-plus me-2"></i> Agregar Aprendiz</button>
-          <button class="btn btn-outline-success"><i class="bi bi-upload me-2"></i> Subir Documento</button>
-          <button class="btn btn-outline-primary"><i class="bi bi-calendar-plus me-2"></i> Programar Reunión</button>
-          <button class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalProyectosLider">
-            <i class="bi bi-kanban me-2"></i> Ver Proyectos
-          </button>
->>>>>>> Fusionmain
         </div>
       </div>
     </div>
@@ -344,4 +334,3 @@ document.addEventListener('DOMContentLoaded', ()=>{
 </script>
 @endpush
 @endsection
-

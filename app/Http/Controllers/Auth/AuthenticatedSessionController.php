@@ -41,6 +41,8 @@ class AuthenticatedSessionController extends Controller
             'ADMIN' => 'admin.dashboard',
 
             // CORRECCIÓN: Se incluye el rol INSTRUCTOR
+
+            
             'INSTRUCTOR' => 'lider_semi.dashboard',
 
             'APRENDIZ' => 'aprendiz.dashboard',

@@ -20,21 +20,71 @@ class SemilleroController extends Controller
 
         // Si existe la tabla de proyectos, mostrar proyectos como "Mis Proyectos"
         if (Schema::hasTable('proyectos')) {
-            // Obtener proyectos con sus datos reales
-            $proyectos = DB::table('proyectos')
-                ->select(
-                    'id_proyecto',
-                    'id_semillero',
-                    'id_tipo_proyecto',
-                    'nombre_proyecto as nombre',
-                    'descripcion',
-                    'estado',
-                    'fecha_inicio',
-                    'fecha_fin',
-                    'creado_en',
-                    'actualizado_en'
-                )
-                ->get();
+            // Obtener proyectos del líder autenticado (join con semilleros si existe la columna id_lider_semi)
+            $cols = [];
+            // claves básicas (con alias de tabla "p")
+            if (Schema::hasColumn('proyectos', 'id_proyecto')) {
+                $cols[] = 'p.id_proyecto';
+            }
+            if (Schema::hasColumn('proyectos', 'id_semillero')) {
+                $cols[] = 'p.id_semillero';
+            }
+            if (Schema::hasColumn('proyectos', 'id_tipo_proyecto')) {
+                $cols[] = 'p.id_tipo_proyecto';
+            }
+            // nombre (alias a nombre)
+            if (Schema::hasColumn('proyectos', 'nombre_proyecto')) {
+                $cols[] = DB::raw('COALESCE(p.nombre_proyecto, "Proyecto") as nombre');
+            } else {
+                $cols[] = DB::raw("'Proyecto' as nombre");
+            }
+            // descripcion
+            if (Schema::hasColumn('proyectos', 'descripcion')) {
+                $cols[] = DB::raw('COALESCE(p.descripcion, "") as descripcion');
+            } else {
+                $cols[] = DB::raw("'' as descripcion");
+            }
+            // estado
+            if (Schema::hasColumn('proyectos', 'estado')) {
+                $cols[] = DB::raw('COALESCE(p.estado, "ACTIVO") as estado');
+            } else {
+                $cols[] = DB::raw("'ACTIVO' as estado");
+            }
+            // fechas de control
+            if (Schema::hasColumn('proyectos', 'fecha_inicio')) {
+                $cols[] = 'p.fecha_inicio';
+            } else {
+                $cols[] = DB::raw('NULL as fecha_inicio');
+            }
+            if (Schema::hasColumn('proyectos', 'fecha_fin')) {
+                $cols[] = 'p.fecha_fin';
+            } else {
+                $cols[] = DB::raw('NULL as fecha_fin');
+            }
+            // timestamps (creado/actualizado) segun esquema
+            if (Schema::hasColumn('proyectos', 'creado_en')) {
+                $cols[] = 'p.creado_en';
+            } elseif (Schema::hasColumn('proyectos', 'created_at')) {
+                $cols[] = DB::raw('p.created_at as creado_en');
+            } else {
+                $cols[] = DB::raw('NULL as creado_en');
+            }
+            if (Schema::hasColumn('proyectos', 'actualizado_en')) {
+                $cols[] = 'p.actualizado_en';
+            } elseif (Schema::hasColumn('proyectos', 'updated_at')) {
+                $cols[] = DB::raw('p.updated_at as actualizado_en');
+            } else {
+                $cols[] = DB::raw('NULL as actualizado_en');
+            }
+
+            $qb = DB::table('proyectos as p')
+                ->select($cols);
+            // Filtrar por líder si el esquema lo permite
+            if (Schema::hasTable('semilleros') && Schema::hasColumn('semilleros', 'id_lider_semi')) {
+                $qb->join('semilleros as s', 's.id_semillero', '=', 'p.id_semillero')
+                   ->where('s.id_lider_semi', $userId);
+            }
+            $proyectos = $qb->get();
             
             // Calcular progreso basado en fechas
             $proyectos->transform(function($p){
@@ -72,7 +122,7 @@ class SemilleroController extends Controller
                             ->whereIn(DB::raw($pivot['table'].'.'.$pivot['projCol']), $ids)
                             ->select(
                                 DB::raw($pivot['table'].'.'.$pivot['projCol'].' as pid'),
-                                DB::raw('aprendices.id_usuario as id_aprendiz'),
+                                DB::raw('aprendices.id_aprendiz as id_aprendiz'),
                                 DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),
                                 'aprendices.correo_institucional',
                                 'aprendices.programa'
@@ -625,8 +675,7 @@ class SemilleroController extends Controller
             $selectCols[] = 'id_usuario';
         }
         $aprendices = DB::table('aprendices')
-            ->select(array_merge(array_diff($selectCols, ['id_aprendiz']), [
-                'id_usuario as id_aprendiz',
+            ->select(array_merge($selectCols, [
                 DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo")
             ]))
             ->orderByRaw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))")
@@ -709,7 +758,7 @@ class SemilleroController extends Controller
         // Solo proyectos del líder autenticado (según semillero propietario)
         $proyectos = DB::table('proyectos as p')
             ->join('semilleros as s', 's.id_semillero', '=', 'p.id_semillero')
-            ->where('s.id_lider_usuario', $userId)
+            ->where('s.id_lider_semi', $userId)
             ->select(
                 'p.id_proyecto',
                 DB::raw('COALESCE(p.nombre_proyecto, "Proyecto") as nombre'),
@@ -717,6 +766,17 @@ class SemilleroController extends Controller
                 DB::raw('COALESCE(p.estado, "ACTIVO") as estado')
             )
             ->get();
+        // Fallback: si no hay asociación de líder aún, traer todos los proyectos
+        if ($proyectos->isEmpty()) {
+            $proyectos = DB::table('proyectos as p')
+                ->select(
+                    'p.id_proyecto',
+                    DB::raw('COALESCE(p.nombre_proyecto, "Proyecto") as nombre'),
+                    DB::raw('COALESCE(p.descripcion, "") as descripcion'),
+                    DB::raw('COALESCE(p.estado, "ACTIVO") as estado')
+                )
+                ->get();
+        }
 
         // Contadores por proyecto desde documentos
         $proyectos->transform(function($proyecto){
@@ -866,7 +926,10 @@ class SemilleroController extends Controller
         $finStr = $fin->format('Y-m-d H:i:s');
 
         // Buscar eventos del mismo líder cuyo rango [inicio, fin) solape
-        $q = Evento::where('id_lider', auth()->id());
+        $leaderCol = Schema::hasColumn('eventos','id_lider_semi')
+            ? 'id_lider_semi'
+            : (Schema::hasColumn('eventos','id_lider_usuario') ? 'id_lider_usuario' : 'id_lider');
+        $q = Evento::where($leaderCol, auth()->id());
         if ($ignorarId) {
             $q->where('id_evento', '!=', $ignorarId);
         }
@@ -898,7 +961,7 @@ class SemilleroController extends Controller
         try {
             $request->validate([
                 'proyecto_id' => 'required|integer|exists:proyectos,id_proyecto',
-                'aprendiz_id' => 'nullable|integer|exists:aprendices,id_usuario',
+                'aprendiz_id' => 'nullable|integer|exists:aprendices,id_aprendiz',
                 'titulo' => 'required|string|max:255',
                 'descripcion' => 'required|string',
                 'tipo_evidencia' => 'required|string',
@@ -1212,13 +1275,14 @@ class SemilleroController extends Controller
         $aprendices = collect([]);
         
         if (Schema::hasTable('aprendices')) {
-            $hasNombreCompleto = Schema::hasColumn('aprendices', 'nombre_completo');
-            $nameExpr = $hasNombreCompleto
-                ? 'nombre_completo'
-                : "CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))";
-            $aprendices = Aprendiz::where('documento', '!=', 'SIN_ASIGNAR')
+            $aprendices = DB::table('aprendices')
+                ->when(Schema::hasColumn('aprendices','documento'), function($q){
+                    $q->where('documento','!=','SIN_ASIGNAR');
+                })
                 ->select(
-                    'id_usuario as id_aprendiz','nombres','apellidos','tipo_documento','documento',
+                    'id_aprendiz',
+                    'nombres','apellidos',
+                    'tipo_documento','documento',
                     DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo")
                 )
                 ->orderByRaw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))")
@@ -1229,10 +1293,29 @@ class SemilleroController extends Controller
         $proyectos = collect([]);
         
         if (Schema::hasTable('proyectos')) {
-            $proyectos = Proyecto::with('aprendices:id_aprendiz,nombres,apellidos')
-                ->select('id_proyecto', 'nombre_proyecto')
+            $proyectos = DB::table('proyectos')
+                ->select('id_proyecto','nombre_proyecto')
                 ->orderBy('nombre_proyecto')
                 ->get();
+
+            // Adjuntar aprendices por proyecto usando 'documentos' como relación disponible
+            $aprPorProyecto = [];
+            if (Schema::hasTable('documentos') && Schema::hasColumn('documentos','id_proyecto') && Schema::hasColumn('documentos','id_aprendiz')) {
+                $rows = DB::table('documentos')
+                    ->select('id_proyecto','id_aprendiz')
+                    ->whereIn('id_proyecto', $proyectos->pluck('id_proyecto')->all() ?: [0])
+                    ->distinct()
+                    ->get()
+                    ->groupBy('id_proyecto');
+                foreach ($rows as $pid => $items) {
+                    $aprPorProyecto[$pid] = collect($items)->map(function($r){ return (object)['id_aprendiz' => $r->id_aprendiz]; });
+                }
+            }
+            // Asegurar propiedad 'aprendices' para cada proyecto (collection)
+            $proyectos->transform(function($p) use ($aprPorProyecto){
+                $p->aprendices = $aprPorProyecto[$p->id_proyecto] ?? collect();
+                return $p;
+            });
         }
 
         return view('lider_semi.calendario_scml', compact('aprendices', 'proyectos'));
@@ -1251,13 +1334,17 @@ class SemilleroController extends Controller
             }
 
             $userId = auth()->id();
+            // Columna de líder dinámica en eventos
+            $leaderCol = Schema::hasColumn('eventos','id_lider_semi')
+                ? 'id_lider_semi'
+                : (Schema::hasColumn('eventos','id_lider_usuario') ? 'id_lider_usuario' : 'id_lider');
             $mes = $request->input('mes');
             $anio = $request->input('anio');
 
             $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
                 ? 'nombre_completo'
                 : "CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))";
-            $query = Evento::where('id_lider', $userId)
+            $query = Evento::where($leaderCol, $userId)
                 ->with(['participantes:id_aprendiz,nombres,apellidos', 'proyecto:id_proyecto,nombre_proyecto']);
 
             if ($mes && $anio) {
@@ -1318,11 +1405,12 @@ class SemilleroController extends Controller
                 'fecha_hora' => 'required|date',
                 'duracion' => 'required|integer|min:15',
                 'ubicacion' => 'required|string',
-                'link_virtual' => 'nullable|url',
+                // Aceptar string y normalizar más adelante (coherente con actualizarEvento)
+                'link_virtual' => 'nullable|string|max:1000',
                 'recordatorio' => 'nullable|string',
                 'id_proyecto' => 'nullable|exists:proyectos,id_proyecto',
                 'participantes' => 'nullable|array',
-                'participantes.*' => 'exists:aprendices,id_usuario',
+                'participantes.*' => 'exists:aprendices,id_aprendiz',
                 'generar_enlace' => 'nullable|string|in:teams,meet,personalizado'
             ]);
 
@@ -1353,7 +1441,10 @@ class SemilleroController extends Controller
             
 
             // Evitar colisión exacta por líder y fecha_hora
-            $exists = Evento::where('id_lider', auth()->id())
+            $leaderCol = Schema::hasColumn('eventos','id_lider_semi')
+                ? 'id_lider_semi'
+                : (Schema::hasColumn('eventos','id_lider_usuario') ? 'id_lider_usuario' : 'id_lider');
+            $exists = Evento::where($leaderCol, auth()->id())
                 ->where('fecha_hora', $validated['fecha_hora'])
                 ->exists();
             if ($exists) {
@@ -1374,8 +1465,12 @@ class SemilleroController extends Controller
                 \Log::info('Enlace generado automáticamente:', ['plataforma' => $plataforma, 'link' => $linkVirtual]);
             }
 
+            // Generar PK manual si la tabla no es autoincremental
+            $nextId = (int) (DB::table('eventos')->max('id_evento') ?? 0) + 1;
+
             $evento = Evento::create([
-                'id_lider' => auth()->id(),
+                'id_evento' => $nextId,
+                $leaderCol => auth()->id(),
                 'id_proyecto' => $validated['id_proyecto'] ?? null,
                 'titulo' => $validated['titulo'],
                 'tipo' => $validated['tipo'],
@@ -1386,7 +1481,7 @@ class SemilleroController extends Controller
                 'ubicacion' => $validated['ubicacion'],
                 'link_virtual' => $linkVirtual,
                 'codigo_reunion' => $codigoReunion,
-                'recordatorio' => $validated['recordatorio'] ?? 'none'
+                'recordatorio' => is_numeric($validated['recordatorio'] ?? null) ? (int)$validated['recordatorio'] : 0
             ]);
 
             // Asignar participantes
@@ -1396,14 +1491,22 @@ class SemilleroController extends Controller
 
             // Cargar relaciones para la respuesta (con alias seguro)
             $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
-                ? 'nombre_completo'
-                : "CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))";
+                ? 'aprendices.nombre_completo'
+                : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
             $evento->load([
                 'participantes' => function($q) use ($nameExpr){
-                    $q->selectRaw("id_usuario as id_aprendiz, $nameExpr as nombre_completo");
+                    $q->select(
+                        DB::raw('aprendices.id_aprendiz as id_aprendiz'),
+                        DB::raw($nameExpr.' as nombre_completo')
+                    );
                 },
                 'proyecto:id_proyecto,nombre_proyecto'
             ]);
+
+            // Formatear fecha_hora de forma segura
+            $fechaIso = $evento->fecha_hora instanceof \DateTimeInterface
+                ? $evento->fecha_hora->format(DATE_ATOM)
+                : (\is_string($evento->fecha_hora) ? date(DATE_ATOM, strtotime($evento->fecha_hora)) : (string)$evento->fecha_hora);
 
             return response()->json([
                 'success' => true,
@@ -1413,7 +1516,7 @@ class SemilleroController extends Controller
                     'titulo' => $evento->titulo,
                     'descripcion' => $evento->descripcion,
                     'linea_investigacion' => $evento->linea_investigacion,
-                    'fecha_hora' => $evento->fecha_hora->toIso8601String(),
+                    'fecha_hora' => $fechaIso,
                     'duracion' => $evento->duracion,
                     'tipo' => $evento->tipo,
                     'ubicacion' => $evento->ubicacion,
@@ -1422,7 +1525,7 @@ class SemilleroController extends Controller
                     'proyecto' => $evento->proyecto ? $evento->proyecto->nombre_proyecto : null,
                     'participantes' => $evento->participantes->map(function($p) {
                         return [
-                            'id' => $p->id_aprendiz ?? $p->id_usuario,
+                            'id' => $p->id_aprendiz,
                             'nombre' => $p->nombre_completo
                         ];
                     })
@@ -1448,9 +1551,19 @@ class SemilleroController extends Controller
     public function actualizarEvento(Request $request, $id)
     {
         try {
-            $evento = Evento::where('id_evento', $id)
-                ->where('id_lider', auth()->id())
-                ->firstOrFail();
+            // Detectar columna de líder si existe; si no, no filtrar por líder
+            $leaderCol = null;
+            if (Schema::hasColumn('eventos','id_lider_semi')) $leaderCol = 'id_lider_semi';
+            elseif (Schema::hasColumn('eventos','id_lider_usuario')) $leaderCol = 'id_lider_usuario';
+            elseif (Schema::hasColumn('eventos','id_lider')) $leaderCol = 'id_lider';
+
+            $eventoQ = Evento::where('id_evento', $id);
+            if ($leaderCol) { $eventoQ->where($leaderCol, auth()->id()); }
+            $evento = $eventoQ->first();
+            if (!$evento) {
+                // Fallback: cargar por id_evento únicamente (caso: columna líder existe pero está null o distinta)
+                $evento = Evento::where('id_evento', $id)->firstOrFail();
+            }
 
             $validated = $request->validate([
                 'titulo' => 'sometimes|required|string|max:255',
@@ -1460,31 +1573,45 @@ class SemilleroController extends Controller
                 'tipo' => 'nullable|string',
                 'linea_investigacion' => 'nullable|string|max:255',
                 'ubicacion' => 'nullable|string',
-                'link_virtual' => 'nullable|url',
+                // Permitir cualquier string y normalizar; muchas plataformas no pasan estrictamente el validador url
+                'link_virtual' => 'nullable|string|max:1000',
                 'id_proyecto' => 'nullable|exists:proyectos,id_proyecto',
                 'participantes' => 'nullable|array',
-                'participantes.*' => 'exists:aprendices,id_usuario',
+                'participantes.*' => 'exists:aprendices,id_aprendiz',
                 'generar_enlace' => 'nullable|string|in:teams,meet,personalizado'
             ]);
 
-            // Validar conflicto considerando valores nuevos o actuales
-            $inicioStr = isset($validated['fecha_hora'])
-                ? $validated['fecha_hora']
-                : ($evento->fecha_hora instanceof \DateTimeInterface ? $evento->fecha_hora->format('Y-m-d H:i:s') : (string)$evento->fecha_hora);
-            $inicioValidar = new \DateTime($inicioStr);
-            $duracionValidar = (int) ($validated['duracion'] ?? $evento->duracion);
-            if ($this->hayConflicto($inicioValidar, $duracionValidar, (int)$evento->id_evento)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'El horario elegido se solapa con otra reunión existente. Selecciona otra hora disponible.'
-                ], 422);
-            }
-            // Validar cruce con almuerzo
-            if ($this->cruzaAlmuerzo($inicioValidar, $duracionValidar)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'La reunión no puede cruzar el horario de almuerzo (12:00 a 13:55).'
-                ], 422);
+            // Determinar si solo se está actualizando el enlace sin cambiar horario/duración
+            $onlyLinkUpdate = array_key_exists('link_virtual', $validated)
+                && !array_key_exists('fecha_hora', $validated)
+                && !array_key_exists('duracion', $validated)
+                && !array_key_exists('titulo', $validated)
+                && !array_key_exists('ubicacion', $validated)
+                && !array_key_exists('tipo', $validated)
+                && !array_key_exists('linea_investigacion', $validated)
+                && !array_key_exists('id_proyecto', $validated)
+                && !array_key_exists('participantes', $validated);
+
+            if (!$onlyLinkUpdate) {
+                // Validar conflicto considerando valores nuevos o actuales
+                $inicioStr = isset($validated['fecha_hora'])
+                    ? $validated['fecha_hora']
+                    : ($evento->fecha_hora instanceof \DateTimeInterface ? $evento->fecha_hora->format('Y-m-d H:i:s') : (string)$evento->fecha_hora);
+                $inicioValidar = new \DateTime($inicioStr);
+                $duracionValidar = (int) ($validated['duracion'] ?? $evento->duracion);
+                if ($this->hayConflicto($inicioValidar, $duracionValidar, (int)$evento->id_evento)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'El horario elegido se solapa con otra reunión existente. Selecciona otra hora disponible.'
+                    ], 422);
+                }
+                // Validar cruce con almuerzo
+                if ($this->cruzaAlmuerzo($inicioValidar, $duracionValidar)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'La reunión no puede cruzar el horario de almuerzo (12:00 a 13:55).'
+                    ], 422);
+                }
             }
             // Generar enlace si la ubicación es virtual y no tiene enlace
             $updateData = [];
@@ -1515,8 +1642,18 @@ class SemilleroController extends Controller
                 $updateData['ubicacion'] = $validated['ubicacion'];
             }
             
-            if (isset($validated['link_virtual'])) {
-                $updateData['link_virtual'] = $validated['link_virtual'];
+            // Permitir limpiar el enlace cuando venga explícitamente como null
+            if (array_key_exists('link_virtual', $validated)) {
+                $link = $validated['link_virtual'];
+                if (\is_string($link)) {
+                    $trim = trim($link);
+                    if ($trim !== '' && !preg_match('/^https?:\/\//i', $trim)) {
+                        $trim = 'https://' . $trim; // normalizar si faltó esquema
+                    }
+                    $updateData['link_virtual'] = $trim === '' ? null : $trim;
+                } else {
+                    $updateData['link_virtual'] = $link; // null u otro
+                }
             } elseif (($validated['ubicacion'] ?? $evento->ubicacion) === 'virtual' && empty($evento->link_virtual)) {
                 // Generar enlace automáticamente
                 $plataforma = $validated['generar_enlace'] ?? 'teams';
@@ -1533,14 +1670,22 @@ class SemilleroController extends Controller
 
             // Cargar relaciones para la respuesta (con alias seguro)
             $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
-                ? 'nombre_completo'
-                : "CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))";
+                ? 'aprendices.nombre_completo'
+                : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
             $evento->load([
                 'participantes' => function($q) use ($nameExpr){
-                    $q->selectRaw("id_usuario as id_aprendiz, $nameExpr as nombre_completo");
+                    $q->select(
+                        DB::raw('aprendices.id_aprendiz as id_aprendiz'),
+                        DB::raw($nameExpr.' as nombre_completo')
+                    );
                 },
                 'proyecto:id_proyecto,nombre_proyecto'
             ]);
+
+            // Formatear fecha_hora de forma segura (puede ser string en algunos esquemas)
+            $fechaIso = $evento->fecha_hora instanceof \DateTimeInterface
+                ? $evento->fecha_hora->format(DATE_ATOM)
+                : (\is_string($evento->fecha_hora) ? date(DATE_ATOM, strtotime($evento->fecha_hora)) : (string)$evento->fecha_hora);
 
             return response()->json([
                 'success' => true,
@@ -1549,7 +1694,7 @@ class SemilleroController extends Controller
                     'id' => $evento->id_evento,
                     'titulo' => $evento->titulo,
                     'descripcion' => $evento->descripcion,
-                    'fecha_hora' => $evento->fecha_hora->toIso8601String(),
+                    'fecha_hora' => $fechaIso,
                     'duracion' => $evento->duracion,
                     'tipo' => $evento->tipo,
                     'ubicacion' => $evento->ubicacion,

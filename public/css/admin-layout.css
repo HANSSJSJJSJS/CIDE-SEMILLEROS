@@ -52,6 +52,7 @@
   border-radius:14px;
   padding:10px;
   box-shadow: 0 6px 18px rgba(0,0,0,.12) inset;
+  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }
 .adm-nav{ display:flex; flex-direction:column; gap:6px; margin-top:8px; }
@@ -59,7 +60,7 @@
   display:flex; align-items:center; gap:10px;
   color:#e6eef7; text-decoration:none;
   padding:10px 12px; border-radius:10px;
-  transition:.15s background,.15s color;
+  transition: .15s background, .15s color;
 }
 .menu-card .nav-link:hover{ background:rgba(255,255,255,.12); color:#fff; }
 .menu-card .nav-link.active{
@@ -79,12 +80,12 @@
 .avatar{ width:34px; height:34px; border-radius:50%; display:grid; place-items:center; background:#0b3f66; color:#fff; font-weight:700; }
 
 /* ---------- Área de página con fondo decorativo ---------- */
-.adm-content{ background:#f7f9fc; }
-.adm-page{ position:relative; padding:20px; isolation:isolate; z-index:0; }
+.adm-content{ background:#f7f9fc; min-height:100vh; display:flex; flex-direction:column; }
+.adm-page{ position:relative; padding:20px; isolation:isolate; z-index:0; flex:1; }
 .adm-page::before{
-  content:""; position:absolute; inset:0; z-index:-1;
+  content:""; position:absolute; top:0; right:0; bottom:0; left:0; z-index:-1;
   background:url("../images/bg-semillero.png") no-repeat center 80px / 900px auto;
-  opacity:.10; pointer-events:none;
+  opacity:.18; pointer-events:none;
 }
 .adm-page-head{ margin:4px 4px 16px; }
 .page-title{ margin:0; font-size:1.6rem; font-weight:800; }
@@ -109,8 +110,9 @@
 
 /* Overlay móvil para el sidebar */
 .sidebar-overlay{
-  position: fixed; inset: 0;
+  position: fixed; top:0; right:0; bottom:0; left:0;
   background: rgba(0,0,0,.35);
+  -webkit-backdrop-filter: blur(1.5px);
   backdrop-filter: blur(1.5px);
   z-index: 1015;          /* debajo del sidebar (1020) y encima del contenido */
   display: none;

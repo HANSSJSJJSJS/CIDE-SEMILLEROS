@@ -11,15 +11,19 @@ return new class extends Migration
      */
     public function up()
 {
-    Schema::table('documentos', function (Blueprint $table) {
-        $table->enum('estado', ['pendiente', 'completado'])->default('pendiente');
-    });
+    if (Schema::hasTable('documentos') && !Schema::hasColumn('documentos', 'estado')) {
+        Schema::table('documentos', function (Blueprint $table) {
+            $table->enum('estado', ['pendiente', 'completado'])->default('pendiente');
+        });
+    }
 }
 
 public function down()
 {
-    Schema::table('documentos', function (Blueprint $table) {
-        $table->dropColumn('estado');
-    });
+    if (Schema::hasTable('documentos') && Schema::hasColumn('documentos', 'estado')) {
+        Schema::table('documentos', function (Blueprint $table) {
+            $table->dropColumn('estado');
+        });
+    }
 }
 };

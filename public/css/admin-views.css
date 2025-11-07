@@ -10,12 +10,24 @@
 .table,
 .form-control,
 .form-select {
-  background-color: rgba(255,255,255,0.82);
+  background-color: rgba(255,255,255,0.90);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   border: 1px solid rgba(255,255,255,0.22);
   border-radius:14px;
 }
 .card.shadow-sm { box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important; }
+
+/* Opcional: silenciar linters/navegadores que no soportan backdrop-filter */
+@supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+  .card,
+  .table,
+  .form-control,
+  .form-select {
+    /* Fallback sin blur */
+    background-color: rgba(255,255,255,0.92);
+  }
+}
 
 /* Cards específicas de filtros/tabla (un poco más claras) */
 .filters-card,
