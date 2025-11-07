@@ -6,72 +6,69 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>@yield('title','Panel del Administrador')</title>
 
+  {{-- Librerías externas --}}
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  {{-- NUEVO tema admin --}}
-  {{-- CSS del layout (estructura) --}}
-<link href="{{ asset('css/admin-layout.css') }}?v={{ time() }}" rel="stylesheet">
-{{-- CSS de vistas (componentes reutilizables) --}}
-<link href="{{ asset('css/admin-views.css') }}?v={{ time() }}" rel="stylesheet">
-
+  {{-- Estilos del sistema --}}
+  <link href="{{ asset('css/admin-layout.css') }}?v={{ time() }}" rel="stylesheet">
+  <link href="{{ asset('css/admin-views.css') }}?v={{ time() }}" rel="stylesheet">
 
   @stack('styles')
   @yield('styles')
 </head>
+
 <body class="adm-body">
   <div class="adm-shell">
-    {{-- Sidebar --}}
-   <aside id="admSidebar" class="adm-sidebar">
-  {{-- Brand más grande, texto debajo --}}
-  <div class="adm-brand brand-large">
-    <img src="{{ asset('images/logo-sena.png') }}" alt="Logo SENA" class="brand-logo-lg">
-    <div class="brand-system-lg">Sistema de Gestión Semillero</div>
-  </div>
 
-  {{-- Contenedor semitransparente para el menú --}}
-  <div class="menu-card">
-    <nav class="adm-nav">
-      <a href="{{ route('admin.dashboard') }}"
-              class="nav-link {{ request()->routeIs('admin.dashboard*') ? 'active' : '' }}">
-              <i class="bi bi-house-fill me-2"></i>
-              <span>Inicio</span>
-            </a>
-      <a href="{{ route('admin.usuarios.index') }}"
-         class="nav-link {{ request()->routeIs('admin.usuarios.*') ? 'active' : '' }}">
-        <i class="bi bi-people-fill me-2"></i> <span>Gestión de Usuarios</span>
-      </a>
+    {{-- ========================= SIDEBAR ========================= --}}
+    <aside id="admSidebar" class="adm-sidebar">
+      <div class="adm-brand brand-large">
+        <img src="{{ asset('images/logo-sena.png') }}" alt="Logo SENA" class="brand-logo-lg">
+        <div class="brand-system-lg">Sistema de Gestión Semillero</div>
+      </div>
 
-      <a href="{{ route('admin.semilleros.index') }}"
-         class="nav-link {{ request()->routeIs('admin.semilleros.*') ? 'active' : '' }}">
-        <i class="bi bi-diagram-3 me-2"></i> <span>Gestión de semilleros</span>
-      </a>
+      <div class="menu-card">
+        <nav class="adm-nav">
+          <a href="{{ route('admin.dashboard') }}"
+             class="nav-link {{ request()->routeIs('admin.dashboard*') ? 'active' : '' }}">
+            <i class="bi bi-house-fill me-2"></i> <span>Inicio</span>
+          </a>
 
-      <a href="{{ route('admin.reuniones-lideres.index') }}"
-      class="nav-link {{ request()->routeIs('admin.reuniones-lideres.*') ? 'active' : '' }}">
-      <i class="bi bi-calendar-event me-2"></i> <span>Reuniones</span>
-    </a>
+          <a href="{{ route('admin.usuarios.index') }}"
+             class="nav-link {{ request()->routeIs('admin.usuarios.*') ? 'active' : '' }}">
+            <i class="bi bi-people-fill me-2"></i> <span>Gestión de Usuarios</span>
+          </a>
 
-      <a href="{{ route('admin.recursos.index') }}"
-      class="nav-link {{ request()->routeIs('admin.recursos.*') ? 'active' : '' }}">
-        <i class="bi bi-journal-text me-2"></i>
-        <span>Recursos</span>
-    </a>
+          <a href="{{ route('admin.semilleros.index') }}"
+             class="nav-link {{ request()->routeIs('admin.semilleros.*') ? 'active' : '' }}">
+            <i class="bi bi-diagram-3 me-2"></i> <span>Gestión de semilleros</span>
+          </a>
 
-      <a href="{{ route('admin.perfil.edit') }}"
-   class="nav-link {{ request()->routeIs('admin.perfil.*') ? 'active' : '' }}">
-  <i class="bi bi-person-circle me-2"></i> <span>Mi Perfil</span>
-</a>
-    </nav>
-  </div>
-</aside>
+          <a href="{{ route('admin.reuniones-lideres.index') }}"
+             class="nav-link {{ request()->routeIs('admin.reuniones-lideres.*') ? 'active' : '' }}">
+            <i class="bi bi-calendar-event me-2"></i> <span>Reuniones</span>
+          </a>
 
-      <div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
+          <a href="{{ route('admin.recursos.index') }}"
+             class="nav-link {{ request()->routeIs('admin.recursos.*') ? 'active' : '' }}">
+            <i class="bi bi-journal-text me-2"></i> <span>Recursos</span>
+          </a>
 
-    {{-- Contenido --}}
+          <a href="{{ route('admin.perfil.edit') }}"
+             class="nav-link {{ request()->routeIs('admin.perfil.*') ? 'active' : '' }}">
+            <i class="bi bi-person-circle me-2"></i> <span>Mi Perfil</span>
+          </a>
+        </nav>
+      </div>
+    </aside>
+
+    <div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
+
+    {{-- ========================= CONTENIDO ========================= --}}
     <div class="adm-content">
-      {{-- Top bar --}}
+      {{-- ---------- Topbar ---------- --}}
       <header class="adm-topbar">
         <div class="d-flex align-items-center gap-2">
           <button id="sidebarToggle" class="btn btn-outline-light d-lg-none">
@@ -101,7 +98,7 @@
         </div>
       </header>
 
-      {{-- Área de página con fondo decorativo --}}
+      {{-- ---------- Página principal ---------- --}}
       <main class="adm-page">
         <div class="adm-page-head">
           <h2 class="page-title">@yield('module-title','')</h2>
@@ -115,19 +112,19 @@
     </div>
   </div>
 
+  {{-- ========================= SCRIPTS ========================= --}}
 
-
-
+  {{-- Bootstrap (solo una vez) --}}
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- 👇 Reemplaza tu script anterior por este -->
+  {{-- Sidebar móvil --}}
   <script>
   (function () {
     const sidebar   = document.getElementById('admSidebar');
     const overlay   = document.getElementById('sidebarOverlay');
     const toggleBtn = document.getElementById('sidebarToggle');
     const body      = document.body;
-    const MQ_LG     = 992; // breakpoint Bootstrap lg
+    const MQ_LG     = 992;
 
     const isMobile = () => window.innerWidth < MQ_LG;
 
@@ -154,14 +151,37 @@
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
     window.addEventListener('resize', () => { if (!isMobile()) closeSidebar(); });
 
-    // Cerrar al hacer click en un link del menú (en móvil)
     sidebar?.addEventListener('click', (e) => {
       if (e.target.closest('a.nav-link') && isMobile()) closeSidebar();
     });
   })();
   </script>
 
+  {{-- Limpieza de backdrops Bootstrap --}}
+  <script>
+  (function () {
+    const overlay = document.getElementById('sidebarOverlay');
+
+    function cleanupModalArtifacts() {
+      document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('padding-right');
+    }
+
+    document.addEventListener('show.bs.modal', function () {
+      overlay?.classList.remove('show');
+      document.body.classList.remove('noscroll');
+    });
+
+    document.addEventListener('hidden.bs.modal', cleanupModalArtifacts);
+    window.addEventListener('pageshow', cleanupModalArtifacts);
+    document.addEventListener('DOMContentLoaded', cleanupModalArtifacts);
+  })();
+  </script>
+
+  {{-- Inyección de scripts personalizados --}}
   @stack('scripts')
   @yield('scripts')
+
 </body>
 </html>

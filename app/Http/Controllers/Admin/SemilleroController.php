@@ -150,66 +150,56 @@ class SemilleroController extends Controller
      * Actualiza SOLO el semillero (nombre, línea) y la relación con el líder.
      * No modifica la tabla users ni datos del líder.
      */
-    public function update(Request $request, $id)
-    {
-        $validated = $request->validate([
-            'nombre'              => 'required|string|max:150',
-            'linea_investigacion' => 'required|string|max:255',
-            'id_lider_usuario'    => 'nullable|integer|exists:lideres_semillero,id_usuario',
-        ]);
-
-        $tbl = 'semilleros';
-        $idCol = Schema::hasColumn($tbl, 'id') ? 'id' : (Schema::hasColumn($tbl, 'id_semillero') ? 'id_semillero' : null);
-        if(!$idCol) return back()->withErrors('No se puede determinar la PK de semilleros');
-
-        $colNombre = Schema::hasColumn($tbl, 'nombre') ? 'nombre'
-                    : (Schema::hasColumn($tbl, 'nombre_semillero') ? 'nombre_semillero' : null);
-        $colLinea  = Schema::hasColumn($tbl, 'linea_investigacion') ? 'linea_investigacion'
-                    : (Schema::hasColumn($tbl, 'línea_investigación') ? 'línea_investigación' : null);
-        $colLider  = Schema::hasColumn($tbl, 'id_lider_usuario') ? 'id_lider_usuario'
-                    : (Schema::hasColumn($tbl, 'id_lider_semi') ? 'id_lider_semi' : null);
-        $hasUpdated = Schema::hasColumn($tbl, 'updated_at');
-        $hasActual  = Schema::hasColumn($tbl, 'actualizado_en');
-
-        $update = [];
-        if ($colNombre) $update[$colNombre] = $validated['nombre'];
-        if ($colLinea)  $update[$colLinea]  = $validated['linea_investigacion'];
-        if ($colLider)  $update[$colLider]  = $validated['id_lider_usuario'] ?? null;
-        if ($hasUpdated) $update['updated_at'] = now();
-        if ($hasActual)  $update['actualizado_en'] = now();
-
-        DB::table($tbl)->where($idCol, $id)->update($update);
-
-        if ($request->wantsJson()) return response()->json(['ok'=>true]);
-        return back()->with('success', 'Semillero actualizado correctamente.');
-    }
-
-    /**
-     * Eliminar semillero.
-     */
-    public function destroy($id)
-    {
-        $tbl = 'semilleros';
-        $idCol = Schema::hasColumn($tbl, 'id') ? 'id' : (Schema::hasColumn($tbl, 'id_semillero') ? 'id_semillero' : null);
-        if($idCol){ DB::table($tbl)->where($idCol, $id)->delete(); }
-        return back()->with('success', 'Semillero eliminado.');
-    }
-
-public function show($id)
+public function update(Request $request, $id)
 {
-    // Datos del semillero (mock mientras tanto)
-    $semillero = DB::table('semilleros')
-        ->leftJoin('lideres_semillero', 'lideres_semillero.id_lider_semi', '=', 'semilleros.id_lider_semi')
-        ->select(
-            'semilleros.nombre',
-            'semilleros.linea_investigacion as linea',
-            DB::raw("CONCAT(lideres_semillero.nombres,' ',lideres_semillero.apellidos) as lider")
-        )
-        ->where('semilleros.id_semillero', $id)
-        ->first();
+    // 1) Validar lo que realmente envía el form: id_lider_semi (opcional)
+    $data = $request->validate([
+        'nombre'              => ['required','string','max:150'],
+        'linea_investigacion' => ['required','string','max:255'],
+        'id_lider_semi'       => ['nullable','integer','exists:lideres_semillero,id_lider_semi'],
+    ], [], [
+        'nombre'              => 'nombre',
+        'linea_investigacion' => 'línea de investigación',
+        'id_lider_semi'       => 'líder de semillero',
+    ]);
 
-    // Por ahora, sin proyectos reales
-    return view('Admin.semilleros.show', compact('semillero'));
+    $tbl = 'semilleros';
+
+    // 2) Resolver nombres reales de columnas según tu esquema
+    $idCol     = Schema::hasColumn($tbl,'id_semillero') ? 'id_semillero' : 'id';
+    $colNombre = Schema::hasColumn($tbl,'nombre') ? 'nombre'
+                : (Schema::hasColumn($tbl,'nombre_semillero') ? 'nombre_semillero' : null);
+    $colLinea  = Schema::hasColumn($tbl,'linea_investigacion') ? 'linea_investigacion'
+                : (Schema::hasColumn($tbl,'línea_investigación') ? 'línea_investigación' : null);
+    $colLider  = Schema::hasColumn($tbl,'id_lider_semi') ? 'id_lider_semi'
+                : (Schema::hasColumn($tbl,'id_lider_usuario') ? 'id_lider_usuario' : null);
+
+    // 3) (Opcional) Evitar que el mismo líder quede en dos semilleros
+    if (!empty($data['id_lider_semi']) && $colLider) {
+        $ocupado = DB::table($tbl)
+            ->where($colLider, $data['id_lider_semi'])
+            ->where($idCol, '<>', $id)
+            ->exists();
+
+        if ($ocupado) {
+            return back()
+                ->withErrors(['id_lider_semi' => 'Ese líder ya tiene un semillero asignado.'])
+                ->withInput();
+        }
+    }
+
+    // 4) Armar update
+    $update = [];
+    if ($colNombre) $update[$colNombre] = $data['nombre'];
+    if ($colLinea)  $update[$colLinea]  = $data['linea_investigacion'];
+    if ($colLider)  $update[$colLider]  = $data['id_lider_semi'] ?? null;
+
+    if (Schema::hasColumn($tbl,'updated_at'))     $update['updated_at']     = now();
+    if (Schema::hasColumn($tbl,'actualizado_en')) $update['actualizado_en'] = now();
+
+    DB::table($tbl)->where($idCol, $id)->update($update);
+
+    return back()->with('success', 'Semillero actualizado correctamente.');
 }
 
     

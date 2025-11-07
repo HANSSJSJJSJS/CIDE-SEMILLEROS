@@ -193,14 +193,19 @@
 </script>
 
 @push('scripts')
-  {{-- Archivos comunes del calendario --}}
-  <script src="{{ asset('calendario-state.js') }}?v={{ $v }}"></script>
-  <script src="{{ asset('calendario-views.js') }}?v={{ $v }}"></script>
-  <script src="{{ asset('calendario-drag.js') }}?v={{ $v }}"></script>
-  <script src="{{ asset('calendario-wizard.js') }}?v={{ $v }}"></script>
+  {{-- Archivos comunes del calendario (ubicados en public/js) --}}
+  <script src="{{ asset('js/calendario-state.js') }}?v={{ $v }}"></script>
+  <script src="{{ asset('js/calendario-views.js') }}?v={{ $v }}"></script>
+  <script src="{{ asset('js/calendario-drag.js') }}?v={{ $v }}"></script>
+  <script src="{{ asset('js/calendario-wizard.js') }}?v={{ $v }}"></script>
+  {{-- Si usas calendario.js también, inclúyelo así: --}}
+  {{-- <script src="{{ asset('js/calendario.js') }}?v={{ $v }}"></script> --}}
 
   {{-- Script del módulo Admin --}}
   <script src="{{ asset('js/Admin/reuniones.js') }}?v={{ $v }}" defer></script>
 @endpush
+
+
+
 
 @endsection
