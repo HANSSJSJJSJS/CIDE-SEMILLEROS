@@ -38,8 +38,8 @@
         <div>
           <strong>Líder del semillero:</strong>
           @if($semillero->lider)
-            {{ trim($semillero->lider->nombres.' '.$semillero->lider->apellidos) }}
-            <span class="text-muted"> · {{ $semillero->lider->correo_institucional }}</span>
+            {{ trim(($semillero->lider->nombres ?? '').' '.($semillero->lider->apellidos ?? '')) }}
+            <span class="text-muted"> · {{ $semillero->lider->correo_institucional ?? '' }}</span>
           @else
             <em>Sin asignar</em>
           @endif
@@ -94,12 +94,29 @@
               <td>{{ optional($p->fecha_fin)->format('Y-m-d') ?? '—' }}</td>
               <td class="text-truncate" style="max-width:360px;">{{ $p->descripcion }}</td>
               <td class="text-end pe-3">
+
+                {{-- Ver detalle --}}
+                <a href="{{ route('admin.semilleros.proyectos.detalle', [$semillero->id_semillero, $p->id_proyecto]) }}"
+                   class="btn btn-sm btn-outline-info">
+                  <i class="bi bi-eye"></i> Ver detalle
+                </a>
+
+                {{-- Editar (dejado como demo; si deseas, lo conectamos por AJAX) --}}
                 <button class="btn btn-sm btn-outline-primary" disabled>
                   <i class="bi bi-pencil-square"></i> Editar
                 </button>
-                <button class="btn btn-sm btn-outline-danger" disabled>
-                  <i class="bi bi-trash"></i> Eliminar
-                </button>
+
+                {{-- Eliminar --}}
+                <form action="{{ route('admin.semilleros.proyectos.destroy', [$semillero->id_semillero, $p->id_proyecto]) }}"
+                      method="POST" class="d-inline-block"
+                      onsubmit="return confirm('¿Seguro que deseas eliminar este proyecto?');">
+                  @csrf
+                  @method('DELETE')
+                  <button class="btn btn-sm btn-outline-danger" type="submit">
+                    <i class="bi bi-trash"></i> Eliminar
+                  </button>
+                </form>
+
               </td>
             </tr>
           @empty

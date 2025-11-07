@@ -79,4 +79,27 @@ class ProyectoSemilleroController extends Controller
 
         return redirect()->route('admin.semilleros.proyectos.index', $id);
     }
+
+    // GET /admin/semilleros/{semillero}/proyectos/{proyecto}/detalle
+public function detalle(Semillero $semillero, Proyecto $proyecto)
+{
+    // === MOCK de datos para vista previa (reemplaza con tus relaciones reales luego) ===
+    $integrantes = collect([
+        (object)['nombre'=>'Ana Pérez','correo'=>'ana.perez@example.com','telefono'=>'3001234567'],
+        (object)['nombre'=>'Carlos Gómez','correo'=>'carlos.gomez@example.com','telefono'=>'3107654321'],
+        (object)['nombre'=>'Sofía Rodríguez','correo'=>'sofia.rod@example.com','telefono'=>'3159876543'],
+    ]);
+
+    $documentacion = collect([
+        (object)['nombre'=>'Acta de inicio.pdf','fecha'=>'2025-10-03'],
+        (object)['nombre'=>'Informe parcial.docx','fecha'=>'2025-11-01'],
+    ]);
+
+    $observaciones = "El proyecto avanza correctamente; fortalecer la documentación técnica.";
+
+    return view('Admin.semilleros.detalle_proyecto',
+        compact('semillero','proyecto','integrantes','documentacion','observaciones')
+    );
+}
+
 }

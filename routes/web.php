@@ -15,13 +15,13 @@ use App\Http\Controllers\GrupoInvestigacionController;
 // Admin (alias correctos)
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UsuarioController as AdminUsuarioController;
-use App\Http\Controllers\Admin\SemilleroController as AdminSemilleroController;
+use App\Http\Controllers\Admin\PerfilController as AdminPerfilController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
+
+use App\Http\Controllers\Admin\SemilleroController;              // ← sin alias
+use App\Http\Controllers\Admin\ProyectoSemilleroController;
 use App\Http\Controllers\Admin\ReunionesLideresController;
 use App\Http\Controllers\Admin\RecursoController;
-use App\Http\Controllers\Admin\PerfilController as AdminPerfilController;
-use App\Http\Controllers\Admin\ProyectoSemilleroController;
-use App\Http\Controllers\Admin\SemilleroController;
 
 // Líder semillero
 use App\Http\Controllers\LiderSemillero\SemilleroController as LiderSemilleroUIController;
@@ -96,11 +96,9 @@ Route::middleware(['auth'])->group(function () {
         ->whereNumber('semillero')->name('lider_semi.semilleros.aprendices.update');
 });
 
-/*
-|--------------------------------------------------------------------------
-| ADMIN (ÚNICO BLOQUE CONSOLIDADO)
-|--------------------------------------------------------------------------
-*/
+// ======================================================
+//                  RUTAS ADMIN
+// ======================================================
 Route::middleware(['auth', 'role:ADMIN'])
     ->prefix('admin')
     ->name('admin.')
@@ -115,13 +113,14 @@ Route::middleware(['auth', 'role:ADMIN'])
         Route::resource('usuarios', AdminUsuarioController::class);
         Route::get('/usuarios/{id}/edit-ajax', [AdminUsuarioController::class, 'editAjax'])
             ->whereNumber('id')->name('usuarios.edit.ajax');
-        Route::post('/usuarios/ajax/store', [AdminUsuarioController::class, 'storeAjax'])->name('usuarios.store.ajax');
+        Route::post('/usuarios/ajax/store', [AdminUsuarioController::class, 'storeAjax'])
+            ->name('usuarios.store.ajax');
 
         // FUNCIONES ADMIN
         Route::get('/funciones', [AdminController::class, 'index'])->name('functions');
         Route::get('/crear', fn () => view('admin.crear'))->name('crear');
 
-        // SEMILLEROS – primero endpoints específicos
+        // SEMILLEROS
         Route::get('/semilleros/lideres-disponibles', [SemilleroController::class, 'lideresDisponibles'])
             ->name('semilleros.lideres-disponibles');
 
@@ -129,14 +128,34 @@ Route::middleware(['auth', 'role:ADMIN'])
 
         // PROYECTOS POR SEMILLERO
         Route::prefix('semilleros')->name('semilleros.')->group(function () {
-            Route::get('{semillero}/proyectos', [ProyectoSemilleroController::class, 'index'])
+
+            // Listar y crear proyectos
+            Route::get('{semillero}/proyectos',  [ProyectoSemilleroController::class, 'index'])
                 ->name('proyectos.index');
             Route::post('{semillero}/proyectos', [ProyectoSemilleroController::class, 'store'])
                 ->name('proyectos.store');
+
+            // Detalle de proyecto (👁️ botón "Ver detalle")
+            Route::scopeBindings()->group(function () {
+                Route::get('{semillero}/proyectos/{proyecto}/detalle',
+                    [ProyectoSemilleroController::class, 'detalle']
+                )->name('proyectos.detalle');
+
+                // (Opcional) habilitar edición/eliminación desde la tabla
+                Route::put('{semillero}/proyectos/{proyecto}',
+                    [ProyectoSemilleroController::class, 'update']
+                )->name('proyectos.update');
+
+                Route::delete('{semillero}/proyectos/{proyecto}',
+                    [ProyectoSemilleroController::class, 'destroy']
+                )->name('proyectos.destroy');
+            });
         });
 
         // REUNIONES DE LÍDERES
-        Route::get('/reuniones-lideres', [ReunionesLideresController::class, 'index'])->name('reuniones-lideres.index');
+        Route::get('/reuniones-lideres', [ReunionesLideresController::class, 'index'])
+            ->name('reuniones-lideres.index');
+
         Route::prefix('reuniones-lideres')->as('reuniones-lideres.')->group(function () {
             Route::get('obtener',    [ReunionesLideresController::class, 'obtener'])->name('obtener');
             Route::get('semilleros', [ReunionesLideresController::class, 'semilleros'])->name('semilleros');
