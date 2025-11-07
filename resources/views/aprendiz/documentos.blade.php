@@ -32,7 +32,7 @@
     {{-- Formulario para subir documentos --}}
     <div class="row mb-4">
         <div class="col-md-6">
-            <div class="card shadow-sm">
+            <div class="card shadow-sm upload-card">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="fas fa-cloud-upload-alt"></i> Subir Nuevo Documento</h5>
                 </div>

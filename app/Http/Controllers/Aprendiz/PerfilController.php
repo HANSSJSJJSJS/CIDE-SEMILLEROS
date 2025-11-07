@@ -54,6 +54,6 @@ class PerfilController extends Controller
         $user->email = $request->email;
         $user->save();
 
-        return redirect()->route('aprendiz.perfil')->with('success', 'Perfil actualizado correctamente.');
+        return redirect()->route('aprendiz.perfil.show')->with('success', 'Perfil actualizado correctamente.');
     }
 }

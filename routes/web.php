@@ -313,4 +313,5 @@ Route::middleware(['auth', 'role:APRENDIZ'])
 
         // Calendario
         Route::get('/calendario', [CalendarioController::class, 'index'])->name('calendario.index');
+        Route::get('/calendario/events', [CalendarioController::class, 'events'])->name('calendario.events');
     });

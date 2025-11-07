@@ -10,89 +10,44 @@
 @endpush
 
 @section('content')
-    <div class="container py-2">
-        <div class="row">
+    <div class="container-xxl py-4 perfil-page">
+        <div class="row justify-content-center">
             <!-- Contenido Principal -->
-            <div class="col-md-9">
-                <div class="profile-section">
-                    <h2 class="mb-3">Mi Perfil</h2>
-                    <p class="text-muted mb-4">Información personal y académica</p>
+            <div class="col-12 col-lg-10 col-xl-9">
+                <div class="glass-box p-4 p-md-5">
 
-                    <form>
-                        <div class="mb-3">
-                            <label class="form-label">Nombre Completo</label>
-                            <input type="text" class="form-control" value="{{ Auth::user()->name }}" disabled>
+                    @if(session('success'))
+                        <div class="alert alert-success fw-semibold">{{ session('success') }}</div>
+                    @endif
+                    @if(session('error'))
+                        <div class="alert alert-danger fw-semibold">{{ session('error') }}</div>
+                    @endif
+
+                    <form method="POST" action="{{ route('aprendiz.perfil.update') }}">
+                        @csrf
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Nombre completo</label>
+                            <input type="text" name="name" class="form-control pill-input @error('name') is-invalid @enderror" value="{{ old('name', Auth::user()->name) }}" required>
+                            @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Correo Electrónico</label>
-                            <input type="email" class="form-control" value="{{ Auth::user()->email }}" disabled>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Correo Electrónico</label>
+                            <input type="email" name="email" class="form-control pill-input @error('email') is-invalid @enderror" value="{{ old('email', Auth::user()->email) }}" required>
+                            @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Programa de Formación</label>
-                            <input type="text" class="form-control" value="Semillero SENA" disabled>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Programa de Formación</label>
+                            <input type="text" class="form-control pill-input" value="{{ $aprendiz->programa ?? 'Semillero SENA' }}" disabled>
                         </div>
 
-                        @if(isset($aprendiz->estado))
-                            @if($aprendiz->estado === 'Activo')
-                                <div class="alert alert-success text-center fw-bold">
-                 Estado: HABILITADO EN EL SÍSTEMA
-            </div>
-        @else
-            <div class="alert alert-danger text-center fw-bold">
-                Estado: INHABILITADO EN EL SÍSTEMA
-            </div>
-        @endif
-    @else
-        <div class="alert alert-secondary text-center fw-bold">
-            Estado NO DISPONIBLE EN EL SÍSTEMA
-        </div>
-    @endif
-
+                        <div class="mt-3">
+                            <button class="btn btn-success btn-pill px-4 fw-semibold" type="submit">Guardar cambios</button>
+                        </div>
                     </form>
 
-                    <button type="button" class="btn btn-primary edit-profile-btn" data-bs-toggle="modal" data-bs-target="#editProfileModal">
-                        Editar Perfil
-                    </button>
-
-                    <!-- Modal de edición de perfil -->
-                    <div class="modal fade modal-sena" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="editProfileModalLabel">Editar Perfil</h5>
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <form id="editProfileForm" method="POST" action="{{ route('aprendiz.perfil.update') }}">
-                                        @csrf
-                                        <div class="mb-3">
-                                            <label class="form-label">Nombre Completo</label>
-                                            <input type="text" class="form-control" name="name" value="{{ old('name', Auth::user()->name) }}" required>
-                                            @error('name') <small class="text-danger">{{ $message }}</small> @enderror
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <label class="form-label">Correo Electrónico</label>
-                                            <input type="email" class="form-control" name="email" value="{{ old('email', Auth::user()->email) }}" required>
-                                            @error('email') <small class="text-danger">{{ $message }}</small> @enderror
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <label class="form-label">Programa de Formación</label>
-                                            <input type="text" class="form-control" name="programa_formacion" value="Semillero SENA" disabled>
-                                        </div>
-
-                                        <div class="d-flex justify-content-end gap-2">
-                                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                            <button type="submit" class="btn btn-sena">Actualizar Perfil</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    
 
                 </div>
             </div>
@@ -101,13 +56,4 @@
 @endsection
 
 @push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-    const hasErrors = {!! json_encode($errors->any() ?? false) !!};
-    if (hasErrors) {
-        const modalEl = document.getElementById('editProfileModal');
-        if (modalEl) new bootstrap.Modal(modalEl).show();
-    }
-});
-</script>
 @endpush

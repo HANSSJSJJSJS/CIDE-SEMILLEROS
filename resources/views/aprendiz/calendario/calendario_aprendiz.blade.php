@@ -40,6 +40,8 @@
                     Tienes reuniones virtuales próximas.
                 </div>
 
+                
+
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <div id='calendar'></div>
@@ -90,7 +92,6 @@
     @php
         $events = ($reuniones ?? collect())
             ->map(function($r){
-                // color por tipo
                 $tipo = $r->tipo ?? null;
                 $colorMap = [
                     'planificacion' => '#2563eb',
@@ -128,6 +129,34 @@
     const reuniones = @json($events);
 
     document.addEventListener('DOMContentLoaded', function() {
+        const selProyecto = document.getElementById('filtroProyecto');
+        const selTipo = document.getElementById('filtroTipo');
+        const proyectos = Array.from(new Set((reuniones||[]).map(e=>e.extendedProps?.proyecto).filter(Boolean))).sort();
+        const tipos = Array.from(new Set((reuniones||[]).map(e=>e.extendedProps?.tipo).filter(Boolean))).sort();
+        proyectos.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; selProyecto.appendChild(o); });
+        tipos.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t.charAt(0).toUpperCase()+t.slice(1); selTipo.appendChild(o); });
+
+        function aplicarFiltros(){
+            const p = selProyecto.value || '';
+            const t = (selTipo.value || '').toLowerCase();
+            const filtrados = (reuniones||[]).filter(ev=>{
+                const okP = !p || (ev.extendedProps?.proyecto === p);
+                const okT = !t || (String(ev.extendedProps?.tipo||'').toLowerCase() === t);
+                return okP && okT;
+            });
+            calendar.removeAllEvents();
+            filtrados.forEach(ev=> calendar.addEvent(ev));
+        }
+        selProyecto.addEventListener('change', aplicarFiltros);
+        selTipo.addEventListener('change', aplicarFiltros);
+        document.getElementById('btnResetFiltros')?.addEventListener('click', (e)=>{
+            e.preventDefault();
+            selProyecto.value=''; selTipo.value=''; aplicarFiltros();
+        });
+        document.getElementById('btnAgenda')?.addEventListener('click', ()=>{
+            calendar.changeView('listWeek');
+        });
+
         const calendarEl = document.getElementById('calendar');
         let calendar;
         try{
@@ -135,11 +164,11 @@
             initialView: 'dayGridMonth',
             headerToolbar: {
                 left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+                center: '',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek title'
             },
             locale: 'es',
-            buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día', list: 'Agenda' },
+            buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día', list: 'Agenda', prev: 'Anterior', next: 'Siguiente' },
             height: 'auto',
             editable: false,
             selectable: false,
@@ -257,34 +286,6 @@
             calendarEl.replaceWith(warn);
             return;
         }
-
-        // Poblar filtros
-        const selProyecto = document.getElementById('filtroProyecto');
-        const selTipo = document.getElementById('filtroTipo');
-        const proyectos = Array.from(new Set((reuniones||[]).map(e=>e.extendedProps?.proyecto).filter(Boolean))).sort();
-        const tipos = Array.from(new Set((reuniones||[]).map(e=>e.extendedProps?.tipo).filter(Boolean))).sort();
-        proyectos.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; selProyecto.appendChild(o); });
-        tipos.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t.charAt(0).toUpperCase()+t.slice(1); selTipo.appendChild(o); });
-
-        function aplicarFiltros(){
-            const p = selProyecto.value || '';
-            const t = (selTipo.value || '').toLowerCase();
-            const filtrados = (reuniones||[]).filter(ev=>{
-                const okP = !p || (ev.extendedProps?.proyecto === p);
-                const okT = !t || (String(ev.extendedProps?.tipo||'').toLowerCase() === t);
-                return okP && okT;
-            });
-            calendar.removeAllEvents();
-            filtrados.forEach(ev=> calendar.addEvent(ev));
-        }
-        selProyecto.addEventListener('change', aplicarFiltros);
-        selTipo.addEventListener('change', aplicarFiltros);
-        document.getElementById('btnResetFiltros').addEventListener('click', ()=>{
-            selProyecto.value=''; selTipo.value=''; aplicarFiltros();
-        });
-        document.getElementById('btnAgenda').addEventListener('click', ()=>{
-            calendar.changeView('listWeek');
-        });
 
         // Notificación silenciosa de reuniones virtuales próximas (<30 min; urgente <=5 min)
         function actualizarNotificacionSilenciosaCal(){

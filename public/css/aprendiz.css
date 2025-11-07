@@ -91,6 +91,15 @@
   display:flex;flex-direction:column;min-height:100%;
   box-shadow:0 8px 24px rgba(16,24,40,.08) !important;
 }
+.project-topband{
+  background:#43A047; /* verde banda superior */
+  color:#fff;
+  border-radius:28px; /* esquinas grandes */
+  padding:20px 22px;
+  margin:16px 16px 8px; /* separada del borde del card */
+}
+.project-topband h5{color:#fff}
+.project-topband small{color:#eaf7ea}
 .project-card:hover{box-shadow:0 12px 28px rgba(16,24,40,.12);transform:translateY(-1px)}
 .project-head{
   background: transparent !important;
@@ -125,6 +134,37 @@
 .meta-title{font-size:.8rem;color:#64748b;font-weight:700;text-transform:uppercase}
 .btn-pill{border-radius:999px}
 
+/* Progreso redondeado */
+.progress.progress-rounded{height:12px;border-radius:999px;background:#e5e7eb}
+.progress.progress-rounded .progress-bar{border-radius:999px}
+
+/* Botones como en el mockup dentro de la tarjeta */
+.project-card .btn-success{background:#2BB673;border:0;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.project-card .btn-success:hover{filter:brightness(.95)}
+.project-card .btn-outline-success{background:#fff;border:2px solid #1f2937;color:#1f2937}
+.project-card .btn-outline-success:hover{background:#f3f4f6}
+
+/* ===== Tarjetas resumen: Mis Proyectos ===== */
+.stat-cards{margin-bottom:.25rem}
+.stat-card{
+  border-radius:20px !important;
+  border:0 !important;
+  height:120px;
+  box-shadow:0 6px 18px rgba(0,0,0,.10) !important;
+  color:#fff;
+}
+.stat-title{font-size:.9rem;font-weight:800;letter-spacing:.2px;margin-bottom:.25rem}
+.stat-value{font-size:2rem;font-weight:900;line-height:1}
+.stat-icon{font-size:2.25rem;opacity:.3;color:#fff}
+
+/* Variantes sólidas según referencia */
+.stat-card.stat-assigned{background:#2BB673 !important}
+.stat-card.stat-pending{background:#43A047 !important}
+.stat-card.stat-complete{background:#5B7A99 !important}
+
+/* En la tarjeta azul, usar texto casi blanco para contraste */
+.stat-card.stat-complete .stat-title,.stat-card.stat-complete .stat-value{color:#f8fafc}
+
 /* ===== Módulo: Subir Documentos (vista documentos.blade.php) ===== */
 .documentos-page .card{
   background: rgba(255,255,255,0.65) !important;
@@ -134,6 +174,7 @@
   backdrop-filter: blur(3px) !important;
   box-shadow:0 8px 24px rgba(16,24,40,.08) !important;
 }
+.documentos-page .card.upload-card{ border:2px solid #6b7280 !important; }
 .documentos-page .card-header{
   background: transparent !important;
   color:#0f172a !important;
@@ -148,11 +189,25 @@
   color:#0b1b2b;
   text-align:center;
   padding:16px;
+  border: 0;
 }
 .documentos-page .dropzone-box .dz-content{color:#0b1b2b}
 .documentos-page .dropzone-box .dz-content i{font-size:42px; display:block; margin-bottom:8px}
 .documentos-page .dropzone-input{
   position:absolute; inset:0; opacity:0; cursor:pointer;
+}
+
+/* Inputs con borde gris en este módulo */
+.documentos-page .form-select,
+.documentos-page .form-control{
+  border: 2px solid #6b7280 !important; /* gris medio */
+  border-radius: 12px !important;
+  background: #fff;
+}
+.documentos-page .form-select:focus,
+.documentos-page .form-control:focus{
+  border-color: #374151 !important; /* gris más fuerte al enfocar */
+  box-shadow: 0 0 0 0.12rem rgba(55,65,81,.12) !important;
 }
 
 /* Botones */
@@ -175,6 +230,33 @@
 main {
     margin-top: 0 !important;
 }
+
+/* ===== Módulo: Mi Perfil (Aprendiz) ===== */
+.perfil-page .glass-box{
+  background: rgba(255,255,255,0.35) !important;
+  -webkit-backdrop-filter: blur(2px) !important;
+  backdrop-filter: blur(2px) !important;
+  border:2px solid #6b7280 !important; /* gris medio */
+  box-shadow:0 6px 18px rgba(16,24,40,.06) !important;
+  border-radius:24px !important;
+}
+.perfil-page .form-label{font-weight:800;color:#0f172a}
+.perfil-page .pill-input{
+  border-radius:18px !important;
+  border:2px solid #6b7280 !important; /* gris medio */
+  background: rgba(255,255,255,0.20) !important;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  padding:.8rem 1rem;
+  height:auto;
+}
+.perfil-page .pill-input:focus{
+  border-color:#374151 !important; /* gris más fuerte al enfocar */
+  box-shadow:0 0 0 0.12rem rgba(55,65,81,.12) !important;
+}
+.perfil-page .pill-input::placeholder{color:#475569; opacity:.7}
+.perfil-page .pill-input:disabled{background: rgba(255,255,255,0.18) !important; opacity:1}
+.perfil-page .alert{border-radius:14px}
 
 /* Elimina separación extra del header */
 .header-bar {

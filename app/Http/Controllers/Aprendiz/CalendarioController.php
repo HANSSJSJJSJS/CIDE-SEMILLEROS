@@ -130,6 +130,110 @@ class CalendarioController extends Controller
         return view('aprendiz.calendario.calendario_aprendiz', compact('reuniones'));
     }
 
+    public function events()
+    {
+        $user = Auth::user();
+        if (!$user || !Schema::hasTable('eventos')) {
+            return response()->json([]);
+        }
+
+        // Obtener IDs de proyectos del usuario
+        $ids = $this->proyectoIdsUsuario((int)$user->id);
+        $proyectosIds = collect($ids);
+
+        $query = Evento::query()->with([
+            'proyecto:id_proyecto,nombre_proyecto',
+            'lider:id,name'
+        ]);
+
+        $uid = $user->id;
+        $hasEventoUsuario = Schema::hasColumn('eventos','id_usuario');
+        $hasEventoLider = Schema::hasColumn('eventos','id_lider');
+        $query->where(function ($q) use ($uid, $proyectosIds, $hasEventoUsuario, $hasEventoLider) {
+            $q->whereRaw('1=0');
+            if ($hasEventoUsuario) { $q->orWhere('id_usuario', $uid); }
+            if ($hasEventoLider) { $q->orWhere('id_lider', $uid); }
+            if ($proyectosIds->isNotEmpty()) { $q->orWhereIn('id_proyecto', $proyectosIds); }
+        })->orWhereExists(function ($sub) use ($uid) {
+            $aprendizIdsPivot = [$uid];
+            if (Schema::hasTable('aprendices')) {
+                $aprPkCols = [];
+                if (Schema::hasColumn('aprendices','id_aprendiz')) { $aprPkCols[] = 'id_aprendiz'; }
+                if (Schema::hasColumn('aprendices','id')) { $aprPkCols[] = 'id'; }
+                $aprId = null;
+                if (Schema::hasColumn('aprendices','id_usuario')) {
+                    foreach ($aprPkCols as $pk) { $aprId = DB::table('aprendices')->where('id_usuario', $uid)->value($pk); if (!is_null($aprId)) break; }
+                } elseif (Schema::hasColumn('aprendices','user_id')) {
+                    foreach ($aprPkCols as $pk) { $aprId = DB::table('aprendices')->where('user_id', $uid)->value($pk); if (!is_null($aprId)) break; }
+                }
+                if (!is_null($aprId)) { $aprendizIdsPivot[] = $aprId; }
+            }
+            $sub->from('evento_participantes as ep')
+                ->whereColumn('ep.id_evento', 'eventos.id_evento')
+                ->whereIn('ep.id_aprendiz', $aprendizIdsPivot);
+        });
+
+        $eventos = $query->select('eventos.*')->orderBy('fecha_hora', 'asc')->get()->unique('id_evento')->values();
+
+        // Participantes (nombres)
+        $participantesPorEvento = collect();
+        if (Schema::hasTable('evento_participantes') && Schema::hasTable('aprendices') && $eventos->isNotEmpty()) {
+            $ids = $eventos->pluck('id_evento')->filter()->values();
+            $hasNombreCompleto = Schema::hasColumn('aprendices', 'nombre_completo');
+            $nameExpr = $hasNombreCompleto
+                ? 'aprendices.nombre_completo'
+                : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
+            $joinCol = null;
+            foreach (['id_usuario','user_id','id_aprendiz','id'] as $cand) {
+                if (Schema::hasColumn('aprendices', $cand)) { $joinCol = $cand; break; }
+            }
+            $rows = DB::table('evento_participantes')
+                ->join('aprendices', DB::raw('aprendices.' . $joinCol), '=', 'evento_participantes.id_aprendiz')
+                ->whereIn('evento_participantes.id_evento', $ids)
+                ->select('evento_participantes.id_evento', DB::raw($nameExpr.' as nombre'))
+                ->get();
+            $participantesPorEvento = $rows->groupBy('id_evento')->map(fn($g)=> $g->pluck('nombre')->filter()->values()->all());
+        }
+
+        // Mapear a formato FullCalendar
+        $events = $eventos->map(function($e) use ($participantesPorEvento){
+            $tipo = $e->tipo ?? null;
+            $colorMap = [
+                'planificacion' => '#2563eb',
+                'seguimiento'   => '#16a34a',
+                'revision'      => '#9333ea',
+                'capacitacion'  => '#fb923c',
+                'general'       => '#0ea5e9',
+            ];
+            $bg = $colorMap[strtolower((string)$tipo)] ?? '#0ea5e9';
+            $eid = $e->id_evento ?? $e->id ?? null;
+            $rawLink = trim((string)($e->link_virtual ?? ''));
+            $placeholders = ['n/a','na','no','no aplica','no aplica.','no aplica,','no aplica ','s/n','sn','-'];
+            $link = $rawLink !== '' && !in_array(strtolower($rawLink), $placeholders, true) ? $rawLink : null;
+            return [
+                'id'    => $eid,
+                'title' => ($e->titulo ?? 'Reunión') . (isset($e->proyecto) ? ' · ' . (optional($e->proyecto)->nombre_proyecto ?? '') : ''),
+                'start' => $e->fecha_hora ? $e->fecha_hora->format('Y-m-d\TH:i:s') : null,
+                'end'   => null,
+                'backgroundColor' => $bg,
+                'borderColor' => $bg,
+                'textColor' => '#fff',
+                'extendedProps' => [
+                    'lider'      => optional($e->lider)->name,
+                    'proyecto'   => optional($e->proyecto)->nombre_proyecto,
+                    'descripcion'=> $e->descripcion ?? '',
+                    'tipo'       => $tipo,
+                    'ubicacion'  => $e->ubicacion ?? null,
+                    'link'       => $link,
+                    'codigo'     => $e->codigo_reunion ?? null,
+                    'participantes' => $participantesPorEvento->get($eid, []),
+                ],
+            ];
+        })->values();
+
+        return response()->json($events);
+    }
+
     private function proyectoIdsUsuario(int $userId): array
     {
         // Intentar con pivotes conocidas
