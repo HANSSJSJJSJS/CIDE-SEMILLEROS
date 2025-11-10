@@ -101,5 +101,22 @@ public function detalle(Semillero $semillero, Proyecto $proyecto)
         compact('semillero','proyecto','integrantes','documentacion','observaciones')
     );
 }
+public function editAjax(Semillero $semillero, Proyecto $proyecto)
+{
+    // seguridad: que el proyecto pertenezca al semillero
+    if ($proyecto->id_semillero !== $semillero->id_semillero) {
+        abort(404);
+    }
+
+    return response()->json([
+        'id_proyecto'     => $proyecto->id_proyecto,
+        'nombre_proyecto' => $proyecto->nombre_proyecto,
+        'descripcion'     => $proyecto->descripcion,
+        'estado'          => $proyecto->estado,
+        'fecha_inicio'    => optional($proyecto->fecha_inicio)->format('Y-m-d'),
+        'fecha_fin'       => optional($proyecto->fecha_fin)->format('Y-m-d'),
+    ]);
+}
+
 
 }
