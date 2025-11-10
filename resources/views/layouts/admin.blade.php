@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>@yield('title','Panel del Administrador')</title>
-  <link rel="icon" type="image/png" href="{{ asset('images/logo-sena.png') }}">
+  <link rel="icon" type="image/png" href="{{ asset('images/logo_pestaña.png') }}">
 
 
   {{-- Librerías externas --}}
