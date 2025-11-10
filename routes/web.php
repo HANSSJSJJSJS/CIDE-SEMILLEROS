@@ -126,32 +126,36 @@ Route::middleware(['auth', 'role:ADMIN'])
             ->name('semilleros.lideres-disponibles');
 
         Route::resource('semilleros', SemilleroController::class);
+   // PROYECTOS POR SEMILLERO
+Route::prefix('semilleros')->name('semilleros.')->group(function () {
 
-        // PROYECTOS POR SEMILLERO
-        Route::prefix('semilleros')->name('semilleros.')->group(function () {
+    // Listar y crear
+    Route::get('{semillero}/proyectos',  [ProyectoSemilleroController::class, 'index'])
+        ->name('proyectos.index');
+    Route::post('{semillero}/proyectos', [ProyectoSemilleroController::class, 'store'])
+        ->name('proyectos.store');
 
-            // Listar y crear proyectos
-            Route::get('{semillero}/proyectos',  [ProyectoSemilleroController::class, 'index'])
-                ->name('proyectos.index');
-            Route::post('{semillero}/proyectos', [ProyectoSemilleroController::class, 'store'])
-                ->name('proyectos.store');
+    // Anidadas con pertenencia
+    Route::scopeBindings()->group(function () {
+        Route::get('{semillero}/proyectos/{proyecto}/json',
+            [ProyectoSemilleroController::class,'editAjax']
+        )->name('proyectos.edit.json');
 
-            // Detalle de proyecto (👁️ botón "Ver detalle")
-            Route::scopeBindings()->group(function () {
-                Route::get('{semillero}/proyectos/{proyecto}/detalle',
-                    [ProyectoSemilleroController::class, 'detalle']
-                )->name('proyectos.detalle');
+        Route::get('{semillero}/proyectos/{proyecto}/detalle',
+            [ProyectoSemilleroController::class, 'detalle']
+        )->name('proyectos.detalle');
 
-                // (Opcional) habilitar edición/eliminación desde la tabla
-                Route::put('{semillero}/proyectos/{proyecto}',
-                    [ProyectoSemilleroController::class, 'update']
-                )->name('proyectos.update');
+        Route::put('{semillero}/proyectos/{proyecto}',
+            [ProyectoSemilleroController::class, 'update']
+        )->name('proyectos.update');
 
-                Route::delete('{semillero}/proyectos/{proyecto}',
-                    [ProyectoSemilleroController::class, 'destroy']
-                )->name('proyectos.destroy');
-            });
-        });
+        Route::delete('{semillero}/proyectos/{proyecto}',
+            [ProyectoSemilleroController::class, 'destroy']
+        )->name('proyectos.destroy');
+    });
+});
+
+
 
         // REUNIONES DE LÍDERES
         Route::get('/reuniones-lideres', [ReunionesLideresController::class, 'index'])
