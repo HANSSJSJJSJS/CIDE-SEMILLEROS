@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;           
 use App\Models\Semillero;
 use App\Models\Proyecto;
-
+use App\Models\DocumentoProyecto; 
 class ProyectoSemilleroController extends Controller
 {
     public function index(Semillero $semillero)

@@ -1,3 +1,4 @@
+
 <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
         <a href="{{ url('/') }}" class="font-semibold text-gray-800 dark:text-gray-100">

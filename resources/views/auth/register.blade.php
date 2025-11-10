@@ -1,6 +1,7 @@
 {{-- resources/views/auth/register.blade.php --}}
 <x-guest-layout>
     {{-- AlpineJS para dinamismo --}}
+    
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>[x-cloak]{display:none!important}</style>
 

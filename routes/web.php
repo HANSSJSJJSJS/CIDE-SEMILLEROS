@@ -152,6 +152,11 @@ Route::prefix('semilleros')->name('semilleros.')->group(function () {
         Route::delete('{semillero}/proyectos/{proyecto}',
             [ProyectoSemilleroController::class, 'destroy']
         )->name('proyectos.destroy');
+        // Descargar documento
+        Route::get('{semillero}/proyectos/{proyecto}/docs/{doc}',
+            [ProyectoSemilleroController::class, 'download']
+        )->name('proyectos.docs.download');
+
     });
 });
 
