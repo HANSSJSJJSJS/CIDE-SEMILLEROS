@@ -48,7 +48,7 @@
         </div>
     </div>
 
-    
+
                 <!-- Steps -->
                 <div class="steps-section">
                     <h5 class="mb-3">Próximos Pasos</h5>

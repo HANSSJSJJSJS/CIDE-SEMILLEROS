@@ -134,6 +134,17 @@
 .meta-title{font-size:.8rem;color:#64748b;font-weight:700;text-transform:uppercase}
 .btn-pill{border-radius:999px}
 
+.adm-sidebar{background:var(--sena-navy)!important;color:#dbe7ee}
+.adm-sidebar .nav-link{color:#dbe7ee;border-radius:12px;padding:10px 12px}
+.adm-sidebar .nav-link:hover{background:rgba(255,255,255,.06)}
+.adm-sidebar .nav-link.active{background:#eef9f3;color:#0b3b52;font-weight:700}
+
+/* Topbar azul oscuro unificado en módulos de Aprendiz */
+.adm-topbar{background:var(--sena-navy)!important;color:#fff}
+.adm-topbar .title-green{color:#43A047!important;font-weight:800}
+.adm-topbar .avatar{background:#0e3f57;color:#fff}
+.adm-topbar .btn{border-radius:9999px}
+
 /* Progreso redondeado */
 .progress.progress-rounded{height:12px;border-radius:999px;background:#e5e7eb}
 .progress.progress-rounded .progress-bar{border-radius:999px}
@@ -158,9 +169,9 @@
 .stat-icon{font-size:2.25rem;opacity:.3;color:#fff}
 
 /* Variantes sólidas según referencia */
-.stat-card.stat-assigned{background:#2BB673 !important}
-.stat-card.stat-pending{background:#43A047 !important}
-.stat-card.stat-complete{background:#5B7A99 !important}
+.stat-card.stat-assigned{background: rgba(67,160,71,0.75) !important; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); border:1px solid rgba(56,134,60,0.35) !important}
+.stat-card.stat-pending{background: rgba(67,160,71,0.75) !important; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); border:1px solid rgba(56,134,60,0.35) !important}
+.stat-card.stat-complete{background: rgba(67,160,71,0.75) !important; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); border:1px solid rgba(56,134,60,0.35) !important}
 
 /* En la tarjeta azul, usar texto casi blanco para contraste */
 .stat-card.stat-complete .stat-title,.stat-card.stat-complete .stat-value{color:#f8fafc}

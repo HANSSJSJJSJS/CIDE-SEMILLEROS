@@ -130,7 +130,12 @@
 /* Alinear bordes con las tarjetas superiores (gx-4 => 1.5rem, mitad = 0.75rem) */
 @media (min-width: 768px){
   .meetings-section{
-    margin-left: -0.75rem;
-    margin-right: -0.75rem;
+    margin-left: -0.70rem;
+    margin-right: -0.70rem;
+  }
+  /* Igualar ancho de 'Próximos pasos' al de las tarjetas superiores */
+  .steps-section{
+    margin-left: -0.70rem;
+    margin-right: -0.70rem;
   }
 }

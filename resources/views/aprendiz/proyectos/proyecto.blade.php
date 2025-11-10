@@ -12,6 +12,33 @@
   <div class="row gx-4">
     <!-- Main content -->
     <main class="col-12">
+      <!-- Tarjetas resumen -->
+      <div class="stat-cards row g-3 mb-2">
+        <div class="col-12 col-md-4">
+          <div class="stat-card stat-assigned d-flex flex-column justify-content-between p-3 h-100">
+            <div class="stat-title">Proyectos Asignados</div>
+            <div class="d-flex align-items-end justify-content-between">
+              <div class="stat-value">{{ $countProyectos ?? 0 }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="stat-card stat-pending d-flex flex-column justify-content-between p-3 h-100">
+            <div class="stat-title">Pendientes</div>
+            <div class="d-flex align-items-end justify-content-between">
+              <div class="stat-value">{{ $countPendientes ?? 0 }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="stat-card stat-complete d-flex flex-column justify-content-between p-3 h-100">
+            <div class="stat-title">Completos</div>
+            <div class="d-flex align-items-end justify-content-between">
+              <div class="stat-value">{{ $countCompletos ?? 0 }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
       
 
       <div class="mt-4">
