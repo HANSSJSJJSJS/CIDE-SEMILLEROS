@@ -62,10 +62,10 @@ class DocumentoController extends Controller
             'descripcion' => 'nullable|string|max:255',
         ]);
         
-        // Verificar que el aprendiz está asignado al proyecto
-        $asignado = DB::table('documentos')
+        // Verificar que el usuario (aprendiz) está asignado al proyecto mediante el pivot proyecto_user
+        $asignado = DB::table('proyecto_user')
+            ->where('user_id', $userId)
             ->where('id_proyecto', $request->id_proyecto)
-            ->where('id_aprendiz', $aprendiz->id_aprendiz)
             ->exists();
         
         if (!$asignado) {
@@ -119,10 +119,11 @@ class DocumentoController extends Controller
             return back()->with('error', 'El archivo no existe en el servidor');
         }
         
-        return Storage::disk('public')->download(
-            $documento->ruta_archivo,
-            basename($documento->ruta_archivo)
-        );
+        $absPath = storage_path('app/public/'.$documento->ruta_archivo);
+        if (!file_exists($absPath)) {
+            return back()->with('error', 'El archivo no existe en el servidor');
+        }
+        return response()->download($absPath, basename($documento->ruta_archivo));
     }
     
     /**

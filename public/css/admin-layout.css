@@ -27,12 +27,20 @@
 }
 
 /* Brand (logo + nombre del sistema) */
-.adm-sidebar .adm-brand{ display:flex; align-items:center; gap:12px; padding-bottom:16px; border-bottom:1px solid rgba(255,255,255,.08); }
+.adm-sidebar .adm-brand{
+  display:flex; align-items:center; gap:12px;
+  padding-bottom:16px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
 .brand-logo{ width:42px; height:42px; object-fit:contain; }
 .brand-system{ font-size:.95rem; color:#cfe6ff; }
 
 /* Variante “brand grande” apilada (logo arriba, texto abajo) */
-.brand-large{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:8px 6px 14px; border-bottom:1px solid rgba(255,255,255,.08); }
+.brand-large{
+  display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px;
+  padding:8px 6px 14px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
 .brand-logo-lg{ width:86px; height:86px; object-fit:contain; }
 .brand-system-lg{ font-size:1.08rem; line-height:1.2; color:#eaf3ff; font-weight:700; }
 
@@ -44,6 +52,7 @@
   border-radius:14px;
   padding:10px;
   box-shadow: 0 6px 18px rgba(0,0,0,.12) inset;
+  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }
 .adm-nav{ display:flex; flex-direction:column; gap:6px; margin-top:8px; }
@@ -51,7 +60,7 @@
   display:flex; align-items:center; gap:10px;
   color:#e6eef7; text-decoration:none;
   padding:10px 12px; border-radius:10px;
-  transition:.15s background,.15s color;
+  transition: .15s background, .15s color;
 }
 .menu-card .nav-link:hover{ background:rgba(255,255,255,.12); color:#fff; }
 .menu-card .nav-link.active{
@@ -85,11 +94,24 @@
 .adm-page-head{ margin:4px 4px 16px; }
 .page-title{ margin:0; font-size:1.6rem; font-weight:800; }
 .page-subtitle{ margin:6px 0 0; color:var(--muted); }
+.adm-content{ background:#f7f9fc; min-height:100vh; display:flex; flex-direction:column; }
+.adm-page{ position:relative; padding:20px; isolation:isolate; z-index:0; flex:1; }
+.adm-page::before{
+  content:""; position:absolute; top:0; right:0; bottom:0; left:0; z-index:-1;
+  background:url("../images/bg-semillero.png") no-repeat center 80px / 900px auto;
+  opacity:.18; pointer-events:none;
+}
+.adm-page-head{ margin:4px 4px 16px; }
+.page-title{ margin:0; font-size:1.6rem; font-weight:800; }
+.page-subtitle{ margin:6px 0 0; color:var(--muted); }
 
 /* ---------- Responsive layout ---------- */
 @media (max-width: 991.98px){
   .adm-shell{ grid-template-columns:1fr; }
-  .adm-sidebar{ position:fixed; inset:0 auto 0 0; width:82vw; transform:translateX(-100%); transition:transform .2s; }
+  .adm-sidebar{
+    position:fixed; inset:0 auto 0 0; width:82vw;
+    transform:translateX(-100%); transition:transform .2s;
+  }
   .adm-sidebar.show{ transform:translateX(0); }
 }
 
@@ -110,8 +132,9 @@
 
 /* Overlay móvil para el sidebar */
 .sidebar-overlay{
-  position: fixed; inset: 0;
+  position: fixed; top:0; right:0; bottom:0; left:0;
   background: rgba(0,0,0,.35);
+  -webkit-backdrop-filter: blur(1.5px);
   backdrop-filter: blur(1.5px);
   z-index: 1015;          /* debajo del sidebar (1020) y encima del contenido */
   display: none;
@@ -141,3 +164,29 @@
 
 /* Bloquea scroll de fondo cuando el menú está abierto en móvil */
 .noscroll{ overflow: hidden; height: 100vh; }
+
+/* =========================================================
+   FIX: Oscurecimiento o bloqueo de pantalla al usar modales
+   ========================================================= */
+
+/* Quita overlay del sidebar si un modal está abierto */
+body.modal-open .sidebar-overlay {
+  display: none !important;
+}
+
+/* Prioridad correcta de z-index para evitar superposiciones */
+.modal-backdrop {
+  z-index: 2000 !important;
+  background-color: rgba(0,0,0,0.45) !important; /* transparencia del fondo del modal */
+}
+
+.modal {
+  z-index: 2050 !important;
+}
+
+/* Asegura que el cuerpo vuelva a scroll normal después del modal */
+body.modal-open {
+  overflow: hidden !important;
+}
+
+.modal-backdrop{ display:none !important; opacity:0 !important; }

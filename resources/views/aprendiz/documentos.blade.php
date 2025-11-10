@@ -1,9 +1,11 @@
-@extends('layouts.app')
+@extends('layouts.aprendiz')
 
 @section('title', 'Mis Documentos')
+@section('module-title','Mis Documentos')
+@section('module-subtitle','Gestión y subida de archivos')
 
 @section('content')
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 documentos-page">
     <div class="row">
         <div class="col-12">
             <h2 class="mb-4">
@@ -30,8 +32,8 @@
     {{-- Formulario para subir documentos --}}
     <div class="row mb-4">
         <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header bg-success text-white">
+            <div class="card shadow-sm upload-card">
+                <div class="card-header">
                     <h5 class="mb-0"><i class="fas fa-cloud-upload-alt"></i> Subir Nuevo Documento</h5>
                 </div>
                 <div class="card-body">
@@ -53,10 +55,17 @@
 
                         <div class="mb-3">
                             <label for="archivo" class="form-label">Archivo *</label>
-                            <input type="file" name="archivo" id="archivo" class="form-control @error('archivo') is-invalid @enderror" required>
-                            <small class="text-muted">Tamaño máximo: 10MB</small>
+                            <div class="dropzone-box">
+                                <div class="dz-content">
+                                    <i class="bi bi-file-earmark-arrow-up"></i>
+                                    <div class="fw-bold">Arrastra archivo aquí</div>
+                                    <small>O haz clic para seleccionar PDF</small>
+                                </div>
+                                <input type="file" name="archivo" id="archivo" accept="application/pdf" class="dropzone-input @error('archivo') is-invalid @enderror" required>
+                            </div>
+                            <small class="text-muted">Solo PDF. Tamaño máximo: 10MB</small>
                             @error('archivo')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
 
@@ -78,7 +87,7 @@
 
         <div class="col-md-6">
             <div class="card shadow-sm">
-                <div class="card-header bg-info text-white">
+                <div class="card-header">
                     <h5 class="mb-0"><i class="fas fa-info-circle"></i> Información</h5>
                 </div>
                 <div class="card-body">

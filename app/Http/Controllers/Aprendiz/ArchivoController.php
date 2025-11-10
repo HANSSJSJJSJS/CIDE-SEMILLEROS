@@ -21,8 +21,23 @@ class ArchivoController extends Controller
         // 1. Obtener el usuario autenticado.
         $user = Auth::user();
 
-        // 2. Obtener proyectos del usuario (sin asumir pivote fija)
-        $ids = $this->proyectoIdsUsuario((int)$user->id);
+        // 2. Obtener proyectos del usuario priorizando el pivote proyecto_user
+        $ids = [];
+        if (\Illuminate\Support\Facades\Schema::hasTable('proyecto_user')) {
+            try {
+                $ids = DB::table('proyecto_user')
+                    ->where('user_id', (int)$user->id)
+                    ->distinct()
+                    ->pluck('id_proyecto')
+                    ->map(fn($v)=> (int)$v)
+                    ->all();
+            } catch (\Exception $e) {
+                $ids = [];
+            }
+        }
+        if (empty($ids)) {
+            $ids = $this->proyectoIdsUsuario((int)$user->id);
+        }
         $proyectos = empty($ids)
             ? collect([])
             : Proyecto::whereIn('id_proyecto', $ids)->get();
@@ -48,7 +63,7 @@ class ArchivoController extends Controller
             ]);
         }
 
-        return view('aprendiz.archivos.index', compact('proyectos', 'archivos', 'proyecto', 'fecha'));
+        return view('aprendiz.archivos.archivo', compact('proyectos', 'archivos', 'proyecto', 'fecha'));
     }
 
     public function create(Request $request)
@@ -103,10 +118,16 @@ class ArchivoController extends Controller
                 'estado'      => 'pendiente',
             ]);
 
+            // Construir URL pública (local public disk): usa /storage symlink
+            $publicUrl = null;
+            if (!empty($registro->ruta)) {
+                $publicUrl = asset('storage/'.$registro->ruta);
+            }
+
             $resultados[] = [
                 'id' => $registro->id ?? null,
                 'nombre_original' => $registro->nombre_original,
-                'ruta' => Storage::disk('public')->url($registro->ruta),
+                'ruta' => $publicUrl,
                 'estado' => $registro->estado,
                 'mime_type' => $registro->mime_type,
                 'subido_en' => $registro->subido_en,
@@ -121,6 +142,52 @@ class ArchivoController extends Controller
             ->with('success', 'Documentos subidos correctamente');
     }
 
+
+    /**
+     * Devuelve en JSON los archivos del usuario autenticado para un proyecto dado
+     */
+    public function listByProject(Request $request)
+    {
+        $request->validate([
+            'proyecto_id' => 'required|integer'
+        ]);
+
+        $userId = Auth::id();
+        $proyectoId = (int)$request->query('proyecto_id');
+
+        // Seguridad: confirmar que el proyecto pertenece al usuario por el pivote
+        $autorizado = false;
+        if (\Illuminate\Support\Facades\Schema::hasTable('proyecto_user')) {
+            $autorizado = DB::table('proyecto_user')
+                ->where('user_id', $userId)
+                ->where('id_proyecto', $proyectoId)
+                ->exists();
+        }
+        if (!$autorizado) {
+            return response()->json(['ok'=>false,'archivos'=>[]], 200);
+        }
+
+        if (!Schema::hasTable('archivos')) {
+            return response()->json(['ok'=>true,'archivos'=>[]]);
+        }
+
+        $items = Archivo::where('user_id', $userId)
+            ->where('proyecto_id', $proyectoId)
+            ->orderByDesc('subido_en')
+            ->get()
+            ->map(function($r){
+                $publicUrl = !empty($r->ruta) ? asset('storage/'.$r->ruta) : null;
+                return [
+                    'id' => $r->id ?? null,
+                    'nombre' => $r->nombre_original ?? basename($r->ruta ?? ''),
+                    'mime' => $r->mime_type ?? null,
+                    'url' => $publicUrl,
+                    'fecha' => optional($r->subido_en)->format('Y-m-d H:i') ?? (string)($r->subido_en ?? ''),
+                ];
+            })->values();
+
+        return response()->json(['ok'=>true,'archivos'=>$items]);
+    }
 
     public function destroy(Archivo $archivo)
     {

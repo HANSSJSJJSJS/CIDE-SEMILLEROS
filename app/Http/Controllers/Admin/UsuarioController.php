@@ -271,6 +271,14 @@ class UsuarioController extends Controller
     {
         return view('admin.usuarios.edit', compact('usuario'));
     }
+    public function edit(User $usuario)
+{
+    return $this->editForm($usuario);
+}
+
+
+
+
 
     // ============================================================
     // OBTENER DATOS PARA EDICIÓN (AJAX)

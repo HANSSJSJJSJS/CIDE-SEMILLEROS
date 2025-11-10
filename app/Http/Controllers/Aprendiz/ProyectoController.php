@@ -26,7 +26,50 @@ class ProyectoController extends Controller
                 ->with(['semillero'])
                 ->get();
 
-        return view('aprendiz.proyectos.index', compact('proyectos'));
+        // Conteos para tarjetas
+        $countProyectos = $proyectos->count();
+        $countPendientes = 0;
+        $countCompletos = 0;
+        if (!empty($ids)) {
+            try {
+                $countPendientes = Archivo::where('user_id', $user->id)
+                    ->whereIn('proyecto_id', $ids)
+                    ->where('estado', 'pendiente')
+                    ->count();
+                $countCompletos = Archivo::where('user_id', $user->id)
+                    ->whereIn('proyecto_id', $ids)
+                    ->whereIn('estado', ['aprobado','completo','completado'])
+                    ->count();
+            } catch (\Throwable $e) {
+                $countPendientes = 0; $countCompletos = 0;
+            }
+        }
+
+        // Stats por proyecto (para progreso y X/Y)
+        $stats = [];
+        foreach ($proyectos as $p) {
+            $subidos = 0; $completos = 0; $pendientes = 0;
+            try {
+                $subidos = Archivo::where('user_id', $user->id)
+                    ->where('proyecto_id', $p->id_proyecto)
+                    ->count();
+                $completos = Archivo::where('user_id', $user->id)
+                    ->where('proyecto_id', $p->id_proyecto)
+                    ->whereIn('estado', ['aprobado','completo','completado'])
+                    ->count();
+                $pendientes = max(0, $subidos - $completos);
+            } catch (\Throwable $e) {}
+            $den = max(1, $subidos);
+            $pct = (int) round(($completos / $den) * 100);
+            $stats[$p->id_proyecto] = [
+                'subidos' => $subidos,
+                'completos' => $completos,
+                'pendientes' => $pendientes,
+                'progreso_pct' => $pct,
+            ];
+        }
+
+        return view('aprendiz.proyectos.proyecto', compact('proyectos','countProyectos','countPendientes','countCompletos','stats'));
     }
 
     public function show($id)
@@ -101,7 +144,7 @@ class ProyectoController extends Controller
             ->orderByDesc('subido_en')
             ->get();
 
-        return view('aprendiz.proyectos.show', compact('proyecto', 'companeros', 'lider', 'evidencias', 'fecha', 'nombre', 'nombreError', 'archivos'));
+        return view('aprendiz.proyectos.show_proyecto', compact('proyecto', 'companeros', 'lider', 'evidencias', 'fecha', 'nombre', 'nombreError', 'archivos'));
     }
 
     private function proyectoIdsUsuario(int $userId): array
@@ -188,4 +231,5 @@ class ProyectoController extends Controller
         return [];
     }
 }
+
 

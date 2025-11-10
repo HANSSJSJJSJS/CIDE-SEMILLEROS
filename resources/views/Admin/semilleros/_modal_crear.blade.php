@@ -1,4 +1,9 @@
-<div class="modal fade" id="modalNuevoSemillero" tabindex="-1" aria-hidden="true">
+<div class="modal fade"
+     id="modalNuevoSemillero"
+     tabindex="-1"
+     aria-hidden="true"
+     data-bs-backdrop="false"
+     data-bs-keyboard="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
@@ -53,18 +58,27 @@
 </div>
 
 @push('scripts')
+@if ($errors->any())
 <script>
-document.addEventListener('DOMContentLoaded', function(){
-  // Reabrir modal si hubo errores de validación
-  @if ($errors->any())
-    if (window.bootstrap?.Modal) {
-      new bootstrap.Modal(document.getElementById('modalNuevoSemillero')).show();
-    }
-  @endif
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.bootstrap?.Modal) {
+    new bootstrap.Modal(document.getElementById('modalNuevoSemillero')).show();
+  }
+});
+</script>
+@endif
 
-  // Cargar líderes disponibles cuando se abre el modal
+<script>
+document.addEventListener('DOMContentLoaded', () => {
   const modalEl = document.getElementById('modalNuevoSemillero');
   if (!modalEl) return;
+
+  const cleanupBackdrop = () => {
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('padding-right');
+    document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+  };
+  modalEl.addEventListener('hidden.bs.modal', cleanupBackdrop);
 
   modalEl.addEventListener('shown.bs.modal', async () => {
     const select = document.getElementById('select-lider-disponible');
@@ -76,9 +90,7 @@ document.addEventListener('DOMContentLoaded', function(){
       if (!resp.ok) throw new Error('Error cargando líderes');
       const data = await resp.json();
 
-      // Limpia todo excepto la primera opción
       [...select.querySelectorAll('option')].forEach((o, i) => { if (i>0) o.remove(); });
-
       data.forEach(item => {
         const op = document.createElement('option');
         op.value = item.id_lider_semi;
@@ -89,7 +101,6 @@ document.addEventListener('DOMContentLoaded', function(){
       select.dataset.loaded = '1';
     } catch (e) {
       console.error(e);
-      // deja el select con "Sin asignar"
     }
   });
 });

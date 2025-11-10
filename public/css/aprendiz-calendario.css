@@ -20,30 +20,63 @@ body{background:var(--cal-bg)}
 .fc{--fc-border-color: var(--cal-border);}
 .fc .fc-toolbar{gap:.75rem;}
 .fc .fc-toolbar-title{font-weight:800; letter-spacing:.2px;}
+/* Capitalizar solo la primera letra del título (p.ej. 'noviembre de 2025' -> 'Noviembre de 2025') */
+.fc .fc-toolbar-title::first-letter{text-transform: uppercase}
 
 /* Botones toolbar */
-.fc .fc-button{background:var(--cal-primary); border:1px solid var(--cal-primary);
-  font-weight:600; border-radius:10px; padding:.4rem .7rem; box-shadow:none}
-.fc .fc-button:hover{background:var(--cal-primary-700); border-color:var(--cal-primary-700)}
+.fc .fc-button{font-weight:600; border-radius:10px; padding:.4rem .7rem; box-shadow:none}
 .fc .fc-button:focus{box-shadow:0 0 0 .2rem rgba(14,165,233,.25)}
+
+/* Grupo izquierdo (Anterior / Hoy / Siguiente) */
+.fc .fc-toolbar-chunk:first-child .fc-button{background:#fff;color:#111827;border:1px solid #d1d5db}
+.fc .fc-toolbar-chunk:first-child .fc-button:hover{background:#f3f4f6}
+.fc .fc-toolbar-chunk:first-child .fc-today-button{background:#39A900 !important; border-color:#39A900 !important; color:#fff !important}
+.fc .fc-toolbar-chunk:first-child .fc-today-button:hover{background:#2f8f00 !important; border-color:#2f8f00 !important}
+.fc .fc-toolbar-chunk:first-child .fc-today-button:disabled{background:#a7e39f !important; border-color:#a7e39f !important; color:#fff !important}
+
+/* Grupo derecho (Mes / Semana / Día / Agenda) se mantiene con verde institucional */
+.fc .fc-toolbar-chunk:last-child .fc-button{background:var(--cal-primary); border:1px solid var(--cal-primary); color:#fff}
+.fc .fc-toolbar-chunk:last-child .fc-button:hover{background:var(--cal-primary-700); border-color:var(--cal-primary-700)}
 .fc .fc-button-primary:not(:disabled).fc-button-active,
 .fc .fc-button-primary:not(:disabled):active{background:var(--cal-primary-700); border-color:var(--cal-primary-700)}
 
 /* Toolbar título centrado y botones a los lados como en Líder */
 .fc .fc-toolbar.fc-header-toolbar{align-items:center; gap:.75rem}
+/* Apilar en el chunk derecho: botones arriba, título debajo centrado */
+.fc .fc-header-toolbar .fc-toolbar-chunk:last-child{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+.fc .fc-header-toolbar .fc-toolbar-chunk:last-child .fc-toolbar-title{
+  order:2;
+  margin:0;
+  line-height:1.1;
+  text-align:center;
+}
 .fc .fc-toolbar-chunk:first-child .fc-button{background:#fff;color:#111827;border-color:var(--cal-border)}
 .fc .fc-toolbar-chunk:first-child .fc-button:hover{background:#f3f4f6}
 .fc .fc-toolbar-title{font-weight:800; letter-spacing:.2px}
 
 /* Vista mes celdas */
 .fc a{ text-decoration:none }
-.fc-theme-standard td, .fc-theme-standard th{border-color:var(--cal-border)}
-/* Quitar "raya" inferior en días y encabezados */
-.fc .fc-daygrid-day{transition:background .2s ease; border-bottom: none}
-.fc .fc-col-header-cell{border-bottom:none; background:var(--cal-navy); color:#fff}
+.fc .fc-theme-standard td, .fc .fc-theme-standard th{border-color:var(--cal-border)}
+/* Encabezado de días: fondo claro y texto azul oscuro */
+.fc .fc-col-header{
+  background: rgba(238,242,247,0.85);
+  -webkit-backdrop-filter: blur(1px);
+  backdrop-filter: blur(1px);
+  border-top-left-radius:12px;
+  border-top-right-radius:12px;
+  overflow:hidden;
+}
+.fc .fc-col-header-cell{border-bottom:none; background:transparent; color:var(--cal-navy)}
+.fc .fc-col-header-cell-cushion{padding:.7rem 0 !important;}
 .fc .fc-col-header-cell-cushion, .fc .fc-daygrid-day-number{ text-decoration:none }
+.fc .fc-col-header-cell-cushion{font-weight:800; color:var(--cal-navy); text-transform:uppercase; letter-spacing:.6px}
+.fc .fc-daygrid-day{transition:background .2s ease; border-bottom: none}
 .fc .fc-daygrid-day:hover{background:#f3f4f6}
-.fc .fc-col-header-cell-cushion{font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:.6px}
 .fc .fc-daygrid-day-top{align-items:center;padding:.35rem}
 .fc .fc-daygrid-day-number{font-weight:700;color:#111827}
 .fc .fc-daygrid-day.fc-day-today{background:#e8f5ee}

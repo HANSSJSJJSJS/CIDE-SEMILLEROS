@@ -1,4 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.aprendiz')
+
+@section('title','Perfil del Aprendiz')
+@section('module-title','Perfil del Aprendiz')
+@section('module-subtitle','Datos personales y recursos')
 
 @section('content')
 <div class="container">

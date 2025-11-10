@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use App\Models\User;
 
 
 class PerfilController extends Controller
@@ -27,7 +28,7 @@ class PerfilController extends Controller
             }
         }
 
-        return view('aprendiz.perfil.show', [
+        return view('aprendiz.perfil.perfil_aprendiz', [
             'user' => $user,
             'aprendiz' => $aprendiz
         ]);
@@ -36,7 +37,7 @@ class PerfilController extends Controller
 
     public function edit()
     {
-        return view('aprendiz.perfil.edit', [
+        return view('aprendiz.perfil.perfil_aprendiz', [
             'user' => Auth::user()
         ]);
     }
@@ -48,7 +49,7 @@ class PerfilController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email,' . Auth::id(),
         ]);
 
-        $user = Auth::user();
+        $user = User::findOrFail(Auth::id());
         $user->name = $request->name;
         $user->email = $request->email;
         $user->save();
