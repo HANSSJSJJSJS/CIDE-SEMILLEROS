@@ -77,13 +77,30 @@ class SemilleroController extends Controller
                 $cols[] = DB::raw('NULL as actualizado_en');
             }
 
-            $qb = DB::table('proyectos as p')
-                ->select($cols);
-            // Filtrar por líder si el esquema lo permite
-            if (Schema::hasTable('semilleros') && Schema::hasColumn('semilleros', 'id_lider_semi')) {
-                $qb->join('semilleros as s', 's.id_semillero', '=', 'p.id_semillero')
-                   ->where('s.id_lider_semi', $userId);
+            $qb = DB::table('proyectos as p')->select($cols);
+
+            // Intentar filtrar por líder (varias opciones según esquema)
+            if (Schema::hasTable('semilleros') && Schema::hasColumn('proyectos', 'id_semillero')) {
+                // Resolver columna de líder en semilleros: id_lider_usuario o id_lider_semi
+                $leaderCol = null;
+                if (Schema::hasColumn('semilleros', 'id_lider_usuario')) {
+                    $leaderCol = 'id_lider_usuario';
+                } elseif (Schema::hasColumn('semilleros', 'id_lider_semi')) {
+                    $leaderCol = 'id_lider_semi';
+                }
+                if ($leaderCol) {
+                    $qb->join('semilleros as s', 's.id_semillero', '=', 'p.id_semillero')
+                       ->where("s.$leaderCol", $userId);
+                }
+            } else {
+                // Si no se puede unir con semilleros, filtrar directo si existe una columna de líder en proyectos
+                if (Schema::hasColumn('proyectos', 'id_lider_usuario')) {
+                    $qb->where('p.id_lider_usuario', $userId);
+                } elseif (Schema::hasColumn('proyectos', 'id_lider_semi')) {
+                    $qb->where('p.id_lider_semi', $userId);
+                }
             }
+
             $proyectos = $qb->get();
             
             // Calcular progreso basado en fechas
@@ -152,9 +169,11 @@ class SemilleroController extends Controller
                 }
             }
 
-            // Reusar la misma vista, mapeando proyectos a la colección esperada
-            $semilleros = $proyectos;
-            return view('lider_semi.semilleros', compact('semilleros'));
+            // Si hay proyectos, reusar la misma vista, mapeando proyectos a la colección esperada
+            if ($proyectos->isNotEmpty()) {
+                $semilleros = $proyectos;
+                return view('lider_semi.semilleros', compact('semilleros'));
+            }
         }
 
         $query = Semillero::query();

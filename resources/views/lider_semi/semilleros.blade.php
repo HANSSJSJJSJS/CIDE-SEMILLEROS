@@ -6,34 +6,47 @@
 @endsection
 
 @section('content')
-<div class="container mt-4">
+<div class="container mt-4 projects-wallpaper">
     <div class="page-header">
-        <h4 class="fw-bold mb-4">Mis Proyectos</h4>
+        <h4 class="fw-bold mb-1">Mis Proyectos</h4>
     </div>
-    <p class="text-muted">Gestiona y supervisa todos tus semilleros activos</p>
+    <p class="text-muted mb-4">Gestiona y supervisa todos tus semilleros activos</p>
 
-    <div class="row">
+    <div class="row g-4">
         @foreach($semilleros as $semillero)
-        <div class="col-md-4 mb-4">
+        @php
+            $estado = strtoupper(trim($semillero->estado ?? ''));
+            $estadoClass = match($estado){
+                'EN EJECUCIÓN', 'EN EJECUCION' => 'status-ejecucion',
+                'EN FORMACIÓN', 'EN FORMACION' => 'status-formacion',
+                'FINALIZADO' => 'status-finalizado',
+                default => 'status-default'
+            };
+        @endphp
+        <div class="col-12 col-md-6 col-lg-4">
             <div class="card card-project">
-                <div class="card-header text-white fw-bold">
-                    {{ $semillero->nombre }}
+                <div class="card-header text-white fw-bold d-flex align-items-center justify-content-between">
+                    <span class="truncate-1">{{ $semillero->nombre }}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge badge-status {{ $estadoClass }}">{{ $semillero->estado }}</span>
+                        <small class="text-white-50">{{ (int)($semillero->aprendices ?? 0) }} aprendices</small>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <span class="badge badge-status">{{ $semillero->estado }}</span>
-                    <small id="apr-count-{{ $loop->index }}" class="text-muted float-end">{{ (int)($semillero->aprendices ?? 0) }} aprendices</small>
-                    <p class="mt-3 text-secondary">{{ $semillero->descripcion }}</p>
+                    <p class="mt-1 text-secondary mb-2">{{ $semillero->descripcion }}</p>
 
-                    <div class="mt-3">
-                        <small>Progreso</small>
-                        <div class="progress">
+                    <div class="mt-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <small class="fw-semibold text-muted">Progreso</small>
+                            <small class="text-muted">{{ $semillero->progreso }}%</small>
+                        </div>
+                        <div class="progress mt-1">
                             <div class="progress-bar bg-success"
                                 role="progressbar"
                                 style="width: {{ $semillero->progreso }}%;"
                                 aria-valuenow="{{ $semillero->progreso }}" aria-valuemin="0" aria-valuemax="100">
                             </div>
                         </div>
-                        <small class="text-muted float-end mt-1">{{ $semillero->progreso }}%</small>
                     </div>
 
                     <div class="mt-3 text-center">

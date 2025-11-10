@@ -28,6 +28,7 @@ use App\Http\Controllers\LiderSemillero\SemilleroController as LiderSemilleroUIC
 use App\Http\Controllers\LiderSemillero\DashboardController_semi;
 use App\Http\Controllers\LiderSemillero\ProyectoController as LiderProyectoController;
 use App\Http\Controllers\LiderSemillero\SemilleroAprendizController;
+use App\Http\Controllers\LiderSemillero\PerfilController as LiderPerfilController;
 
 // Aprendiz
 use App\Http\Controllers\Aprendiz\DashboardController as AprendizDashboardController;
@@ -125,32 +126,36 @@ Route::middleware(['auth', 'role:ADMIN'])
             ->name('semilleros.lideres-disponibles');
 
         Route::resource('semilleros', SemilleroController::class);
+   // PROYECTOS POR SEMILLERO
+Route::prefix('semilleros')->name('semilleros.')->group(function () {
 
-        // PROYECTOS POR SEMILLERO
-        Route::prefix('semilleros')->name('semilleros.')->group(function () {
+    // Listar y crear
+    Route::get('{semillero}/proyectos',  [ProyectoSemilleroController::class, 'index'])
+        ->name('proyectos.index');
+    Route::post('{semillero}/proyectos', [ProyectoSemilleroController::class, 'store'])
+        ->name('proyectos.store');
 
-            // Listar y crear proyectos
-            Route::get('{semillero}/proyectos',  [ProyectoSemilleroController::class, 'index'])
-                ->name('proyectos.index');
-            Route::post('{semillero}/proyectos', [ProyectoSemilleroController::class, 'store'])
-                ->name('proyectos.store');
+    // Anidadas con pertenencia
+    Route::scopeBindings()->group(function () {
+        Route::get('{semillero}/proyectos/{proyecto}/json',
+            [ProyectoSemilleroController::class,'editAjax']
+        )->name('proyectos.edit.json');
 
-            // Detalle de proyecto (👁️ botón "Ver detalle")
-            Route::scopeBindings()->group(function () {
-                Route::get('{semillero}/proyectos/{proyecto}/detalle',
-                    [ProyectoSemilleroController::class, 'detalle']
-                )->name('proyectos.detalle');
+        Route::get('{semillero}/proyectos/{proyecto}/detalle',
+            [ProyectoSemilleroController::class, 'detalle']
+        )->name('proyectos.detalle');
 
-                // (Opcional) habilitar edición/eliminación desde la tabla
-                Route::put('{semillero}/proyectos/{proyecto}',
-                    [ProyectoSemilleroController::class, 'update']
-                )->name('proyectos.update');
+        Route::put('{semillero}/proyectos/{proyecto}',
+            [ProyectoSemilleroController::class, 'update']
+        )->name('proyectos.update');
 
-                Route::delete('{semillero}/proyectos/{proyecto}',
-                    [ProyectoSemilleroController::class, 'destroy']
-                )->name('proyectos.destroy');
-            });
-        });
+        Route::delete('{semillero}/proyectos/{proyecto}',
+            [ProyectoSemilleroController::class, 'destroy']
+        )->name('proyectos.destroy');
+    });
+});
+
+
 
         // REUNIONES DE LÍDERES
         Route::get('/reuniones-lideres', [ReunionesLideresController::class, 'index'])
@@ -260,6 +265,8 @@ Route::middleware(['auth','lider.semillero'])
         Route::get('/aprendices', [LiderSemilleroUIController::class, 'aprendices'])->name('aprendices');
         Route::view('/recursos', 'lider_semi.recursos')->name('recursos');
         Route::view('/perfil', 'lider_semi.perfil')->name('perfil');
+        Route::put('/perfil/contacto', [LiderPerfilController::class, 'updateContacto'])->name('perfil.contacto.update');
+        Route::put('/perfil/password', [LiderPerfilController::class, 'updatePassword'])->name('perfil.password.update');
 
         // Gestión de aprendices por semillero
         Route::get('/semilleros/{semillero}/aprendices', [LiderSemilleroUIController::class, 'editAprendices'])->name('semilleros.aprendices.edit');

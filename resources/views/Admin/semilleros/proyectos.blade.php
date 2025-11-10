@@ -102,7 +102,10 @@
                 </a>
 
                 {{-- Editar (dejado como demo; si deseas, lo conectamos por AJAX) --}}
-                <button class="btn btn-sm btn-outline-primary" disabled>
+                <button type="button"
+                        class="btn btn-sm btn-outline-primary btn-edit-proyecto"
+                        data-semillero="{{ $semillero->id_semillero }}"
+                        data-proyecto="{{ $p->id_proyecto }}">
                   <i class="bi bi-pencil-square"></i> Editar
                 </button>
 
@@ -193,3 +196,90 @@
   </div>
 </div>
 @endsection
+
+
+{{-- Modal Editar Proyecto --}}
+<div class="modal fade" id="modalEditarProyecto" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <form id="formEditarProyecto" class="modal-content" method="POST">
+      @csrf
+      @method('PUT') {{-- spoof para PUT --}}
+      <div class="modal-header">
+        <h5 class="modal-title">Editar proyecto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Nombre</label>
+            <input type="text" name="nombre_proyecto" id="e_nombre" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Estado</label>
+            <select name="estado" id="e_estado" class="form-select" required>
+              <option value="EN_FORMULACION">En formulación</option>
+              <option value="EN_EJECUCION">En ejecución</option>
+              <option value="FINALIZADO">Finalizado</option>
+              <option value="ARCHIVADO">Archivado</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Descripción</label>
+            <textarea name="descripcion" id="e_desc" class="form-control" rows="3"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Fecha inicio</label>
+            <input type="date" name="fecha_inicio" id="e_inicio" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Fecha fin</label>
+            <input type="date" name="fecha_fin" id="e_fin" class="form-control">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-success" type="submit">Guardar cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{{-- JS: abre modal y carga datos --}}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const modal = new bootstrap.Modal(document.getElementById('modalEditarProyecto'));
+  const form  = document.getElementById('formEditarProyecto');
+
+  document.querySelectorAll('.btn-edit-proyecto').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const semilleroId = btn.dataset.semillero;
+      const proyectoId  = btn.dataset.proyecto;
+
+      // endpoint JSON
+      const urlJson = `{{ url('admin/semilleros') }}/${semilleroId}/proyectos/${proyectoId}/json`;
+      const urlPut  = `{{ url('admin/semilleros') }}/${semilleroId}/proyectos/${proyectoId}`;
+
+      try {
+        const res = await fetch(urlJson, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        if (!res.ok) throw new Error('No se pudo cargar el proyecto');
+        const p = await res.json();
+
+        // llena campos
+        document.getElementById('e_nombre').value = p.nombre_proyecto ?? '';
+        document.getElementById('e_estado').value = p.estado ?? 'EN_FORMULACION';
+        document.getElementById('e_desc').value   = p.descripcion ?? '';
+        document.getElementById('e_inicio').value = p.fecha_inicio ?? '';
+        document.getElementById('e_fin').value    = p.fecha_fin ?? '';
+
+        // set action PUT
+        form.action = urlPut;
+
+        modal.show();
+      } catch (e) {
+        alert(e.message || 'Error cargando datos');
+      }
+    });
+  });
+});
+</script>
