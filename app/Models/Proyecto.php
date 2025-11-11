@@ -49,10 +49,10 @@ class Proyecto extends Model
         return $this->hasMany(Documento::class, 'id_proyecto', 'id_proyecto');
     }
 
-    // 🔹 Un proyecto tiene muchos aprendices (1-N)
+    // 🔹 Un proyecto tiene muchos aprendices (N-N) vía pivote aprendiz_proyecto
     public function aprendices()
     {
-        return $this->hasMany(Aprendiz::class, 'id_proyecto', 'id_proyecto');
+        return $this->belongsToMany(Aprendiz::class, 'aprendiz_proyecto', 'id_proyecto', 'id_aprendiz', 'id_proyecto', 'id_aprendiz');
     }
 
     // 🔹 Un proyecto tiene muchas evidencias
