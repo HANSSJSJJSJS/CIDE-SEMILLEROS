@@ -31,10 +31,12 @@ class Kernel extends HttpKernel
         ],
     ];
 
+    // ✅ Solo UNA vez
     protected $routeMiddleware = [
-        'auth' => \App\Http\Middleware\Authenticate::class,
-        'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-        'role' => \App\Http\Middleware\RoleMiddleware::class, // <-- registrar alias 'role'
-        'lider.semillero' => \App\Http\Middleware\LiderSemilleroMiddleware::class,
+        'auth'                => \App\Http\Middleware\Authenticate::class,
+        'verified'            => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+        'role'                => \App\Http\Middleware\RoleMiddleware::class,
+        'lider.semillero'     => \App\Http\Middleware\LiderSemilleroMiddleware::class,
+        'prevent-back-history'=> \App\Http\Middleware\PreventBackHistory::class, // <-- aquí
     ];
 }
