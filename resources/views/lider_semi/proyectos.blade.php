@@ -185,7 +185,7 @@
                                 @foreach($items as $ap)
                                     <div class="border rounded p-2 d-flex justify-content-between align-items-center" data-id="{{ $ap['id_aprendiz'] ?? '' }}">
                                         <div>
-                                            <div class="fw-semibold">{{ $ap['nombres'] ?? '' }} {{ $ap['apellidos'] ?? '' }}</div>
+                                            <div class="fw-semibold">{{ ($ap['nombre'] ?? null) ?: trim((($ap['nombres'] ?? '') . ' ' . ($ap['apellidos'] ?? ''))) ?: 'Sin nombre' }}</div>
                                             <small class="text-muted">{{ $ap['programa'] ?? 'Sin programa' }}</small>
                                         </div>
                                         <button class="btn btn-sm btn-danger btn-eliminar"><i class="bi bi-trash me-1"></i>Eliminar</button>

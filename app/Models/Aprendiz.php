@@ -24,13 +24,23 @@ class Aprendiz extends Model
         'correo_personal',
         'contacto_nombre',
         'contacto_celular',
-        'semillero_id', // <<--- NUEVO: FK al semillero
+        'semillero_id',      // FK al semillero (nuevo)
+        'vinculado_sena',    // bool: 1=SENA, 0=otra institución
+        'institucion',       // nullable cuando no está en SENA
     ];
 
-    // Relaciones
+    /** Relaciones */
     public function user()
     {
+        // clave foránea real en la tabla aprendices: user_id -> users.id
         return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+    // (Conservamos la relación de main por compatibilidad, si no la usas, puedes quitarla)
+    public function grupos()
+    {
+        // OJO: esta pivot referencia id_usuario; verifícala con tu esquema real
+        return $this->belongsToMany(Grupo::class, 'grupo_aprendices', 'id_usuario', 'id_grupo');
     }
 
     public function semillero()
@@ -48,7 +58,7 @@ class Aprendiz extends Model
         );
     }
 
-    // Atributos virtuales
+    /** Atributos virtuales */
     protected $appends = ['nombre_completo', 'linea_investigacion'];
 
     public function getNombreCompletoAttribute(): string
@@ -58,7 +68,7 @@ class Aprendiz extends Model
         return trim($n . ' ' . $a);
     }
 
-    // NO se persiste en la tabla aprendices: se lee desde el semillero
+    // Se toma desde la relación con semillero; no se persiste en aprendices
     public function getLineaInvestigacionAttribute(): ?string
     {
         return optional($this->semillero)->linea_investigacion;

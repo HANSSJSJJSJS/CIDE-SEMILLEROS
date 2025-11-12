@@ -10,18 +10,26 @@ use App\Models\Proyecto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController_semi extends Controller
 {
     public function index()
     {
         // Usuario autenticado como "líder" para el dashboard
-        $lider = auth()->user();
-        $userId = auth()->id();
+        $lider = Auth::user();
+        // Mantener compat si alguna vista/fragmento espera $lideruser
+        $lideruser = $lider;
+        $userId = Auth::id();
 
         // Construir consulta de semilleros de forma compatible con diferentes esquemas
         $query = Semillero::query();
-        if (Schema::hasColumn('semilleros', 'lider_id')) {
+        // Detectar columna de líder en semilleros: id_lider_usuario | id_lider_semi | lider_id
+        if (Schema::hasColumn('semilleros', 'id_lider_usuario')) {
+            $query->where('id_lider_usuario', $userId);
+        } elseif (Schema::hasColumn('semilleros', 'id_lider_semi')) {
+            $query->where('id_lider_semi', $userId);
+        } elseif (Schema::hasColumn('semilleros', 'lider_id')) {
             $query->where('lider_id', $userId);
         }
         if (Schema::hasColumn('semilleros', 'estado')) {
@@ -37,7 +45,9 @@ class DashboardController_semi extends Controller
             // Intento de conteo si existe el esquema de grupos/proyectos
             $proyectoIds = [];
             if (Schema::hasColumn('proyectos', 'id_semillero') && $semilleros->isNotEmpty()) {
-                $ids = $semilleros->pluck('id')->all();
+                // Resolver PK real de semilleros
+                $semPk = Schema::hasColumn('semilleros','id_semillero') ? 'id_semillero' : 'id';
+                $ids = $semilleros->pluck($semPk)->all();
                 $proyectoIds = DB::table('proyectos')
                     ->whereIn('id_semillero', $ids)
                     ->pluck('id_proyecto')

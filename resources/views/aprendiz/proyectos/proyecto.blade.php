@@ -66,8 +66,8 @@
                   </div>
                   <div class="fw-bold mb-3">Documentos: <span class="opacity-75">{{ $comp }}/{{ $sub }}</span></div>
                   <div class="d-flex gap-3 flex-wrap">
-                    <a href="{{ route('aprendiz.proyectos.show', $proyecto->id_proyecto) }}" class="btn btn-success btn-pill px-4 fw-semibold">Ver Detalles</a>
-                    <a href="{{ route('aprendiz.archivos.upload', ['proyecto' => $proyecto->id_proyecto]) }}" class="btn btn-outline-success btn-pill px-4 fw-semibold">Subir Docs</a>
+                    <a href="{{ route('aprendiz.proyectos.show', $proyecto->id_proyecto) }}" class="btn btn-pill px-4 fw-semibold" style="background-color:#39A900;border-color:#39A900;color:#ffffff;">Ver Detalles</a>
+                    <a href="{{ route('aprendiz.documentos.index', ['proyecto' => $proyecto->id_proyecto]) }}" class="btn btn-outline-success btn-pill px-4 fw-semibold">Subir Docs</a>
                   </div>
                 </div>
               </div>

@@ -26,7 +26,7 @@
 .adm-sidebar{background:var(--navy)!important;color:#dbe7ee}
 .adm-sidebar .nav-link{color:#dbe7ee;border-radius:12px;padding:10px 12px}
 .adm-sidebar .nav-link:hover{background:rgba(255,255,255,.06)}
-.adm-sidebar .nav-link.active{background:#eef9f3;color:#0b3b52;font-weight:700}
+.adm-sidebar .nav-link.active{background:#39A900 !important;color:#ffffff !important;font-weight:700}
 
 /* Tarjeta blanca principal */
 .adm-page-body > *{background:#fff;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.08); padding:14px}

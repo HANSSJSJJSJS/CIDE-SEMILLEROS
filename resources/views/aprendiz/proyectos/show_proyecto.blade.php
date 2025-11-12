@@ -168,7 +168,7 @@
 
                     <div class="d-flex gap-2">
                         <a href="{{ route('aprendiz.proyectos.index') }}" class="btn btn-outline-secondary">Volver</a>
-                        <a href="{{ route('aprendiz.archivos.create', ['proyecto' => $proyecto->id_proyecto]) }}" class="btn btn-success">Subir Documentos</a>
+                        <a href="{{ route('aprendiz.documentos.index', ['proyecto' => $proyecto->id_proyecto]) }}" class="btn btn-success">Subir Documentos</a>
                     </div>
                 </div>
             </div>

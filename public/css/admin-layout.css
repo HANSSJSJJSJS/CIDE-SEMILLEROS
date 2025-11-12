@@ -64,7 +64,7 @@
 }
 .menu-card .nav-link:hover{ background:rgba(255,255,255,.12); color:#fff; }
 .menu-card .nav-link.active{
-  background:#59b54a; color:#fff; font-weight:700; border-radius:14px;
+  background:#39A900; color:#fff; font-weight:700; border-radius:14px;
 }
 .menu-card .nav-link.active i{ filter: brightness(0) invert(1); }
 

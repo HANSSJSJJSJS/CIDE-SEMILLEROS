@@ -9,12 +9,13 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Schema;
+use App\Models\User;
 
 class PerfilController extends Controller
 {
     public function updateContacto(UpdateContactoRequest $request): RedirectResponse
     {
-        $user = Auth::user();
+        $user = User::findOrFail(Auth::id());
 
         $email = $request->validated()['email'];
         $telefono = $request->validated()['telefono'] ?? null;
@@ -38,7 +39,7 @@ class PerfilController extends Controller
 
     public function updatePassword(UpdatePasswordRequest $request): RedirectResponse
     {
-        $user = Auth::user();
+        $user = User::findOrFail(Auth::id());
 
         $user->password = $request->validated()['password'];
         $user->save();

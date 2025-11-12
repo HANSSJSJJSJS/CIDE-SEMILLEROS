@@ -2,10 +2,16 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
+
 -- Servidor: 127.0.0.1
 -- Tiempo de generación: 12-11-2025 a las 21:18:26
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.4.13
+
+-- Servidor: localhost
+-- Tiempo de generación: 12-11-2025 a las 17:23:15
+-- Versión del servidor: 10.4.28-MariaDB
+-- Versión de PHP: 8.0.28
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -78,6 +84,7 @@ CREATE TABLE `aprendices` (
 -- Volcado de datos para la tabla `aprendices`
 --
 
+
 INSERT INTO `aprendices` (`id_aprendiz`, `user_id`, `nombres`, `apellidos`, `nombre_completo`, `ficha`, `programa`, `vinculado_sena`, `institucion`, `tipo_documento`, `documento`, `celular`, `correo_institucional`, `correo_personal`, `contacto_nombre`, `contacto_celular`, `semillero_id`, `creado_en`, `actualizado_en`, `estado`) VALUES
 (62, 1, 'Laura', 'García Pérez', 'Laura García Pérez', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000001', '3001111111', 'laura.garcia@misena.edu.co', 'laura.garcia@gmail.com', 'Marta Pérez', '3101111111', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
 (63, 2, 'Carlos', 'Hernández Ruiz', 'Carlos Hernández Ruiz', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000002', '3002222222', 'carlos.hernandez@misena.edu.co', 'carlos.hernandez@gmail.com', 'Juan Ruiz', '3102222222', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
@@ -108,6 +115,8 @@ INSERT INTO `aprendices` (`id_aprendiz`, `user_id`, `nombres`, `apellidos`, `nom
 (88, 77, 'Mario', 'nova', NULL, '3548751', 'Adso', 1, NULL, 'CC', '15457845', '54648961', 'marionova@hotmail.com', 'aprendiz@hotmail.com', 'aasd', '21641561', 13, '2025-11-13 00:45:01', '2025-11-13 00:45:01', 'Activo'),
 (89, 82, 'cangiro', 'Sáenz', NULL, NULL, NULL, 0, 'Manuela', 'CC', '15457845', '54648961', 'cangiro@hsena.com', 'aprendizsinficha@hola.com', 'jose', '21641561', 6, '2025-11-13 01:06:03', '2025-11-13 01:06:03', 'Activo');
 
+
+
 -- --------------------------------------------------------
 
 --
@@ -125,6 +134,7 @@ CREATE TABLE `aprendiz_proyecto` (
 --
 
 INSERT INTO `aprendiz_proyecto` (`id`, `id_aprendiz`, `id_proyecto`) VALUES
+
 (2, 82, 6),
 (3, 82, 7),
 (4, 82, 8),
@@ -136,6 +146,14 @@ INSERT INTO `aprendiz_proyecto` (`id`, `id_aprendiz`, `id_proyecto`) VALUES
 (15, 83, 10),
 (16, 82, 10),
 (17, 85, 13);
+
+(3, 82, 7),
+(4, 82, 8),
+(5, 69, 9),
+(8, 84, 6),
+(9, 86, 6),
+(10, 69, 6);
+
 
 -- --------------------------------------------------------
 
@@ -474,7 +492,7 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (37, '2025_11_05_150509_create_recursos_table', 18),
 (38, '2025_11_05_164816_add_categoria_to_recursos_table', 19),
 (39, '2025_11_12_163607_migrate_pivot_to_fk_aprendices', 20),
-(40, '2025_11_12_192249_add_vinculado_sena_and_institucion_to_aprendices_table', 21);
+(38, '2025_11_05_164816_add_categoria_to_recursos_table', 19);
 
 -- --------------------------------------------------------
 
@@ -525,6 +543,7 @@ INSERT INTO `proyectos` (`id_proyecto`, `id_semillero`, `nombre_proyecto`, `desc
 (11, 7, 'Nombre de Ejemplo de proyecto222', 'descripción  de Ejemplo de proyecto2', 3, 'EN_FORMULACION', NULL, NULL, '2025-11-12 14:49:59', '2025-11-12 15:52:26'),
 (12, 7, 'aaa123', 'aaa123', 3, 'EN_FORMULACION', NULL, NULL, '2025-11-12 14:50:26', '2025-11-12 14:50:26'),
 (13, 7, 'Proyecto Alcón', 'abc es', 3, 'EN_FORMULACION', NULL, NULL, '2025-11-12 14:50:42', '2025-11-12 15:45:25');
+(9, 9, '+queperros', 'dsv dbdeberb', 3, 'FINALIZADO', '2026-02-13', '2026-04-03', '2025-11-10 19:13:14', '2025-11-10 19:13:14');
 
 -- --------------------------------------------------------
 
@@ -593,7 +612,9 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
+
 ('IiT7F0X2c9kjWfb1GnYVrgdRmzIpTrONnYQGIDMe', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiOVJCUkRBenFTUjZlYllPNDJuUmZxMXcwRGVaZVZwQUppUXpIRDJ2YyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9sb2dpbiI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fX0=', 1762978479);
+
 
 -- --------------------------------------------------------
 
@@ -660,7 +681,8 @@ INSERT INTO `users` (`id`, `name`, `apellidos`, `email`, `email_verified_at`, `p
 (75, 'Andrea', 'Díaz', 'andrea.moreno@misena.edu.co', NULL, '$2y$12$8./hYkYMUKYq40b0fgPOYOgX8v8ImoVHqXpUzGvl9vYyzgw2OF0Z2', 'APRENDIZ', NULL, '2025-11-12 18:23:31', '2025-11-12 18:23:31'),
 (76, 'Kevin', 'levinin', 'kevinsan@hotmail.com', NULL, '$2y$12$Y8HQzARbw1BN4gQR.172KulRsUAwmmjwRsLDHGo5ThVxK3hwHfFZW', 'APRENDIZ', NULL, '2025-11-12 22:39:15', '2025-11-12 22:39:15'),
 (77, 'Mario', 'nova', 'aprendiz@hotmail.com', NULL, '$2y$12$n9s5zzz5aP.ELxl5KGrhn.g0UhDy6dYNNDdrTN38AEqY0SWId/qMO', 'APRENDIZ', NULL, '2025-11-13 00:45:01', '2025-11-13 00:45:01'),
-(82, 'cangiro', 'Sáenz', 'aprendizsinficha@hola.com', NULL, '$2y$12$jxN6wbzuLjed0saX7ydvDuACXwotkCMDtdqgja/vDFiam0EoiP0Ia', 'APRENDIZ', NULL, '2025-11-13 01:06:03', '2025-11-13 01:06:03');
+(75, 'Andrea', 'Díaz', 'andrea.moreno@misena.edu.co', NULL, '$2y$12$8./hYkYMUKYq40b0fgPOYOgX8v8ImoVHqXpUzGvl9vYyzgw2OF0Z2', 'APRENDIZ', NULL, '2025-11-12 18:23:31', '2025-11-12 18:23:31');
+
 
 --
 -- Índices para tablas volcadas
@@ -682,6 +704,14 @@ ALTER TABLE `aprendices`
   ADD KEY `idx_ficha` (`ficha`),
   ADD KEY `idx_correo_institucional` (`correo_institucional`),
   ADD KEY `aprendices_semillero_fk` (`semillero_id`);
+
+--
+-- Indices de la tabla `aprendiz_proyecto`
+--
+ALTER TABLE `aprendiz_proyecto`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `id_aprendiz` (`id_aprendiz`),
+  ADD KEY `id_proyecto` (`id_proyecto`);
 
 --
 -- Indices de la tabla `aprendiz_proyecto`
@@ -819,13 +849,16 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT de la tabla `aprendices`
 --
 ALTER TABLE `aprendices`
+
   MODIFY `id_aprendiz` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=90;
+
 
 --
 -- AUTO_INCREMENT de la tabla `aprendiz_proyecto`
 --
-ALTER TABLE `aprendiz_proyecto`
+
   MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+
 
 --
 -- AUTO_INCREMENT de la tabla `evento_participantes`
@@ -855,12 +888,14 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT de la tabla `migrations`
 --
 ALTER TABLE `migrations`
+
   MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
 
 --
 -- AUTO_INCREMENT de la tabla `proyectos`
 --
 ALTER TABLE `proyectos`
+
   MODIFY `id_proyecto` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
@@ -873,7 +908,9 @@ ALTER TABLE `semilleros`
 -- AUTO_INCREMENT de la tabla `users`
 --
 ALTER TABLE `users`
+
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=83;
+
 
 --
 -- Restricciones para tablas volcadas
@@ -892,12 +929,61 @@ ALTER TABLE `aprendices`
   ADD CONSTRAINT `aprendices_semillero_fk` FOREIGN KEY (`semillero_id`) REFERENCES `semilleros` (`id_semillero`);
 
 --
--- Filtros para la tabla `aprendiz_proyecto`
---
+START TRANSACTION;
+
+-- aprendiz_proyecto
 ALTER TABLE `aprendiz_proyecto`
-  ADD CONSTRAINT `aprendiz_proyecto_ibfk_1` FOREIGN KEY (`id_aprendiz`) REFERENCES `aprendices` (`id_aprendiz`),
-  ADD CONSTRAINT `aprendiz_proyecto_ibfk_2` FOREIGN KEY (`id_proyecto`) REFERENCES `proyectos` (`id_proyecto`);
+  ADD CONSTRAINT `aprendiz_proyecto_ibfk_1`
+    FOREIGN KEY (`id_aprendiz`) REFERENCES `aprendices` (`id_aprendiz`),
+  ADD CONSTRAINT `aprendiz_proyecto_ibfk_2`
+    FOREIGN KEY (`id_proyecto`) REFERENCES `proyectos` (`id_proyecto`);
+
+-- documentos
+ALTER TABLE `documentos`
+  ADD CONSTRAINT `fk_documentos_aprendices`
+    FOREIGN KEY (`id_aprendiz`) REFERENCES `aprendices` (`id_aprendiz`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_documentos_proyectos`
+    FOREIGN KEY (`id_proyecto`) REFERENCES `proyectos` (`id_proyecto`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- eventos
+ALTER TABLE `eventos`
+  ADD CONSTRAINT `fk_eventos_admin`
+    FOREIGN KEY (`id_admin`) REFERENCES `users` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_eventos_lider`
+    FOREIGN KEY (`id_lider_semi`) REFERENCES `lideres_semillero` (`id_lider_semi`)
+    ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- evento_participantes
+ALTER TABLE `evento_participantes`
+  ADD CONSTRAINT `fk_part_lider`
+    FOREIGN KEY (`id_lider_semi`) REFERENCES `lideres_semillero` (`id_lider_semi`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- evidencias
+ALTER TABLE `evidencias`
+  ADD CONSTRAINT `evidencias_id_usuario_foreign`
+    FOREIGN KEY (`id_usuario`) REFERENCES `users` (`id`)
+    ON DELETE SET NULL;
+
+-- lideres_semillero
+-- OJO: esto hace que `lideres_semillero.id_lider_semi` == `users.id`.
+-- Si tu tabla tiene columna `user_id`, cambia la FK a esa columna.
+ALTER TABLE `lideres_semillero`
+  ADD CONSTRAINT `fk_lideres_semillero_user`
+    FOREIGN KEY (`id_lider_semi`) REFERENCES `users` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- semilleros
+ALTER TABLE `semilleros`
+  ADD CONSTRAINT `fk_semillero_lider`
+    FOREIGN KEY (`id_lider_semi`) REFERENCES `lideres_semillero` (`id_lider_semi`)
+    ON DELETE SET NULL ON UPDATE CASCADE;
+
 COMMIT;
+
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
