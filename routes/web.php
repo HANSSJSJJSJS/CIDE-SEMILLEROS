@@ -29,6 +29,7 @@ use App\Http\Controllers\LiderSemillero\DashboardController_semi;
 use App\Http\Controllers\LiderSemillero\ProyectoController as LiderProyectoController;
 use App\Http\Controllers\LiderSemillero\SemilleroAprendizController;
 use App\Http\Controllers\LiderSemillero\PerfilController as LiderPerfilController;
+use App\Http\Controllers\LiderSemillero\RecursosController;
 
 // Aprendiz
 use App\Http\Controllers\Aprendiz\DashboardController as AprendizDashboardController;
@@ -299,7 +300,14 @@ Route::middleware(['auth','lider.semillero'])
         // Vistas principales
         Route::get('/semilleros', [LiderSemilleroUIController::class, 'semilleros'])->name('semilleros');
         Route::get('/aprendices', [LiderSemilleroUIController::class, 'aprendices'])->name('aprendices');
-        Route::view('/recursos', 'lider_semi.recursos')->name('recursos');
+        // Recursos (solo Líder Semillero)
+        Route::prefix('recursos')->name('recursos.')->group(function () {
+            Route::get('/',              [RecursosController::class, 'index'])->name('index');
+            Route::get('/crear',         [RecursosController::class, 'create'])->name('create');
+            Route::post('/',             [RecursosController::class, 'store'])->name('store');
+            Route::get('/{id}/download', [RecursosController::class, 'download'])->whereNumber('id')->name('download');
+            Route::delete('/{id}',       [RecursosController::class, 'destroy'])->whereNumber('id')->name('destroy');
+        });
         Route::view('/perfil', 'lider_semi.perfil')->name('perfil');
         Route::put('/perfil/contacto', [LiderPerfilController::class, 'updateContacto'])->name('perfil.contacto.update');
         Route::put('/perfil/password', [LiderPerfilController::class, 'updatePassword'])->name('perfil.password.update');

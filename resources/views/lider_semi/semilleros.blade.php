@@ -271,6 +271,10 @@
                     if (!detEl || !editEl) return;
                     const det = bootstrap.Modal.getInstance(detEl) || new bootstrap.Modal(detEl);
                     const edit = bootstrap.Modal.getInstance(editEl) || new bootstrap.Modal(editEl);
+                    // Evitar foco dentro de un contenedor que pronto será aria-hidden
+                    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+                        document.activeElement.blur();
+                    }
                     detEl.addEventListener('hidden.bs.modal', function onHidden(){
                         edit.show();
                     }, { once: true });
@@ -375,6 +379,11 @@
                             const prog = data.aprendiz && data.aprendiz.programa ? data.aprendiz.programa : (programa ?? 'Sin programa');
                             col.innerHTML = `<div class=\"border rounded p-3 d-flex align-items-center gap-3\"><div class=\"rounded-circle d-flex justify-content-center align-items-center\" style=\"width:48px;height:48px;background-color:#5aa72e;color:#fff;font-weight:700;\">${ini1}${ini2}</div><div><div class=\"fw-semibold\">${nombre}</div><small class=\"text-muted\">${prog}</small></div></div>`;
                             detailsList.appendChild(col);
+                            // Eliminar placeholder 'Sin aprendices asignados.' si existe
+                            const placeholder = detailsList.querySelector('.col-12 small.text-muted');
+                            if (placeholder && placeholder.closest('.col-12')) {
+                                placeholder.closest('.col-12').remove();
+                            }
                         }
                         if (countEl){
                             const m = (countEl.textContent||'0').match(/\d+/); let n = m?parseInt(m[0],10):0; n++; countEl.textContent = n + ' aprendices';
@@ -453,6 +462,13 @@
                 modalEl.addEventListener('shown.bs.modal', function(){
                     doSearch();
                 });
+                // Evitar aria-hidden con elemento enfocado dentro del modal en cierre
+                const blurInside = () => {
+                    const insideFocused = modalEl.contains(document.activeElement) ? document.activeElement : null;
+                    if (insideFocused && typeof insideFocused.blur === 'function') insideFocused.blur();
+                };
+                modalEl.addEventListener('hide.bs.modal', blurInside);
+                modalEl.addEventListener('hidden.bs.modal', blurInside);
             }
             if (lista) lista.addEventListener('click', function(e){ const btn = e.target.closest('.btn-eliminar'); if(!btn) return; const cont = btn.closest('[data-id]'); const id = cont.dataset.id; if(id) detachAprendiz(id, cont); });
             if (btnCrearAgregar) btnCrearAgregar.addEventListener('click', function(e){ e.preventDefault(); crearYAdjuntar(); });

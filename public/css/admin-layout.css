@@ -85,43 +85,43 @@
 .adm-page::before{
   content:""; position:absolute; inset:0; z-index:-1;
   /* Mostrar imagen completa de forma responsiva */
-  background-image:url("../images/bg-semillero.png");
+  background-image: url("../images/bg-semillero.png");
   background-repeat:no-repeat;
-  background-position:center 90px; /* separa del topbar */
-  background-size:clamp(520px, 60vw, 1280px) auto; /* escala responsiva */
-  opacity:.12; pointer-events:none;
-}
-.adm-page-head{ margin:4px 4px 16px; }
-.page-title{ margin:0; font-size:1.6rem; font-weight:800; }
-.page-subtitle{ margin:6px 0 0; color:var(--muted); }
-.adm-content{ background:#f7f9fc; min-height:100vh; display:flex; flex-direction:column; }
-.adm-page{ position:relative; padding:20px; isolation:isolate; z-index:0; flex:1; }
-.adm-page::before{
-  content:""; position:absolute; top:0; right:0; bottom:0; left:0; z-index:-1;
-  background:url("../images/bg-semillero.png") no-repeat center 80px / 900px auto;
-  opacity:.18; pointer-events:none;
+  background-position:center 38%; /* subir más la imagen manteniendo centrado */
+  background-size:clamp(520px, 60vw, 1400px) auto; /* más grande y responsiva */
+  opacity:.40; /* más oscuro */
+  pointer-events:none;
 }
 .adm-page-head{ margin:4px 4px 16px; }
 .page-title{ margin:0; font-size:1.6rem; font-weight:800; }
 .page-subtitle{ margin:6px 0 0; color:var(--muted); }
 
-/* ---------- Responsive layout ---------- */
-@media (max-width: 991.98px){
-  .adm-shell{ grid-template-columns:1fr; }
-  .adm-sidebar{
-    position:fixed; inset:0 auto 0 0; width:82vw;
-    transform:translateX(-100%); transition:transform .2s;
+  /* ---------- Responsive layout ---------- */
+  @media (max-width: 991.98px){
+    .adm-shell{ grid-template-columns:1fr; }
+    .adm-sidebar{
+      position:fixed; inset:0 auto 0 0; width:82vw;
+      transform:translateX(-100%); transition:transform .2s;
+    }
+    .adm-sidebar.show{ transform:translateX(0); }
   }
-  .adm-sidebar.show{ transform:translateX(0); }
-}
 
-/* Ajustes extra para pantallas muy anchas y muy pequeñas */
-@media (min-width: 1600px){
-  .adm-page::before{ background-size: 1400px auto; }
-}
-@media (max-width: 575.98px){
-  .adm-page::before{ background-position:center 70px; background-size: 520px auto; }
-}
+  /* Ajustes extra para pantallas muy anchas y muy pequeñas */
+  @media (min-width: 900px){
+    .adm-page::before{ background-size: 1200px auto; background-position: center 36%; }
+  }
+  @media (min-width: 1200px) and (max-width: 1599.98px){
+    .adm-page::before{ background-size: 980px auto; background-position: center 38%; }
+  }
+  @media (min-width: 992px) and (max-width: 1199.98px){
+    .adm-page::before{ background-size: 64vw auto; background-position: center 40%; }
+  }
+  @media (min-width: 768px) and (max-width: 991.98px){
+    .adm-page::before{ background-size: 72vw auto; background-position: center 42%; }
+  }
+  @media (max-width: 575.98px){
+    .adm-page::before{ background-position:center 18px; background-size: 86vw auto; }
+  }
 
 /* Botón hamburguesa */
 .btn-outline-light#sidebarToggle {

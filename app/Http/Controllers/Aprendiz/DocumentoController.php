@@ -85,7 +85,7 @@ class DocumentoController extends Controller
         $ruta = $archivo->storeAs('documentos', $nombreArchivo, 'public');
         
         // Insertar en la base de datos
-        DB::table('documentos')->insert([
+        $idDocumento = DB::table('documentos')->insertGetId([
             'id_proyecto' => $request->id_proyecto,
             'id_aprendiz' => $aprendiz->id_aprendiz,
             'documento' => $request->descripcion ?: $nombreOriginal,
@@ -95,6 +95,29 @@ class DocumentoController extends Controller
             'fecha_subida' => now(),
         ]);
         
+        // Si es AJAX, devolver JSON con el nuevo registro
+        if ($request->ajax() || $request->wantsJson()) {
+            $doc = DB::table('documentos')
+                ->join('proyectos', 'proyectos.id_proyecto', '=', 'documentos.id_proyecto')
+                ->where('id_documento', $idDocumento)
+                ->select('documentos.*', 'proyectos.nombre_proyecto')
+                ->first();
+
+            return response()->json([
+                'ok' => true,
+                'documento' => [
+                    'id' => $doc->id_documento,
+                    'proyecto' => $doc->nombre_proyecto,
+                    'documento' => $doc->documento,
+                    'tipo' => pathinfo($doc->ruta_archivo, PATHINFO_EXTENSION),
+                    'tamanio_kb' => round(($doc->tamanio ?? 0) / 1024, 2),
+                    'fecha' => optional($doc->fecha_subida)->format('d/m/Y H:i'),
+                    'download_url' => route('aprendiz.documentos.download', $doc->id_documento),
+                    'delete_url' => route('aprendiz.documentos.destroy', $doc->id_documento),
+                ]
+            ]);
+        }
+
         return back()->with('success', 'Documento subido correctamente');
     }
     

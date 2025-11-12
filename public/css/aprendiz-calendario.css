@@ -75,7 +75,7 @@ body{background:var(--cal-bg)}
 .fc .fc-col-header-cell-cushion{padding:.7rem 0 !important;}
 .fc .fc-col-header-cell-cushion, .fc .fc-daygrid-day-number{ text-decoration:none }
 .fc .fc-col-header-cell-cushion{font-weight:800; color:var(--cal-navy); text-transform:uppercase; letter-spacing:.6px}
-.fc .fc-daygrid-day{transition:background .2s ease; border-bottom: none}
+.fc .fc-daygrid-day{transition: .2s ease; border-bottom: none}
 .fc .fc-daygrid-day:hover{background:#f3f4f6}
 .fc .fc-daygrid-day-top{align-items:center;padding:.35rem}
 .fc .fc-daygrid-day-number{font-weight:700;color:#111827}

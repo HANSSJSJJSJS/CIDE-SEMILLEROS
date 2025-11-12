@@ -37,7 +37,7 @@
                     <h5 class="mb-0"><i class="fas fa-cloud-upload-alt"></i> Subir Nuevo Documento</h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('aprendiz.documentos.store') }}" method="POST" enctype="multipart/form-data">
+                    <form id="formUploadDoc" action="{{ route('aprendiz.documentos.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
 
                         <div class="mb-3">
@@ -122,7 +122,7 @@
                         </div>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table table-hover" id="docsTable">
                                 <thead>
                                     <tr>
                                         <th>Proyecto</th>
@@ -133,7 +133,7 @@
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="docsTbody">
                                     @foreach($documentos as $doc)
                                         <tr>
                                             <td>{{ $doc->nombre_proyecto }}</td>
@@ -170,3 +170,64 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const form = document.getElementById('formUploadDoc');
+  if (!form) return;
+  form.addEventListener('submit', async function(e){
+    try{
+      e.preventDefault();
+      const btn = form.querySelector('button[type="submit"]');
+      if (btn){ btn.disabled = true; btn.dataset._label = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo...'; }
+      const fd = new FormData(form);
+      const resp = await fetch(form.action, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: fd
+      });
+      if(!resp.ok){ throw new Error('Error HTTP '+resp.status); }
+      const data = await resp.json();
+      if (!data?.ok){ throw new Error('Respuesta inválida'); }
+      const tBody = document.getElementById('docsTbody');
+      if (tBody){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${data.documento.proyecto ?? ''}</td>
+          <td><i class="fas fa-file-alt text-primary"></i> ${data.documento.documento ?? ''}</td>
+          <td><span class="badge bg-secondary">${String(data.documento.tipo||'').toUpperCase()}</span></td>
+          <td>${data.documento.tamanio_kb ?? 0} KB</td>
+          <td>${data.documento.fecha ?? ''}</td>
+          <td>
+            <a href="${data.documento.download_url}" class="btn btn-sm btn-success" title="Descargar"><i class="fas fa-download"></i></a>
+            <form action="${data.documento.delete_url}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de eliminar este documento?')">
+              <input type="hidden" name="_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="_method" value="DELETE">
+              <button type="submit" class="btn btn-sm btn-danger" title="Eliminar"><i class="fas fa-trash"></i></button>
+            </form>
+          </td>`;
+        tBody.prepend(tr);
+        // Reset form
+        form.reset();
+        // Aviso
+        const ok = document.createElement('div');
+        ok.className = 'alert alert-success mt-3';
+        ok.textContent = 'Documento subido correctamente';
+        form.parentElement.insertBefore(ok, form);
+        setTimeout(()=> ok.remove(), 2500);
+      } else {
+        // Fallback si no existe tabla
+        window.location.reload();
+      }
+    } catch(err){
+      console.error(err);
+      alert('No se pudo subir el documento. Inténtalo nuevamente.');
+    } finally {
+      const btn = form.querySelector('button[type="submit"]');
+      if (btn){ btn.disabled = false; if (btn.dataset._label) btn.innerHTML = btn.dataset._label; }
+    }
+  });
+});
+</script>
+@endpush

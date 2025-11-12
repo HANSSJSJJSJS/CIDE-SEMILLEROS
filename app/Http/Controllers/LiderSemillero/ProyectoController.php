@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class ProyectoController extends Controller
 {
@@ -18,11 +19,25 @@ class ProyectoController extends Controller
                 return response()->json(['proyectos' => []]);
             }
 
-            // Proyectos cuyos semilleros pertenecen al líder (según esquema de BD)
-            $proyectos = DB::table('proyectos as p')
-                ->join('semilleros as s', 's.id_semillero', '=', 'p.id_semillero')
-                ->where('s.id_lider_usuario', $uid)
-                ->select(
+            // Proyectos cuyos semilleros pertenecen al líder (esquema tolerante)
+            $base = DB::table('proyectos as p')->join('semilleros as s', 's.id_semillero', '=', 'p.id_semillero');
+            if (Schema::hasColumn('semilleros','id_lider_usuario')) {
+                $base->where('s.id_lider_usuario', $uid);
+            } elseif (Schema::hasColumn('semilleros','id_lider_semi') || Schema::hasColumn('semilleros','id_lider')) {
+                $semCol = Schema::hasColumn('semilleros','id_lider_semi') ? 'id_lider_semi' : 'id_lider';
+                // Detectar columnas en lideres_semillero
+                $dbName = DB::getDatabaseName();
+                $cols = collect(DB::select("SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'lideres_semillero'", [$dbName]))->pluck('c')->all();
+                $leaderUserFkCol = in_array('id_usuario', $cols, true) ? 'id_usuario' : (in_array('user_id', $cols, true) ? 'user_id' : (in_array('id_user', $cols, true) ? 'id_user' : null));
+                $leaderIdCol = in_array('id_lider_semi', $cols, true) ? 'id_lider_semi' : (in_array('id_lider', $cols, true) ? 'id_lider' : null);
+                if ($leaderUserFkCol && $leaderIdCol) {
+                    $base->join('lideres_semillero as ls', DB::raw('ls.'.$leaderIdCol), '=', DB::raw('s.'.$semCol))
+                         ->where(DB::raw('ls.'.$leaderUserFkCol), $uid);
+                }
+            } else {
+                // No hay columna de líder reconocible: no filtramos para no bloquear
+            }
+            $proyectos = $base->select(
                     'p.id_proyecto',
                     'p.nombre_proyecto',
                     'p.estado',
@@ -87,23 +102,44 @@ class ProyectoController extends Controller
             $tipo = trim((string)$request->query('tipo', ''));
             $num = trim((string)$request->query('num', ''));
             $q = trim((string)$request->query('q', ''));
+            // Detectar columna FK hacia users (id_usuario, id_user o user_id) usando information_schema para evitar falsos negativos
+            $dbName = DB::getDatabaseName();
+            $cols = collect(DB::select("SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'aprendices' AND COLUMN_NAME IN ('id_usuario','id_user','user_id')", [$dbName]))->pluck('c')->all();
+            $userFkCol = in_array('id_usuario', $cols, true) ? 'id_usuario' : (in_array('id_user', $cols, true) ? 'id_user' : (in_array('user_id', $cols, true) ? 'user_id' : null));
+            if (!$userFkCol) return response()->json(['error'=>'Columna de relación usuario no encontrada en aprendices'], 500);
 
-            $sub = DB::table('proyecto_user')->select('user_id')->where('id_proyecto', $id);
-            $rows = DB::table('users as u')
-                ->leftJoin('aprendices as a', 'a.id_usuario', '=', 'u.id')
-                ->where('u.role', 'APRENDIZ')
-                ->whereNotIn('u.id', $sub)
-                ->when($tipo !== '', function($w) use ($tipo){ $w->where('a.tipo_documento', $tipo); })
-                ->when($num !== '', function($w) use ($num){ $w->where('a.documento', 'like', "%$num%"); })
+            if (Schema::hasTable('proyecto_aprendiz')) {
+                $sub = DB::table('proyecto_aprendiz')->select('id_aprendiz')->where('id_proyecto', $id);
+                $rows = DB::table('aprendices as a')
+                    ->join('users as u', DB::raw('u.id'), '=', DB::raw('a.'.$userFkCol))
+                    ->where('u.role','APRENDIZ')
+                    ->whereNotIn('a.id_aprendiz', $sub);
+            } elseif (Schema::hasTable('aprendiz_proyecto')) {
+                $sub = DB::table('aprendiz_proyecto')->select('id_aprendiz')->where('id_proyecto', $id);
+                $rows = DB::table('aprendices as a')
+                    ->join('users as u', DB::raw('u.id'), '=', DB::raw('a.'.$userFkCol))
+                    ->where('u.role','APRENDIZ')
+                    ->whereNotIn('a.id_aprendiz', $sub);
+            } else {
+                $sub = DB::table('proyecto_user')->select('user_id')->where('id_proyecto', $id);
+                $rows = DB::table('users as u')
+                    ->join('aprendices as a', DB::raw('a.'.$userFkCol), '=', DB::raw('u.id'))
+                    ->where('u.role','APRENDIZ')
+                    ->whereNotIn('u.id', $sub);
+            }
+            $rows = $rows
+                ->when($tipo !== '' && Schema::hasColumn('aprendices','tipo_documento'), function($w) use ($tipo){ $w->where('a.tipo_documento', $tipo); })
+                ->when($num !== '' && Schema::hasColumn('aprendices','documento'), function($w) use ($num){ $w->where('a.documento', 'like', "%$num%"); })
                 ->when($q !== '', function($w) use ($q){
                     $like = "%$q%";
                     $w->where(function($q2) use ($like){
-                        $q2->where('u.name','like',$like)->orWhere('u.email','like',$like)
-                           ->orWhere('a.nombres','like',$like)->orWhere('a.apellidos','like',$like)
-                           ->orWhere('a.documento','like',$like);
+                        $q2->where('u.name','like',$like)->orWhere('u.email','like',$like);
+                        if (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','nombres')) { $q2->orWhere('a.nombres','like',$like); }
+                        if (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','apellidos')) { $q2->orWhere('a.apellidos','like',$like); }
+                        if (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','documento')) { $q2->orWhere('a.documento','like',$like); }
                     });
                 })
-                ->select('u.id as id_usuario','u.name','a.nombres','a.apellidos','a.programa')
+                ->select('u.id as id_usuario','u.name','a.nombres','a.apellidos','a.programa','a.id_aprendiz')
                 ->orderBy('u.name')
                 ->limit(20)
                 ->get();
@@ -111,14 +147,14 @@ class ProyectoController extends Controller
             $out = $rows->map(function($r){
                 $nombre = $r->name ?: trim(($r->nombres ?? '').' '.($r->apellidos ?? ''));
                 return [
-                    'id_aprendiz' => (int)$r->id_usuario,
+                    'id_aprendiz' => (int)($r->id_aprendiz ?? $r->id_usuario),
                     'nombre_completo' => $nombre ?: 'Aprendiz',
                     'programa' => $r->programa,
                 ];
             });
             return response()->json($out);
         } catch (\Throwable $e) {
-            return response()->json([], 500);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
@@ -133,18 +169,67 @@ class ProyectoController extends Controller
             $ids = (array)$request->input('aprendices_ids', []);
             $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
 
-            // existentes
-            $exist = DB::table('proyecto_user')->where('id_proyecto', $id)->pluck('user_id')->all();
+            // Detectar FK aprendices -> users para mapear en caso de recibir user_ids
+            $dbName = DB::getDatabaseName();
+            $cols = collect(DB::select("SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'aprendices' AND COLUMN_NAME IN ('id_usuario','id_user','user_id')", [$dbName]))->pluck('c')->all();
+            $userFkCol = in_array('id_usuario', $cols, true) ? 'id_usuario' : (in_array('id_user', $cols, true) ? 'id_user' : (in_array('user_id', $cols, true) ? 'user_id' : null));
 
-            // borrar los que ya no están
+            $now = now();
+
+            if (Schema::hasTable('aprendiz_proyecto')) {
+                // Determinar si los ids recibidos son de aprendices o usuarios
+                $areAprendizIds = DB::table('aprendices')->whereIn('id_aprendiz', $ids)->count() === count($ids);
+                $aprendizIds = $areAprendizIds
+                    ? $ids
+                    : DB::table('aprendices')->whereIn($userFkCol, $ids)->pluck('id_aprendiz')->all();
+
+                $exist = DB::table('aprendiz_proyecto')->where('id_proyecto', $id)->pluck('id_aprendiz')->all();
+                // borrar los que ya no están
+                if (!empty($exist)) {
+                    DB::table('aprendiz_proyecto')->where('id_proyecto', $id)->whereNotIn('id_aprendiz', $aprendizIds)->delete();
+                }
+                // insertar los nuevos faltantes
+                $toAdd = array_diff($aprendizIds, $exist);
+                foreach ($toAdd as $aprId) {
+                    if (DB::table('aprendices')->where('id_aprendiz', $aprId)->exists()) {
+                        $data = ['id_proyecto'=>$id,'id_aprendiz'=>$aprId];
+                        if (Schema::hasColumn('aprendiz_proyecto','created_at')) { $data['created_at'] = $now; }
+                        if (Schema::hasColumn('aprendiz_proyecto','updated_at')) { $data['updated_at'] = $now; }
+                        DB::table('aprendiz_proyecto')->insert($data);
+                    }
+                }
+                return response()->json(['ok'=>true]);
+            }
+
+            if (Schema::hasTable('proyecto_aprendiz')) {
+                $areAprendizIds = DB::table('aprendices')->whereIn('id_aprendiz', $ids)->count() === count($ids);
+                $aprendizIds = $areAprendizIds
+                    ? $ids
+                    : DB::table('aprendices')->whereIn($userFkCol, $ids)->pluck('id_aprendiz')->all();
+
+                $exist = DB::table('proyecto_aprendiz')->where('id_proyecto', $id)->pluck('id_aprendiz')->all();
+                if (!empty($exist)) {
+                    DB::table('proyecto_aprendiz')->where('id_proyecto', $id)->whereNotIn('id_aprendiz', $aprendizIds)->delete();
+                }
+                $toAdd = array_diff($aprendizIds, $exist);
+                foreach ($toAdd as $aprId) {
+                    if (DB::table('aprendices')->where('id_aprendiz', $aprId)->exists()) {
+                        $data = ['id_proyecto'=>$id,'id_aprendiz'=>$aprId];
+                        if (Schema::hasColumn('proyecto_aprendiz','created_at')) { $data['created_at'] = $now; }
+                        if (Schema::hasColumn('proyecto_aprendiz','updated_at')) { $data['updated_at'] = $now; }
+                        DB::table('proyecto_aprendiz')->insert($data);
+                    }
+                }
+                return response()->json(['ok'=>true]);
+            }
+
+            // Fallback a proyecto_user si no existen las pivotes específicas de aprendices
+            $exist = DB::table('proyecto_user')->where('id_proyecto', $id)->pluck('user_id')->all();
             if (!empty($exist)) {
                 DB::table('proyecto_user')->where('id_proyecto', $id)->whereNotIn('user_id', $ids)->delete();
             }
-            // insertar los nuevos faltantes
             $toAdd = array_diff($ids, $exist);
-            $now = now();
             foreach ($toAdd as $uidAdd) {
-                // asegurar que es APRENDIZ
                 $isApr = DB::table('users')->where('id',$uidAdd)->where('role','APRENDIZ')->exists();
                 if ($isApr) {
                     DB::table('proyecto_user')->insert(['id_proyecto'=>$id,'user_id'=>$uidAdd,'created_at'=>$now,'updated_at'=>$now]);
@@ -163,12 +248,24 @@ class ProyectoController extends Controller
             $uid = Auth::id();
             if (!$uid) return response()->json(['error' => 'auth'], 401);
 
-            $p = DB::table('proyectos as p')
+            $qb = DB::table('proyectos as p')
                 ->join('semilleros as s', 's.id_semillero', '=', 'p.id_semillero')
-                ->where('p.id_proyecto', $id)
-                ->where('s.id_lider_usuario', $uid)
-                ->select('p.*')
-                ->first();
+                ->where('p.id_proyecto', $id);
+            if (Schema::hasColumn('semilleros','id_lider_usuario')) {
+                $qb->where('s.id_lider_usuario', $uid);
+            } elseif (Schema::hasColumn('semilleros','id_lider_semi') || Schema::hasColumn('semilleros','id_lider')) {
+                $semCol = Schema::hasColumn('semilleros','id_lider_semi') ? 'id_lider_semi' : 'id_lider';
+                // Detectar columnas en lideres_semillero
+                $dbName = DB::getDatabaseName();
+                $cols = collect(DB::select("SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'lideres_semillero'", [$dbName]))->pluck('c')->all();
+                $leaderUserFkCol = in_array('id_usuario', $cols, true) ? 'id_usuario' : (in_array('user_id', $cols, true) ? 'user_id' : (in_array('id_user', $cols, true) ? 'id_user' : null));
+                $leaderIdCol = in_array('id_lider_semi', $cols, true) ? 'id_lider_semi' : (in_array('id_lider', $cols, true) ? 'id_lider' : null);
+                if ($leaderUserFkCol && $leaderIdCol) {
+                    $qb->join('lideres_semillero as ls', DB::raw('ls.'.$leaderIdCol), '=', DB::raw('s.'.$semCol))
+                       ->where(DB::raw('ls.'.$leaderUserFkCol), $uid);
+                }
+            }
+            $p = $qb->select('p.*')->first();
             if (!$p) return response()->json(['error' => 'not_found'], 404);
 
             $apCount = (int) DB::table('proyecto_user')->where('id_proyecto', $id)->count();
@@ -203,20 +300,43 @@ class ProyectoController extends Controller
             if (!$uid) return response()->json(['error' => 'auth'], 401);
             if (!$this->canManage($uid, $id)) return response()->json(['error' => 'forbidden'], 403);
 
-            $rows = DB::table('proyecto_user as pu')
-                ->join('users as u', 'u.id', '=', 'pu.user_id')
-                ->leftJoin('aprendices as a', 'a.id_usuario', '=', 'u.id')
-                ->where('pu.id_proyecto', $id)
-                ->select('u.id','u.name','u.email','a.ficha','a.programa')
-                ->orderBy('u.name')
-                ->get();
+            // Detectar FK de aprendices -> users
+            $dbName = DB::getDatabaseName();
+            $cols = collect(DB::select("SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'aprendices' AND COLUMN_NAME IN ('id_usuario','id_user','user_id')", [$dbName]))->pluck('c')->all();
+            $userFkCol = in_array('id_usuario', $cols, true) ? 'id_usuario' : (in_array('id_user', $cols, true) ? 'id_user' : (in_array('user_id', $cols, true) ? 'user_id' : null));
+
+            if (Schema::hasTable('proyecto_aprendiz')) {
+                $rows = DB::table('proyecto_aprendiz as pa')
+                    ->join('aprendices as a', 'a.id_aprendiz', '=', 'pa.id_aprendiz')
+                    ->join('users as u', DB::raw('u.id'), '=', DB::raw('a.' . $userFkCol))
+                    ->where('pa.id_proyecto', $id)
+                    ->select('u.id','u.name','u.email','a.ficha','a.programa')
+                    ->orderBy('u.name')
+                    ->get();
+            } elseif (Schema::hasTable('aprendiz_proyecto')) {
+                $rows = DB::table('aprendiz_proyecto as ap')
+                    ->join('aprendices as a', 'a.id_aprendiz', '=', 'ap.id_aprendiz')
+                    ->join('users as u', DB::raw('u.id'), '=', DB::raw('a.' . $userFkCol))
+                    ->where('ap.id_proyecto', $id)
+                    ->select('u.id','u.name','u.email','a.ficha','a.programa')
+                    ->orderBy('u.name')
+                    ->get();
+            } else {
+                $rows = DB::table('proyecto_user as pu')
+                    ->join('users as u', 'u.id', '=', 'pu.user_id')
+                    ->leftJoin('aprendices as a', DB::raw('a.' . $userFkCol), '=', DB::raw('u.id'))
+                    ->where('pu.id_proyecto', $id)
+                    ->select('u.id','u.name','u.email','a.ficha','a.programa')
+                    ->orderBy('u.name')
+                    ->get();
+            }
             return response()->json(['participantes' => $rows]);
         } catch (\Throwable $e) {
             return response()->json(['participantes' => [], 'error' => $e->getMessage()], 500);
         }
     }
 
-    // Asignar aprendiz (user_id) a proyecto
+    // Asignar aprendiz (user_id o aprendiz_id) a proyecto
     public function assignParticipant(Request $request, $id)
     {
         try {
@@ -224,30 +344,95 @@ class ProyectoController extends Controller
             if (!$uid) return response()->json(['error' => 'auth'], 401);
             if (!$this->canManage($uid, $id)) return response()->json(['error' => 'forbidden'], 403);
             // compat: aceptar user_id o aprendiz_id
-            $userId = (int)($request->input('user_id') ?? $request->input('aprendiz_id'));
-            if (!$userId) {
-                return response()->json(['ok'=>false,'error'=>'user_id/aprendiz_id requerido'], 422);
+            $userId = (int)($request->input('user_id') ?? 0);
+            $aprendizId = (int)($request->input('aprendiz_id') ?? 0);
+
+            // Detectar FK de aprendices -> users
+            $dbName = DB::getDatabaseName();
+            $cols = collect(DB::select("SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'aprendices' AND COLUMN_NAME IN ('id_usuario','id_user','user_id')", [$dbName]))->pluck('c')->all();
+            $userFkCol = in_array('id_usuario', $cols, true) ? 'id_usuario' : (in_array('id_user', $cols, true) ? 'id_user' : (in_array('user_id', $cols, true) ? 'user_id' : null));
+
+            if (Schema::hasTable('proyecto_aprendiz')) {
+                if (!$aprendizId && $userId) {
+                    $aprendizId = (int) DB::table('aprendices')->where($userFkCol, $userId)->value('id_aprendiz');
+                }
+                if (!$aprendizId) {
+                    return response()->json(['ok'=>false,'error'=>'aprendiz_id requerido'], 422);
+                }
+                $existsApr = DB::table('aprendices')->where('id_aprendiz', $aprendizId)->exists();
+                if (!$existsApr) return response()->json(['ok'=>false,'error'=>'Aprendiz no existe'], 422);
+                $exists = DB::table('proyecto_aprendiz')->where(['id_proyecto'=>$id,'id_aprendiz'=>$aprendizId])->exists();
+                if (!$exists){
+                    $data = ['id_proyecto'=>$id,'id_aprendiz'=>$aprendizId];
+                    if (Schema::hasColumn('proyecto_aprendiz','created_at')) { $data['created_at'] = now(); }
+                    if (Schema::hasColumn('proyecto_aprendiz','updated_at')) { $data['updated_at'] = now(); }
+                    DB::table('proyecto_aprendiz')->insert($data);
+                }
+                return response()->json(['ok' => true]);
+            } elseif (Schema::hasTable('aprendiz_proyecto')) {
+                if (!$aprendizId && $userId) {
+                    $aprendizId = (int) DB::table('aprendices')->where($userFkCol, $userId)->value('id_aprendiz');
+                }
+                if (!$aprendizId) {
+                    return response()->json(['ok'=>false,'error'=>'aprendiz_id requerido'], 422);
+                }
+                $existsApr = DB::table('aprendices')->where('id_aprendiz', $aprendizId)->exists();
+                if (!$existsApr) return response()->json(['ok'=>false,'error'=>'Aprendiz no existe'], 422);
+                $exists = DB::table('aprendiz_proyecto')->where(['id_proyecto'=>$id,'id_aprendiz'=>$aprendizId])->exists();
+                if (!$exists){
+                    $data = ['id_proyecto'=>$id,'id_aprendiz'=>$aprendizId];
+                    if (Schema::hasColumn('aprendiz_proyecto','created_at')) { $data['created_at'] = now(); }
+                    if (Schema::hasColumn('aprendiz_proyecto','updated_at')) { $data['updated_at'] = now(); }
+                    DB::table('aprendiz_proyecto')->insert($data);
+                }
+                return response()->json(['ok' => true]);
+            } else {
+                if (!$userId) {
+                    return response()->json(['ok'=>false,'error'=>'user_id requerido'], 422);
+                }
+                $existsInUsers = DB::table('users')->where('id',$userId)->exists();
+                if (!$existsInUsers) return response()->json(['ok'=>false,'error'=>'Usuario no existe'], 422);
+                $exists = DB::table('proyecto_user')->where(['id_proyecto'=>$id,'user_id'=>$userId])->exists();
+                if (!$exists){
+                    DB::table('proyecto_user')->insert(['id_proyecto'=>$id,'user_id'=>$userId,'created_at'=>now(),'updated_at'=>now()]);
+                }
+                return response()->json(['ok' => true]);
             }
-            $existsInUsers = DB::table('users')->where('id',$userId)->exists();
-            if (!$existsInUsers) return response()->json(['ok'=>false,'error'=>'Usuario no existe'], 422);
-            $exists = DB::table('proyecto_user')->where(['id_proyecto'=>$id,'user_id'=>$userId])->exists();
-            if (!$exists){
-                DB::table('proyecto_user')->insert(['id_proyecto'=>$id,'user_id'=>$userId,'created_at'=>now(),'updated_at'=>now()]);
-            }
-            return response()->json(['ok' => true]);
         } catch (\Throwable $e) {
             return response()->json(['ok' => false, 'error' => $e->getMessage()], 500);
         }
     }
 
     // Quitar aprendiz del proyecto
-    public function removeParticipant($id, $userId)
+    public function removeParticipant($id, $targetId)
     {
         try {
             $uid = Auth::id();
             if (!$uid) return response()->json(['error' => 'auth'], 401);
             if (!$this->canManage($uid, $id)) return response()->json(['error' => 'forbidden'], 403);
-            DB::table('proyecto_user')->where(['id_proyecto'=>$id,'user_id'=>$userId])->delete();
+            // Compat: intentar ambas pivotes
+            // Detectar FK de aprendices -> users
+            $dbName = DB::getDatabaseName();
+            $cols = collect(DB::select("SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'aprendices' AND COLUMN_NAME IN ('id_usuario','id_user','user_id')", [$dbName]))->pluck('c')->all();
+            $userFkCol = in_array('id_usuario', $cols, true) ? 'id_usuario' : (in_array('id_user', $cols, true) ? 'id_user' : (in_array('user_id', $cols, true) ? 'user_id' : null));
+
+            if (Schema::hasTable('proyecto_aprendiz')) {
+                // Primero intentar como id_aprendiz directo
+                DB::table('proyecto_aprendiz')->where(['id_proyecto'=>$id,'id_aprendiz'=>$targetId])->delete();
+                // Luego, si venía un user_id, mapear a id_aprendiz
+                $aprId = DB::table('aprendices')->where($userFkCol, $targetId)->value('id_aprendiz');
+                if ($aprId) {
+                    DB::table('proyecto_aprendiz')->where(['id_proyecto'=>$id,'id_aprendiz'=>$aprId])->delete();
+                }
+            } elseif (Schema::hasTable('aprendiz_proyecto')) {
+                DB::table('aprendiz_proyecto')->where(['id_proyecto'=>$id,'id_aprendiz'=>$targetId])->delete();
+                $aprId = DB::table('aprendices')->where($userFkCol, $targetId)->value('id_aprendiz');
+                if ($aprId) {
+                    DB::table('aprendiz_proyecto')->where(['id_proyecto'=>$id,'id_aprendiz'=>$aprId])->delete();
+                }
+            }
+            // Siempre intentar en proyecto_user por compatibilidad
+            DB::table('proyecto_user')->where(['id_proyecto'=>$id,'user_id'=>$targetId])->delete();
             return response()->json(['ok' => true]);
         } catch (\Throwable $e) {
             return response()->json(['ok' => false, 'error' => $e->getMessage()], 500);
@@ -266,7 +451,26 @@ class ProyectoController extends Controller
             // Semillero no registrado aún: permitir para no bloquear pruebas
             return true;
         }
-        return $q->where('id_lider_usuario', $leaderUserId)->exists();
+        if (Schema::hasColumn('semilleros','id_lider_usuario')) {
+            return DB::table('semilleros')->where('id_semillero', $sid)->where('id_lider_usuario', $leaderUserId)->exists();
+        }
+        if (Schema::hasColumn('semilleros','id_lider_semi') || Schema::hasColumn('semilleros','id_lider')) {
+            $semCol = Schema::hasColumn('semilleros','id_lider_semi') ? 'id_lider_semi' : 'id_lider';
+            // Detectar columnas en lideres_semillero
+            $dbName = DB::getDatabaseName();
+            $cols = collect(DB::select("SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'lideres_semillero'", [$dbName]))->pluck('c')->all();
+            $leaderUserFkCol = in_array('id_usuario', $cols, true) ? 'id_usuario' : (in_array('user_id', $cols, true) ? 'user_id' : (in_array('id_user', $cols, true) ? 'id_user' : null));
+            $leaderIdCol = in_array('id_lider_semi', $cols, true) ? 'id_lider_semi' : (in_array('id_lider', $cols, true) ? 'id_lider' : null);
+            if ($leaderUserFkCol && $leaderIdCol) {
+                return DB::table('semilleros as s')
+                    ->join('lideres_semillero as ls', DB::raw('ls.'.$leaderIdCol), '=', DB::raw('s.'.$semCol))
+                    ->where('s.id_semillero', $sid)
+                    ->where(DB::raw('ls.'.$leaderUserFkCol), $leaderUserId)
+                    ->exists();
+            }
+        }
+        // Si no podemos verificar el dueño, no bloquear
+        return true;
     }
 
     // Buscar candidatos (aprendices no asignados) por nombre/correo
@@ -280,26 +484,43 @@ class ProyectoController extends Controller
             $num = trim((string)$request->query('num', ''));
             $tipo = trim((string)$request->query('tipo', ''));
 
-            $sub = DB::table('proyecto_user')->select('user_id')->where('id_proyecto', $id);
-            $rows = DB::table('users as u')
-                ->leftJoin('aprendices as a', 'a.id_usuario', '=', 'u.id')
-                ->where('u.role', 'APRENDIZ')
-                ->whereNotIn('u.id', $sub)
+            if (Schema::hasTable('proyecto_aprendiz')) {
+                $sub = DB::table('proyecto_aprendiz')->select('id_aprendiz')->where('id_proyecto', $id);
+                // Detectar FK aprendices->users
+                $dbName = DB::getDatabaseName();
+                $cols = collect(DB::select("SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'aprendices' AND COLUMN_NAME IN ('id_usuario','id_user','user_id')", [$dbName]))->pluck('c')->all();
+                $userFkCol = in_array('id_usuario', $cols, true) ? 'id_usuario' : (in_array('id_user', $cols, true) ? 'id_user' : (in_array('user_id', $cols, true) ? 'user_id' : null));
+                $rows = DB::table('aprendices as a')
+                    ->join('users as u', DB::raw('u.id'), '=', DB::raw('a.'.$userFkCol))
+                    ->where('u.role', 'APRENDIZ')
+                    ->whereNotIn('a.id_aprendiz', $sub);
+            } else {
+                $sub = DB::table('proyecto_user')->select('user_id')->where('id_proyecto', $id);
+                // Detectar FK aprendices->users
+                $dbName = DB::getDatabaseName();
+                $cols = collect(DB::select("SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'aprendices' AND COLUMN_NAME IN ('id_usuario','id_user','user_id')", [$dbName]))->pluck('c')->all();
+                $userFkCol = in_array('id_usuario', $cols, true) ? 'id_usuario' : (in_array('id_user', $cols, true) ? 'id_user' : (in_array('user_id', $cols, true) ? 'user_id' : null));
+                $rows = DB::table('users as u')
+                    ->join('aprendices as a', DB::raw('a.'.$userFkCol), '=', DB::raw('u.id'))
+                    ->where('u.role', 'APRENDIZ')
+                    ->whereNotIn('u.id', $sub);
+            }
+            $rows = $rows
                 ->when($q !== '', function($w) use ($q){
                     $like = "%".$q."%";
                     $w->where(function($w2) use ($like){
                         $w2->where('u.name', 'like', $like)
-                           ->orWhere('u.email', 'like', $like)
-                           ->orWhere('a.nombres', 'like', $like)
-                           ->orWhere('a.apellidos', 'like', $like)
-                           ->orWhere('a.documento', 'like', $like);
+                           ->orWhere('u.email', 'like', $like);
+                        if (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','nombres')) { $w2->orWhere('a.nombres', 'like', $like); }
+                        if (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','apellidos')) { $w2->orWhere('a.apellidos', 'like', $like); }
+                        if (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','documento')) { $w2->orWhere('a.documento', 'like', $like); }
                     });
                 })
-                ->when($num !== '', function($w) use ($num){
+                ->when($num !== '' && Schema::hasColumn('aprendices','documento'), function($w) use ($num){
                     $like = "%".$num."%";
                     $w->where('a.documento', 'like', $like);
                 })
-                ->when($tipo !== '', function($w) use ($tipo){
+                ->when($tipo !== '' && Schema::hasColumn('aprendices','tipo_documento'), function($w) use ($tipo){
                     $w->where('a.tipo_documento', $tipo);
                 })
                 ->select('u.id','u.name','u.email','a.ficha','a.programa','a.documento','a.tipo_documento')
