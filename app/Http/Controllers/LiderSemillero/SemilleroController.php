@@ -888,29 +888,62 @@ class SemilleroController extends Controller
 
             Log::info("Usando pivot: " . json_encode($pivot));
 
-            // Obtener IDs únicos de aprendices del proyecto
-            $aprendizIds = DB::table($pivot['table'])
-                ->where($pivot['projCol'], $proyectoId)
-                ->whereNotNull($pivot['aprCol'])
-                ->where($pivot['aprCol'], '>', 0)
-                ->distinct()
-                ->pluck($pivot['aprCol']);
+            // Determinar si la pivote almacena id_usuario/user_id (usuario) o id_aprendiz (aprendiz)
+            $pivotUsaUsuario = in_array($pivot['aprCol'], ['id_usuario', 'user_id'], true);
+            // Detectar PK real en 'aprendices'
+            $aprPkCol = null;
+            if (Schema::hasColumn('aprendices','id_aprendiz')) { $aprPkCol = 'id_aprendiz'; }
+            elseif (Schema::hasColumn('aprendices','id')) { $aprPkCol = 'id'; }
+            elseif (Schema::hasColumn('aprendices','id_usuario')) { $aprPkCol = 'id_usuario'; }
+            // Detectar FK de usuario en 'aprendices' para hacer join por usuario
+            $aprUserFkCol = null;
+            if (Schema::hasColumn('aprendices','id_usuario')) { $aprUserFkCol = 'id_usuario'; }
+            elseif (Schema::hasColumn('aprendices','user_id')) { $aprUserFkCol = 'user_id'; }
 
-            Log::info("IDs de aprendices encontrados: " . $aprendizIds->toJson());
+            if ($pivotUsaUsuario && $aprUserFkCol) {
+                // Caso: pivote guarda id de usuario -> mapear a id_aprendiz vía join contra aprendices
+                $aprendices = DB::table($pivot['table'])
+                    ->join('aprendices', 'aprendices.'.$aprUserFkCol, '=', DB::raw($pivot['table'].'.'.$pivot['aprCol']))
+                    ->where(DB::raw($pivot['table'].'.'.$pivot['projCol']), $proyectoId)
+                    ->where('aprendices.documento', '!=', 'SIN_ASIGNAR')
+                    ->distinct()
+                    ->select(
+                        DB::raw('aprendices.' . ($aprPkCol ?? 'id_usuario') . ' as id_aprendiz'),
+                        DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo")
+                    )
+                    ->orderBy('nombre_completo')
+                    ->get();
+            } else {
+                // Caso: pivote ya guarda id_aprendiz -> consultar directamente
+                $aprendizIds = DB::table($pivot['table'])
+                    ->where($pivot['projCol'], $proyectoId)
+                    ->whereNotNull($pivot['aprCol'])
+                    ->where($pivot['aprCol'], '>', 0)
+                    ->distinct()
+                    ->pluck($pivot['aprCol']);
 
-            // Si no hay aprendices, retornar vacío
-            if ($aprendizIds->isEmpty()) {
-                Log::info('No se encontraron aprendices para este proyecto');
-                return response()->json(['aprendices' => []]);
+                Log::info("IDs de aprendices (id_aprendiz) encontrados: " . $aprendizIds->toJson());
+
+                if ($aprendizIds->isEmpty()) {
+                    Log::info('No se encontraron aprendices para este proyecto');
+                    return response()->json(['aprendices' => []]);
+                }
+
+                $aprendices = DB::table('aprendices')
+                    ->when($aprPkCol !== null, function($q) use ($aprPkCol, $aprendizIds) {
+                        return $q->whereIn($aprPkCol, $aprendizIds);
+                    }, function($q) use ($aprendizIds) {
+                        // Fallback improbable: usar id_usuario
+                        return $q->whereIn('id_usuario', $aprendizIds);
+                    })
+                    ->where('documento', '!=', 'SIN_ASIGNAR')
+                    ->select(
+                        DB::raw(($aprPkCol ?? 'id_usuario') . ' as id_aprendiz'),
+                        DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo")
+                    )
+                    ->orderBy('nombre_completo')
+                    ->get();
             }
-
-            // Obtener información de los aprendices
-            $aprendices = DB::table('aprendices')
-                ->whereIn('id_usuario', $aprendizIds)
-                ->where('documento', '!=', 'SIN_ASIGNAR') // Excluir el aprendiz "Sin Asignar"
-                ->select(DB::raw('id_usuario as id_aprendiz'), DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo"))
-                ->orderBy('nombre_completo')
-                ->get();
 
             Log::info("Aprendices obtenidos: " . $aprendices->toJson());
 
@@ -1021,7 +1054,7 @@ class SemilleroController extends Controller
                 'tipo_archivo' => $request->tipo_evidencia,
                 'tamanio' => 0,
                 'mime_type' => '',
-                'fecha_subido' => now(),
+                'fecha_subida' => now(),
                 'fecha_limite' => $request->fecha,
                 'estado' => 'pendiente',
                 'tipo_documento' => $request->tipo_evidencia,
@@ -1032,6 +1065,18 @@ class SemilleroController extends Controller
             if ($request->has('aprendiz_id') && $request->aprendiz_id) {
                 // Si se seleccionó un aprendiz, usarlo
                 $dataToInsert['id_aprendiz'] = $request->aprendiz_id;
+                // Si existe documentos.id_usuario, mapear y guardarlo también
+                if (Schema::hasColumn('documentos', 'id_usuario')) {
+                    $usrId = null;
+                    if (Schema::hasColumn('aprendices', 'id_usuario')) {
+                        $usrId = DB::table('aprendices')->where('id_aprendiz', $request->aprendiz_id)->value('id_usuario');
+                    } elseif (Schema::hasColumn('aprendices', 'user_id')) {
+                        $usrId = DB::table('aprendices')->where('id_aprendiz', $request->aprendiz_id)->value('user_id');
+                    }
+                    if (!is_null($usrId)) {
+                        $dataToInsert['id_usuario'] = (int)$usrId;
+                    }
+                }
             } elseif ($allowsNull) {
                 // Si permite NULL y no se seleccionó aprendiz, usar NULL
                 $dataToInsert['id_aprendiz'] = null;
@@ -1068,10 +1113,35 @@ class SemilleroController extends Controller
                     $dataToInsert['id_aprendiz'] = $aprendizSinAsignar->id_aprendiz;
                     Log::info('Usando aprendiz Sin Asignar existente con ID: ' . $aprendizSinAsignar->id_aprendiz);
                 }
+
+                // Si existe documentos.id_usuario, y tenemos aprendiz (nuevo o existente), intentar mapear usuario
+                if (Schema::hasColumn('documentos', 'id_usuario')) {
+                    $usrId = null;
+                    if (Schema::hasColumn('aprendices', 'id_usuario')) {
+                        $usrId = DB::table('aprendices')->where('id_aprendiz', $dataToInsert['id_aprendiz'])->value('id_usuario');
+                    } elseif (Schema::hasColumn('aprendices', 'user_id')) {
+                        $usrId = DB::table('aprendices')->where('id_aprendiz', $dataToInsert['id_aprendiz'])->value('user_id');
+                    }
+                    if (!is_null($usrId)) {
+                        $dataToInsert['id_usuario'] = (int)$usrId;
+                    }
+                }
             }
 
-            // Crear un registro en la tabla documentos
-            $documentoId = DB::table('documentos')->insertGetId($dataToInsert);
+            // Crear un registro en la tabla documentos (generar PK manual si aplica)
+            $nextId = null;
+            if (Schema::hasColumn('documentos', 'id_documento')) {
+                try {
+                    $max = DB::table('documentos')->max('id_documento');
+                    $nextId = (int) ($max ?? 0) + 1;
+                    $dataToInsert['id_documento'] = $nextId;
+                } catch (\Throwable $ex) {
+                    // continuar sin id manual
+                }
+            }
+
+            DB::table('documentos')->insert($dataToInsert);
+            $documentoId = $nextId ?? 0;
 
             return response()->json([
                 'success' => true,

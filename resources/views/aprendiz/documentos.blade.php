@@ -107,6 +107,48 @@
         </div>
     </div>
 
+    @if(isset($pendientesAsignadas) && $pendientesAsignadas->isNotEmpty())
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="fas fa-hourglass-half"></i> Evidencias Asignadas Pendientes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Proyecto</th>
+                                    <th>Título</th>
+                                    <th>Fecha límite</th>
+                                    <th>Subir archivo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($pendientesAsignadas as $p)
+                                <tr>
+                                    <td>{{ $p->nombre_proyecto }}</td>
+                                    <td>{{ $p->documento }}</td>
+                                    <td>{{ !empty($p->fecha_limite) ? \Carbon\Carbon::parse($p->fecha_limite)->format('Y-m-d') : '—' }}</td>
+                                    <td style="min-width:320px;">
+                                        <form action="{{ route('aprendiz.documentos.uploadAssigned', $p->id_documento) }}" method="POST" enctype="multipart/form-data" class="d-flex gap-2 pending-upload-form">
+                                            @csrf
+                                            <input type="file" name="archivo" class="form-control" required>
+                                            <button class="btn btn-success"><i class="fas fa-upload"></i> Subir</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     {{-- Lista de documentos subidos --}}
     <div class="row">
         <div class="col-12">
@@ -251,6 +293,38 @@ document.addEventListener('DOMContentLoaded', function(){
       const btn = form.querySelector('button[type="submit"]');
       if (btn){ btn.disabled = false; if (btn.dataset._label) btn.innerHTML = btn.dataset._label; }
     }
+  });
+
+  // Envío AJAX para formularios de evidencias pendientes
+  const pendingForms = document.querySelectorAll('form.pending-upload-form');
+  pendingForms.forEach((pf) => {
+    pf.addEventListener('submit', async function(ev){
+      ev.preventDefault();
+      const btn = pf.querySelector('button[type="submit"], button');
+      try {
+        if (btn){ btn.disabled = true; btn.dataset._label = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo...'; }
+        const fd = new FormData(pf);
+        const resp = await fetch(pf.action, {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+          body: fd
+        });
+        if (!resp.ok){
+          let msg = 'Error HTTP '+resp.status;
+          try { const err = await resp.json(); if (err?.message) msg = err.message; } catch(_e){}
+          throw new Error(msg);
+        }
+        const data = await resp.json();
+        if (!data?.ok){ throw new Error('Respuesta inválida'); }
+        // Recargar para reflejar que la evidencia ya no está pendiente y aparece en la lista inferior
+        window.location.reload();
+      } catch(err){
+        console.error(err);
+        alert((err && err.message) ? err.message : 'No se pudo subir la evidencia.');
+      } finally {
+        if (btn){ btn.disabled = false; if (btn.dataset._label) btn.innerHTML = btn.dataset._label; }
+      }
+    });
   });
 });
 </script>

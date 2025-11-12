@@ -359,6 +359,7 @@ Route::middleware(['auth', 'role:APRENDIZ'])
         // Documentos
         Route::get('/documentos', [DocumentoController::class, 'index'])->name('documentos.index');
         Route::post('/documentos', [DocumentoController::class, 'store'])->name('documentos.store');
+        Route::post('/documentos/{id}/upload-assigned', [DocumentoController::class, 'uploadAssigned'])->whereNumber('id')->name('documentos.uploadAssigned');
         Route::get('/documentos/{id}/download', [DocumentoController::class, 'download'])->whereNumber('id')->name('documentos.download');
         Route::delete('/documentos/{id}', [DocumentoController::class, 'destroy'])->whereNumber('id')->name('documentos.destroy');
 
