@@ -97,7 +97,7 @@
               </div>
             </div>
 
-            {{-- ===== LÍDER SEMILLERO ===== --}}
+            {{-- ===== LÍDER SEMILLERO (Instructor) ===== --}}
             <div id="box-lider" class="row g-3 d-none mt-2">
               <div class="col-12"><span class="section-label"><i class="bi bi-mortarboard"></i> Líder semillero</span></div>
 
@@ -109,10 +109,18 @@
                 <label class="form-label fw-semibold">Apellido</label>
                 <input name="apellido" class="form-control" value="{{ old('apellido') }}">
               </div>
+
+              {{-- CAMBIO: Select con CC / CE para instructor --}}
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Tipo documento</label>
-                <input name="ls_tipo_documento" class="form-control" value="{{ old('ls_tipo_documento') }}" placeholder="CC / TI / CE">
+                <select name="ls_tipo_documento" class="form-select @error('ls_tipo_documento') is-invalid @enderror">
+                  <option value="">Seleccione...</option>
+                  <option value="CC" @selected(old('ls_tipo_documento')==='CC')>CC</option>
+                  <option value="CE" @selected(old('ls_tipo_documento')==='CE')>CE</option>
+                </select>
+                @error('ls_tipo_documento') <div class="text-danger small">{{ $message }}</div> @enderror
               </div>
+
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Documento</label>
                 <input name="ls_documento" class="form-control" value="{{ old('ls_documento') }}">
@@ -147,10 +155,19 @@
                 <label class="form-label fw-semibold">Programa</label>
                 <input name="ap_programa" class="form-control" value="{{ old('ap_programa') }}">
               </div>
+
+              {{-- CAMBIO: Select con CC / TI / CE para aprendiz --}}
               <div class="col-md-4">
                 <label class="form-label fw-semibold">Tipo documento</label>
-                <input name="ap_tipo_documento" class="form-control" value="{{ old('ap_tipo_documento') }}" placeholder="CC / TI / CE">
+                <select name="ap_tipo_documento" class="form-select @error('ap_tipo_documento') is-invalid @enderror">
+                  <option value="">Seleccione...</option>
+                  <option value="CC" @selected(old('ap_tipo_documento')==='CC')>CC</option>
+                  <option value="TI" @selected(old('ap_tipo_documento')==='TI')>TI</option>
+                  <option value="CE" @selected(old('ap_tipo_documento')==='CE')>CE</option>
+                </select>
+                @error('ap_tipo_documento') <div class="text-danger small">{{ $message }}</div> @enderror
               </div>
+
               <div class="col-md-4">
                 <label class="form-label fw-semibold">Documento</label>
                 <input name="ap_documento" class="form-control" value="{{ old('ap_documento') }}">
@@ -239,10 +256,12 @@
       ['nombre','apellido','password'].forEach(n=>boxAdmin?.querySelector(`[name="${n}"]`)?.setAttribute('required','required'));
     }
     if(role==='LIDER_SEMILLERO'){
+      // Requerimos también el tipo de documento del instructor
       ['nombre','apellido','ls_tipo_documento','ls_documento','password'].forEach(n=>boxLider?.querySelector(`[name="${n}"]`)?.setAttribute('required','required'));
     }
     if(role==='APRENDIZ'){
-      ['nombre','apellido','ap_ficha','ap_programa','ap_documento','ap_correo_institucional','password'].forEach(n=>boxAprendiz?.querySelector(`[name="${n}"]`)?.setAttribute('required','required'));
+      // Requerimos también el tipo de documento del aprendiz
+      ['nombre','apellido','ap_ficha','ap_programa','ap_tipo_documento','ap_documento','ap_correo_institucional','password'].forEach(n=>boxAprendiz?.querySelector(`[name="${n}"]`)?.setAttribute('required','required'));
     }
   }
   function toggle(role){

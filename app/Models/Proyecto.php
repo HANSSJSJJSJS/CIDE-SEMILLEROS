@@ -8,7 +8,6 @@ use App\Models\Documento;
 use App\Models\User;
 use App\Models\Aprendiz;
 
-
 class Proyecto extends Model
 {
     protected $table = 'proyectos';
@@ -34,44 +33,29 @@ class Proyecto extends Model
         'actualizado_en'
     ];
 
-    // Relación con semillero
+    /** ---------------------------------------------------------
+     *  RELACIONES
+     *  --------------------------------------------------------- */
+
+    // 🔹 Un proyecto pertenece a un semillero
     public function semillero()
     {
         return $this->belongsTo(Semillero::class, 'id_semillero', 'id_semillero');
     }
 
-    // Relación con documentos
+    // 🔹 Un proyecto tiene muchos documentos
     public function documentos()
     {
         return $this->hasMany(Documento::class, 'id_proyecto', 'id_proyecto');
     }
 
-    // Relación con aprendices (por id_usuario en pivot)
+    // 🔹 Un proyecto tiene muchos aprendices (N-N) vía pivote aprendiz_proyecto
     public function aprendices()
     {
-        return $this->belongsToMany(
-            Aprendiz::class,
-            'proyecto_user',
-            'id_proyecto',
-            'user_id',
-            'id_proyecto',
-            'id_usuario'
-        )->distinct();
+        return $this->belongsToMany(Aprendiz::class, 'aprendiz_proyecto', 'id_proyecto', 'id_aprendiz', 'id_proyecto', 'id_aprendiz');
     }
 
-    // Relación directa con usuarios a través de la misma pivote
-    public function usuarios()
-    {
-        return $this->belongsToMany(
-            User::class,
-            'proyecto_user',
-            'id_proyecto',
-            'user_id',
-            'id_proyecto',
-            'id'
-        )->distinct();
-    }
-
+    // 🔹 Un proyecto tiene muchas evidencias
     public function evidencias()
     {
         return $this->hasMany(Evidencia::class, 'id_proyecto', 'id_proyecto');

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 10-11-2025 a las 14:41:18
+-- Tiempo de generación: 10-11-2025 a las 17:34:12
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.4.13
 
@@ -56,6 +56,7 @@ CREATE TABLE `aprendices` (
   `user_id` bigint(20) UNSIGNED DEFAULT NULL,
   `nombres` varchar(120) NOT NULL,
   `apellidos` varchar(255) DEFAULT NULL,
+  `nombre_completo` varchar(255) DEFAULT NULL,
   `ficha` varchar(30) NOT NULL,
   `programa` varchar(160) NOT NULL,
   `tipo_documento` varchar(5) DEFAULT NULL,
@@ -66,35 +67,36 @@ CREATE TABLE `aprendices` (
   `contacto_nombre` varchar(160) DEFAULT NULL,
   `contacto_celular` varchar(30) DEFAULT NULL,
   `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
-  `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `estado` enum('Activo','Inactivo') NOT NULL DEFAULT 'Activo'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `aprendices`
 --
 
-INSERT INTO `aprendices` (`id_aprendiz`, `user_id`, `nombres`, `apellidos`, `ficha`, `programa`, `tipo_documento`, `documento`, `celular`, `correo_institucional`, `correo_personal`, `contacto_nombre`, `contacto_celular`, `creado_en`, `actualizado_en`) VALUES
-(7, NULL, 'Joaquin cañon', NULL, '35435345', 'adso', 'T.I', '8344873278', '3215678976', 'test2@gmail.com', 'example@gmail.com', 'gsdfd', '3456789642', '2025-10-21 15:46:36', '2025-10-21 19:02:39'),
-(8, NULL, 'Hansbleidi Cardenas', NULL, '2848527', 'ADSO', 'CC', '1071548288', '3053970242', 'hans@soy.sena.edu.co', 'test3@gmail.com', NULL, NULL, '2025-10-15 20:50:17', '2025-10-21 19:58:36'),
-(20, NULL, 'Laura Martínez', NULL, '38454893', 'Animacion 3D', 'C.E', '8237498234', '3470909094', 'laura@sena.edu.co', 'IKJEDWN@HSBXJ.COM', 'djnbcuibn', '3129098765', '2025-10-21 15:46:36', '2025-10-21 19:21:33'),
-(21, NULL, 'Carlos Pérez', NULL, '77788888', 'Adso', 'C.C', '76876876', '3700907888', 'carlos@sena.edu.co', 'hfbejhr@fdnjdn.com', 'ebfciewuab', '7263t43', '2025-10-21 15:46:36', '2025-10-21 19:20:24'),
-(25, NULL, 'Laura Rodríguez', NULL, '7247747', 'Animacion 3D', 'C.C', '72364264', '32145567888', 'laura.rod@example.com', 'vdvcb@gjgjgj.com', 'uhbvusdb', '3457890078', '2025-10-21 15:46:36', '2025-10-21 19:18:34'),
-(26, NULL, 'Carlos Gómez', NULL, '35435345', 'Adso', 'T.I', '7373363663', '3456789009', 'carlos.gomez@example.com', 'gsggs@ifiuewf.com', 'hahhah', '3213456789', '2025-10-21 15:46:36', '2025-10-21 19:17:35'),
-(27, NULL, 'Valentina Ruiz', NULL, '73478364', 'Animacion 3D', 'C.C', '7468584863', '3215678976', 'valentina.ruiz@example.com', 'example@gnmail.com', 'hahsabahs', '3467674356', '2025-10-21 15:46:36', '2025-10-21 19:16:36'),
-(28, NULL, 'Andrés Pérez', NULL, '62347826', 'ADSO', 'C.C', '847276487', '3456789023', 'andres.perez@example.com', 'dvasvfjh@dbd.com', '3216789045', '6472474127', '2025-10-21 15:46:36', '2025-10-21 19:10:29'),
-(29, NULL, 'María Castro', NULL, '35435345', 'animacion 3D', 'C.C', '7689367363', '3214789076', 'maria.castro@example.com', 'example123@gmail.com', 'hasahgvbwi', '3456789012', '2025-10-21 15:46:36', '2025-10-21 19:05:48'),
-(30, NULL, 'Laura Martínez Pérez', NULL, '2435345', 'Tecnología en Análisis y Desarrollo de Sistemas de Información', 'CC', '1001234567', '3004567890', 'laura.martinez@sena.edu.co', 'laura.perez@gmail.com', 'Carlos Pérez', '3102345678', '2025-10-21 19:41:11', '2025-10-21 19:41:11'),
-(31, NULL, 'Juan David Torres', NULL, '2435346', 'Gestión Empresarial', 'TI', '1002234568', '3014567891', 'juan.torres@sena.edu.co', 'jdavidtorres@yahoo.com', 'Martha Torres', '3103345679', '2025-10-21 19:41:11', '2025-10-21 19:41:11'),
-(32, NULL, 'Mariana Gómez Ríos', NULL, '2435347', 'Diseño Gráfico Digital', 'CC', '1003234569', '3024567892', 'mariana.gomez@sena.edu.co', 'marianagomez@hotmail.com', 'Luis Ríos', '3104345680', '2025-10-21 19:41:11', '2025-10-21 19:41:11'),
-(33, NULL, 'Carlos Andrés Suárez', NULL, '2435348', 'Contabilidad y Finanzas', 'CE', '1004234570', '3034567893', 'carlos.suarez@sena.edu.co', 'carsuarez@gmail.com', 'Sandra Suárez', '3105345681', '2025-10-21 19:41:11', '2025-10-21 19:41:11'),
-(34, NULL, 'Ana Milena López', NULL, '2435349', 'Gestión del Talento Humano', 'CC', '1005234571', '3044567894', 'ana.lopez@sena.edu.co', 'anamilena@gmail.com', 'Diego López', '3106345682', '2025-10-21 19:41:11', '2025-10-21 19:41:11'),
-(35, NULL, 'Esteban Ramírez Torres', NULL, '2435350', 'Producción Multimedia', 'TI', '1006234572', '3054567895', 'esteban.ramirez@sena.edu.co', 'eramirez@hotmail.com', 'Natalia Torres', '3107345683', '2025-10-21 19:41:11', '2025-10-21 19:41:11'),
-(36, NULL, 'Luisa Fernanda Salazar', NULL, '2435351', 'Seguridad y Salud en el Trabajo', 'CC', '1007234573', '3064567896', 'luisa.salazar@sena.edu.co', 'lusalazar@gmail.com', 'Camilo Salazar', '3108345684', '2025-10-21 19:41:11', '2025-10-21 19:41:11'),
-(37, NULL, 'David Alejandro Méndez', NULL, '2435352', 'Mecatrónica', 'CE', '1008234574', '3074567897', 'david.mendez@sena.edu.co', 'damendez@gmail.com', 'Paola Méndez', '3109345685', '2025-10-21 19:41:11', '2025-10-21 19:41:11'),
-(38, NULL, 'Juliana Herrera Osorio', NULL, '2435353', 'Marketing Digital', 'CC', '1009234575', '3084567898', 'juliana.herrera@sena.edu.co', 'jherrera@gmail.com', 'Hernán Herrera', '3110345686', '2025-10-21 19:41:11', '2025-10-21 19:41:11'),
-(39, NULL, 'Santiago López Vargas', NULL, '2435354', 'Desarrollo de Videojuegos', 'TI', '1010234576', '3094567899', 'santiago.lopez@sena.edu.co', 'slopezvargas@gmail.com', 'Andrea Vargas', '3111345687', '2025-10-21 19:41:11', '2025-10-21 19:41:11'),
-(40, 46, 'Sergio', 'Morita', '28485274', 'Adsoa', 'TI', '15457845', '54648961', 'asjo@hotmail.com', 'asd2223@hola.com', 'sias', NULL, '2025-10-22 21:48:14', '2025-10-22 23:46:41'),
-(41, 68, 'deivit', 'Agudelo', '28485274', 'Adso', 'CC', '15457845', '54648961', 'lorem@hsena.com', 'joaquin_canon@soy.sena.edu.co.com', NULL, NULL, '2025-10-29 23:41:00', '2025-10-29 23:41:00');
+INSERT INTO `aprendices` (`id_aprendiz`, `user_id`, `nombres`, `apellidos`, `nombre_completo`, `ficha`, `programa`, `tipo_documento`, `documento`, `celular`, `correo_institucional`, `correo_personal`, `contacto_nombre`, `contacto_celular`, `creado_en`, `actualizado_en`, `estado`) VALUES
+(7, NULL, 'Joaquin cañon', NULL, 'Joaquin cañon ', '35435345', 'adso', 'T.I', '8344873278', '3215678976', 'test2@gmail.com', 'example@gmail.com', 'gsdfd', '3456789642', '2025-10-21 15:46:36', '2025-11-05 20:02:55', 'Activo'),
+(8, NULL, 'Hansbleidi Cardenas', NULL, 'Hansbleidi Cardenas ', '2848527', 'ADSO', 'CC', '1071548288', '3053970242', 'hans@soy.sena.edu.co', 'test3@gmail.com', NULL, NULL, '2025-10-15 20:50:17', '2025-11-05 20:02:55', 'Activo'),
+(20, NULL, 'Laura Martínez', NULL, 'Laura Martínez ', '38454893', 'Animacion 3D', 'C.E', '8237498234', '3470909094', 'laura@sena.edu.co', 'IKJEDWN@HSBXJ.COM', 'djnbcuibn', '3129098765', '2025-10-21 15:46:36', '2025-11-05 20:02:55', 'Activo'),
+(21, NULL, 'Carlos Pérez', NULL, 'Carlos Pérez ', '77788888', 'Adso', 'C.C', '76876876', '3700907888', 'carlos@sena.edu.co', 'hfbejhr@fdnjdn.com', 'ebfciewuab', '7263t43', '2025-10-21 15:46:36', '2025-11-05 20:02:55', 'Activo'),
+(25, NULL, 'Laura Rodríguez', NULL, 'Laura Rodríguez ', '7247747', 'Animacion 3D', 'C.C', '72364264', '32145567888', 'laura.rod@example.com', 'vdvcb@gjgjgj.com', 'uhbvusdb', '3457890078', '2025-10-21 15:46:36', '2025-11-05 20:02:55', 'Activo'),
+(26, NULL, 'Carlos Gómez', NULL, 'Carlos Gómez ', '35435345', 'Adso', 'T.I', '7373363663', '3456789009', 'carlos.gomez@example.com', 'gsggs@ifiuewf.com', 'hahhah', '3213456789', '2025-10-21 15:46:36', '2025-11-05 20:02:55', 'Activo'),
+(27, NULL, 'Valentina Ruiz', NULL, 'Valentina Ruiz ', '73478364', 'Animacion 3D', 'C.C', '7468584863', '3215678976', 'valentina.ruiz@example.com', 'example@gnmail.com', 'hahsabahs', '3467674356', '2025-10-21 15:46:36', '2025-11-05 20:02:55', 'Activo'),
+(28, NULL, 'Andrés Pérez', NULL, 'Andrés Pérez ', '62347826', 'ADSO', 'C.C', '847276487', '3456789023', 'andres.perez@example.com', 'dvasvfjh@dbd.com', '3216789045', '6472474127', '2025-10-21 15:46:36', '2025-11-05 20:02:55', 'Activo'),
+(29, NULL, 'María Castro', NULL, 'María Castro ', '35435345', 'animacion 3D', 'C.C', '7689367363', '3214789076', 'maria.castro@example.com', 'example123@gmail.com', 'hasahgvbwi', '3456789012', '2025-10-21 15:46:36', '2025-11-05 20:02:55', 'Activo'),
+(30, NULL, 'Laura Martínez Pérez', NULL, 'Laura Martínez Pérez ', '2435345', 'Tecnología en Análisis y Desarrollo de Sistemas de Información', 'CC', '1001234567', '3004567890', 'laura.martinez@sena.edu.co', 'laura.perez@gmail.com', 'Carlos Pérez', '3102345678', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
+(31, NULL, 'Juan David Torres', NULL, 'Juan David Torres ', '2435346', 'Gestión Empresarial', 'TI', '1002234568', '3014567891', 'juan.torres@sena.edu.co', 'jdavidtorres@yahoo.com', 'Martha Torres', '3103345679', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
+(32, NULL, 'Mariana Gómez Ríos', NULL, 'Mariana Gómez Ríos ', '2435347', 'Diseño Gráfico Digital', 'CC', '1003234569', '3024567892', 'mariana.gomez@sena.edu.co', 'marianagomez@hotmail.com', 'Luis Ríos', '3104345680', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
+(33, NULL, 'Carlos Andrés Suárez', NULL, 'Carlos Andrés Suárez ', '2435348', 'Contabilidad y Finanzas', 'CE', '1004234570', '3034567893', 'carlos.suarez@sena.edu.co', 'carsuarez@gmail.com', 'Sandra Suárez', '3105345681', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
+(34, NULL, 'Ana Milena López', NULL, 'Ana Milena López ', '2435349', 'Gestión del Talento Humano', 'CC', '1005234571', '3044567894', 'ana.lopez@sena.edu.co', 'anamilena@gmail.com', 'Diego López', '3106345682', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
+(35, NULL, 'Esteban Ramírez Torres', NULL, 'Esteban Ramírez Torres ', '2435350', 'Producción Multimedia', 'TI', '1006234572', '3054567895', 'esteban.ramirez@sena.edu.co', 'eramirez@hotmail.com', 'Natalia Torres', '3107345683', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
+(36, NULL, 'Luisa Fernanda Salazar', NULL, 'Luisa Fernanda Salazar ', '2435351', 'Seguridad y Salud en el Trabajo', 'CC', '1007234573', '3064567896', 'luisa.salazar@sena.edu.co', 'lusalazar@gmail.com', 'Camilo Salazar', '3108345684', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
+(37, NULL, 'David Alejandro Méndez', NULL, 'David Alejandro Méndez ', '2435352', 'Mecatrónica', 'CE', '1008234574', '3074567897', 'david.mendez@sena.edu.co', 'damendez@gmail.com', 'Paola Méndez', '3109345685', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
+(38, NULL, 'Juliana Herrera Osorio', NULL, 'Juliana Herrera Osorio ', '2435353', 'Marketing Digital', 'CC', '1009234575', '3084567898', 'juliana.herrera@sena.edu.co', 'jherrera@gmail.com', 'Hernán Herrera', '3110345686', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
+(39, NULL, 'Santiago López Vargas', NULL, 'Santiago López Vargas ', '2435354', 'Desarrollo de Videojuegos', 'TI', '1010234576', '3094567899', 'santiago.lopez@sena.edu.co', 'slopezvargas@gmail.com', 'Andrea Vargas', '3111345687', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
+(40, 46, 'Sergio', 'Morita', 'Sergio Morita', '28485274', 'Adsoa', 'TI', '15457845', '54648961', 'asjo@hotmail.com', 'asd2223@hola.com', 'sias', NULL, '2025-10-22 21:48:14', '2025-11-05 20:02:55', 'Activo'),
+(41, 68, 'deivit', 'Agudelo', 'deivit Agudelo', '28485274', 'Adso', 'CC', '15457845', '54648961', 'lorem@hsena.com', 'joaquin_canon@soy.sena.edu.co.com', NULL, NULL, '2025-10-29 23:41:00', '2025-11-05 20:02:55', 'Activo');
 
 -- --------------------------------------------------------
 
@@ -160,7 +162,7 @@ CREATE TABLE `eventos` (
   `id_proyecto` bigint(20) UNSIGNED DEFAULT NULL,
   `titulo` varchar(255) NOT NULL,
   `descripcion` text DEFAULT NULL,
-  `linea_investigacion` varchar(255) NOT NULL,
+  `linea_investigacion` varchar(255) DEFAULT NULL,
   `fecha_hora` datetime NOT NULL,
   `duracion` int(11) NOT NULL DEFAULT 60,
   `ubicacion` varchar(255) DEFAULT NULL,
@@ -171,6 +173,16 @@ CREATE TABLE `eventos` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `eventos`
+--
+
+INSERT INTO `eventos` (`id_evento`, `id_lider_semi`, `id_admin`, `id_proyecto`, `titulo`, `descripcion`, `linea_investigacion`, `fecha_hora`, `duracion`, `ubicacion`, `link_virtual`, `codigo_reunion`, `recordatorio`, `tipo`, `created_at`, `updated_at`) VALUES
+(1, 70, NULL, NULL, 'AVANECE', NULL, '', '2025-11-19 14:00:00', 60, 'virtual', 'https://teams.live.com/meet/9384643488347?p=oddDzjUY8wqa2wF0Tb', 'xPPcCdA6r2', '15', 'entrega', '2025-11-05 21:16:13', '2025-11-06 01:59:32'),
+(2, 70, NULL, 2, 'fbrrdbre', NULL, '', '2025-11-14 10:00:00', 60, 'virtual', 'https://teams.live.com/meet/9384643488347?p=oddDzjUY8wqa2wF0Tb', 'le2ZvyymMg', '30', 'seguimiento', '2025-11-06 01:59:54', '2025-11-10 18:51:26'),
+(3, 70, NULL, NULL, 'AVANECE', NULL, '', '2025-11-10 09:00:00', 60, 'virtual', 'https://teams.live.com/meet/9384643488347?p=oddDzjUY8wqa2wF0Tb', 'k7uzqN6mNX', '0', 'seguimiento', '2025-11-06 02:02:18', '2025-11-10 18:51:36'),
+(4, 70, NULL, NULL, 'AVANECE', NULL, '', '2025-11-21 08:00:00', 60, 'virtual', NULL, '1hYwdahIeK', '0', 'seguimiento', '2025-11-06 02:02:40', '2025-11-10 18:31:24');
 
 -- --------------------------------------------------------
 
@@ -186,6 +198,91 @@ CREATE TABLE `evento_participantes` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `evento_participantes`
+--
+
+INSERT INTO `evento_participantes` (`id`, `id_evento`, `id_aprendiz`, `id_lider_semi`, `created_at`, `updated_at`) VALUES
+(1, 2, 34, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(2, 2, 28, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(3, 2, 33, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(4, 2, 26, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(5, 2, 21, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(6, 2, 37, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(7, 2, 41, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(8, 2, 35, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(9, 2, 8, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(10, 2, 7, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(11, 2, 31, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(12, 2, 38, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(13, 2, 20, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(14, 2, 30, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(15, 2, 25, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(16, 2, 36, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(17, 2, 29, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(18, 2, 32, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(19, 2, 39, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(20, 2, 40, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(21, 2, 27, NULL, '2025-11-06 01:59:54', '2025-11-06 01:59:54'),
+(22, 3, 34, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(23, 3, 28, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(24, 3, 33, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(25, 3, 26, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(26, 3, 21, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(27, 3, 37, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(28, 3, 41, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(29, 3, 35, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(30, 3, 8, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(31, 3, 7, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(32, 3, 31, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(33, 3, 38, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(34, 3, 20, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(35, 3, 30, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(36, 3, 25, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(37, 3, 36, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(38, 3, 29, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(39, 3, 32, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(40, 3, 39, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(41, 3, 40, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(42, 3, 27, NULL, '2025-11-06 02:02:18', '2025-11-06 02:02:18'),
+(43, 4, 34, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(44, 4, 28, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(45, 4, 33, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(46, 4, 26, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(47, 4, 21, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(48, 4, 37, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(49, 4, 41, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(50, 4, 35, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(51, 4, 8, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(52, 4, 7, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(53, 4, 31, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(54, 4, 38, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(55, 4, 20, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(56, 4, 30, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(57, 4, 25, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(58, 4, 36, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(59, 4, 29, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(60, 4, 32, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(61, 4, 39, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(62, 4, 40, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40'),
+(63, 4, 27, NULL, '2025-11-06 02:02:40', '2025-11-06 02:02:40');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `evidencias`
+--
+
+CREATE TABLE `evidencias` (
+  `id_evidencia` bigint(20) UNSIGNED NOT NULL,
+  `proyecto_id` bigint(20) UNSIGNED NOT NULL,
+  `id_usuario` bigint(20) UNSIGNED DEFAULT NULL,
+  `nombre` varchar(255) NOT NULL,
+  `estado` enum('pendiente','completado') NOT NULL DEFAULT 'pendiente',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -269,7 +366,8 @@ INSERT INTO `lideres_semillero` (`id_lider_semi`, `nombres`, `apellidos`, `tipo_
 (64, 'Diana Marcela', 'Acosta Torres', 'CC', '000000008', 'dacostat@sena.edu.co', '2025-10-28 02:06:41', '2025-10-28 02:06:41'),
 (65, 'Arlix Carolina', 'Aragón', 'CC', '000000010', 'aaragonc@sena.edu.co', '2025-10-28 02:07:18', '2025-10-28 02:07:18'),
 (66, 'Carlos Andrés', 'Sáenz', 'CC', '000000012', 'casaenz@sena.edu.co', '2025-10-28 23:41:56', '2025-10-28 23:41:56'),
-(67, 'Harol', 'Pardos', 'CC', '1544547', 'sergio@admin1.com', '2025-10-29 00:24:23', '2025-10-29 19:47:29');
+(67, 'Harol', 'Pardos', 'CC', '1544547', 'sergio@admin1.com', '2025-10-29 00:24:23', '2025-10-29 19:47:29'),
+(70, 'Hansbleidi', 'Cardenas', 'CC', '1071548288', 'yurani12@gmail.com', '2025-11-05 18:21:44', '2025-11-05 18:21:44');
 
 -- --------------------------------------------------------
 
@@ -297,7 +395,31 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (9, '2025_10_15_191526_update_id_tipo_documento_in_aprendices_and_lideres_semillero', 3),
 (10, '2025_10_20_163848_create_semilleros_table', 4),
 (11, '2025_10_21_000000_create_aprendiz_proyectos_table', 5),
-(12, '2025_10_21_151521_add_apellidos_to_users_table', 6);
+(12, '2025_10_21_151521_add_apellidos_to_users_table', 6),
+(13, '2025_10_17_163819_create_archivos_table', 7),
+(14, '2025_10_17_200240_create_proyecto_user_table', 8),
+(15, '2025_10_20_172439_add_estado_to_users_table', 9),
+(16, '2025_10_20_create_proyectos_table', 9),
+(17, 'create_proyectos_table', 9),
+(18, '2025_10_22_193932_add_nombre_completo_to_aprendices_table', 10),
+(19, '2025_10_22_202536_add_estado_to_documentos_table', 10),
+(20, '2025_10_23_083700_create_eventos_table', 9),
+(21, '2025_10_23_140834_add_ubicacion_recordatorio_to_eventos_table', 10),
+(22, '2025_10_23_145619_add_link_virtual_descripcion_to_eventos_table', 10),
+(23, '2025_10_23_154412_create_evidencias_table', 11),
+(24, '2025_10_24_133708_add_estado_to_documentos_table', 12),
+(25, '2025_10_24_150148_add_documentos_requeridos_to_proyectos_table', 12),
+(26, '2025_10_24_163144_add_codigo_reunion_to_eventos_table', 13),
+(27, '2025_10_24_170619_add_estado_to_archivos_table', 13),
+(28, '2025_10_24_191739_add_proyecto_id_to_archivos_table', 14),
+(29, '2025_10_24_194710_add_proyecto_id_to_archivos_table', 15),
+(30, '2025_10_27_200800_add_id_usuario_to_evidencias_table', 16),
+(31, '2025_10_28_000100_create_evento_participantes_table', 16),
+(32, '2025_10_28_000200_add_unique_index_eventos_datetime', 17),
+(33, '2025_10_28_150500_add_optional_fields_to_eventos_table', 17),
+(34, '2025_10_28_154300_make_linea_investigacion_nullable_in_eventos_table', 17),
+(35, '2025_10_28_154500_alter_linea_investigacion_nullable_mysql', 17),
+(36, '2025_11_05_000200_fix_evento_participantes_id_auto_increment', 17);
 
 -- --------------------------------------------------------
 
@@ -322,6 +444,7 @@ CREATE TABLE `proyectos` (
   `id_semillero` int(10) UNSIGNED NOT NULL,
   `nombre_proyecto` varchar(200) NOT NULL,
   `descripcion` text DEFAULT NULL,
+  `documentos_requeridos` int(11) NOT NULL DEFAULT 3,
   `estado` enum('EN_FORMULACION','EN_EJECUCION','FINALIZADO','ARCHIVADO') DEFAULT 'EN_FORMULACION',
   `fecha_inicio` date DEFAULT NULL,
   `fecha_fin` date DEFAULT NULL,
@@ -333,14 +456,12 @@ CREATE TABLE `proyectos` (
 -- Volcado de datos para la tabla `proyectos`
 --
 
-INSERT INTO `proyectos` (`id_proyecto`, `id_semillero`, `nombre_proyecto`, `descripcion`, `estado`, `fecha_inicio`, `fecha_fin`, `creado_en`, `actualizado_en`) VALUES
-(1, 1, 'IA para Agricultura', 'Proyecto de optimización de cultivos mediante IA', 'EN_EJECUCION', '2025-01-01', NULL, '2025-10-20 20:02:22', '2025-10-20 20:02:22'),
-(2, 2, 'App de Aprendizaje SENA', 'Aplicación para gestión de aprendizajes', 'EN_FORMULACION', '2025-02-01', NULL, '2025-10-20 20:02:22', '2025-10-20 20:02:22'),
-(3, 3, 'Sistema de Energía Solar', 'Investigación en paneles solares', 'FINALIZADO', '2024-09-01', '2025-02-01', '2025-10-20 20:02:22', '2025-10-20 20:02:22'),
-(4, 4, 'Monitor de Ciberseguridad', 'Monitoreo de redes locales', 'EN_EJECUCION', '2025-03-01', NULL, '2025-10-20 20:02:22', '2025-10-20 20:02:22'),
-(5, 5, 'Robot Educativo', 'Robot con sensores para enseñanza STEAM', 'EN_FORMULACION', '2025-04-01', NULL, '2025-10-20 20:02:22', '2025-10-20 20:02:22'),
-(6, 7, 'Ejemplo de proyecto', 'ejemplo de descripción del proyecto', 'EN_EJECUCION', '2025-11-06', '2026-01-06', '2025-11-06 20:17:12', '2025-11-06 20:17:12'),
-(7, 7, 'Gestión estratégica de programas de bienestar y actividad física para la mejora de la salud laboral', 'Este proyecto busca diseñar e implementar un modelo de administración eficiente para programas de bienestar y actividad física en entornos laborales, con el objetivo de mejorar la salud integral de los empleados, reducir el ausentismo y aumentar la productividad. A través de estrategias de gestión, evaluación de impacto y promoción de hábitos saludables, se pretende fortalecer la cultura organizacional orientada al bienestar físico y mental.', 'EN_EJECUCION', NULL, NULL, '2025-11-06 20:25:37', '2025-11-07 18:12:34');
+INSERT INTO `proyectos` (`id_proyecto`, `id_semillero`, `nombre_proyecto`, `descripcion`, `documentos_requeridos`, `estado`, `fecha_inicio`, `fecha_fin`, `creado_en`, `actualizado_en`) VALUES
+(1, 1, 'IA para Agricultura', 'Proyecto de optimización de cultivos mediante IA', 3, 'EN_EJECUCION', '2025-01-01', NULL, '2025-10-20 20:02:22', '2025-10-20 20:02:22'),
+(2, 2, 'App de Aprendizaje SENA', 'Aplicación para gestión de aprendizajes', 3, 'EN_FORMULACION', '2025-02-01', NULL, '2025-10-20 20:02:22', '2025-10-20 20:02:22'),
+(3, 3, 'Sistema de Energía Solar', 'Investigación en paneles solares', 3, 'FINALIZADO', '2024-09-01', '2025-02-01', '2025-10-20 20:02:22', '2025-10-20 20:02:22'),
+(4, 4, 'Monitor de Ciberseguridad', 'Monitoreo de redes locales', 3, 'EN_EJECUCION', '2025-03-01', NULL, '2025-10-20 20:02:22', '2025-10-20 20:02:22'),
+(5, 5, 'Robot Educativo', 'Robot con sensores para enseñanza STEAM', 3, 'EN_FORMULACION', '2025-04-01', NULL, '2025-10-20 20:02:22', '2025-10-20 20:02:22');
 
 -- --------------------------------------------------------
 
@@ -364,10 +485,7 @@ CREATE TABLE `recursos` (
 --
 
 INSERT INTO `recursos` (`id`, `nombre_archivo`, `archivo`, `categoria`, `descripcion`, `user_id`, `created_at`, `updated_at`) VALUES
-(1, 'Plantilla rx56', 'recursos/faSamm8ZixAHq20lMqMKqXrXUev6HkoqWIZi8KuS', 'plantillas', NULL, 4, '2025-11-06 00:35:15', '2025-11-06 00:35:15'),
-(2, 'presentación', 'recursos/4t95SzzAdZAP8Cou7udSbvL9mAFq8gqELNWlC41T.pptx', 'plantillas', NULL, 4, '2025-11-06 00:37:48', '2025-11-06 00:37:48'),
-(3, 'pdf', 'recursos/hdvjPd2002AqrPwdumMXCeeOsWgqVFyn7vls3cOn.pdf', 'otros', 'Es un pdf', 4, '2025-11-06 00:40:35', '2025-11-06 00:40:35'),
-(4, 'manual', 'recursos/5D9qIWMCzjjhlR4l4Yr2Mi2vL8KmkgjDODHSvpG7.pdf', 'manuales', 'esto es un manual', 4, '2025-11-06 00:41:15', '2025-11-06 00:41:15');
+(1, 'Plantilla rx56', 'recursos/0uC1zAChhaK5Xfk8m91zBs8xylzmABiIKf0Mmjuq.pdf', 'manuales', 'Plantilla rx56', 4, '2025-11-10 20:57:39', '2025-11-10 20:57:39');
 
 -- --------------------------------------------------------
 
@@ -390,7 +508,7 @@ CREATE TABLE `semilleros` (
 
 INSERT INTO `semilleros` (`id_semillero`, `nombre`, `linea_investigacion`, `id_lider_semi`, `created_at`, `updated_at`) VALUES
 (6, 'Bioprocesos y Biotecnología Aplicada (BIBA)', 'Ciencias Aplicadas en Desarrollo Ambiental', 57, '2025-10-27 18:08:12', '2025-10-28 01:57:50'),
-(7, 'administración y Salud, Deportes y Bienestar', 'Administración en Salud, Deportes y Bienestar', 58, '2025-10-27 18:08:12', '2025-11-07 18:36:13'),
+(7, 'Administración y Salud, Deportes y Bienestar', 'Administración en Salud, Deportes y Bienestar', 58, '2025-10-27 18:08:12', '2025-11-10 18:42:36'),
 (8, 'Agroindustria Seguridad Alimentaria', 'Seguridad Alimentaria', 59, '2025-10-27 18:08:12', '2025-10-28 01:58:57'),
 (9, 'Grupo de Estudio de Desarrollo de Software (GEDS)', 'Telecomunicaciones y Tecnologías Virtuales', 60, '2025-10-27 18:08:12', '2025-10-28 02:08:33'),
 (10, 'Investigación de Mercados para las Mipymes (INVERPYMES)', 'Comercio y Servicios para el Desarrollo Empresarial', 61, '2025-10-27 18:08:12', '2025-10-28 02:09:20'),
@@ -419,8 +537,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('n4S0suNfSYEI7NKFnBFLAvvmYqarNTzcbC4pOjAp', 4, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiMDRWMERmS3JyTG13dmlEc3lub3JOWm54VDhiZ3dhRnV1eXFRTERlViI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6NDU6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9yZXVuaW9uZXMtbGlkZXJlcyI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjQ7fQ==', 1762550530),
-('yAqR5DuenBmCXx3GDyRI7rYg4y9Mw5PkpMzMmnzr', 4, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiWHlVOFNNQjU5RERSVWFLOU81b2JWY1kzbEl3d3FLbEs0a004U3Z5RSI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MzY6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi91c3VhcmlvcyI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjQ7fQ==', 1762781681);
+('8xnehNTihwvL8wH2pr2dD3PEd31miTmYajQMRO1m', 70, '127.0.0.1', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoib05tUmZBQ2RuQk5qZHk3a29QTkZVRmVKY2FqTkdZRFlQYjlaOW9mbCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDM6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9saWRlcl9zZW1pL2NhbGVuZGFyaW8iO3M6NToicm91dGUiO3M6MjE6ImxpZGVyX3NlbWkuY2FsZW5kYXJpbyI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjcwO30=', 1762787021),
+('nTVAlZgSAtwExl7cX3d4SxJuJ7IVbGByOlfCbGy4', 4, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoidTBBVmpvVGh4UXNOTlpnQXZKSkNoS2JRS0xKaFlVMEY5RXFEbE94eCI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozNjoiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2FkbWluL3JlY3Vyc29zIjt9czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6NDM6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9kYXNoYm9hcmQvc3RhdHMiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTo0O30=', 1762792424);
 
 -- --------------------------------------------------------
 
@@ -478,7 +596,8 @@ INSERT INTO `users` (`id`, `name`, `apellidos`, `email`, `email_verified_at`, `p
 (66, 'Carlos Andrés', 'Sáenz', 'casaenz@sena.edu.co', NULL, '$2y$12$cMQuRFhEsAMGtz0tjcjIbOSxBNXgUvnecHFuTw1iiT4IsrgTLAOj2', 'LIDER_SEMILLERO', NULL, '2025-10-28 23:41:56', '2025-10-28 23:41:56'),
 (67, 'Harol', 'Pardos', 'sergio@admin1.com', NULL, '$2y$12$oqJyGYOnWOqd6WLDIOOaHOXybBykL2OIOGYhs77dUPf3sPo4BhpRq', 'LIDER_SEMILLERO', NULL, '2025-10-29 00:24:23', '2025-10-29 19:47:29'),
 (68, 'deivit', 'Agudelo', 'joaquin_canon@soy.sena.edu.co.com', NULL, '$2y$12$0TM.ctVut0gIBuJAA9u94Ord22JMauSbNSg/WayCvtkOx.GqZFOj6', 'APRENDIZ', NULL, '2025-10-29 23:40:59', '2025-10-29 23:40:59'),
-(69, 'luis', 'garcia', 'lideradmin@hola.com', NULL, '$2y$12$xgChGVNvHOBXhGjD98dmU.k94pgDEn7akThvCIKVtwhSg7uvy3e0.', 'ADMIN', NULL, '2025-10-30 00:29:35', '2025-10-30 00:29:35');
+(69, 'luis', 'garcia', 'lideradmin@hola.com', NULL, '$2y$12$xgChGVNvHOBXhGjD98dmU.k94pgDEn7akThvCIKVtwhSg7uvy3e0.', 'ADMIN', NULL, '2025-10-30 00:29:35', '2025-10-30 00:29:35'),
+(70, 'Hansbleidi', 'Cardenas', 'yurani12@gmail.com', NULL, '$2y$12$IaEEeNepnPujOXZk6c5fQeYMB.38rLT6MDZsuBa.xq6ZfBV3sx.Ka', 'LIDER_SEMILLERO', NULL, '2025-11-05 18:21:44', '2025-11-05 18:21:44');
 
 --
 -- Índices para tablas volcadas
@@ -516,26 +635,38 @@ ALTER TABLE `cache_locks`
 -- Indices de la tabla `documentos`
 --
 ALTER TABLE `documentos`
-  ADD KEY `idx_documentos_tipo_estado` (`tipo_archivo`,`estado`);
+  ADD KEY `idx_documentos_tipo_estado` (`tipo_archivo`,`estado`),
+  ADD KEY `fk_documentos_aprendices` (`id_aprendiz`),
+  ADD KEY `fk_documentos_proyectos` (`id_proyecto`);
 ALTER TABLE `documentos` ADD FULLTEXT KEY `ft_documentos` (`titulo_avance`,`descripcion_avance`,`descripcion`);
 
 --
 -- Indices de la tabla `eventos`
 --
 ALTER TABLE `eventos`
+  ADD UNIQUE KEY `eventos_lider_fecha_unique` (`id_lider_semi`,`fecha_hora`),
   ADD KEY `idx_eventos_fecha` (`fecha_hora`),
   ADD KEY `idx_eventos_admin_fecha` (`id_admin`,`fecha_hora`),
-  ADD KEY `idx_eventos_lider_fecha` (`id_lider_semi`,`fecha_hora`);
+  ADD KEY `idx_eventos_lider_fecha` (`id_lider_semi`,`fecha_hora`),
+  ADD KEY `eventos_codigo_reunion_index` (`codigo_reunion`);
 ALTER TABLE `eventos` ADD FULLTEXT KEY `ft_eventos` (`titulo`,`descripcion`);
 
 --
 -- Indices de la tabla `evento_participantes`
 --
 ALTER TABLE `evento_participantes`
+  ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uq_ep_evento_aprendiz` (`id_evento`,`id_aprendiz`),
   ADD UNIQUE KEY `uq_ep_evento_lider` (`id_evento`,`id_lider_semi`),
   ADD KEY `idx_ep_aprendiz` (`id_aprendiz`),
   ADD KEY `idx_ep_lider` (`id_lider_semi`);
+
+--
+-- Indices de la tabla `evidencias`
+--
+ALTER TABLE `evidencias`
+  ADD PRIMARY KEY (`id_evidencia`),
+  ADD KEY `evidencias_id_usuario_index` (`id_usuario`);
 
 --
 -- Indices de la tabla `failed_jobs`
@@ -588,7 +719,8 @@ ALTER TABLE `proyectos` ADD FULLTEXT KEY `ft_proyectos` (`nombre_proyecto`,`desc
 -- Indices de la tabla `recursos`
 --
 ALTER TABLE `recursos`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_recursos_user` (`user_id`);
 
 --
 -- Indices de la tabla `semilleros`
@@ -599,20 +731,144 @@ ALTER TABLE `semilleros`
   ADD UNIQUE KEY `uk_semilleros_lider` (`id_lider_semi`);
 
 --
+-- Indices de la tabla `sessions`
+--
+ALTER TABLE `sessions`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `sessions_user_id_index` (`user_id`),
+  ADD KEY `sessions_last_activity_index` (`last_activity`);
+
+--
+-- Indices de la tabla `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `users_email_unique` (`email`),
+  ADD UNIQUE KEY `uq_users_email_lc` (`email_lc`);
+
+--
 -- AUTO_INCREMENT de las tablas volcadas
 --
+
+--
+-- AUTO_INCREMENT de la tabla `aprendices`
+--
+ALTER TABLE `aprendices`
+  MODIFY `id_aprendiz` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+
+--
+-- AUTO_INCREMENT de la tabla `evento_participantes`
+--
+ALTER TABLE `evento_participantes`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=64;
+
+--
+-- AUTO_INCREMENT de la tabla `evidencias`
+--
+ALTER TABLE `evidencias`
+  MODIFY `id_evidencia` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `failed_jobs`
+--
+ALTER TABLE `failed_jobs`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `jobs`
+--
+ALTER TABLE `jobs`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `migrations`
+--
+ALTER TABLE `migrations`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
 -- AUTO_INCREMENT de la tabla `proyectos`
 --
 ALTER TABLE `proyectos`
-  MODIFY `id_proyecto` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id_proyecto` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de la tabla `recursos`
 --
 ALTER TABLE `recursos`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT de la tabla `semilleros`
+--
+ALTER TABLE `semilleros`
+  MODIFY `id_semillero` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT de la tabla `users`
+--
+ALTER TABLE `users`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=71;
+
+--
+-- Restricciones para tablas volcadas
+--
+
+--
+-- Filtros para la tabla `administradores`
+--
+ALTER TABLE `administradores`
+  ADD CONSTRAINT `administradores_id_usuario_foreign` FOREIGN KEY (`id_usuario`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `aprendices`
+--
+ALTER TABLE `aprendices`
+  ADD CONSTRAINT `fk_aprendices_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `documentos`
+--
+ALTER TABLE `documentos`
+  ADD CONSTRAINT `fk_documentos_aprendices` FOREIGN KEY (`id_aprendiz`) REFERENCES `aprendices` (`id_aprendiz`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_documentos_proyectos` FOREIGN KEY (`id_proyecto`) REFERENCES `proyectos` (`id_proyecto`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `eventos`
+--
+ALTER TABLE `eventos`
+  ADD CONSTRAINT `fk_eventos_admin` FOREIGN KEY (`id_admin`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_eventos_lider` FOREIGN KEY (`id_lider_semi`) REFERENCES `lideres_semillero` (`id_lider_semi`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `evento_participantes`
+--
+ALTER TABLE `evento_participantes`
+  ADD CONSTRAINT `fk_part_lider` FOREIGN KEY (`id_lider_semi`) REFERENCES `lideres_semillero` (`id_lider_semi`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `evidencias`
+--
+ALTER TABLE `evidencias`
+  ADD CONSTRAINT `evidencias_id_usuario_foreign` FOREIGN KEY (`id_usuario`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Filtros para la tabla `lideres_semillero`
+--
+ALTER TABLE `lideres_semillero`
+  ADD CONSTRAINT `fk_lideres_semillero_user` FOREIGN KEY (`id_lider_semi`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `recursos`
+--
+ALTER TABLE `recursos`
+  ADD CONSTRAINT `fk_recursos_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `semilleros`
+--
+ALTER TABLE `semilleros`
+  ADD CONSTRAINT `fk_semillero_lider` FOREIGN KEY (`id_lider_semi`) REFERENCES `lideres_semillero` (`id_lider_semi`) ON DELETE SET NULL ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
