@@ -177,7 +177,7 @@
                 <input name="ap_celular" class="form-control" value="{{ old('ap_celular') }}">
               </div>
               <div class="col-md-6">
-                <label class="form-label fw-semibold">Correo institucional</label>
+                <label class="form-label fw-semibold">Correo personal</label>
                 <input name="ap_correo_institucional" type="email" class="form-control" value="{{ old('ap_correo_institucional') }}">
               </div>
               <div class="col-md-6">
