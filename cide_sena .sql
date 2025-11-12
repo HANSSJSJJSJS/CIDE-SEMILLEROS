@@ -3,20 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 30-10-2025 a las 22:17:53
+-- Tiempo de generación: 06-11-2025 a las 20:09:56
 -- Versión del servidor: 10.4.32-MariaDB
--- relaciones que no se observando en el diseño 
-
-ALTER TABLE `documentos`
-  ADD CONSTRAINT `fk_documentos_aprendices`
-    FOREIGN KEY (`id_aprendiz`)
-    REFERENCES `aprendices` (`id_aprendiz`)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_documentos_proyectos`
-    FOREIGN KEY (`id_proyecto`)
-    REFERENCES `proyectos` (`id_proyecto`)
-    ON DELETE CASCADE ON UPDATE CASCADE;
-
+-- Versión de PHP: 8.4.13
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -27,6 +16,14 @@ SET time_zone = "+00:00";
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
+
+--
+-- ** ELIMINAR Y CREAR BASE DE DATOS (AÑADIDO) **
+--
+
+DROP DATABASE IF EXISTS `cide_sena`;
+CREATE DATABASE `cide_sena` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE `cide_sena`;
 
 --
 -- Base de datos: `cide_sena`
@@ -181,7 +178,7 @@ CREATE TABLE `eventos` (
   `tipo` varchar(255) NOT NULL DEFAULT 'reunion',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -196,7 +193,7 @@ CREATE TABLE `evento_participantes` (
   `id_lider_semi` bigint(20) UNSIGNED DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -354,6 +351,33 @@ INSERT INTO `proyectos` (`id_proyecto`, `id_semillero`, `nombre_proyecto`, `desc
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `recursos`
+--
+
+CREATE TABLE `recursos` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `nombre_archivo` varchar(255) NOT NULL,
+  `archivo` varchar(255) NOT NULL,
+  `categoria` enum('plantillas','manuales','otros') NOT NULL DEFAULT 'otros',
+  `descripcion` text DEFAULT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `recursos`
+--
+
+INSERT INTO `recursos` (`id`, `nombre_archivo`, `archivo`, `categoria`, `descripcion`, `user_id`, `created_at`, `updated_at`) VALUES
+(1, 'Plantilla rx56', 'recursos/faSamm8ZixAHq20lMqMKqXrXUev6HkoqWIZi8KuS', 'plantillas', NULL, 4, '2025-11-06 00:35:15', '2025-11-06 00:35:15'),
+(2, 'presentación', 'recursos/4t95SzzAdZAP8Cou7udSbvL9mAFq8gqELNWlC41T.pptx', 'plantillas', NULL, 4, '2025-11-06 00:37:48', '2025-11-06 00:37:48'),
+(3, 'pdf', 'recursos/hdvjPd2002AqrPwdumMXCeeOsWgqVFyn7vls3cOn.pdf', 'otros', 'Es un pdf', 4, '2025-11-06 00:40:35', '2025-11-06 00:40:35'),
+(4, 'manual', 'recursos/5D9qIWMCzjjhlR4l4Yr2Mi2vL8KmkgjDODHSvpG7.pdf', 'manuales', 'esto es un manual', 4, '2025-11-06 00:41:15', '2025-11-06 00:41:15');
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `semilleros`
 --
 
@@ -401,11 +425,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('EhBFmyIqBy8tdA2oCxWcxwIqYZA82kYkdsJWdMcd', 4, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiSWt6SUNoZ2U2cjJWYUNZUDE4cjRuMDR1RWttYk9lbXZWUWRLaTlIZSI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czo0MDoiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2FkbWluL3NlbWlsbGVyb3MvNyI7fXM6OToiX3ByZXZpb3VzIjthOjE6e3M6MzoidXJsIjtzOjQwOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYWRtaW4vc2VtaWxsZXJvcy83Ijt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6NDt9', 1761771337),
-('g4KLL7ajzsY3o39KXMmEj6CKcOAqE2EpfdMolKLI', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiUEFVcEFCclM0RFZuY2NoNmIxVXdJYTd0WHNvTVZFTlZzbHRXRVg3TSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9sb2dpbiI7fX0=', 1761838878),
-('LGyKYQX64LvL5DGzeSPOkk6gKwZIBWyEz3WRS00i', 4, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiaGxZdkVhZGVsT1ZyOE53RmNaSHdmb0lKOFlJRk1kb2lPd0hsMHZzMiI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6NDU6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9yZXVuaW9uZXMtbGlkZXJlcyI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjQ7fQ==', 1761857118),
-('MopHZ5PwkVAqbOlKif5CHegyp4zORwqwwLkloXlP', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoicjh3cTVIN1dwQTh4aG1EV3d4SWhVMUdwVk9oSWhoTFlISTdNeGw5ayI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czo0MzoiaHR0cDovL2xvY2FsaG9zdDo4MDAwL2FkbWluL3NlbWlsbGVyb3MvZGVtbyI7fXM6OToiX3ByZXZpb3VzIjthOjE6e3M6MzoidXJsIjtzOjI3OiJodHRwOi8vbG9jYWxob3N0OjgwMDAvbG9naW4iO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1761770731),
-('UNYDphh6FuRid782VRaOhRWStFS8JuWp7PyfCAks', 69, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiQzdmR2d4ejBGS3NwOVBzVjY1NlJaaE1KeE1FaUVOY3lXMk5xYTB6WiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6NDA6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9zZW1pbGxlcm9zLzciO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTo2OTt9', 1761770921);
+('DGjlJwuYgAi421K9ueQP6L4FZ2KMzpBtu9HmsH4u', 4, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiQ2RPdkN0bFNqeTlnWk9kWlcyNFV0c0lsZnV2T3RTelpwSmV1ZThSMCI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi91c3Vhcmlvcy82Ny9lZGl0Ijt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6NDt9', 1762456117);
 
 -- --------------------------------------------------------
 
@@ -570,6 +590,12 @@ ALTER TABLE `proyectos`
 ALTER TABLE `proyectos` ADD FULLTEXT KEY `ft_proyectos` (`nombre_proyecto`,`descripcion`);
 
 --
+-- Indices de la tabla `recursos`
+--
+ALTER TABLE `recursos`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indices de la tabla `semilleros`
 --
 ALTER TABLE `semilleros`
@@ -578,107 +604,14 @@ ALTER TABLE `semilleros`
   ADD UNIQUE KEY `uk_semilleros_lider` (`id_lider_semi`);
 
 --
--- Indices de la tabla `sessions`
---
-ALTER TABLE `sessions`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `sessions_user_id_index` (`user_id`),
-  ADD KEY `sessions_last_activity_index` (`last_activity`);
-
---
--- Indices de la tabla `users`
---
-ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `users_email_unique` (`email`),
-  ADD UNIQUE KEY `uq_users_email_lc` (`email_lc`);
-
---
 -- AUTO_INCREMENT de las tablas volcadas
 --
 
 --
--- AUTO_INCREMENT de la tabla `aprendices`
+-- AUTO_INCREMENT de la tabla `recursos`
 --
-ALTER TABLE `aprendices`
-  MODIFY `id_aprendiz` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
-
---
--- AUTO_INCREMENT de la tabla `failed_jobs`
---
-ALTER TABLE `failed_jobs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `jobs`
---
-ALTER TABLE `jobs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `migrations`
---
-ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
-
---
--- AUTO_INCREMENT de la tabla `proyectos`
---
-ALTER TABLE `proyectos`
-  MODIFY `id_proyecto` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT de la tabla `semilleros`
---
-ALTER TABLE `semilleros`
-  MODIFY `id_semillero` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
-
---
--- AUTO_INCREMENT de la tabla `users`
---
-ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=70;
-
---
--- Restricciones para tablas volcadas
---
-
---
--- Filtros para la tabla `administradores`
---
-ALTER TABLE `administradores`
-  ADD CONSTRAINT `administradores_id_usuario_foreign` FOREIGN KEY (`id_usuario`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `aprendices`
---
-ALTER TABLE `aprendices`
-  ADD CONSTRAINT `fk_aprendices_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `eventos`
---
-ALTER TABLE `eventos`
-  ADD CONSTRAINT `fk_eventos_admin` FOREIGN KEY (`id_admin`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_eventos_lider` FOREIGN KEY (`id_lider_semi`) REFERENCES `lideres_semillero` (`id_lider_semi`) ON DELETE SET NULL ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `evento_participantes`
---
-ALTER TABLE `evento_participantes`
-  ADD CONSTRAINT `fk_part_lider` FOREIGN KEY (`id_lider_semi`) REFERENCES `lideres_semillero` (`id_lider_semi`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `lideres_semillero`
---
-ALTER TABLE `lideres_semillero`
-  ADD CONSTRAINT `fk_lideres_semillero_user` FOREIGN KEY (`id_lider_semi`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `semilleros`
---
-ALTER TABLE `semilleros`
-  ADD CONSTRAINT `fk_semillero_lider` FOREIGN KEY (`id_lider_semi`) REFERENCES `lideres_semillero` (`id_lider_semi`) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE `recursos`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -36,5 +36,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'role' => \App\Http\Middleware\RoleMiddleware::class, // <-- registrar alias 'role'
         'lider.semillero' => \App\Http\Middleware\LiderSemilleroMiddleware::class,
+        'admin.readonly' => \App\Http\Middleware\AdminReadOnlyMiddleware::class,
     ];
 }

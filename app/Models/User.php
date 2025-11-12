@@ -65,6 +65,7 @@ class User extends Authenticatable
 {
     return match ($this->role) {
         'ADMIN' => '/admin/dashboard',
+        'LIDER_INTERMEDIARIO' => '/admin/dashboard',
         'LIDER_SEMILLERO' => '/lider_semi/dashboard',
         'APRENDIZ' => '/aprendiz/dashboard',
         'LIDER GENERAL' => '/lider/dashboard',
@@ -96,4 +97,14 @@ public function evidencias()
     return $this->hasMany(Documento::class, 'id_usuario', 'id');
 }
 
+    public function getRoleLabelAttribute(): string
+    {
+        $role = strtoupper(str_replace([' ', '-'], '_', $this->role ?? ''));
+        return match ($role) {
+            'ADMIN'              => 'Líder grupo de investigación CIDEINNOVA',
+            'LIDER_SEMILLERO'    => 'Líder semillero',
+            'APRENDIZ'           => 'Aprendiz',
+            default              => $this->role ?? '—',
+        };
+    }
 }

@@ -15,6 +15,7 @@
         <select id="rol" name="role" class="form-select" required>
           <option value="">Seleccione...</option>
           <option value="ADMIN"           {{ old('role')==='ADMIN' ? 'selected' : '' }}>Líder general</option>
+          <option value="LIDER_INTERMEDIARIO" {{ old('role')==='LIDER_INTERMEDIARIO' ? 'selected' : '' }}>Líder intermediario</option>
           <option value="LIDER_SEMILLERO" {{ old('role')==='LIDER_SEMILLERO' ? 'selected' : '' }}>Líder semillero</option>
           <option value="APRENDIZ"        {{ old('role')==='APRENDIZ' ? 'selected' : '' }}>Aprendiz</option>
         </select>

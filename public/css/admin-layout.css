@@ -72,7 +72,7 @@
 
 /* ---------- Área de página con fondo decorativo ---------- */
 .adm-content{ background:#f7f9fc; }
-.adm-page{ position:relative; padding:20px; isolation:isolate; z-index:0; }
+.adm-page{ position:relative; padding:20px; isolation:auto; z-index:auto; }
 .adm-page::before{
   content:""; position:absolute; inset:0; z-index:-1;
   background:url("../images/bg-semillero.png") no-repeat center 80px / 900px auto;
@@ -129,3 +129,7 @@
 
 /* Bloquea scroll de fondo cuando el menú está abierto en móvil */
 .noscroll{ overflow: hidden; height: 100vh; }
+
+/* Asegurar modales por encima de overlays del layout */
+.modal { z-index: 2050 !important; }
+.modal-backdrop { z-index: 2040 !important; pointer-events: none !important; }

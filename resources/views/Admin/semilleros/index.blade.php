@@ -6,14 +6,27 @@
     <h3 class="fw-bold" style="color:#2d572c;">Gestión de Semilleros</h3>
   </div>
 
+  @php
+    $__ROLE_PAGE = strtoupper(str_replace([' ', '-'], '_', auth()->user()->role ?? ''));
+    $__USR_PERM_SEM = null;
+    if ($__ROLE_PAGE === 'ADMIN') {
+      $__USR_PERM_SEM = \DB::table('user_module_permissions')
+        ->where('user_id', auth()->id())
+        ->where('module', 'semilleros')
+        ->first();
+    }
+  @endphp
 
 
 
   {{-- Botón abrir modal --}}
-<button type="button" class="btn btn-primary mb-3"
-        data-bs-toggle="modal" data-bs-target="#modalNuevoSemillero">
-  <i class="fa fa-plus me-1"></i> Nuevo semillero
-</button>
+  @php $canCreate = ($__ROLE_PAGE === 'LIDER_GENERAL') || ($__ROLE_PAGE === 'ADMIN' && (int)($__USR_PERM_SEM->can_create ?? 0) === 1); @endphp
+  @if ($canCreate)
+    <button type="button" class="btn btn-primary mb-3"
+            data-bs-toggle="modal" data-bs-target="#modalNuevoSemillero">
+      <i class="fa fa-plus me-1"></i> Nuevo semillero
+    </button>
+  @endif
 
 @include('Admin.semilleros._modal_crear')
 
@@ -24,13 +37,16 @@
 
 
   {{-- Filtro simple --}}
-      <div class="row g-2">
-        <div class="col-md-10">
-          <input name="q" value="{{ $q }}" class="form-control" placeholder="Buscar por semillero, línea o líder">
-        </div>
-        <div class="col-md-2">
-          <button class="btn btn-success w-100"><i class="bi bi-search"></i> Buscar</button>
-        </div>
+  <form method="GET" action="{{ route('admin.semilleros.index') }}" class="mb-3">
+    <div class="row g-2">
+      <div class="col-md-8 col-lg-9">
+        <input name="q" value="{{ $q }}" class="form-control" placeholder="Buscar por semillero, línea o líder">
+      </div>
+      <div class="col-6 col-md-2 col-lg-1 d-grid">
+        <button type="submit" class="btn btn-success"><i class="bi bi-search"></i> Buscar</button>
+      </div>
+      <div class="col-6 col-md-2 col-lg-2 d-grid">
+        <a href="{{ route('admin.semilleros.index') }}" class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i> Limpiar</a>
       </div>
     </div>
   </form>
@@ -56,23 +72,30 @@
             <td>{{ $s->linea_investigacion }}</td>
             <td>{{ $s->lider_nombre ? $s->lider_nombre.' ('.$s->lider_correo.')' : '—' }}</td>
             <td class="text-end">
-              <button class="btn btn-sm btn-outline-primary"
-                      data-bs-toggle="modal" data-bs-target="#modalEditarSemillero"
-                      data-id="{{ $s->id_semillero }}">
-                <i class="bi bi-pencil"></i> Editar
-              </button>
-              <form action="{{ route('admin.semilleros.destroy',$s->id_semillero) }}" method="POST" class="d-inline"
-                    onsubmit="return confirm('¿Eliminar este semillero?');">
-                @csrf @method('DELETE')
-                <button class="btn btn-sm btn-outline-danger">
-                  <i class="bi bi-trash"></i> Eliminar
+              @php
+                $canUpdate = ($__ROLE_PAGE === 'LIDER_GENERAL') || ($__ROLE_PAGE === 'ADMIN' && (int)($__USR_PERM_SEM->can_update ?? 0) === 1);
+                $canDelete = ($__ROLE_PAGE === 'LIDER_GENERAL') || ($__ROLE_PAGE === 'ADMIN' && (int)($__USR_PERM_SEM->can_delete ?? 0) === 1);
+              @endphp
+              @if ($canUpdate)
+                <button class="btn btn-sm btn-outline-primary"
+                        data-bs-toggle="modal" data-bs-target="#modalEditarSemillero"
+                        data-id="{{ $s->id_semillero }}">
+                  <i class="bi bi-pencil"></i> Editar
                 </button>
-
-                  <a href="{{ route('admin.semilleros.show', $s->id_semillero) }}"
+              @endif
+              @if ($canDelete)
+                <form action="{{ route('admin.semilleros.destroy',$s->id_semillero) }}" method="POST" class="d-inline"
+                      onsubmit="return confirm('¿Eliminar este semillero?');">
+                  @csrf @method('DELETE')
+                  <button class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash"></i> Eliminar
+                  </button>
+                </form>
+              @endif
+              <a href="{{ route('admin.semilleros.show', $s->id_semillero) }}"
                   class="btn btn-sm btn-outline-success" style="border-radius:20px;">
                   <i class="bi bi-folder2-open"></i> Ver proyectos
                   </a>
-              </form>
             </td>
           </tr>
         @empty

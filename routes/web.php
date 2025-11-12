@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\NotificationController as AdminNotificationContro
 use App\Http\Controllers\Admin\ReunionesLideresController;
 use App\Http\Controllers\Admin\RecursoController;
 use App\Http\Controllers\Admin\PerfilController as AdminPerfilController;
+use App\Http\Controllers\Admin\UserPermissionController;
 
 // Líder semillero
 use App\Http\Controllers\LiderSemillero\SemilleroController as LiderSemilleroUIController;
@@ -99,7 +100,7 @@ Route::middleware(['auth'])->group(function () {
 | ADMIN (ÚNICO BLOQUE CONSOLIDADO)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:ADMIN'])
+Route::middleware(['auth', 'role:ADMIN,LIDER_INTERMEDIARIO,LIDER_GENERAL', \App\Http\Middleware\AdminReadOnlyMiddleware::class])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
@@ -155,6 +156,12 @@ Route::middleware(['auth', 'role:ADMIN'])
         // Notificaciones
         Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');
         Route::post('/notifications/read-all', [AdminNotificationController::class, 'readAll'])->name('notifications.read_all');
+
+        // Permisos por usuario (ADMIN)
+        Route::prefix('usuarios')->group(function () {
+            Route::get('{id}/permisos', [UserPermissionController::class, 'show'])->whereNumber('id')->name('usuarios.permisos.show');
+            Route::post('{id}/permisos', [UserPermissionController::class, 'update'])->whereNumber('id')->name('usuarios.permisos.update');
+        });
     });
 
 
@@ -171,6 +178,7 @@ Route::get('/dashboard', function () {
 
     $map = [
         'ADMIN'          => 'admin.dashboard',
+        'LIDER_INTERMEDIARIO' => 'admin.dashboard',
         'INSTRUCTOR'     => 'lider_semi.dashboard',
         'APRENDIZ'       => 'aprendiz.dashboard',
         'LIDER_SEMILLERO'=> 'lider_semi.dashboard',

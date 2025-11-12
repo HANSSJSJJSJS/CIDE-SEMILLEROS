@@ -69,18 +69,22 @@ class SemilleroController extends Controller
             }
         }
 
-        DB::table('semilleros')->insert([
+        $insert = [
             'nombre'              => $data['nombre'],
             'linea_investigacion' => $data['linea_investigacion'],
             'id_lider_semi'       => $data['id_lider_semi'] ?? null,
-            // Usa los nombres de columnas de tu esquema:
-            // si tu tabla maneja "creado_en/actualizado_en" usa esas:
-            'creado_en'           => now(),
-            'actualizado_en'      => now(),
-            // si en tu esquema usas timestamps de laravel, usa en cambio:
-            // 'created_at'       => now(),
-            // 'updated_at'       => now(),
-        ]);
+        ];
+
+        // Si la tabla usa PK 'id_semillero' sin autoincrement, calcular siguiente id
+        $tbl = 'semilleros';
+        if (Schema::hasColumn($tbl, 'id_semillero') && !Schema::hasColumn($tbl, 'id')) {
+            // Intenta detectar si requiere valor manual (no AI) asumiendo NOT NULL sin default
+            // Estrategia simple: setear id = max + 1
+            $next = (int) (DB::table($tbl)->max('id_semillero') ?? 0) + 1;
+            $insert['id_semillero'] = $next;
+        }
+
+        DB::table('semilleros')->insert($insert);
 
         return redirect()->route('admin.semilleros.index')
             ->with('success', 'Semillero creado correctamente.');

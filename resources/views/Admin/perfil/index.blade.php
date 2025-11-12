@@ -30,6 +30,7 @@
       </div>
     @endif
 
+    @php($CURRENT_ROLE = strtoupper(str_replace([' ', '-'], '_', auth()->user()->role ?? '')))
     {{-- Datos de cuenta --}}
     <div class="card shadow-sm mb-4">
       <div class="card-header bg-white">
@@ -48,6 +49,7 @@
                 name="name"
                 value="{{ old('name', auth()->user()->name) }}"
                 class="form-control @error('name') is-invalid @enderror"
+                @if($CURRENT_ROLE==='LIDER_INTERMEDIARIO') disabled @endif
                 required
               >
               @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -61,6 +63,7 @@
                 name="email"
                 value="{{ old('email', auth()->user()->email) }}"
                 class="form-control @error('email') is-invalid @enderror"
+                @if($CURRENT_ROLE==='LIDER_INTERMEDIARIO') disabled @endif
                 required
               >
               @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -68,12 +71,14 @@
             </div>
           </div>
 
-          <div class="d-flex gap-2 mt-4">
-            <button class="btn btn-primary" type="submit">
-              <i class="bi bi-save me-1"></i> Guardar cambios
-            </button>
-            <a class="btn btn-outline-secondary" href="{{ url()->current() }}">Cancelar</a>
-          </div>
+          @unless($CURRENT_ROLE==='LIDER_INTERMEDIARIO')
+            <div class="d-flex gap-2 mt-4">
+              <button class="btn btn-primary" type="submit">
+                <i class="bi bi-save me-1"></i> Guardar cambios
+              </button>
+              <a class="btn btn-outline-secondary" href="{{ url()->current() }}">Cancelar</a>
+            </div>
+          @endunless
         </form>
       </div>
     </div>
@@ -96,6 +101,7 @@
                   type="password"
                   name="current_password"
                   class="form-control @error('current_password') is-invalid @enderror"
+                  @if($CURRENT_ROLE==='LIDER_INTERMEDIARIO') disabled @endif
                   required
                   id="current_password"
                 >
@@ -113,6 +119,7 @@
                   type="password"
                   name="password"
                   class="form-control @error('password') is-invalid @enderror"
+                  @if($CURRENT_ROLE==='LIDER_INTERMEDIARIO') disabled @endif
                   required
                   minlength="8"
                   id="password"
@@ -132,6 +139,7 @@
                   type="password"
                   name="password_confirmation"
                   class="form-control"
+                  @if($CURRENT_ROLE==='LIDER_INTERMEDIARIO') disabled @endif
                   required
                   id="password_confirmation"
                 >
@@ -143,12 +151,14 @@
             </div>
           </div>
 
-          <div class="d-flex gap-2 mt-4">
-            <button class="btn btn-primary" type="submit">
-              <i class="bi bi-key-fill me-1"></i> Actualizar contraseña
-            </button>
-            <button class="btn btn-outline-secondary" type="reset">Limpiar</button>
-          </div>
+          @unless($CURRENT_ROLE==='LIDER_INTERMEDIARIO')
+            <div class="d-flex gap-2 mt-4">
+              <button class="btn btn-primary" type="submit">
+                <i class="bi bi-key-fill me-1"></i> Actualizar contraseña
+              </button>
+              <button class="btn btn-outline-secondary" type="reset">Limpiar</button>
+            </div>
+          @endunless
         </form>
       </div>
     </div>

@@ -1,7 +1,3 @@
-<<<<<<< HEAD:resources/views/Admin/dashboard-admin.blade.php
-=======
-<<<<<<< HEAD:resources/views/Admin/dashboard-admin.blade.php
->>>>>>> Fusionmain:resources/views/Admin/copia.html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -23,7 +19,7 @@
             <div class="user-avatar">JC</div>
             <span style="font-weight: 600; color: var(--gray-700);">Joaquín cañon</span>
         </div>
-        <h1 class="header-title">Bienvenido a CIDE SEMILLERO</h1>
+        <h1 class="header-title">Bienvenido a CIDE SEMILLERO Admin</h1>
         <button class="logout-btn" type="button" onclick="logout()">
             <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
@@ -288,13 +284,6 @@
 <style>
   #users .toolbar .form-control, #users .toolbar .form-select { height: 42px; }
 </style>
-
-<<<<<<< HEAD:resources/views/Admin/dashboard-admin.blade.php
-=======
-=======
->>>>>>> origin/main:resources/views/Admin/copia.html
->>>>>>> Fusionmain:resources/views/Admin/copia.html
-
             <!-- Semilleros Section -->
             <section id="semilleros" class="content-section">
                 <h2 class="section-title">Gestión de Semilleros</h2>
