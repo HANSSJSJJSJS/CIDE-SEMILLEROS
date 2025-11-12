@@ -126,7 +126,7 @@ class ProyectoController extends Controller
         }
 
         $evidencias = Evidencia::with(['autor'])
-            ->where('id_proyecto', $proyecto->id_proyecto)
+            ->where('proyecto_id', $proyecto->id_proyecto)
             ->when($fecha, function ($q) use ($fecha) {
                 $q->whereDate('created_at', $fecha);
             })
@@ -139,10 +139,23 @@ class ProyectoController extends Controller
             ->get();
 
         // Documentos del proyecto (para listarlos en el detalle)
-        $archivos = Archivo::with('user')
-            ->where('proyecto_id', $proyecto->id_proyecto)
-            ->orderByDesc('subido_en')
-            ->get();
+        if (Schema::hasTable('archivos')) {
+            $archivos = Archivo::with('user')
+                ->where('proyecto_id', $proyecto->id_proyecto)
+                ->orderByDesc('subido_en')
+                ->get();
+        } elseif (Schema::hasTable('documentos')) {
+            // Fallback: usar la tabla documentos y mapear columnas a las esperadas por la vista
+            $archivos = DB::table('documentos')
+                ->where('id_proyecto', $proyecto->id_proyecto)
+                ->orderByDesc('fecha_subida')
+                ->select([
+                    DB::raw('documento as nombre_original'),
+                    DB::raw('ruta_archivo as ruta')
+                ])->get();
+        } else {
+            $archivos = collect();
+        }
 
         return view('aprendiz.proyectos.show_proyecto', compact('proyecto', 'companeros', 'lider', 'evidencias', 'fecha', 'nombre', 'nombreError', 'archivos'));
     }
@@ -161,6 +174,38 @@ class ProyectoController extends Controller
             foreach ($userCols as $c) { if (Schema::hasColumn($tbl, $c)) { $ucol = $c; break; } }
             if ($pcol && $ucol) {
                 try {
+                    // Si la columna de usuario en la pivote representa un id de aprendiz, debemos mapear desde users -> aprendices
+                    $aprColsPivot = ['id_aprendiz','aprendiz_id','idAprendiz'];
+                    if (in_array($ucol, $aprColsPivot, true)) {
+                        // Determinar cómo relacionar aprendices con users
+                        $aprTable = 'aprendices';
+                        if (Schema::hasTable($aprTable)) {
+                            $userFkCandidates = ['id_usuario','user_id'];
+                            $aprPkCandidates  = ['id_aprendiz','id'];
+                            $userFkCol = null; $aprPkCol = null;
+                            foreach ($userFkCandidates as $cand) { if (Schema::hasColumn($aprTable, $cand)) { $userFkCol = $cand; break; } }
+                            foreach ($aprPkCandidates as $cand) { if (Schema::hasColumn($aprTable, $cand)) { $aprPkCol = $cand; break; } }
+                            if ($userFkCol && $aprPkCol) {
+                                $aprendizIds = DB::table($aprTable)
+                                    ->where($userFkCol, $userId)
+                                    ->pluck($aprPkCol)
+                                    ->map(fn($v)=> (int)$v)
+                                    ->all();
+                                if (!empty($aprendizIds)) {
+                                    return DB::table($tbl)
+                                        ->whereIn($ucol, $aprendizIds)
+                                        ->distinct()
+                                        ->pluck($pcol)
+                                        ->map(fn($v)=> (int)$v)
+                                        ->all();
+                                }
+                            }
+                        }
+                        // Si no hay manera de mapear, seguir al siguiente intento
+                        continue;
+                    }
+
+                    // Caso normal: la columna en pivote referencia directamente al user id
                     return DB::table($tbl)
                         ->where($ucol, $userId)
                         ->distinct()

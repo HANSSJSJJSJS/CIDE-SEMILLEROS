@@ -45,7 +45,7 @@
                             <select name="id_proyecto" id="id_proyecto" class="form-select @error('id_proyecto') is-invalid @enderror" required>
                                 <option value="">Selecciona un proyecto</option>
                                 @foreach($proyectos as $proyecto)
-                                    <option value="{{ $proyecto->id_proyecto }}">{{ $proyecto->nombre_proyecto }}</option>
+                                    <option value="{{ $proyecto->id_proyecto }}" {{ (string)request('proyecto') === (string)$proyecto->id_proyecto ? 'selected' : '' }}>{{ $proyecto->nombre_proyecto }}</option>
                                 @endforeach
                             </select>
                             @error('id_proyecto')
@@ -59,11 +59,11 @@
                                 <div class="dz-content">
                                     <i class="bi bi-file-earmark-arrow-up"></i>
                                     <div class="fw-bold">Arrastra archivo aquí</div>
-                                    <small>O haz clic para seleccionar PDF</small>
+                                    <small>O haz clic para seleccionar archivo</small>
                                 </div>
-                                <input type="file" name="archivo" id="archivo" accept="application/pdf" class="dropzone-input @error('archivo') is-invalid @enderror" required>
+                                <input type="file" name="archivo" id="archivo" accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/*,text/plain,text/csv,application/zip,application/x-rar-compressed" class="dropzone-input @error('archivo') is-invalid @enderror" required>
                             </div>
-                            <small class="text-muted">Solo PDF. Tamaño máximo: 10MB</small>
+                            <small class="text-muted">Tipos permitidos: PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, Imágenes, TXT, CSV, ZIP/RAR. Tamaño máximo: 10MB</small>
                             @error('archivo')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
@@ -176,6 +176,17 @@
 document.addEventListener('DOMContentLoaded', function(){
   const form = document.getElementById('formUploadDoc');
   if (!form) return;
+  const dz = form.querySelector('.dropzone-box');
+  const input = form.querySelector('#archivo');
+  const dzText = form.querySelector('.dz-content .fw-bold');
+  if (dz && input){
+    dz.addEventListener('click', function(e){
+      if (e.target !== input) { input.click(); }
+    });
+    input.addEventListener('change', function(){
+      if (input.files && input.files.length > 0 && dzText){ dzText.textContent = input.files[0].name; }
+    });
+  }
   form.addEventListener('submit', async function(e){
     try{
       e.preventDefault();
@@ -184,10 +195,22 @@ document.addEventListener('DOMContentLoaded', function(){
       const fd = new FormData(form);
       const resp = await fetch(form.action, {
         method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
         body: fd
       });
-      if(!resp.ok){ throw new Error('Error HTTP '+resp.status); }
+      if(!resp.ok){
+        let msg = 'Error HTTP '+resp.status;
+        try { const err = await resp.json();
+          if (err?.message) msg = err.message;
+          if (err?.errors){
+            const firstKey = Object.keys(err.errors)[0];
+            if (firstKey && Array.isArray(err.errors[firstKey]) && err.errors[firstKey][0]){
+              msg = err.errors[firstKey][0];
+            }
+          }
+        } catch(_e){}
+        throw new Error(msg);
+      }
       const data = await resp.json();
       if (!data?.ok){ throw new Error('Respuesta inválida'); }
       const tBody = document.getElementById('docsTbody');
@@ -210,6 +233,7 @@ document.addEventListener('DOMContentLoaded', function(){
         tBody.prepend(tr);
         // Reset form
         form.reset();
+        if (dzText){ dzText.textContent = 'Arrastra archivo aquí'; }
         // Aviso
         const ok = document.createElement('div');
         ok.className = 'alert alert-success mt-3';
@@ -222,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function(){
       }
     } catch(err){
       console.error(err);
-      alert('No se pudo subir el documento. Inténtalo nuevamente.');
+      alert((err && err.message) ? err.message : 'No se pudo subir el documento. Inténtalo nuevamente.');
     } finally {
       const btn = form.querySelector('button[type="submit"]');
       if (btn){ btn.disabled = false; if (btn.dataset._label) btn.innerHTML = btn.dataset._label; }

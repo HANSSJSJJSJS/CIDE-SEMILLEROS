@@ -58,6 +58,6 @@ class Proyecto extends Model
     // 🔹 Un proyecto tiene muchas evidencias
     public function evidencias()
     {
-        return $this->hasMany(Evidencia::class, 'id_proyecto', 'id_proyecto');
+        return $this->hasMany(Evidencia::class, 'proyecto_id', 'id_proyecto');
     }
 }
