@@ -39,6 +39,9 @@
           <a href="{{ route('lider_semi.documentos') }}" class="nav-link {{ request()->routeIs('lider_semi.documentos*') ? 'active' : '' }}">
             <i class="bi bi-file-earmark-text me-2"></i> <span>Documentación</span>
           </a>
+          <a href="{{ route('lider_semi.recursos.index') }}" class="nav-link {{ request()->routeIs('lider_semi.recursos.*') ? 'active' : '' }}">
+            <i class="bi bi-archive me-2"></i> <span>Recursos</span>
+            </a>
           <a href="{{ route('lider_semi.calendario') }}" class="nav-link {{ request()->routeIs('lider_semi.calendario*') ? 'active' : '' }}">
             <i class="bi bi-calendar-event me-2"></i> <span>Calendario</span>
           </a>
