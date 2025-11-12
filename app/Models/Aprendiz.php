@@ -7,20 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 class Aprendiz extends Model
 {
     protected $table = 'aprendices';
-
     protected $primaryKey = 'id_aprendiz';
     public $incrementing = true;
-
     public $timestamps = false;
 
     protected $fillable = [
-        'id_aprendiz',
-        'id_user',
+        'user_id',
         'nombres',
         'apellidos',
         'ficha',
         'programa',
-        'id_tipo_documento',
         'tipo_documento',
         'documento',
         'celular',
@@ -28,35 +24,43 @@ class Aprendiz extends Model
         'correo_personal',
         'contacto_nombre',
         'contacto_celular',
+        'semillero_id', // <<--- NUEVO: FK al semillero
     ];
 
+    // Relaciones
     public function user()
     {
-        return $this->belongsTo(User::class, 'id_user');
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
-    public function grupos()
+    public function semillero()
     {
-        return $this->belongsToMany(Grupo::class, 'grupo_aprendices', 'id_usuario', 'id_grupo');
-    }
-
-    public function semilleros()
-    {
-        return $this->belongsToMany(Semillero::class, 'aprendiz_semillero', 'id_aprendiz', 'id_semillero', 'id_aprendiz', 'id_semillero');
+        return $this->belongsTo(Semillero::class, 'semillero_id', 'id_semillero');
     }
 
     public function proyectos()
     {
-        return $this->belongsToMany(Proyecto::class, 'aprendiz_proyecto', 'id_aprendiz', 'id_proyecto', 'id_aprendiz', 'id_proyecto');
+        return $this->belongsToMany(
+            Proyecto::class,
+            'aprendiz_proyecto',
+            'id_aprendiz',
+            'id_proyecto'
+        );
     }
 
-    // Exponer atributo virtual "nombre_completo" a partir de nombres y apellidos
-    protected $appends = ['nombre_completo'];
+    // Atributos virtuales
+    protected $appends = ['nombre_completo', 'linea_investigacion'];
 
     public function getNombreCompletoAttribute(): string
     {
         $n = trim((string)($this->attributes['nombres'] ?? ''));
         $a = trim((string)($this->attributes['apellidos'] ?? ''));
         return trim($n . ' ' . $a);
+    }
+
+    // NO se persiste en la tabla aprendices: se lee desde el semillero
+    public function getLineaInvestigacionAttribute(): ?string
+    {
+        return optional($this->semillero)->linea_investigacion;
     }
 }

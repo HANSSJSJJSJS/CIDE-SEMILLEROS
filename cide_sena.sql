@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 10-11-2025 a las 17:34:12
+-- Tiempo de generación: 12-11-2025 a las 21:18:26
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.4.13
 
@@ -57,8 +57,10 @@ CREATE TABLE `aprendices` (
   `nombres` varchar(120) NOT NULL,
   `apellidos` varchar(255) DEFAULT NULL,
   `nombre_completo` varchar(255) DEFAULT NULL,
-  `ficha` varchar(30) NOT NULL,
-  `programa` varchar(160) NOT NULL,
+  `ficha` varchar(30) DEFAULT NULL,
+  `programa` varchar(160) DEFAULT NULL,
+  `vinculado_sena` tinyint(1) NOT NULL DEFAULT 1,
+  `institucion` varchar(160) DEFAULT NULL,
   `tipo_documento` varchar(5) DEFAULT NULL,
   `documento` varchar(40) NOT NULL,
   `celular` varchar(30) DEFAULT NULL,
@@ -66,6 +68,7 @@ CREATE TABLE `aprendices` (
   `correo_personal` varchar(160) DEFAULT NULL,
   `contacto_nombre` varchar(160) DEFAULT NULL,
   `contacto_celular` varchar(30) DEFAULT NULL,
+  `semillero_id` bigint(20) UNSIGNED DEFAULT NULL,
   `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
   `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `estado` enum('Activo','Inactivo') NOT NULL DEFAULT 'Activo'
@@ -75,28 +78,64 @@ CREATE TABLE `aprendices` (
 -- Volcado de datos para la tabla `aprendices`
 --
 
-INSERT INTO `aprendices` (`id_aprendiz`, `user_id`, `nombres`, `apellidos`, `nombre_completo`, `ficha`, `programa`, `tipo_documento`, `documento`, `celular`, `correo_institucional`, `correo_personal`, `contacto_nombre`, `contacto_celular`, `creado_en`, `actualizado_en`, `estado`) VALUES
-(7, NULL, 'Joaquin cañon', NULL, 'Joaquin cañon ', '35435345', 'adso', 'T.I', '8344873278', '3215678976', 'test2@gmail.com', 'example@gmail.com', 'gsdfd', '3456789642', '2025-10-21 15:46:36', '2025-11-05 20:02:55', 'Activo'),
-(8, NULL, 'Hansbleidi Cardenas', NULL, 'Hansbleidi Cardenas ', '2848527', 'ADSO', 'CC', '1071548288', '3053970242', 'hans@soy.sena.edu.co', 'test3@gmail.com', NULL, NULL, '2025-10-15 20:50:17', '2025-11-05 20:02:55', 'Activo'),
-(20, NULL, 'Laura Martínez', NULL, 'Laura Martínez ', '38454893', 'Animacion 3D', 'C.E', '8237498234', '3470909094', 'laura@sena.edu.co', 'IKJEDWN@HSBXJ.COM', 'djnbcuibn', '3129098765', '2025-10-21 15:46:36', '2025-11-05 20:02:55', 'Activo'),
-(21, NULL, 'Carlos Pérez', NULL, 'Carlos Pérez ', '77788888', 'Adso', 'C.C', '76876876', '3700907888', 'carlos@sena.edu.co', 'hfbejhr@fdnjdn.com', 'ebfciewuab', '7263t43', '2025-10-21 15:46:36', '2025-11-05 20:02:55', 'Activo'),
-(25, NULL, 'Laura Rodríguez', NULL, 'Laura Rodríguez ', '7247747', 'Animacion 3D', 'C.C', '72364264', '32145567888', 'laura.rod@example.com', 'vdvcb@gjgjgj.com', 'uhbvusdb', '3457890078', '2025-10-21 15:46:36', '2025-11-05 20:02:55', 'Activo'),
-(26, NULL, 'Carlos Gómez', NULL, 'Carlos Gómez ', '35435345', 'Adso', 'T.I', '7373363663', '3456789009', 'carlos.gomez@example.com', 'gsggs@ifiuewf.com', 'hahhah', '3213456789', '2025-10-21 15:46:36', '2025-11-05 20:02:55', 'Activo'),
-(27, NULL, 'Valentina Ruiz', NULL, 'Valentina Ruiz ', '73478364', 'Animacion 3D', 'C.C', '7468584863', '3215678976', 'valentina.ruiz@example.com', 'example@gnmail.com', 'hahsabahs', '3467674356', '2025-10-21 15:46:36', '2025-11-05 20:02:55', 'Activo'),
-(28, NULL, 'Andrés Pérez', NULL, 'Andrés Pérez ', '62347826', 'ADSO', 'C.C', '847276487', '3456789023', 'andres.perez@example.com', 'dvasvfjh@dbd.com', '3216789045', '6472474127', '2025-10-21 15:46:36', '2025-11-05 20:02:55', 'Activo'),
-(29, NULL, 'María Castro', NULL, 'María Castro ', '35435345', 'animacion 3D', 'C.C', '7689367363', '3214789076', 'maria.castro@example.com', 'example123@gmail.com', 'hasahgvbwi', '3456789012', '2025-10-21 15:46:36', '2025-11-05 20:02:55', 'Activo'),
-(30, NULL, 'Laura Martínez Pérez', NULL, 'Laura Martínez Pérez ', '2435345', 'Tecnología en Análisis y Desarrollo de Sistemas de Información', 'CC', '1001234567', '3004567890', 'laura.martinez@sena.edu.co', 'laura.perez@gmail.com', 'Carlos Pérez', '3102345678', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
-(31, NULL, 'Juan David Torres', NULL, 'Juan David Torres ', '2435346', 'Gestión Empresarial', 'TI', '1002234568', '3014567891', 'juan.torres@sena.edu.co', 'jdavidtorres@yahoo.com', 'Martha Torres', '3103345679', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
-(32, NULL, 'Mariana Gómez Ríos', NULL, 'Mariana Gómez Ríos ', '2435347', 'Diseño Gráfico Digital', 'CC', '1003234569', '3024567892', 'mariana.gomez@sena.edu.co', 'marianagomez@hotmail.com', 'Luis Ríos', '3104345680', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
-(33, NULL, 'Carlos Andrés Suárez', NULL, 'Carlos Andrés Suárez ', '2435348', 'Contabilidad y Finanzas', 'CE', '1004234570', '3034567893', 'carlos.suarez@sena.edu.co', 'carsuarez@gmail.com', 'Sandra Suárez', '3105345681', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
-(34, NULL, 'Ana Milena López', NULL, 'Ana Milena López ', '2435349', 'Gestión del Talento Humano', 'CC', '1005234571', '3044567894', 'ana.lopez@sena.edu.co', 'anamilena@gmail.com', 'Diego López', '3106345682', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
-(35, NULL, 'Esteban Ramírez Torres', NULL, 'Esteban Ramírez Torres ', '2435350', 'Producción Multimedia', 'TI', '1006234572', '3054567895', 'esteban.ramirez@sena.edu.co', 'eramirez@hotmail.com', 'Natalia Torres', '3107345683', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
-(36, NULL, 'Luisa Fernanda Salazar', NULL, 'Luisa Fernanda Salazar ', '2435351', 'Seguridad y Salud en el Trabajo', 'CC', '1007234573', '3064567896', 'luisa.salazar@sena.edu.co', 'lusalazar@gmail.com', 'Camilo Salazar', '3108345684', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
-(37, NULL, 'David Alejandro Méndez', NULL, 'David Alejandro Méndez ', '2435352', 'Mecatrónica', 'CE', '1008234574', '3074567897', 'david.mendez@sena.edu.co', 'damendez@gmail.com', 'Paola Méndez', '3109345685', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
-(38, NULL, 'Juliana Herrera Osorio', NULL, 'Juliana Herrera Osorio ', '2435353', 'Marketing Digital', 'CC', '1009234575', '3084567898', 'juliana.herrera@sena.edu.co', 'jherrera@gmail.com', 'Hernán Herrera', '3110345686', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
-(39, NULL, 'Santiago López Vargas', NULL, 'Santiago López Vargas ', '2435354', 'Desarrollo de Videojuegos', 'TI', '1010234576', '3094567899', 'santiago.lopez@sena.edu.co', 'slopezvargas@gmail.com', 'Andrea Vargas', '3111345687', '2025-10-21 19:41:11', '2025-11-05 20:02:55', 'Activo'),
-(40, 46, 'Sergio', 'Morita', 'Sergio Morita', '28485274', 'Adsoa', 'TI', '15457845', '54648961', 'asjo@hotmail.com', 'asd2223@hola.com', 'sias', NULL, '2025-10-22 21:48:14', '2025-11-05 20:02:55', 'Activo'),
-(41, 68, 'deivit', 'Agudelo', 'deivit Agudelo', '28485274', 'Adso', 'CC', '15457845', '54648961', 'lorem@hsena.com', 'joaquin_canon@soy.sena.edu.co.com', NULL, NULL, '2025-10-29 23:41:00', '2025-11-05 20:02:55', 'Activo');
+INSERT INTO `aprendices` (`id_aprendiz`, `user_id`, `nombres`, `apellidos`, `nombre_completo`, `ficha`, `programa`, `vinculado_sena`, `institucion`, `tipo_documento`, `documento`, `celular`, `correo_institucional`, `correo_personal`, `contacto_nombre`, `contacto_celular`, `semillero_id`, `creado_en`, `actualizado_en`, `estado`) VALUES
+(62, 1, 'Laura', 'García Pérez', 'Laura García Pérez', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000001', '3001111111', 'laura.garcia@misena.edu.co', 'laura.garcia@gmail.com', 'Marta Pérez', '3101111111', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(63, 2, 'Carlos', 'Hernández Ruiz', 'Carlos Hernández Ruiz', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000002', '3002222222', 'carlos.hernandez@misena.edu.co', 'carlos.hernandez@gmail.com', 'Juan Ruiz', '3102222222', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(64, 3, 'María', 'López Díaz', 'María López Díaz', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000003', '3003333333', 'maria.lopez@misena.edu.co', 'maria.lopez@gmail.com', 'Ana Díaz', '3103333333', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(65, 4, 'Andrés', 'Torres Gómez', 'Andrés Torres Gómez', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000004', '3004444444', 'andres.torres@misena.edu.co', 'andres.torres@gmail.com', 'Laura Gómez', '3104444444', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(66, 5, 'Camila', 'Martínez Rojas', 'Camila Martínez Rojas', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000005', '3005555555', 'camila.martinez@misena.edu.co', 'camila.martinez@gmail.com', 'Rosa Rojas', '3105555555', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(67, 6, 'Felipe', 'Gutiérrez Ramos', 'Felipe Gutiérrez Ramos', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000006', '3006666666', 'felipe.gutierrez@misena.edu.co', 'felipe.gutierrez@gmail.com', 'Marta Ramos', '3106666666', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(68, 7, 'Diana', 'Morales Castillo', 'Diana Morales Castillo', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000007', '3007777777', 'diana.morales@misena.edu.co', 'diana.morales@gmail.com', 'Carlos Castillo', '3107777777', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(69, 8, 'Santiago', 'Jiménez Herrera', 'Santiago Jiménez Herrera', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000008', '3008888888', 'santiago.jimenez@misena.edu.co', 'santiago.jimenez@gmail.com', 'María Herrera', '3108888888', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(70, 9, 'Valentina', 'Ruiz Cabrera', 'Valentina Ruiz Cabrera', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000009', '3009999999', 'valentina.ruiz@misena.edu.co', 'valentina.ruiz@gmail.com', 'Lucía Cabrera', '3109999999', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(71, 10, 'Mateo', 'Castro Peña', 'Mateo Castro Peña', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000010', '3010000000', 'mateo.castro@misena.edu.co', 'mateo.castro@gmail.com', 'José Peña', '3110000000', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(72, 11, 'Paula', 'Rodríguez León', 'Paula Rodríguez León', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000011', '3011111111', 'paula.rodriguez@misena.edu.co', 'paula.rodriguez@gmail.com', 'María León', '3111111111', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(73, 12, 'Juan', 'Vargas Ortiz', 'Juan Vargas Ortiz', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000012', '3012222222', 'juan.vargas@misena.edu.co', 'juan.vargas@gmail.com', 'Carmen Ortiz', '3112222222', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(74, 13, 'Isabella', 'Mendoza Suárez', 'Isabella Mendoza Suárez', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000013', '3013333333', 'isabella.mendoza@misena.edu.co', 'isabella.mendoza@gmail.com', 'Julio Suárez', '3113333333', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(75, 14, 'Sebastián', 'Gómez Vera', 'Sebastián Gómez Vera', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000014', '3014444444', 'sebastian.gomez@misena.edu.co', 'sebastian.gomez@gmail.com', 'Andrés Vera', '3114444444', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(76, 15, 'Sara', 'Ramírez Patiño', 'Sara Ramírez Patiño', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000015', '3015555555', 'sara.ramirez@misena.edu.co', 'sara.ramirez@gmail.com', 'Claudia Patiño', '3115555555', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(77, 16, 'Daniel', 'Córdoba Mejía', 'Daniel Córdoba Mejía', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000016', '3016666666', 'daniel.cordoba@misena.edu.co', 'daniel.cordoba@gmail.com', 'Sandra Mejía', '3116666666', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(78, 17, 'Lucía', 'Pérez Torres', 'Lucía Pérez Torres', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000017', '3017777777', 'lucia.perez@misena.edu.co', 'lucia.perez@gmail.com', 'Mario Torres', '3117777777', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(79, 18, 'Tomás', 'Martínez Ospina', 'Tomás Martínez Ospina', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000018', '3018888888', 'tomas.martinez@misena.edu.co', 'tomas.martinez@gmail.com', 'Luisa Ospina', '3118888888', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(80, 19, 'Natalia', 'Reyes Gómez', 'Natalia Reyes Gómez', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000019', '3019999999', 'natalia.reyes@misena.edu.co', 'natalia.reyes@gmail.com', 'Felipe Gómez', '3119999999', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(81, 20, 'David', 'Moreno Silva', 'David Moreno Silva', '258963', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '100000020', '3020000000', 'david.moreno@misena.edu.co', 'david.moreno@gmail.com', 'Sofía Silva', '3120000000', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(82, 71, 'jubhb', 'jhvv', NULL, 'mi999990', 'vgvhgcfc', 1, NULL, 'CC', '78897777', '3114543344', 'khbhbkh@gmail.com', 'hidalgo.16@gmail.com', 'hgyugy', '987897987', NULL, '2025-11-11 23:37:32', '2025-11-11 23:37:32', 'Activo'),
+(83, 72, 'Juan', 'Pérez López', NULL, '2456789', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '1023456789', '3114543344', 'juan.perez@misena.edu.co', 'juan.perez@misena.edu.co', 'María López', '3119876543', NULL, '2025-11-12 18:18:57', '2025-11-12 18:18:57', 'Activo'),
+(84, 73, 'Laura', 'Gómez Rincón', NULL, '2456790', 'Gestión Administrativa', 1, NULL, 'CC', '1034587910', '3105678932', 'laura.gomez@misena.edu.co', 'laura.gomez@misena.edu.co', 'Jorge Gómez', '3124567891', NULL, '2025-11-12 18:20:35', '2025-11-12 18:20:35', 'Activo'),
+(85, 74, 'Carlos', 'Méndez Silva', NULL, '2456791', 'Mantenimiento Electromecánico', 1, NULL, 'CC', '1009876543', '3019876543', 'carlos.mendez@misena.edu.co', 'carlos.mendez@misena.edu.co', 'Ana Silva', '3136547890', NULL, '2025-11-12 18:21:57', '2025-11-12 18:21:57', 'Activo'),
+(86, 75, 'Andrea', 'Díaz', NULL, '2456792', 'Contabilidad y Finanzas', 1, NULL, 'CE', '1029384756', '3157896543', 'andrea.moreno@misena.edu.co', 'andrea.moreno@misena.edu.co', 'Luis Moreno', '3115678923', NULL, '2025-11-12 18:23:31', '2025-11-12 18:23:31', 'Activo'),
+(87, 76, 'Kevin', 'levinin', NULL, '3548751', 'ADSO', 1, NULL, 'CC', '15457845', '54648961', 'kevin@hsena.com', 'kevinsan@hotmail.com', 'maria', '21641561', 13, '2025-11-12 22:39:15', '2025-11-12 22:39:15', 'Activo'),
+(88, 77, 'Mario', 'nova', NULL, '3548751', 'Adso', 1, NULL, 'CC', '15457845', '54648961', 'marionova@hotmail.com', 'aprendiz@hotmail.com', 'aasd', '21641561', 13, '2025-11-13 00:45:01', '2025-11-13 00:45:01', 'Activo'),
+(89, 82, 'cangiro', 'Sáenz', NULL, NULL, NULL, 0, 'Manuela', 'CC', '15457845', '54648961', 'cangiro@hsena.com', 'aprendizsinficha@hola.com', 'jose', '21641561', 6, '2025-11-13 01:06:03', '2025-11-13 01:06:03', 'Activo');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `aprendiz_proyecto`
+--
+
+CREATE TABLE `aprendiz_proyecto` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `id_aprendiz` bigint(20) UNSIGNED NOT NULL,
+  `id_proyecto` int(10) UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `aprendiz_proyecto`
+--
+
+INSERT INTO `aprendiz_proyecto` (`id`, `id_aprendiz`, `id_proyecto`) VALUES
+(2, 82, 6),
+(3, 82, 7),
+(4, 82, 8),
+(5, 69, 9),
+(7, 85, 6),
+(8, 84, 6),
+(13, 69, 10),
+(14, 85, 10),
+(15, 83, 10),
+(16, 82, 10),
+(17, 85, 13);
 
 -- --------------------------------------------------------
 
@@ -109,6 +148,18 @@ CREATE TABLE `cache` (
   `value` mediumtext NOT NULL,
   `expiration` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `cache`
+--
+
+INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
+('laravel-cache-carlos.hernandez@gmail.com|127.0.0.1', 'i:2;', 1762978530),
+('laravel-cache-carlos.hernandez@gmail.com|127.0.0.1:timer', 'i:1762978529;', 1762978529),
+('laravel-cache-laura.garcia@gmail.com|127.0.0.1', 'i:2;', 1762978480),
+('laravel-cache-laura.garcia@gmail.com|127.0.0.1:timer', 'i:1762978480;', 1762978480),
+('laravel-cache-laura.garcia@misena.edu.co|127.0.0.1', 'i:1;', 1762978509),
+('laravel-cache-laura.garcia@misena.edu.co|127.0.0.1:timer', 'i:1762978509;', 1762978509);
 
 -- --------------------------------------------------------
 
@@ -419,7 +470,11 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (33, '2025_10_28_150500_add_optional_fields_to_eventos_table', 17),
 (34, '2025_10_28_154300_make_linea_investigacion_nullable_in_eventos_table', 17),
 (35, '2025_10_28_154500_alter_linea_investigacion_nullable_mysql', 17),
-(36, '2025_11_05_000200_fix_evento_participantes_id_auto_increment', 17);
+(36, '2025_11_05_000200_fix_evento_participantes_id_auto_increment', 17),
+(37, '2025_11_05_150509_create_recursos_table', 18),
+(38, '2025_11_05_164816_add_categoria_to_recursos_table', 19),
+(39, '2025_11_12_163607_migrate_pivot_to_fk_aprendices', 20),
+(40, '2025_11_12_192249_add_vinculado_sena_and_institucion_to_aprendices_table', 21);
 
 -- --------------------------------------------------------
 
@@ -461,7 +516,15 @@ INSERT INTO `proyectos` (`id_proyecto`, `id_semillero`, `nombre_proyecto`, `desc
 (2, 2, 'App de Aprendizaje SENA', 'Aplicación para gestión de aprendizajes', 3, 'EN_FORMULACION', '2025-02-01', NULL, '2025-10-20 20:02:22', '2025-10-20 20:02:22'),
 (3, 3, 'Sistema de Energía Solar', 'Investigación en paneles solares', 3, 'FINALIZADO', '2024-09-01', '2025-02-01', '2025-10-20 20:02:22', '2025-10-20 20:02:22'),
 (4, 4, 'Monitor de Ciberseguridad', 'Monitoreo de redes locales', 3, 'EN_EJECUCION', '2025-03-01', NULL, '2025-10-20 20:02:22', '2025-10-20 20:02:22'),
-(5, 5, 'Robot Educativo', 'Robot con sensores para enseñanza STEAM', 3, 'EN_FORMULACION', '2025-04-01', NULL, '2025-10-20 20:02:22', '2025-10-20 20:02:22');
+(5, 5, 'Robot Educativo', 'Robot con sensores para enseñanza STEAM', 3, 'EN_FORMULACION', '2025-04-01', NULL, '2025-10-20 20:02:22', '2025-10-20 20:02:22'),
+(6, 9, 'sgvevgewb', 'fsdbvdrbre', 3, 'FINALIZADO', '2025-11-14', '2025-11-30', '2025-11-10 19:12:02', '2025-11-10 19:12:02'),
+(7, 9, 'avgerhgber', 'dvwdvd', 3, 'FINALIZADO', '2026-01-01', '2026-02-20', '2025-11-10 19:12:32', '2025-11-10 19:12:32'),
+(8, 9, '+queperros', 'wedvbdebb', 3, 'EN_FORMULACION', '2026-01-19', '2026-03-14', '2025-11-10 19:12:53', '2025-11-10 19:12:53'),
+(9, 9, '+queperros', 'dsv dbdeberb', 3, 'FINALIZADO', '2026-02-13', '2026-04-03', '2025-11-10 19:13:14', '2025-11-10 19:13:14'),
+(10, 7, 'Nombre de Ejemplo de proyecto', 'Descripción  de Ejemplo de proyecto', 3, 'EN_FORMULACION', '2025-11-12', '2025-11-30', '2025-11-12 14:49:14', '2025-11-12 14:49:14'),
+(11, 7, 'Nombre de Ejemplo de proyecto222', 'descripción  de Ejemplo de proyecto2', 3, 'EN_FORMULACION', NULL, NULL, '2025-11-12 14:49:59', '2025-11-12 15:52:26'),
+(12, 7, 'aaa123', 'aaa123', 3, 'EN_FORMULACION', NULL, NULL, '2025-11-12 14:50:26', '2025-11-12 14:50:26'),
+(13, 7, 'Proyecto Alcón', 'abc es', 3, 'EN_FORMULACION', NULL, NULL, '2025-11-12 14:50:42', '2025-11-12 15:45:25');
 
 -- --------------------------------------------------------
 
@@ -479,13 +542,6 @@ CREATE TABLE `recursos` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Volcado de datos para la tabla `recursos`
---
-
-INSERT INTO `recursos` (`id`, `nombre_archivo`, `archivo`, `categoria`, `descripcion`, `user_id`, `created_at`, `updated_at`) VALUES
-(1, 'Plantilla rx56', 'recursos/0uC1zAChhaK5Xfk8m91zBs8xylzmABiIKf0Mmjuq.pdf', 'manuales', 'Plantilla rx56', 4, '2025-11-10 20:57:39', '2025-11-10 20:57:39');
 
 -- --------------------------------------------------------
 
@@ -510,11 +566,11 @@ INSERT INTO `semilleros` (`id_semillero`, `nombre`, `linea_investigacion`, `id_l
 (6, 'Bioprocesos y Biotecnología Aplicada (BIBA)', 'Ciencias Aplicadas en Desarrollo Ambiental', 57, '2025-10-27 18:08:12', '2025-10-28 01:57:50'),
 (7, 'Administración y Salud, Deportes y Bienestar', 'Administración en Salud, Deportes y Bienestar', 58, '2025-10-27 18:08:12', '2025-11-10 18:42:36'),
 (8, 'Agroindustria Seguridad Alimentaria', 'Seguridad Alimentaria', 59, '2025-10-27 18:08:12', '2025-10-28 01:58:57'),
-(9, 'Grupo de Estudio de Desarrollo de Software (GEDS)', 'Telecomunicaciones y Tecnologías Virtuales', 60, '2025-10-27 18:08:12', '2025-10-28 02:08:33'),
+(9, 'Grupo de Estudio de Desarrollo de Software (GEDS)', 'Telecomunicaciones y Tecnologías Virtuales', 70, '2025-10-27 18:08:12', '2025-11-11 23:18:34'),
 (10, 'Investigación de Mercados para las Mipymes (INVERPYMES)', 'Comercio y Servicios para el Desarrollo Empresarial', 61, '2025-10-27 18:08:12', '2025-10-28 02:09:20'),
 (11, 'Materiales, Procesos de Manufactura y Automatización (MAPRA)', 'Diseño, Ingeniería y Mecatrónica', 66, '2025-10-27 18:08:12', '2025-10-28 23:42:15'),
 (12, 'Micronanotec', 'Integración de tecnologías convergentes para el mejoramiento de la calidad de vida', 63, '2025-10-27 18:08:12', '2025-10-28 02:10:07'),
-(13, 'Desarrollo de Videojuegos Serios', 'Telecomunicaciones y Tecnologías Virtuales', 64, '2025-10-27 18:08:12', '2025-10-28 02:07:55'),
+(13, 'Desarrollo de Videojuegos Serios', 'Telecomunicaciones y Tecnologías Virtuales', 64, '2025-10-27 18:08:12', '2025-11-11 00:11:07'),
 (14, 'PICIDE (Pedagogía)', 'Ciencias Sociales y Ciencias de la Educación', 65, '2025-10-27 18:08:13', '2025-10-28 02:10:28');
 
 -- --------------------------------------------------------
@@ -537,8 +593,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('8xnehNTihwvL8wH2pr2dD3PEd31miTmYajQMRO1m', 70, '127.0.0.1', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoib05tUmZBQ2RuQk5qZHk3a29QTkZVRmVKY2FqTkdZRFlQYjlaOW9mbCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDM6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9saWRlcl9zZW1pL2NhbGVuZGFyaW8iO3M6NToicm91dGUiO3M6MjE6ImxpZGVyX3NlbWkuY2FsZW5kYXJpbyI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjcwO30=', 1762787021),
-('nTVAlZgSAtwExl7cX3d4SxJuJ7IVbGByOlfCbGy4', 4, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoidTBBVmpvVGh4UXNOTlpnQXZKSkNoS2JRS0xKaFlVMEY5RXFEbE94eCI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozNjoiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2FkbWluL3JlY3Vyc29zIjt9czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6NDM6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9kYXNoYm9hcmQvc3RhdHMiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTo0O30=', 1762792424);
+('IiT7F0X2c9kjWfb1GnYVrgdRmzIpTrONnYQGIDMe', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiOVJCUkRBenFTUjZlYllPNDJuUmZxMXcwRGVaZVZwQUppUXpIRDJ2YyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9sb2dpbiI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fX0=', 1762978479);
 
 -- --------------------------------------------------------
 
@@ -597,7 +652,15 @@ INSERT INTO `users` (`id`, `name`, `apellidos`, `email`, `email_verified_at`, `p
 (67, 'Harol', 'Pardos', 'sergio@admin1.com', NULL, '$2y$12$oqJyGYOnWOqd6WLDIOOaHOXybBykL2OIOGYhs77dUPf3sPo4BhpRq', 'LIDER_SEMILLERO', NULL, '2025-10-29 00:24:23', '2025-10-29 19:47:29'),
 (68, 'deivit', 'Agudelo', 'joaquin_canon@soy.sena.edu.co.com', NULL, '$2y$12$0TM.ctVut0gIBuJAA9u94Ord22JMauSbNSg/WayCvtkOx.GqZFOj6', 'APRENDIZ', NULL, '2025-10-29 23:40:59', '2025-10-29 23:40:59'),
 (69, 'luis', 'garcia', 'lideradmin@hola.com', NULL, '$2y$12$xgChGVNvHOBXhGjD98dmU.k94pgDEn7akThvCIKVtwhSg7uvy3e0.', 'ADMIN', NULL, '2025-10-30 00:29:35', '2025-10-30 00:29:35'),
-(70, 'Hansbleidi', 'Cardenas', 'yurani12@gmail.com', NULL, '$2y$12$IaEEeNepnPujOXZk6c5fQeYMB.38rLT6MDZsuBa.xq6ZfBV3sx.Ka', 'LIDER_SEMILLERO', NULL, '2025-11-05 18:21:44', '2025-11-05 18:21:44');
+(70, 'Hansbleidi', 'Cardenas', 'yurani12@gmail.com', NULL, '$2y$12$IaEEeNepnPujOXZk6c5fQeYMB.38rLT6MDZsuBa.xq6ZfBV3sx.Ka', 'LIDER_SEMILLERO', NULL, '2025-11-05 18:21:44', '2025-11-05 18:21:44'),
+(71, 'jubhb', 'jhvv', 'hidalgo.16@gmail.com', NULL, '$2y$12$IL1eNma7i4KitbcXlSYfuO8IVp2Y1RZkQHa9W451RURzi/WehtJjS', 'APRENDIZ', NULL, '2025-11-11 23:37:32', '2025-11-11 23:37:32'),
+(72, 'Juan', 'Pérez López', 'juan.perez@misena.edu.co', NULL, '$2y$12$RlunXngGHsN4EyYmNHCj3OkIdTQfriQzIprFNnuNAEbTh0kLCtjje', 'APRENDIZ', NULL, '2025-11-12 18:18:57', '2025-11-12 18:18:57'),
+(73, 'Laura', 'Gómez Rincón', 'laura.gomez@misena.edu.co', NULL, '$2y$12$CDQ.mIzBy2nP7mEVHLsBYuTwW.VOMVRmEDOM9Hq1jd2KzY0WdMB4C', 'APRENDIZ', NULL, '2025-11-12 18:20:35', '2025-11-12 18:20:35'),
+(74, 'Carlos', 'Méndez Silva', 'carlos.mendez@misena.edu.co', NULL, '$2y$12$6wwudRztzdTSwo6UOxV.mevXE0aU3LkD53IS5OH8xbx6hIuRjR9P6', 'APRENDIZ', NULL, '2025-11-12 18:21:57', '2025-11-12 18:21:57'),
+(75, 'Andrea', 'Díaz', 'andrea.moreno@misena.edu.co', NULL, '$2y$12$8./hYkYMUKYq40b0fgPOYOgX8v8ImoVHqXpUzGvl9vYyzgw2OF0Z2', 'APRENDIZ', NULL, '2025-11-12 18:23:31', '2025-11-12 18:23:31'),
+(76, 'Kevin', 'levinin', 'kevinsan@hotmail.com', NULL, '$2y$12$Y8HQzARbw1BN4gQR.172KulRsUAwmmjwRsLDHGo5ThVxK3hwHfFZW', 'APRENDIZ', NULL, '2025-11-12 22:39:15', '2025-11-12 22:39:15'),
+(77, 'Mario', 'nova', 'aprendiz@hotmail.com', NULL, '$2y$12$n9s5zzz5aP.ELxl5KGrhn.g0UhDy6dYNNDdrTN38AEqY0SWId/qMO', 'APRENDIZ', NULL, '2025-11-13 00:45:01', '2025-11-13 00:45:01'),
+(82, 'cangiro', 'Sáenz', 'aprendizsinficha@hola.com', NULL, '$2y$12$jxN6wbzuLjed0saX7ydvDuACXwotkCMDtdqgja/vDFiam0EoiP0Ia', 'APRENDIZ', NULL, '2025-11-13 01:06:03', '2025-11-13 01:06:03');
 
 --
 -- Índices para tablas volcadas
@@ -617,7 +680,16 @@ ALTER TABLE `aprendices`
   ADD UNIQUE KEY `uk_aprendiz_user` (`user_id`),
   ADD KEY `idx_documento` (`documento`),
   ADD KEY `idx_ficha` (`ficha`),
-  ADD KEY `idx_correo_institucional` (`correo_institucional`);
+  ADD KEY `idx_correo_institucional` (`correo_institucional`),
+  ADD KEY `aprendices_semillero_fk` (`semillero_id`);
+
+--
+-- Indices de la tabla `aprendiz_proyecto`
+--
+ALTER TABLE `aprendiz_proyecto`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `id_aprendiz` (`id_aprendiz`),
+  ADD KEY `id_proyecto` (`id_proyecto`);
 
 --
 -- Indices de la tabla `cache`
@@ -716,13 +788,6 @@ ALTER TABLE `proyectos`
 ALTER TABLE `proyectos` ADD FULLTEXT KEY `ft_proyectos` (`nombre_proyecto`,`descripcion`);
 
 --
--- Indices de la tabla `recursos`
---
-ALTER TABLE `recursos`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_recursos_user` (`user_id`);
-
---
 -- Indices de la tabla `semilleros`
 --
 ALTER TABLE `semilleros`
@@ -754,7 +819,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT de la tabla `aprendices`
 --
 ALTER TABLE `aprendices`
-  MODIFY `id_aprendiz` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+  MODIFY `id_aprendiz` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=90;
+
+--
+-- AUTO_INCREMENT de la tabla `aprendiz_proyecto`
+--
+ALTER TABLE `aprendiz_proyecto`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT de la tabla `evento_participantes`
@@ -784,19 +855,13 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT de la tabla `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
 
 --
 -- AUTO_INCREMENT de la tabla `proyectos`
 --
 ALTER TABLE `proyectos`
-  MODIFY `id_proyecto` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT de la tabla `recursos`
---
-ALTER TABLE `recursos`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_proyecto` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT de la tabla `semilleros`
@@ -808,7 +873,7 @@ ALTER TABLE `semilleros`
 -- AUTO_INCREMENT de la tabla `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=71;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=83;
 
 --
 -- Restricciones para tablas volcadas
@@ -824,51 +889,14 @@ ALTER TABLE `administradores`
 -- Filtros para la tabla `aprendices`
 --
 ALTER TABLE `aprendices`
-  ADD CONSTRAINT `fk_aprendices_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `aprendices_semillero_fk` FOREIGN KEY (`semillero_id`) REFERENCES `semilleros` (`id_semillero`);
 
 --
--- Filtros para la tabla `documentos`
+-- Filtros para la tabla `aprendiz_proyecto`
 --
-ALTER TABLE `documentos`
-  ADD CONSTRAINT `fk_documentos_aprendices` FOREIGN KEY (`id_aprendiz`) REFERENCES `aprendices` (`id_aprendiz`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_documentos_proyectos` FOREIGN KEY (`id_proyecto`) REFERENCES `proyectos` (`id_proyecto`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `eventos`
---
-ALTER TABLE `eventos`
-  ADD CONSTRAINT `fk_eventos_admin` FOREIGN KEY (`id_admin`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_eventos_lider` FOREIGN KEY (`id_lider_semi`) REFERENCES `lideres_semillero` (`id_lider_semi`) ON DELETE SET NULL ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `evento_participantes`
---
-ALTER TABLE `evento_participantes`
-  ADD CONSTRAINT `fk_part_lider` FOREIGN KEY (`id_lider_semi`) REFERENCES `lideres_semillero` (`id_lider_semi`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `evidencias`
---
-ALTER TABLE `evidencias`
-  ADD CONSTRAINT `evidencias_id_usuario_foreign` FOREIGN KEY (`id_usuario`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Filtros para la tabla `lideres_semillero`
---
-ALTER TABLE `lideres_semillero`
-  ADD CONSTRAINT `fk_lideres_semillero_user` FOREIGN KEY (`id_lider_semi`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `recursos`
---
-ALTER TABLE `recursos`
-  ADD CONSTRAINT `fk_recursos_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Filtros para la tabla `semilleros`
---
-ALTER TABLE `semilleros`
-  ADD CONSTRAINT `fk_semillero_lider` FOREIGN KEY (`id_lider_semi`) REFERENCES `lideres_semillero` (`id_lider_semi`) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE `aprendiz_proyecto`
+  ADD CONSTRAINT `aprendiz_proyecto_ibfk_1` FOREIGN KEY (`id_aprendiz`) REFERENCES `aprendices` (`id_aprendiz`),
+  ADD CONSTRAINT `aprendiz_proyecto_ibfk_2` FOREIGN KEY (`id_proyecto`) REFERENCES `proyectos` (`id_proyecto`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
