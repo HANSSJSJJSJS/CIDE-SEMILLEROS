@@ -43,19 +43,50 @@ use App\Http\Controllers\Aprendiz\CalendarioController;
 | RUTAS PÚBLICAS
 |--------------------------------------------------------------------------
 */
+// ======================================================
+// RUTAS DE LOGIN / LOGOUT  (mantén tal cual)
+// ======================================================
 Route::get('/', function () {
     return Auth::check()
         ? redirect()->route('dashboard')
         : redirect()->route('login');
 })->name('home');
 
+// Vista de login personalizada
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+
+// Envío del formulario de login
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
+
+// Cierre de sesión (logout)
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
-    ->middleware('auth')->name('logout');
+    ->middleware('auth')
+    ->name('logout');
 
+
+// ======================================================
+// RUTAS PROTEGIDAS (paneles, dashboard, etc.)
+// ======================================================
+// Solo accesibles si el usuario está autenticado
+// y con prevención del uso del botón "Atrás" tras logout
+Route::middleware(['auth', 'prevent-back-history'])->group(function () {
+
+    // Dashboard principal del administrador
+    Route::get('/dashboard', fn() => view('admin.dashboard.index'))->name('dashboard');
+
+    // 🔽 Aquí puedes agregar todas tus rutas internas protegidas
+    // Ejemplo:
+    // Route::get('/proyectos', [ProyectoController::class, 'index'])->name('proyectos.index');
+    // Route::get('/recursos', [RecursoController::class, 'index'])->name('recursos.index');
+});
+
+
+// ======================================================
+// RUTAS ADICIONALES (auth.php, restablecer contraseña, verificación, etc.)
+// ======================================================
+// Importa las rutas autogeneradas por Laravel Breeze / Jetstream
+// ⚠️ Asegúrate de que en routes/auth.php estén COMENTADAS las rutas /login y /logout
 require __DIR__ . '/auth.php';
-
 /*
 |--------------------------------------------------------------------------
 | JSON LÍDER SEMILLERO – PROYECTOS (compatibilidad con modales existentes)

@@ -4,59 +4,133 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>@yield('title','SCIDES')</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/logo_pestaña.png') }}">
+  
+  {{-- 🔒 Evita almacenamiento en caché del dashboard --}}
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
 
+  <title>@yield('title', 'SCIDES')</title>
+  <link rel="icon" type="image/png" href="{{ asset('images/logo_pestaña.png') }}">
+
+  {{-- Bootstrap y estilos --}}
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
+  {{-- Estilos generales del panel --}}
   <style>
-    :root{ --scides-green:#34a300; --scides-green-dark:#258000; }
-    html,body{height:100%} body{background:var(--scides-green); color:#fff}
-    .topbar{border:2px solid #fff;border-bottom:none;border-radius:14px 14px 0 0;padding:.6rem 1rem}
-    .board{border:2px solid #fff;border-top:none;border-radius:0 0 14px 14px;min-height:calc(100dvh - 3.5rem);padding:1.25rem}
-    .side-frame{background:#fff;border-radius:18px;padding:1rem .9rem;box-shadow:0 8px 30px rgba(0,0,0,.12)}
-    .side-inner{background:var(--scides-green-dark);border-radius:12px;padding:1rem}
-    .pill-btn{background:#fff;color:#1c1c1c;border:none;border-radius:999px;padding:.55rem .9rem;font-weight:600;display:flex;align-items:center;justify-content:space-between;box-shadow:0 6px 0 rgba(0,0,0,.15)}
-    .pill-btn:hover{transform:translateY(1px);box-shadow:0 4px 0 rgba(0,0,0,.2)}
-    .pill-btn:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.25)}
-    .big-title{font-weight:800;font-size:clamp(2rem,2.6rem + 1.2vw,4rem)}
-    @media (max-width: 991.98px){ .sidebar-desktop{display:none!important} }
+    :root { --scides-green: #34a300; --scides-green-dark: #258000; }
+    html, body { height: 100%; }
+    body { background: var(--scides-green); color: #fff; }
+
+    .topbar {
+      border: 2px solid #fff;
+      border-bottom: none;
+      border-radius: 14px 14px 0 0;
+      padding: .6rem 1rem;
+    }
+
+    .board {
+      border: 2px solid #fff;
+      border-top: none;
+      border-radius: 0 0 14px 14px;
+      min-height: calc(100dvh - 3.5rem);
+      padding: 1.25rem;
+    }
+
+    .side-frame {
+      background: #fff;
+      border-radius: 18px;
+      padding: 1rem .9rem;
+      box-shadow: 0 8px 30px rgba(0,0,0,.12);
+    }
+
+    .side-inner {
+      background: var(--scides-green-dark);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .pill-btn {
+      background: #fff;
+      color: #1c1c1c;
+      border: none;
+      border-radius: 999px;
+      padding: .55rem .9rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 6px 0 rgba(0,0,0,.15);
+      transition: all .2s ease;
+    }
+
+    .pill-btn:hover {
+      transform: translateY(1px);
+      box-shadow: 0 4px 0 rgba(0,0,0,.2);
+    }
+
+    .pill-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 rgba(0,0,0,.25);
+    }
+
+    .big-title {
+      font-weight: 800;
+      font-size: clamp(2rem, 2.6rem + 1.2vw, 4rem);
+    }
+
+    @media (max-width: 991.98px) {
+      .sidebar-desktop { display: none !important; }
+    }
   </style>
 
   @stack('styles')
 </head>
 <body>
   <div class="container-xxl mt-3">
+    {{-- 🔝 Barra superior --}}
     <div class="topbar d-flex align-items-center justify-content-between">
       <div class="d-flex align-items-center gap-2">
         <i class="bi bi-person-fill" style="font-size:1.5rem"></i>
         <strong>{{ Auth::user()->name ?? 'Usuario' }}</strong>
       </div>
+
       <div class="d-flex align-items-center gap-2">
+        {{-- Botón menú móvil --}}
         <button class="btn btn-light d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu">
           <i class="bi bi-list"></i> Menú
         </button>
+
+        {{-- Cambio de contraseña --}}
         <a href="{{ route('password.change') }}" class="btn btn-light">
           <i class="bi bi-lock-fill me-2"></i> Cambio contraseña
         </a>
+
+        {{-- Cerrar sesión --}}
         <a href="{{ route('logout') }}" class="btn btn-light"
-           onclick="event.preventDefault();document.getElementById('logout-form').submit();">
+           onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
           <i class="bi bi-box-arrow-right me-2"></i> Salida
         </a>
-        <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">@csrf</form>
+
+        <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+          @csrf
+        </form>
       </div>
     </div>
 
+    {{-- Contenido dinámico del panel --}}
     <div class="board">
       @yield('content')
     </div>
   </div>
 
-  {{-- Offcanvas (móvil) --}}
+  {{-- Menú lateral móvil --}}
   <div class="offcanvas offcanvas-start text-dark" tabindex="-1" id="offcanvasMenu">
     <div class="offcanvas-header">
-      <h5 class="offcanvas-title"><i class="bi bi-people-fill me-2"></i> Menú</h5>
+      <h5 class="offcanvas-title">
+        <i class="bi bi-people-fill me-2"></i> Menú
+      </h5>
       <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
     </div>
     <div class="offcanvas-body">
@@ -71,7 +145,19 @@
     </div>
   </div>
 
+  {{-- Scripts --}}
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   @stack('scripts')
+
+  {{-- 🔒 Script para evitar volver al dashboard tras el logout --}}
+  <script>
+  window.addEventListener('pageshow', function (event) {
+    const nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+    const isBFCache = event.persisted || (nav && nav.type === 'back_forward');
+    if (isBFCache) {
+      window.location.reload();
+    }
+  });
+  </script>
 </body>
 </html>
