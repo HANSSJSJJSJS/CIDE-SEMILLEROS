@@ -15,7 +15,7 @@ class Aprendiz extends Model
 
     protected $fillable = [
         'id_aprendiz',
-        'id_user',
+        'user_id',
         'nombres',
         'apellidos',
         'ficha',
@@ -32,7 +32,7 @@ class Aprendiz extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'id_user');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function grupos()

@@ -174,7 +174,7 @@ class SemilleroController extends Controller
             // Si hay proyectos, reusar la misma vista, mapeando proyectos a la colección esperada
             if ($proyectos->isNotEmpty()) {
                 $semilleros = $proyectos;
-                return view('lider_semi.semilleros', compact('semilleros'));
+                return view('lider_semi.proyectos', compact('semilleros'));
             }
         }
 
@@ -292,11 +292,22 @@ class SemilleroController extends Controller
     public function editAprendices($semilleroId)
     {
         $semillero = Semillero::where('id_semillero', $semilleroId)
-            ->with(['aprendices' => function($q){
-                $q->select('aprendices.id_usuario','aprendices.nombres','aprendices.apellidos','aprendices.correo_institucional');
-            }])->firstOrFail();
+            ->with([
+                'aprendices' => function($q){
+                    $q->select(
+                        'aprendices.id_aprendiz',
+                        'aprendices.user_id',
+                        'aprendices.nombres',
+                        'aprendices.apellidos',
+                        'aprendices.programa',
+                        DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo")
+                    );
+                },
+                'aprendices.user:id,name,apellidos'
+            ])
+            ->firstOrFail();
 
-        $asignadosIds = $semillero->aprendices->pluck('id_usuario')->all();
+        $asignadosIds = $semillero->aprendices->pluck('id_aprendiz')->all();
 
         $aprendices = Aprendiz::select(
                 'id_usuario as id_aprendiz',
@@ -433,7 +444,10 @@ class SemilleroController extends Controller
     {
         // Priorizar tabla pivote tradicional para obtener aprendices asignados
         $pivotCandidates = [
-            'proyecto_user', 'aprendiz_proyecto', 'aprendices_proyectos', 'aprendiz_proyectos', 'proyecto_aprendiz', 'proyectos_aprendices', 'proyecto_aprendices'
+            // Preferir pivotes de aprendices ↔ proyectos
+            'aprendiz_proyecto', 'aprendices_proyectos', 'aprendiz_proyectos', 'proyecto_aprendiz', 'proyectos_aprendices', 'proyecto_aprendices',
+            // Último recurso: proyecto_user (mapea por users)
+            'proyecto_user'
         ];
         $table = null;
         foreach ($pivotCandidates as $cand) {
@@ -467,6 +481,7 @@ class SemilleroController extends Controller
         if (empty($pivot)) abort(404, 'Relación proyecto-aprendiz no configurada');
         $proyecto = Proyecto::select('id_proyecto', DB::raw('COALESCE(nombre_proyecto, "Proyecto") as nombre'))
             ->where('id_proyecto', $proyectoId)->firstOrFail();
+<<<<<<< Updated upstream
         // Determinar si la pivote almacena id_usuario o id_aprendiz
         $useUserId = in_array($pivot['aprCol'], ['id_usuario','user_id']);
         $aprJoinCol = $useUserId && Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : 'id_aprendiz';
@@ -476,6 +491,22 @@ class SemilleroController extends Controller
             ->where(DB::raw($pivot['table'].'.'.$pivot['projCol']), $proyectoId)
             ->select(DB::raw($selectIdAs), DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),'aprendices.correo_institucional')
             ->orderByRaw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))")
+=======
+        $rows = DB::table($pivot['table'].' as pvt')
+            ->join('aprendices as a','a.id_aprendiz','=',DB::raw('pvt.'.$pivot['aprCol']))
+            ->leftJoin('users as u','u.id','=','a.user_id')
+            ->where(DB::raw('pvt.'.$pivot['projCol']), $proyectoId)
+            ->select(
+                DB::raw('a.id_aprendiz as id_aprendiz'),
+                DB::raw("COALESCE(NULLIF(TRIM(CONCAT(COALESCE(a.nombres,''),' ',COALESCE(a.apellidos,''))),''), NULLIF(TRIM(u.name),''), 'Sin nombre') as display_name"),
+                DB::raw("TRIM(CONCAT(COALESCE(a.nombres,''),' ',COALESCE(a.apellidos,''))) as nombre_completo"),
+                'a.programa',
+                'a.documento',
+                'a.nombres',
+                'a.apellidos'
+            )
+            ->orderByRaw("COALESCE(NULLIF(TRIM(CONCAT(COALESCE(a.nombres,''),' ',COALESCE(a.apellidos,''))),''), NULLIF(TRIM(u.name),''), 'zzz')")
+>>>>>>> Stashed changes
             ->get();
         // Simular relación para la vista
         $proyecto->aprendices = $rows;
