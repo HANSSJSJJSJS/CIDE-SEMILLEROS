@@ -22,6 +22,15 @@
 @section('content')
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
+  @php($__ROLE = strtoupper(str_replace([' ', '-'], '_', auth()->user()->role ?? '')))
+  @php($__REC_PERM = null)
+  @if ($__ROLE === 'ADMIN')
+    @php($__REC_PERM = \DB::table('user_module_permissions')
+      ->where('user_id', auth()->id())
+      ->where('module', 'recursos')
+      ->first())
+  @endif
+
   <div class="rec-head">
     <div class="input-group" style="max-width:480px;">
       <span class="input-group-text">🔍</span>
@@ -35,12 +44,29 @@
       <option value="otros">Otros</option>
     </select>
 
-    <button class="btn btn-success ms-auto" data-bs-toggle="modal" data-bs-target="#recUploadModal">
-      <i class="bi bi-upload"></i> Subir recurso
-    </button>
+    @php($__CAN_CREATE_REC = ($__ROLE !== 'ADMIN') || (int)($__REC_PERM->can_create ?? 0) === 1)
+    @if ($__CAN_CREATE_REC)
+      <button class="btn btn-success ms-auto" data-bs-toggle="modal" data-bs-target="#recUploadModal">
+        <i class="bi bi-upload"></i> Subir recurso
+      </button>
+    @endif
   </div>
 
   <div id="recContainer"></div>
+  <script>
+    window.READ_ONLY_INTER = (
+      "{{ $__ROLE }}" === 'ADMIN'
+      && !(
+        {{ (int)($__REC_PERM->can_create ?? 0) }}
+        || {{ (int)($__REC_PERM->can_update ?? 0) }}
+        || {{ (int)($__REC_PERM->can_delete ?? 0) }}
+      )
+    );
+    window.REC_CAN_DELETE = (
+      ("{{ $__ROLE }}" !== 'ADMIN')
+      || ({{ (int)($__REC_PERM->can_delete ?? 0) }} === 1)
+    );
+  </script>
 
   {{-- Modal subir --}}
  <div class="modal fade"
@@ -186,6 +212,7 @@
     arr.forEach(r => {
       const card = document.createElement('div');
       card.className = 'rec-card';
+      const canDelete = !!window.REC_CAN_DELETE;
       card.innerHTML = `
         <div class="d-flex justify-content-between align-items-start">
           <span class="badge-cat">${r.categoria}</span>
@@ -196,21 +223,24 @@
         <div class="rec-actions">
           <a class="btn btn-sm btn-outline-primary" href="${r.url}" target="_blank" rel="noopener">Ver</a>
           <a class="btn btn-sm btn-primary" href="${r.download}">Descargar</a>
-          <button class="btn btn-sm btn-outline-danger" data-id="${r.id}">Eliminar</button>
+          ${canDelete ? `<button class="btn btn-sm btn-outline-danger" data-id="${r.id}">Eliminar</button>` : ''}
         </div>
       `;
       grid.appendChild(card);
 
-      // eliminar
-      card.querySelector('button.btn-outline-danger').addEventListener('click', async (e) => {
-        const id = e.currentTarget.getAttribute('data-id');
-        if (!confirm('¿Eliminar este recurso?')) return;
-        await fetch(ENDPOINTS.destroy(id), {
-          method: 'DELETE',
-          headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
+      // eliminar (solo si existe el botón)
+      const delBtn = card.querySelector('button.btn-outline-danger');
+      if (delBtn) {
+        delBtn.addEventListener('click', async (e) => {
+          const id = e.currentTarget.getAttribute('data-id');
+          if (!confirm('¿Eliminar este recurso?')) return;
+          await fetch(ENDPOINTS.destroy(id), {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
+          });
+          await loadResources();
         });
-        await loadResources();
-      });
+      }
     });
 
     section.appendChild(grid);
@@ -238,6 +268,10 @@
 
   recForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (window.READ_ONLY_INTER) {
+      alert('No tienes permisos para subir recursos.');
+      return;
+    }
 
     // Construir FormData antes de deshabilitar inputs
     const fd = new FormData(recForm);

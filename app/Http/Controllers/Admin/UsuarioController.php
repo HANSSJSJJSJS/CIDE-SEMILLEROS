@@ -20,9 +20,10 @@ class UsuarioController extends Controller
         $roleFilter  = trim($request->get('role',''));              // filtro de rol
         $semilleroId = $request->integer('semillero_id');           // filtro por semillero
 
-        // Normaliza "LIDER_GENERAL" -> "ADMIN" (valor real en BD)
+        // Normaliza filtro para coincidir con el valor real en BD
+        // En BD el super admin se guarda como 'LIDER GENERAL' (con espacio)
         if ($roleFilter === 'LIDER_GENERAL') {
-            $roleFilter = 'ADMIN';
+            $roleFilter = 'LIDER GENERAL';
         }
 
         $usuarios = User::query()
@@ -33,7 +34,8 @@ class UsuarioController extends Controller
                 DB::raw('s.nombre as semillero_nombre'),
                 DB::raw('s.id_semillero as semillero_id'),
                 DB::raw("CASE 
-                            WHEN users.role = 'ADMIN'            THEN 'Líder general'
+                            WHEN users.role = 'ADMIN'            THEN 'Líder grupo de investigación CIDEINNOVA'
+                            WHEN users.role = 'LIDER GENERAL'    THEN 'Líder General'
                             WHEN users.role = 'LIDER_SEMILLERO'  THEN 'Líder semillero'
                             WHEN users.role = 'APRENDIZ'         THEN 'Aprendiz'
                             ELSE users.role
@@ -46,7 +48,13 @@ class UsuarioController extends Controller
                       ->orWhere('users.email','like',"%{$q}%");
                 });
             })
-            ->when($roleFilter !== '', fn($w) => $w->where('users.role',$roleFilter))
+            ->when($roleFilter !== '', function($w) use ($roleFilter) {
+                if ($roleFilter === 'LIDER_GENERAL' || $roleFilter === 'LIDER GENERAL') {
+                    $w->whereIn('users.role', ['LIDER_GENERAL','LIDER GENERAL']);
+                } else {
+                    $w->where('users.role', $roleFilter);
+                }
+            })
             ->when($semilleroId, fn($w) => $w->where('s.id_semillero', $semilleroId))
             ->orderByDesc('users.created_at')
             ->paginate(12)
@@ -58,9 +66,10 @@ class UsuarioController extends Controller
             ->get();
 
         $roles = [
-            'ADMIN'           => 'Líder general',
-            'LIDER_SEMILLERO' => 'Líder semillero',
-            'APRENDIZ'        => 'Aprendiz',
+            'LIDER_GENERAL'       => 'Líder General',
+            'ADMIN'               => 'Líder grupo de investigación CIDEINNOVA',
+            'LIDER_SEMILLERO'     => 'Líder semillero',
+            'APRENDIZ'            => 'Aprendiz',
         ];
 
         return view('admin.usuarios.index', [
@@ -163,10 +172,11 @@ class UsuarioController extends Controller
 
         // Helper para label visible
         $roleLabel = match ($role) {
-            'ADMIN'           => 'Líder general',
-            'LIDER_SEMILLERO' => 'Líder semillero',
-            'APRENDIZ'        => 'Aprendiz',
-            default           => $role,
+            'ADMIN'               => 'Líder general',
+            'LIDER_INTERMEDIARIO' => 'Líder intermediario',
+            'LIDER_SEMILLERO'     => 'Líder semillero',
+            'APRENDIZ'            => 'Aprendiz',
+            default               => $role,
         };
 
         $userId = null;
@@ -267,6 +277,11 @@ class UsuarioController extends Controller
     // ============================================================
     // FORMULARIO DE EDICIÓN (solo vista)
     // ============================================================
+    public function edit(User $usuario)
+    {
+        return $this->editForm($usuario);
+    }
+
     public function editForm(User $usuario)
     {
         return view('admin.usuarios.edit', compact('usuario'));

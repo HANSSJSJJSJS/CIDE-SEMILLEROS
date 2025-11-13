@@ -89,6 +89,7 @@ class SemilleroController extends Controller
             }
         }
 
+<<<<<<< HEAD
         // Unicidad manual por nombre
         $dup = DB::table($tblS)->where($sNom, $data['nombre'])->exists();
         if ($dup) {
@@ -114,6 +115,24 @@ class SemilleroController extends Controller
         if (Schema::hasColumn($tblS,'actualizado_en')) { $insert['actualizado_en'] = now(); }
 
         DB::table($tblS)->insert($insert);
+=======
+        $insert = [
+            'nombre'              => $data['nombre'],
+            'linea_investigacion' => $data['linea_investigacion'],
+            'id_lider_semi'       => $data['id_lider_semi'] ?? null,
+        ];
+
+        // Si la tabla usa PK 'id_semillero' sin autoincrement, calcular siguiente id
+        $tbl = 'semilleros';
+        if (Schema::hasColumn($tbl, 'id_semillero') && !Schema::hasColumn($tbl, 'id')) {
+            // Intenta detectar si requiere valor manual (no AI) asumiendo NOT NULL sin default
+            // Estrategia simple: setear id = max + 1
+            $next = (int) (DB::table($tbl)->max('id_semillero') ?? 0) + 1;
+            $insert['id_semillero'] = $next;
+        }
+
+        DB::table('semilleros')->insert($insert);
+>>>>>>> PreFu
 
         return redirect()->route('admin.semilleros.index')
             ->with('success', 'Semillero creado correctamente.');

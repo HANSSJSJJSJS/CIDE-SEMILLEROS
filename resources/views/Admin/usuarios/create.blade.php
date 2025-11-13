@@ -18,6 +18,7 @@
     <div class="card card-soft">
       <div class="card-body p-4">
 
+<<<<<<< HEAD
         <div class="d-flex align-items-center mb-3">
           <div class="me-2 rounded-circle d-flex align-items-center justify-content-center"
                style="width:44px;height:44px;background:#e6f0e6">
@@ -26,6 +27,149 @@
           <div>
             <h3 class="brand-title mb-0">Agregar usuario</h3>
             <small class="text-muted">Selecciona un rol y completa los datos requeridos</small>
+=======
+    <div class="row g-3">
+
+      {{-- ====== 1) ROL (primero) ====== --}}
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Rol</label>
+        <select id="rol" name="role" class="form-select" required>
+          <option value="">Seleccione...</option>
+          <option value="ADMIN"           {{ old('role')==='ADMIN' ? 'selected' : '' }}>Líder general</option>
+          <option value="LIDER_INTERMEDIARIO" {{ old('role')==='LIDER_INTERMEDIARIO' ? 'selected' : '' }}>Líder intermediario</option>
+          <option value="LIDER_SEMILLERO" {{ old('role')==='LIDER_SEMILLERO' ? 'selected' : '' }}>Líder semillero</option>
+          <option value="APRENDIZ"        {{ old('role')==='APRENDIZ' ? 'selected' : '' }}>Aprendiz</option>
+        </select>
+        @error('role') <div class="text-danger small">{{ $message }}</div> @enderror
+      </div>
+
+      {{-- ====== 2) Correo (solo si hay rol) ====== --}}
+      <div id="box-correo" class="col-md-6 d-none">
+        <label class="form-label fw-semibold">Correo</label>
+        <input id="correo" type="email" name="email" class="form-control" value="{{ old('email') }}">
+        @error('email') <div class="text-danger small">{{ $message }}</div> @enderror
+      </div>
+
+      {{-- ====== 3) Bloque ADMIN (Líder general) ====== --}}
+      <div id="box-admin" class="row g-3 d-none">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Nombre</label>
+          <input name="nombre" class="form-control" value="{{ old('nombre') }}">
+          @error('nombre') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Apellido</label>
+          <input name="apellido" class="form-control" value="{{ old('apellido') }}">
+          @error('apellido') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Contraseña</label>
+          <input type="password" name="password" class="form-control">
+          @error('password') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+      </div>
+
+      {{-- ====== 4) Bloque LÍDER SEMILLERO ====== --}}
+      <div id="box-lider" class="row g-3 d-none">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Nombre</label>
+          <input name="nombre" class="form-control" value="{{ old('nombre') }}">
+          @error('nombre') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Apellido</label>
+          <input name="apellido" class="form-control" value="{{ old('apellido') }}">
+          @error('apellido') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Tipo documento</label>
+          <input name="ls_tipo_documento" class="form-control" value="{{ old('ls_tipo_documento') }}" placeholder="CC / TI / CE">
+          @error('ls_tipo_documento') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Documento</label>
+          <input name="ls_documento" class="form-control" value="{{ old('ls_documento') }}">
+          @error('ls_documento') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Contraseña</label>
+          <input type="password" name="password" class="form-control">
+          @error('password') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+      </div>
+
+      {{-- ====== 5) Bloque APRENDIZ ====== --}}
+      <div id="box-aprendiz" class="row g-3 d-none">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Nombre</label>
+          <input name="nombre" class="form-control" value="{{ old('nombre') }}">
+          @error('nombre') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Apellido</label>
+          <input name="apellido" class="form-control" value="{{ old('apellido') }}">
+          @error('apellido') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Ficha</label>
+          <input name="ap_ficha" class="form-control" value="{{ old('ap_ficha') }}">
+          @error('ap_ficha') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Programa</label>
+          <input name="ap_programa" class="form-control" value="{{ old('ap_programa') }}">
+          @error('ap_programa') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Tipo documento</label>
+          <input name="ap_tipo_documento" class="form-control" value="{{ old('ap_tipo_documento') }}" placeholder="CC / TI / CE">
+          @error('ap_tipo_documento') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Documento</label>
+          <input name="ap_documento" class="form-control" value="{{ old('ap_documento') }}">
+          @error('ap_documento') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Celular</label>
+          <input name="ap_celular" class="form-control" value="{{ old('ap_celular') }}">
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Correo institucional</label>
+          <input name="ap_correo_institucional" type="email" class="form-control" value="{{ old('ap_correo_institucional') }}">
+          @error('ap_correo_institucional') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Contraseña</label>
+          <input type="password" name="password" class="form-control">
+          @error('password') <div class="text-danger small">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Contacto nombre</label>
+          <input name="ap_contacto_nombre" class="form-control" value="{{ old('ap_contacto_nombre') }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Contacto celular</label>
+          <input name="ap_contacto_celular" class="form-control" value="{{ old('ap_contacto_celular') }}">
+        </div>
+      </div>
+
+      {{-- Errores generales --}}
+      @if ($errors->any())
+        <div class="col-12">
+          <div class="alert alert-danger">
+            <ul class="mb-0">
+              @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+              @endforeach
+            </ul>
+>>>>>>> PreFu
           </div>
         </div>
 

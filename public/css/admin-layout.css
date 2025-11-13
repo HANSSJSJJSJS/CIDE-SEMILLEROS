@@ -81,7 +81,11 @@
 
 /* ---------- Área de página con fondo decorativo ---------- */
 .adm-content{ background:#f7f9fc; }
+<<<<<<< HEAD
 .adm-page{ position:relative; padding:20px; isolation:isolate; z-index:0; min-height:100vh; }
+=======
+.adm-page{ position:relative; padding:20px; isolation:auto; z-index:auto; }
+>>>>>>> PreFu
 .adm-page::before{
   content:""; position:absolute; inset:0; z-index:-1;
   /* Mostrar imagen completa de forma responsiva */
@@ -165,6 +169,7 @@
 /* Bloquea scroll de fondo cuando el menú está abierto en móvil */
 .noscroll{ overflow: hidden; height: 100vh; }
 
+<<<<<<< HEAD
 /* =========================================================
    FIX: Oscurecimiento o bloqueo de pantalla al usar modales
    ========================================================= */
@@ -190,3 +195,8 @@ body.modal-open {
 }
 
 .modal-backdrop{ display:none !important; opacity:0 !important; }
+=======
+/* Asegurar modales por encima de overlays del layout */
+.modal { z-index: 2050 !important; }
+.modal-backdrop { z-index: 2040 !important; pointer-events: none !important; }
+>>>>>>> PreFu
