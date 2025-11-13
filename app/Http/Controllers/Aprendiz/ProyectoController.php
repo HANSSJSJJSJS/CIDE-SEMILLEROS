@@ -86,9 +86,19 @@ class ProyectoController extends Controller
             ->firstOrFail();
 
         // Compañeros (otros aprendices asignados al proyecto)
-        $companeros = $proyecto->aprendices
-            ->where('id_usuario', '!=', $user->id)
-            ->values();
+        $aprUserCol = Schema::hasTable('aprendices')
+            ? (Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : (Schema::hasColumn('aprendices','user_id') ? 'user_id' : null))
+            : null;
+        $companeros = $proyecto->aprendices;
+        if ($aprUserCol) {
+            $companeros = $companeros->filter(function($ap) use ($aprUserCol, $user){
+                $val = null;
+                if (method_exists($ap, 'getAttribute')) { $val = $ap->getAttribute($aprUserCol); }
+                return (int)$val !== (int)$user->id;
+            })->values();
+        } else {
+            $companeros = $companeros->values();
+        }
 
         // Líder del semillero (si el proyecto pertenece a un semillero con líder asociado)
         $lider = null;
@@ -100,13 +110,25 @@ class ProyectoController extends Controller
 
         // Filtros de evidencias: por fecha exacta (created_at) y por nombre del compañero (autor)
         $fecha = request('fecha');
+        // Normalizar fecha posible en formato dd/mm/yyyy a Y-m-d
+        if (is_string($fecha) && strpos($fecha, '/') !== false) {
+            $parts = explode('/', $fecha);
+            if (count($parts) === 3) {
+                [$d,$m,$y] = $parts;
+                if (checkdate((int)$m,(int)$d,(int)$y)) { $fecha = sprintf('%04d-%02d-%02d', (int)$y, (int)$m, (int)$d); }
+            }
+        }
         $nombre = request('nombre');
 
         // Validación del nombre contra compañeros del proyecto (incluye al propio usuario si tiene registro en aprendices)
         $nombreError = null;
         $aplicarFiltroNombre = false;
         if ($nombre) {
-            $aprendizActual = \App\Models\Aprendiz::where('id_usuario', $user->id)->first();
+            // Resolver aprendiz actual por columna disponible (id_usuario o user_id)
+            $aprendizActual = null;
+            if ($aprUserCol) {
+                $aprendizActual = \App\Models\Aprendiz::where($aprUserCol, $user->id)->first();
+            }
             $lista = $companeros->values();
             if ($aprendizActual) { $lista = $lista->push($aprendizActual); }
 
@@ -118,25 +140,59 @@ class ProyectoController extends Controller
                 return $val && stripos($val, $nombre) !== false;
             })->isNotEmpty();
 
-            if ($hayMatch) {
-                $aplicarFiltroNombre = true;
+            // Aplicar filtro aunque no se encuentre coincidencia previa; nombreError es informativo
+            $aplicarFiltroNombre = true;
+            if (!$hayMatch) { $nombreError = 'No se encontró ningún compañero con ese nombre en este proyecto.'; }
+        }
+
+        // Construir evidencias desde 'documentos' del proyecto (incluye asignadas y subidas)
+        $docAprCol = $this->getDocumentoAprendizColumn();
+        $queryDocs = DB::table('documentos')
+            ->where('documentos.id_proyecto', $proyecto->id_proyecto);
+
+        if ($fecha) {
+            $dateCol = Schema::hasColumn('documentos','fecha_subida') ? 'fecha_subida' : (Schema::hasColumn('documentos','created_at') ? 'created_at' : null);
+            if ($dateCol) { $queryDocs->whereDate($dateCol, $fecha); }
+        }
+
+        if ($aplicarFiltroNombre && $nombre) {
+            // Intentar filtrar por nombre del aprendiz asociado al documento
+            $nameExpr = Schema::hasTable('aprendices') && Schema::hasColumn('aprendices','nombre_completo')
+                ? 'aprendices.nombre_completo'
+                : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
+            $ownerKey = null; // columna en aprendices que empata con documentos.$docAprCol
+            foreach (['id_aprendiz','id','id_usuario','user_id'] as $cand) { if (Schema::hasColumn('aprendices',$cand)) { $ownerKey = $cand; break; } }
+            if ($ownerKey) {
+                $queryDocs->leftJoin('aprendices', DB::raw('aprendices.'.$ownerKey), '=', DB::raw('documentos.'.$docAprCol))
+                          ->whereRaw("$nameExpr LIKE ?", ["%$nombre%"]); 
             } else {
-                $nombreError = 'No se encontró ningún compañero con ese nombre en este proyecto.';
+                // Fallback: filtrar por users.name si docAprCol apunta a id de usuario
+                if ($docAprCol === 'id_usuario' && Schema::hasTable('users')) {
+                    $queryDocs->leftJoin('users', 'users.id', '=', 'documentos.id_usuario')
+                              ->where('users.name', 'LIKE', "%$nombre%");
+                }
             }
         }
 
-        $evidencias = Evidencia::with(['autor'])
-            ->where('proyecto_id', $proyecto->id_proyecto)
-            ->when($fecha, function ($q) use ($fecha) {
-                $q->whereDate('created_at', $fecha);
-            })
-            ->when($aplicarFiltroNombre && $nombre, function ($q) use ($nombre) {
-                $q->whereHas('autor', function ($s) use ($nombre) {
-                    $s->whereRaw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) LIKE ?", ["%$nombre%"]); 
-                });
-            })
-            ->orderByDesc('created_at')
-            ->get();
+        $docs = $queryDocs->orderByDesc(Schema::hasColumn('documentos','fecha_subida') ? 'fecha_subida' : 'id_documento')->get();
+
+        // Mapear a estructura esperada por la vista
+        $evidencias = $docs->map(function($d){
+            $estado = isset($d->estado) ? strtolower((string)$d->estado) : null;
+            if (!$estado) {
+                // Derivar por presencia de archivo (ruta_archivo no vacío)
+                $hasFile = isset($d->ruta_archivo) && trim((string)$d->ruta_archivo) !== '';
+                $estado = $hasFile ? 'completado' : 'pendiente';
+            }
+            $created = $d->fecha_subida ?? ($d->created_at ?? null);
+            return (object) [
+                'nombre' => $d->documento ?? 'Evidencia',
+                'estado' => $estado,
+                'created_at' => $created ? (new \Carbon\Carbon($created)) : null,
+                // El autor lo resolverá la vista con $ev->autor opcional, aquí lo dejamos nulo
+                'autor' => null,
+            ];
+        });
 
         // Documentos del proyecto (para listarlos en el detalle)
         if (Schema::hasTable('archivos')) {
@@ -274,6 +330,14 @@ class ProyectoController extends Controller
         }
 
         return [];
+    }
+
+    // Detectar la columna en 'documentos' que referencia al aprendiz
+    private function getDocumentoAprendizColumn(): string
+    {
+        if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','id_aprendiz')) { return 'id_aprendiz'; }
+        if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','id_usuario')) { return 'id_usuario'; }
+        return 'id_aprendiz';
     }
 }
 
