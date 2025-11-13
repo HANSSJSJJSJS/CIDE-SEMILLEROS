@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class SemilleroController extends Controller
 {
@@ -19,6 +20,8 @@ class SemilleroController extends Controller
     public function semilleros()
     {
         $userId = Auth::id();
+        Log::info("=== DEBUG SEMILLEROS ===");
+        Log::info("Usuario autenticado ID: {$userId}");
 
         // Si existe la tabla de proyectos, mostrar proyectos como "Mis Proyectos"
         if (Schema::hasTable('proyectos')) {
@@ -81,29 +84,46 @@ class SemilleroController extends Controller
 
             $qb = DB::table('proyectos as p')->select($cols);
 
-            // Intentar filtrar por líder (varias opciones según esquema)
+            // FILTRO CORREGIDO: obtener semilleros del líder y filtrar proyectos por esos IDs
+            Log::info("Buscando semilleros del líder ID: {$userId}");
+            $semillerosDelLider = [];
             if (Schema::hasTable('semilleros') && Schema::hasColumn('proyectos', 'id_semillero')) {
-                // Resolver columna de líder en semilleros: id_lider_usuario o id_lider_semi
-                $leaderCol = null;
-                if (Schema::hasColumn('semilleros', 'id_lider_usuario')) {
-                    $leaderCol = 'id_lider_usuario';
-                } elseif (Schema::hasColumn('semilleros', 'id_lider_semi')) {
-                    $leaderCol = 'id_lider_semi';
-                }
-                if ($leaderCol) {
-                    $qb->join('semilleros as s', 's.id_semillero', '=', 'p.id_semillero')
-                       ->where("s.$leaderCol", $userId);
-                }
+                $semillerosDelLider = DB::table('semilleros')
+                    ->where('id_lider_semi', $userId)
+                    ->pluck('id_semillero')
+                    ->toArray();
+            }
+            Log::info("Semilleros encontrados para el líder: " . json_encode($semillerosDelLider));
+
+            if (!empty($semillerosDelLider)) {
+                $qb->whereIn('p.id_semillero', $semillerosDelLider);
+                Log::info("Filtrando proyectos por semilleros: " . implode(', ', $semillerosDelLider));
             } else {
-                // Si no se puede unir con semilleros, filtrar directo si existe una columna de líder en proyectos
-                if (Schema::hasColumn('proyectos', 'id_lider_usuario')) {
-                    $qb->where('p.id_lider_usuario', $userId);
-                } elseif (Schema::hasColumn('proyectos', 'id_lider_semi')) {
-                    $qb->where('p.id_lider_semi', $userId);
-                }
+                Log::warning("El líder no tiene semilleros asignados o no existe relación");
+                // Forzamos condición imposible para no devolver proyectos ajenos
+                $qb->where('p.id_semillero', 0);
             }
 
+            // DEBUG: query generada
+            Log::info("Query SQL: " . $qb->toSql());
+            Log::info("Parámetros: " . json_encode($qb->getBindings()));
+
             $proyectos = $qb->get();
+            Log::info("Proyectos encontrados: " . $proyectos->count());
+
+            // Después de obtener $proyectos, forzar el filtro por semillero del líder
+            $semillerosQ = DB::table('semilleros')
+                ->where('id_lider_semi', $userId);
+            if (Schema::hasColumn('semilleros','id_lider_usuario')) {
+                $semillerosQ->orWhere('id_lider_usuario', $userId);
+            }
+            $semillerosLider = $semillerosQ->pluck('id_semillero');
+
+            if ($semillerosLider->isNotEmpty()) {
+                $proyectos = $proyectos->filter(function($proyecto) use ($semillerosLider) {
+                    return isset($proyecto->id_semillero) && $semillerosLider->contains($proyecto->id_semillero);
+                });
+            }
 
             // Calcular progreso basado en fechas
             $proyectos->transform(function($p){
@@ -255,12 +275,12 @@ class SemilleroController extends Controller
             });
         }
 
-        return view('lider_semi.semilleros', compact('semilleros'));
+        return view('lider_semi.proyectos', compact('semilleros'));
     }
 
     public function create()
     {
-        return view('usuarios.create');
+        return view('usuarios.create'); 
     }
 
     public function store(Request $request)
@@ -604,6 +624,7 @@ class SemilleroController extends Controller
         return response()->json($query->orderByRaw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))")->limit(20)->get());
     }
 
+
     public function attachProyectoAprendiz(Request $request, $proyectoId)
     {
         $data = $request->validate(['aprendiz_id' => ['required','integer','exists:aprendices,id_usuario']]);
@@ -875,15 +896,23 @@ class SemilleroController extends Controller
     }
 
     // Listar proyectos para el select del modal
-    public function listarProyectos()
+    public function listarProyectos(Request $request)
     {
-        if (!Schema::hasTable('proyectos')) {
+        // Validaciones mínimas
+        if (!Schema::hasTable('proyectos') || !Schema::hasTable('semilleros')) {
+            return response()->json(['proyectos' => []]);
+        }
+        if (!Schema::hasColumn('proyectos','id_semillero') || !Schema::hasColumn('semilleros','id_lider_semi')) {
             return response()->json(['proyectos' => []]);
         }
 
-        $proyectos = DB::table('proyectos')
-            ->select('id_proyecto', 'nombre_proyecto')
-            ->orderBy('nombre_proyecto')
+        $leaderId = (int) ($request->query('leader_id', 76));
+
+        $proyectos = DB::table('proyectos as p')
+            ->join('semilleros as s', 's.id_semillero', '=', 'p.id_semillero')
+            ->where('s.id_lider_semi', $leaderId)
+            ->select('p.id_proyecto','p.nombre_proyecto')
+            ->orderBy('p.nombre_proyecto')
             ->get();
 
         return response()->json(['proyectos' => $proyectos]);
@@ -894,10 +923,35 @@ class SemilleroController extends Controller
     {
         try {
             Log::info("Obteniendo aprendices para proyecto ID: {$proyectoId}");
+            // Validar que el proyecto pertenezca al líder 76 antes de exponer aprendices
+            $leaderId = 76;
+            $pertenece = false;
+            if (Schema::hasTable('proyectos')) {
+                $chk = DB::table('proyectos as p');
+                if (Schema::hasTable('semilleros') && Schema::hasColumn('proyectos','id_semillero')) {
+                    $chk->join('semilleros as s','s.id_semillero','=','p.id_semillero');
+                    $chk->where('p.id_proyecto', $proyectoId);
+                    $chk->where(function($w) use ($leaderId){
+                        if (Schema::hasColumn('semilleros','id_lider_usuario')) $w->orWhere('s.id_lider_usuario', $leaderId);
+                        if (Schema::hasColumn('semilleros','id_lider_semi'))    $w->orWhere('s.id_lider_semi', $leaderId);
+                    });
+                    $pertenece = $chk->exists();
+                } else {
+                    $chk->where('p.id_proyecto', $proyectoId);
+                    $chk->where(function($w) use ($leaderId){
+                        if (Schema::hasColumn('proyectos','id_lider_usuario')) $w->orWhere('p.id_lider_usuario', $leaderId);
+                        if (Schema::hasColumn('proyectos','id_lider_semi'))    $w->orWhere('p.id_lider_semi', $leaderId);
+                    });
+                    $pertenece = $chk->exists();
+                }
+            }
+            if (!$pertenece) {
+                return response()->json(['aprendices' => [], 'data' => []]);
+            }
 
             if (!Schema::hasTable('proyectos') || !Schema::hasTable('aprendices')) {
                 Log::warning('Tablas proyectos o aprendices no existen');
-                return response()->json(['aprendices' => []]);
+                return response()->json(['aprendices' => [], 'data' => []]);
             }
 
             // Buscar la tabla pivot
@@ -905,7 +959,7 @@ class SemilleroController extends Controller
 
             if (empty($pivot)) {
                 Log::warning('No se encontró tabla pivot para proyecto-aprendiz');
-                return response()->json(['aprendices' => []]);
+                return response()->json(['aprendices' => [], 'data' => []]);
             }
 
             Log::info("Usando pivot: " . json_encode($pivot));
@@ -948,7 +1002,7 @@ class SemilleroController extends Controller
 
                 if ($aprendizIds->isEmpty()) {
                     Log::info('No se encontraron aprendices para este proyecto');
-                    return response()->json(['aprendices' => []]);
+                    return response()->json(['aprendices' => [], 'data' => []]);
                 }
 
                 $aprendices = DB::table('aprendices')
@@ -969,12 +1023,12 @@ class SemilleroController extends Controller
 
             Log::info("Aprendices obtenidos: " . $aprendices->toJson());
 
-            return response()->json(['aprendices' => $aprendices]);
+            return response()->json(['aprendices' => $aprendices, 'data' => $aprendices]);
 
         } catch (\Exception $e) {
             Log::error('Error al obtener aprendices del proyecto: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
-            return response()->json(['aprendices' => [], 'error' => $e->getMessage()]);
+            return response()->json(['aprendices' => [], 'data' => [], 'error' => $e->getMessage()]);
         }
     }
 
@@ -1416,11 +1470,19 @@ class SemilleroController extends Controller
         $proyectos = collect([]);
 
         if (Schema::hasTable('proyectos')) {
-            $proyectos = DB::table('proyectos')
-                ->select('id_proyecto','nombre_proyecto')
-                ->orderBy('nombre_proyecto')
-                ->get();
+            if (Schema::hasTable('semilleros') && Schema::hasColumn('proyectos','id_semillero') && Schema::hasColumn('semilleros','id_lider_semi')) {
+                $proyectos = DB::table('proyectos as p')
+                    ->join('semilleros as s','s.id_semillero','=','p.id_semillero')
+                    ->where('s.id_lider_semi', $userId)
+                    ->select('p.id_proyecto','p.nombre_proyecto')
+                    ->orderBy('p.nombre_proyecto')
+                    ->get();
+            } else {
+                // Fallback seguro: no exponer todos los proyectos si no podemos validar líder
+                $proyectos = collect([]);
+            }
 
+<<<<<<< HEAD
             // Construir aprendices por proyecto
             $aprPorProyecto = [];
             $pids = $proyectos->pluck('id_proyecto')->all() ?: [0];
@@ -1456,6 +1518,37 @@ class SemilleroController extends Controller
                                 }
                             }
                         }
+=======
+            // Adjuntar aprendices por proyecto usando la pivote real (más preciso que documentos)
+            $aprPorProyecto = [];
+            $projIds = $proyectos->pluck('id_proyecto')->all() ?: [];
+            if (!empty($projIds)) {
+                $pivot = $this->pivotProyectoAprendiz();
+                if (!empty($pivot)) {
+                    // Determinar cómo unir con aprendices según si la pivote guarda id_usuario/user_id o id_aprendiz
+                    $pivotUsaUsuario = in_array($pivot['aprCol'], ['id_usuario','user_id'], true);
+                    $aprJoinCol = 'id_aprendiz';
+                    if ($pivotUsaUsuario && Schema::hasColumn('aprendices','id_usuario')) {
+                        $aprJoinCol = 'id_usuario';
+                    }
+
+                    $rows = DB::table($pivot['table'] . ' as pv')
+                        ->join('aprendices', 'aprendices.' . $aprJoinCol, '=', DB::raw('pv.' . $pivot['aprCol']))
+                        ->whereIn(DB::raw('pv.' . $pivot['projCol']), $projIds)
+                        ->when(Schema::hasColumn('aprendices','documento'), function($q){
+                            $q->where('aprendices.documento','!=','SIN_ASIGNAR');
+                        })
+                        ->select(
+                            DB::raw('pv.' . $pivot['projCol'] . ' as pid'),
+                            DB::raw('aprendices.id_aprendiz as id_aprendiz')
+                        )
+                        ->distinct()
+                        ->get()
+                        ->groupBy('pid');
+
+                    foreach ($rows as $pid => $items) {
+                        $aprPorProyecto[$pid] = collect($items)->map(function($r){ return (object)['id_aprendiz' => $r->id_aprendiz]; });
+>>>>>>> b86c1fc (detalles reunion lider)
                     }
                 }
             }
@@ -1526,22 +1619,36 @@ class SemilleroController extends Controller
 
             $eventos = $query->orderBy('fecha_hora', 'asc')->get();
 
+            $tz = config('app.timezone', 'America/Bogota');
             return response()->json([
                 'success' => true,
-                'eventos' => $eventos->map(function($evento) {
+                'eventos' => $eventos->map(function($evento) use ($tz) {
+                    // Normalizar fecha a timezone de app en formato 'Y-m-d H:i:s'
+                    $dt = $evento->fecha_hora instanceof \DateTimeInterface
+                        ? Carbon::instance($evento->fecha_hora)
+                        : Carbon::parse($evento->fecha_hora);
+                    $fechaLocal = $dt->setTimezone($tz)->format('Y-m-d H:i:s');
+
                     // Participantes desde grupo/proyecto
-                    $aprIds = [];
-                    if (!empty($evento->id_proyecto)) {
-                        $aprIds = $this->getProjectAprendizIds((int)$evento->id_proyecto);
-                    }
-                    $aprIds = array_values(array_unique(array_filter(array_map('intval', $aprIds))));
                     $parts = collect();
-                    if (!empty($aprIds) && Schema::hasTable('aprendices')) {
-                        $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
-                            ? 'aprendices.nombre_completo'
-                            : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
-                        $rows = DB::table('aprendices')->whereIn('id_aprendiz', $aprIds)->select('id_aprendiz', DB::raw($nameExpr.' as nombre'))->get();
-                        $parts = $rows->map(fn($r)=> ['id'=>$r->id_aprendiz, 'nombre_completo'=>$r->nombre]);
+                    try {
+                        $aprIds = [];
+                        if (!empty($evento->id_proyecto)) {
+                            $aprIds = $this->getProjectAprendizIds((int)$evento->id_proyecto);
+                        }
+                        $aprIds = array_values(array_unique(array_filter(array_map('intval', $aprIds))));
+                        if (!empty($aprIds) && Schema::hasTable('aprendices')) {
+                            $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
+                                ? 'aprendices.nombre_completo'
+                                : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
+                            $rows = DB::table('aprendices')
+                                ->whereIn('id_aprendiz', $aprIds)
+                                ->select('id_aprendiz', DB::raw($nameExpr.' as nombre'))
+                                ->get();
+                            $parts = $rows->map(fn($r)=> ['id'=>$r->id_aprendiz, 'nombre_completo'=>$r->nombre]);
+                        }
+                    } catch (\Throwable $t) {
+                        // dejar $parts vacío en caso de error
                     }
 
                     return [
@@ -1549,7 +1656,7 @@ class SemilleroController extends Controller
                         'titulo' => $evento->titulo,
                         'descripcion' => $evento->descripcion,
                         'linea_investigacion' => $evento->linea_investigacion,
-                        'fecha_hora' => $evento->fecha_hora->toIso8601String(),
+                        'fecha_hora' => $fechaLocal,
                         'duracion' => $evento->duracion,
                         'tipo' => $evento->tipo,
                         'ubicacion' => $evento->ubicacion,
@@ -1577,6 +1684,19 @@ class SemilleroController extends Controller
     {
         try {
             Log::info('Datos recibidos para crear evento:', $request->all());
+            // === DEBUG FECHA / TIMEZONE ===
+            try {
+                Log::info("=== DEBUG FECHA ===");
+                Log::info("Fecha recibida del request: " . ($request->fecha_hora ?? 'NULL'));
+                Log::info("Timezone de la app: " . (string) config('app.timezone'));
+                $raw = (string) ($request->fecha_hora ?? '');
+                $parsedTs = $raw !== '' ? @strtotime($raw) : false;
+                $phpInterp = $parsedTs ? date('Y-m-d H:i:s', $parsedTs) : 'INVALID';
+                Log::info("Fecha interpretada en PHP: " . $phpInterp);
+                Log::info("Zona horaria actual (PHP): " . date_default_timezone_get());
+            } catch (\Throwable $t) {
+                Log::warning('DEBUG FECHA falló: ' . $t->getMessage());
+            }
 
             $validated = $request->validate([
                 'titulo' => 'required|string|max:255',
@@ -1691,10 +1811,12 @@ class SemilleroController extends Controller
                 'proyecto:id_proyecto,nombre_proyecto'
             ]);
 
-            // Formatear fecha_hora de forma segura
-            $fechaIso = $evento->fecha_hora instanceof \DateTimeInterface
-                ? $evento->fecha_hora->format(DATE_ATOM)
-                : (\is_string($evento->fecha_hora) ? date(DATE_ATOM, strtotime($evento->fecha_hora)) : (string)$evento->fecha_hora);
+            // Formatear fecha_hora en timezone de app y formato local (evitar ISO/Z)
+            $tz = config('app.timezone', 'America/Bogota');
+            $dt = $evento->fecha_hora instanceof \DateTimeInterface
+                ? Carbon::instance($evento->fecha_hora)
+                : Carbon::parse($evento->fecha_hora);
+            $fechaLocal = $dt->setTimezone($tz)->format('Y-m-d H:i:s');
 
             return response()->json([
                 'success' => true,
@@ -1704,7 +1826,7 @@ class SemilleroController extends Controller
                     'titulo' => $evento->titulo,
                     'descripcion' => $evento->descripcion,
                     'linea_investigacion' => $evento->linea_investigacion,
-                    'fecha_hora' => $fechaIso,
+                    'fecha_hora' => $fechaLocal,
                     'duracion' => $evento->duracion,
                     'tipo' => $evento->tipo,
                     'ubicacion' => $evento->ubicacion,
