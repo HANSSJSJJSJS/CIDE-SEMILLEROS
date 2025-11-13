@@ -481,7 +481,6 @@ class SemilleroController extends Controller
         if (empty($pivot)) abort(404, 'Relación proyecto-aprendiz no configurada');
         $proyecto = Proyecto::select('id_proyecto', DB::raw('COALESCE(nombre_proyecto, "Proyecto") as nombre'))
             ->where('id_proyecto', $proyectoId)->firstOrFail();
-<<<<<<< Updated upstream
         // Determinar si la pivote almacena id_usuario o id_aprendiz
         $useUserId = in_array($pivot['aprCol'], ['id_usuario','user_id']);
         $aprJoinCol = $useUserId && Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : 'id_aprendiz';
@@ -489,24 +488,16 @@ class SemilleroController extends Controller
         $rows = DB::table($pivot['table'])
             ->join('aprendices','aprendices.'.$aprJoinCol,'=',DB::raw($pivot['table'].'.'.$pivot['aprCol']))
             ->where(DB::raw($pivot['table'].'.'.$pivot['projCol']), $proyectoId)
-            ->select(DB::raw($selectIdAs), DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),'aprendices.correo_institucional')
-            ->orderByRaw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))")
-=======
-        $rows = DB::table($pivot['table'].' as pvt')
-            ->join('aprendices as a','a.id_aprendiz','=',DB::raw('pvt.'.$pivot['aprCol']))
-            ->leftJoin('users as u','u.id','=','a.user_id')
-            ->where(DB::raw('pvt.'.$pivot['projCol']), $proyectoId)
             ->select(
-                DB::raw('a.id_aprendiz as id_aprendiz'),
-                DB::raw("COALESCE(NULLIF(TRIM(CONCAT(COALESCE(a.nombres,''),' ',COALESCE(a.apellidos,''))),''), NULLIF(TRIM(u.name),''), 'Sin nombre') as display_name"),
-                DB::raw("TRIM(CONCAT(COALESCE(a.nombres,''),' ',COALESCE(a.apellidos,''))) as nombre_completo"),
-                'a.programa',
-                'a.documento',
-                'a.nombres',
-                'a.apellidos'
+                DB::raw($selectIdAs),
+                DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),
+                'aprendices.correo_institucional',
+                'aprendices.programa',
+                'aprendices.documento',
+                'aprendices.nombres',
+                'aprendices.apellidos'
             )
-            ->orderByRaw("COALESCE(NULLIF(TRIM(CONCAT(COALESCE(a.nombres,''),' ',COALESCE(a.apellidos,''))),''), NULLIF(TRIM(u.name),''), 'zzz')")
->>>>>>> Stashed changes
+            ->orderByRaw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))")
             ->get();
         // Simular relación para la vista
         $proyecto->aprendices = $rows;
