@@ -72,6 +72,14 @@ class DocumentoController extends Controller
             ->join('proyectos', 'proyectos.id_proyecto', '=', 'documentos.id_proyecto')
             ->where('documentos.' . $docAprCol, $aprId)
             ->whereRaw("documentos.documento NOT LIKE 'PLACEHOLDER%'")
+            ->whereNotNull('documentos.ruta_archivo')
+            ->where('documentos.ruta_archivo', '!=', '')
+            ->when(\Illuminate\Support\Facades\Schema::hasColumn('documentos','tamanio'), function($q){
+                $q->where('documentos.tamanio', '>', 0);
+            })
+            ->when(\Illuminate\Support\Facades\Schema::hasColumn('documentos','estado'), function($q){
+                $q->where('documentos.estado', '!=', 'pendiente');
+            })
             ->select(
                 'documentos.*',
                 'proyectos.nombre_proyecto'
@@ -79,7 +87,24 @@ class DocumentoController extends Controller
             ->orderBy('documentos.fecha_subida', 'desc')
             ->get();
 
-        return view('aprendiz.documentos', compact('proyectos', 'documentos', 'aprendiz'));
+        $pendientesAsignadas = DB::table('documentos')
+            ->join('proyectos', 'proyectos.id_proyecto', '=', 'documentos.id_proyecto')
+            ->where('documentos.' . $docAprCol, $aprId)
+            ->where(function($q){
+                $q->whereNull('documentos.ruta_archivo')
+                  ->orWhere('documentos.ruta_archivo', '=', '');
+                if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','tamanio')) {
+                    $q->orWhere('documentos.tamanio', '=', 0);
+                }
+            })
+            ->when(\Illuminate\Support\Facades\Schema::hasColumn('documentos','estado'), function($q){
+                $q->where('documentos.estado', 'pendiente');
+            })
+            ->select('documentos.*','proyectos.nombre_proyecto')
+            ->orderBy('documentos.fecha_subida','desc')
+            ->get();
+
+        return view('aprendiz.documentos', compact('proyectos', 'documentos', 'aprendiz', 'pendientesAsignadas'));
     }
 
     /**
@@ -204,6 +229,52 @@ class DocumentoController extends Controller
             return response()->json(['ok' => true]);
         }
         return back()->with('success', 'Documento subido correctamente');
+    }
+
+    public function uploadAssigned(Request $request, $id)
+    {
+        $userId = Auth::id();
+        $aprendiz = $this->getAprendizByUserId($userId);
+        if (!$aprendiz) { return back()->with('error', 'No se encontró el perfil de aprendiz'); }
+
+        $request->validate([
+            'archivo' => 'required|file|max:10240',
+        ]);
+
+        $docAprCol = $this->getDocumentoAprendizColumn();
+        $aprId = $this->getAprendizId($aprendiz);
+
+        $documento = DB::table('documentos')
+            ->where('id_documento', $id)
+            ->where($docAprCol, $aprId)
+            ->first();
+        if (!$documento) { return back()->with('error', 'Documento no encontrado'); }
+
+        $archivo = $request->file('archivo');
+        $nombreOriginal = $archivo->getClientOriginalName();
+        $extension = $archivo->getClientOriginalExtension();
+        $tamanio = $archivo->getSize();
+        $tipoArchivo = strtolower($extension ?? '');
+        $nombreArchivo = time() . '_' . $aprId . '_' . $nombreOriginal;
+        $ruta = \Illuminate\Support\Facades\Storage::disk('public')->putFileAs('documentos', $archivo, $nombreArchivo);
+
+        $update = [
+            'ruta_archivo' => $ruta,
+            'tipo_archivo' => $tipoArchivo,
+            'tamanio' => $tamanio,
+            'fecha_subida' => now(),
+        ];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','estado')) {
+            $update['estado'] = 'completado';
+        }
+        DB::table('documentos')
+            ->where('id_documento', $id)
+            ->update($update);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['ok' => true]);
+        }
+        return back()->with('success', 'Archivo subido a la evidencia');
     }
 
     /**
