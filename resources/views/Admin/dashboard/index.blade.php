@@ -28,43 +28,48 @@
 @section('module-subtitle','Resumen del sistema y actividad reciente')
 
 @section('content')
+
+  {{-- Tarjetas KPI --}}
   <div class="row g-3">
-    {{-- KPIs --}}
     <div class="col-md-2 col-sm-4">
       <div class="card kpi-card shadow-sm">
-        <div class="card-body">
+        <div class="card-body text-center">
           <div class="kpi-label">Semilleros</div>
           <div id="kpiSemilleros" class="kpi-value">--</div>
         </div>
       </div>
     </div>
+
     <div class="col-md-2 col-sm-4">
       <div class="card kpi-card shadow-sm">
-        <div class="card-body">
+        <div class="card-body text-center">
           <div class="kpi-label">Líderes</div>
           <div id="kpiLideres" class="kpi-value">--</div>
         </div>
       </div>
     </div>
+
     <div class="col-md-2 col-sm-4">
       <div class="card kpi-card shadow-sm">
-        <div class="card-body">
+        <div class="card-body text-center">
           <div class="kpi-label">Aprendices</div>
           <div id="kpiAprendices" class="kpi-value">--</div>
         </div>
       </div>
     </div>
+
     <div class="col-md-3 col-sm-6">
       <div class="card kpi-card shadow-sm">
-        <div class="card-body">
-          <div class="kpi-label">Proyectos activos</div>
+        <div class="card-body text-center">
+          <div class="kpi-label">Proyectos</div>
           <div id="kpiProyectos" class="kpi-value">--</div>
         </div>
       </div>
     </div>
+
     <div class="col-md-3 col-sm-6">
       <div class="card kpi-card shadow-sm">
-        <div class="card-body">
+        <div class="card-body text-center">
           <div class="kpi-label">Recursos</div>
           <div id="kpiRecursos" class="kpi-value">--</div>
         </div>
@@ -72,40 +77,60 @@
     </div>
   </div>
 
-  {{-- Gráficas --}}
-  <div class="row g-3 mt-1">
-    <div class="col-lg-6">
-      <div class="card shadow-sm">
-        <div class="card-header"><strong>Aprendices por semillero (Top 10)</strong></div>
-        <div class="card-body"><canvas id="chartAprSem" height="140"></canvas></div>
-      </div>
-    </div>
-    <div class="col-lg-6">
-      <div class="card shadow-sm">
-        <div class="card-header"><strong>Proyectos por estado</strong></div>
-        <div class="card-body"><canvas id="chartProjEstado" height="140"></canvas></div>
-      </div>
+  {{-- TABLA 1 — Aprendices por semillero --}}
+  <div class="card shadow-sm mt-4">
+    <div class="card-header"><strong>Aprendices por semillero</strong></div>
+    <div class="card-body p-0">
+      <table class="table table-striped mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>Semillero</th>
+            <th>Total de aprendices</th>
+          </tr>
+        </thead>
+        <tbody id="tablaAprendicesSem"></tbody>
+      </table>
     </div>
   </div>
 
-  <div class="row g-3 mt-1">
-    <div class="col-lg-6">
-      <div class="card shadow-sm">
-        <div class="card-header"><strong>Proyectos creados por mes (últimos 12)</strong></div>
-        <div class="card-body"><canvas id="chartProjMes" height="140"></canvas></div>
-      </div>
-    </div>
-    <div class="col-lg-6">
-      <div class="card shadow-sm">
-        <div class="card-header"><strong>Recursos por categoría</strong></div>
-        <div class="card-body"><canvas id="chartRecCat" height="140"></canvas></div>
-      </div>
+  {{-- TABLA 2 — Proyectos por semillero (últimos 5) --}}
+  <div class="card shadow-sm mt-4">
+    <div class="card-header"><strong>Proyectos por semillero (últimos 5)</strong></div>
+    <div class="card-body p-0">
+      <table class="table table-striped mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>Semillero</th>
+            <th>Últimos proyectos</th>
+          </tr>
+        </thead>
+        <tbody id="tablaProyectosSem"></tbody>
+      </table>
     </div>
   </div>
+
+  {{-- TABLA 3 — Actividad de líderes --}}
+  <div class="card shadow-sm mt-4 mb-4">
+    <div class="card-header"><strong>Actividad de líderes</strong></div>
+    <div class="card-body p-0">
+      <table class="table table-striped mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>Líder</th>
+            <th>Línea de investigación</th>
+            <th>Último ingreso</th>
+            <th>Hace cuánto</th>
+          </tr>
+        </thead>
+        <tbody id="tablaActividadLideres"></tbody>
+      </table>
+    </div>
+  </div>
+
 @endsection
 
+
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (() => {
   // 1) KPIs
@@ -120,40 +145,51 @@
     })
     .catch(console.error);
 
-  // 2) Charts
+  // 2) Tablas
   fetch("{{ route('admin.dashboard.charts') }}")
     .then(r => r.json())
     .then(d => {
-      new Chart(document.getElementById('chartAprSem'), {
-        type: 'bar',
-        data: { labels: d.aprendicesPorSemillero.labels,
-                datasets: [{ label: 'Aprendices', data: d.aprendicesPorSemillero.data }] },
-        options: { responsive: true, maintainAspectRatio: false }
+      // ---- TABLA 1: Aprendices por semillero
+      let htmlApr = "";
+      d.tablaAprendicesSem.forEach(row => {
+        htmlApr += `
+          <tr>
+            <td>${row.semillero}</td>
+            <td>${row.total_aprendices}</td>
+          </tr>`;
       });
+      document.getElementById('tablaAprendicesSem').innerHTML = htmlApr;
 
-      new Chart(document.getElementById('chartProjEstado'), {
-        type: 'pie',
-        data: { labels: d.proyectosPorEstado.labels,
-                datasets: [{ data: d.proyectosPorEstado.data }] },
-        options: { responsive: true, maintainAspectRatio: false }
-      });
+      // ---- TABLA 2: Proyectos por semillero
+      let htmlProj = "";
+      d.tablaProyectosSem.forEach(row => {
+        const lista = row.proyectos.length
+          ? row.proyectos.map(p => `<div>• ${p}</div>`).join('')
+          : '<em>Sin proyectos</em>';
 
-      new Chart(document.getElementById('chartProjMes'), {
-        type: 'line',
-        data: { labels: d.proyectosPorMes.labels,
-                datasets: [{ label: 'Proyectos', data: d.proyectosPorMes.data,
-                             tension: .3, fill: false }] },
-        options: { responsive: true, maintainAspectRatio: false }
+        htmlProj += `
+          <tr>
+            <td>${row.semillero}</td>
+            <td>${lista}</td>
+          </tr>`;
       });
+      document.getElementById('tablaProyectosSem').innerHTML = htmlProj;
 
-      new Chart(document.getElementById('chartRecCat'), {
-        type: 'bar',
-        data: { labels: d.recursosPorCategoria.labels,
-                datasets: [{ label: 'Recursos', data: d.recursosPorCategoria.data }] },
-        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false }
+      // ---- TABLA 3: Actividad de líderes
+      let htmlLid = "";
+      d.actividadLideres.forEach(row => {
+        htmlLid += `
+          <tr>
+            <td>${row.lider}</td>
+            <td>${row.linea ?? '-'}</td>
+            <td>${row.last_login ?? '<em>Sin registro</em>'}</td>
+            <td>${row.last_login_humano}</td>
+          </tr>`;
       });
+      document.getElementById('tablaActividadLideres').innerHTML = htmlLid;
     })
     .catch(console.error);
+
 })();
 </script>
 @endpush

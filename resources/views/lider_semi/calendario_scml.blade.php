@@ -383,6 +383,16 @@ let selectedDate = null;
 let editingEventId = null;
 let draggedEvent = null;
 
+// Helper: formatea 'YYYY-MM-DD' en largo, evitando new Date('YYYY-MM-DD') (UTC)
+if (typeof formatDateLongLocalFromYMD !== 'function') {
+  function formatDateLongLocalFromYMD(ymd){
+    if(!ymd) return '--';
+    const [y,m,d] = String(ymd).split('-').map(Number);
+    const dt = new Date(y, (m||1)-1, d||1, 12, 0, 0, 0); // mediodía local
+    return dt.toLocaleDateString('es-CO', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  }
+}
+
 // Rutas backend
 const ROUTES = {
   obtener: "{{ route('lider_semi.eventos.obtener', [], false) }}",
@@ -823,7 +833,8 @@ function showEventDetails(event){
   editingEventId = event.id;
   document.getElementById('detail-titulo').textContent = event.title || '--';
   document.getElementById('detail-tipo').textContent = event.type || '--';
-  document.getElementById('detail-fecha').textContent = formatDateLong(new Date(event.date));
+  // Evitar usar new Date('YYYY-MM-DD') (interpreta UTC). Formatear con helper local.
+  document.getElementById('detail-fecha').textContent = formatDateLongLocalFromYMD(event.date);
   document.getElementById('detail-hora').textContent = event.time || '--';
   document.getElementById('detail-duracion').textContent = formatDurationMinutes(event.duration||60);
   document.getElementById('detail-ubicacion').textContent = event.location || '--';

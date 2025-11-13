@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UsuarioController as AdminUsuarioController;
 use App\Http\Controllers\Admin\PerfilController as AdminPerfilController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
+use App\Http\Controllers\Admin\DashboardController;
 
 use App\Http\Controllers\Admin\SemilleroController;              // ← sin alias
 use App\Http\Controllers\Admin\ProyectoSemilleroController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\LiderSemillero\ProyectoController as LiderProyectoContr
 use App\Http\Controllers\LiderSemillero\SemilleroAprendizController;
 use App\Http\Controllers\LiderSemillero\PerfilController as LiderPerfilController;
 use App\Http\Controllers\LiderSemillero\RecursosController;
+use App\Http\Controllers\LiderSemillero\DocumentosController;
 
 // Aprendiz
 use App\Http\Controllers\Aprendiz\DashboardController as AprendizDashboardController;
@@ -138,9 +140,9 @@ Route::middleware(['auth', 'role:ADMIN'])
     ->group(function () {
 
         // DASHBOARD
-        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/dashboard/stats',  [AdminDashboardController::class, 'stats'])->name('dashboard.stats');
-        Route::get('/dashboard/charts', [AdminDashboardController::class, 'charts'])->name('dashboard.charts');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/stats',  [DashboardController::class, 'stats'])->name('dashboard.stats');
+        Route::get('/dashboard/charts', [DashboardController::class, 'charts'])->name('dashboard.charts');
 
         // USUARIOS
         Route::resource('usuarios', AdminUsuarioController::class);
@@ -328,14 +330,14 @@ Route::middleware(['auth','lider.semillero'])
         Route::delete('/proyectos/{proyecto}/aprendices/{aprendiz}', [LiderSemilleroUIController::class, 'detachProyectoAprendiz'])->name('proyectos.aprendices.detach');
         Route::post('/proyectos/{proyecto}/aprendices/create', [LiderSemilleroUIController::class, 'createAndAttachProyectoAprendiz'])->name('proyectos.aprendices.create');
 
-        // Documentos / entregas / evidencias
-        Route::get('/documentos', [LiderSemilleroUIController::class, 'documentos'])->name('documentos');
-        Route::get('/proyectos/list', [LiderSemilleroUIController::class, 'listarProyectos'])->name('proyectos.list');
-        Route::get('/proyectos/{proyecto}/aprendices-list', [LiderSemilleroUIController::class, 'obtenerAprendicesProyecto'])->name('proyectos.aprendices.list');
-        Route::post('/evidencias/store', [LiderSemilleroUIController::class, 'guardarEvidencia'])->name('evidencias.store');
-        Route::get('/proyectos/{proyecto}/entregas', [LiderSemilleroUIController::class, 'obtenerEntregas'])->name('proyectos.entregas');
-        Route::put('/entregas/{entrega}/estado', [LiderSemilleroUIController::class, 'cambiarEstadoEntrega'])->name('entregas.estado');
-        Route::put('/documentos/{documento}/actualizar', [LiderSemilleroUIController::class, 'actualizarDocumento'])->name('documentos.actualizar');
+        // Documentos / entregas / evidencias (controlador dedicado)
+        Route::get('/documentos', [DocumentosController::class, 'documentos'])->name('documentos');
+        Route::get('/proyectos/list', [DocumentosController::class, 'listarProyectos'])->name('proyectos.list');
+        Route::get('/proyectos/{proyecto}/aprendices-list', [DocumentosController::class, 'obtenerAprendicesProyecto'])->name('proyectos.aprendices.list');
+        Route::post('/evidencias/store', [DocumentosController::class, 'guardarEvidencia'])->name('evidencias.store');
+        Route::get('/proyectos/{proyecto}/entregas', [DocumentosController::class, 'obtenerEntregas'])->name('proyectos.entregas');
+        Route::put('/entregas/{entrega}/estado', [DocumentosController::class, 'cambiarEstadoEntrega'])->name('entregas.estado');
+        Route::put('/documentos/{documento}/actualizar', [DocumentosController::class, 'actualizarDocumento'])->name('documentos.actualizar');
 
         // Calendario
         Route::get('/calendario', [LiderSemilleroUIController::class, 'calendario'])->name('calendario');
