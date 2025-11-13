@@ -501,13 +501,12 @@ class SemilleroController extends Controller
         if (empty($pivot)) abort(404, 'Relación proyecto-aprendiz no configurada');
         $proyecto = Proyecto::select('id_proyecto', DB::raw('COALESCE(nombre_proyecto, "Proyecto") as nombre'))
             ->where('id_proyecto', $proyectoId)->firstOrFail();
-        // Determinar si la pivote almacena id_usuario o id_aprendiz
-        $useUserId = in_array($pivot['aprCol'], ['id_usuario','user_id']);
-        $aprJoinCol = $useUserId && Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : 'id_aprendiz';
-        $selectIdAs = $aprJoinCol === 'id_usuario' ? 'aprendices.id_usuario as id_aprendiz' : 'aprendices.id_aprendiz as id_aprendiz';
-        $rows = DB::table($pivot['table'])
-            ->join('aprendices','aprendices.'.$aprJoinCol,'=',DB::raw($pivot['table'].'.'.$pivot['aprCol']))
-            ->where(DB::raw($pivot['table'].'.'.$pivot['projCol']), $proyectoId)
+
+ ModuloAdmin
+            ->select(DB::raw($selectIdAs), DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),'aprendices.correo_institucional')
+            ->orderByRaw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))")
+
+
             ->select(
                 DB::raw($selectIdAs),
                 DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),
@@ -518,6 +517,7 @@ class SemilleroController extends Controller
                 'aprendices.apellidos'
             )
             ->orderByRaw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))")
+
             ->get();
         // Simular relación para la vista
         $proyecto->aprendices = $rows;

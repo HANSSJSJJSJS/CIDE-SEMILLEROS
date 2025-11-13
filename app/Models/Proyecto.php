@@ -50,10 +50,15 @@ class Proyecto extends Model
     }
 
     // 🔹 Un proyecto tiene muchos aprendices (N-N) vía pivote aprendiz_proyecto
-    public function aprendices()
-    {
-        return $this->belongsToMany(Aprendiz::class, 'aprendiz_proyecto', 'id_proyecto', 'id_aprendiz', 'id_proyecto', 'id_aprendiz');
-    }
+   public function aprendices()
+{
+    return $this->belongsToMany(
+        Aprendiz::class,      // modelo relacionado
+        'aprendiz_proyecto',  // tabla pivote
+        'id_proyecto',        // FK del proyecto en el pivote
+        'id_aprendiz'         // FK del aprendiz en el pivote
+    );
+}
 
     // 🔹 Un proyecto tiene muchas evidencias
     public function evidencias()
