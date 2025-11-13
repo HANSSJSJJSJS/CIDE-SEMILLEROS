@@ -906,7 +906,7 @@ class SemilleroController extends Controller
             return response()->json(['proyectos' => []]);
         }
 
-        $leaderId = (int) ($request->query('leader_id', 76));
+        $leaderId = (int) (Auth::id() ?? 0);
 
         $proyectos = DB::table('proyectos as p')
             ->join('semilleros as s', 's.id_semillero', '=', 'p.id_semillero')
@@ -924,7 +924,7 @@ class SemilleroController extends Controller
         try {
             Log::info("Obteniendo aprendices para proyecto ID: {$proyectoId}");
             // Validar que el proyecto pertenezca al líder 76 antes de exponer aprendices
-            $leaderId = 76;
+            $leaderId = (int) (Auth::id() ?? 0);
             $pertenece = false;
             if (Schema::hasTable('proyectos')) {
                 $chk = DB::table('proyectos as p');
