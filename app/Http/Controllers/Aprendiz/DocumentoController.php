@@ -22,7 +22,19 @@ class DocumentoController extends Controller
         $aprendiz = $this->getAprendizByUserId($userId);
 
         if (!$aprendiz) {
-            return redirect()->back()->with('error', 'No se encontró el perfil de aprendiz');
+            // Mostrar la vista de forma tolerante aunque no exista el perfil, para no dejar la página vacía
+            session()->flash('error', 'No se encontró el perfil de aprendiz');
+            $proyectos = collect([]);
+            $documentos = collect([]);
+            $pendientesAsignadas = collect([]);
+            $aprendizStub = (object) [
+                'id_aprendiz' => 0,
+                'nombre_completo' => '',
+                'nombres' => '',
+                'apellidos' => '',
+            ];
+            return view('aprendiz.documentos', compact('proyectos', 'documentos', 'pendientesAsignadas'))
+                ->with('aprendiz', $aprendizStub);
         }
 
         // Obtener proyectos asignados al aprendiz, aunque aún no tenga documentos
@@ -127,10 +139,12 @@ class DocumentoController extends Controller
 
         if (!$asignado) {
             // Permitir si ya existe relación implícita por documentos previos (incluye placeholders)
+            $docAprCol = $this->getDocumentoAprendizColumn();
+            $aprId = $this->getAprendizId($aprendiz);
             $relPorDocs = \Illuminate\Support\Facades\Schema::hasTable('documentos')
                 ? DB::table('documentos')
                     ->where('id_proyecto', $request->id_proyecto)
-                    ->where('id_aprendiz', $aprendiz->id_aprendiz)
+                    ->where($docAprCol, $aprId)
                     ->exists()
                 : false;
 
@@ -164,7 +178,8 @@ class DocumentoController extends Controller
         $aprId = $this->getAprendizId($aprendiz);
         $nextId = null;
         if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','id_documento')) {
-            // Obtener el siguiente ID manualmente
+            // Obtener el siguiente ID manualmente si no es autoincremental
+            // Intentar detectar AI no es trivial; en su lugar, preasignamos y usamos insertGetId si es posible
             $max = DB::table('documentos')->max('id_documento');
             $nextId = (int)($max ?? 0) + 1;
         }
@@ -177,9 +192,23 @@ class DocumentoController extends Controller
             'tamanio' => $tamanio,
             'fecha_subida' => now(),
         ];
-        if (!is_null($nextId)) { $dataInsert['id_documento'] = $nextId; }
-        DB::table('documentos')->insert($dataInsert);
-        $idDocumento = $nextId ?? 0;
+        if (!is_null($nextId)) {
+            $dataInsert['id_documento'] = $nextId;
+            DB::table('documentos')->insert($dataInsert);
+            $idDocumento = $nextId;
+        } else {
+            // Intentar recuperar el ID insertado (para motores que soportan clave AI)
+            try {
+                $idDocumento = DB::table('documentos')->insertGetId($dataInsert, 'id_documento');
+            } catch (\Throwable $e) {
+                DB::table('documentos')->insert($dataInsert);
+                // Fallback: buscar por ruta y aprendiz
+                $idDocumento = (int) (DB::table('documentos')
+                    ->where('ruta_archivo', $ruta)
+                    ->where($docAprCol, $aprId)
+                    ->max('id_documento') ?? 0);
+            }
+        }
 
         // Si es AJAX, devolver JSON con el nuevo registro
         if ($request->ajax() || $request->wantsJson()) {
@@ -328,9 +357,11 @@ class DocumentoController extends Controller
         $aprendiz = $this->getAprendizByUserId($userId);
         if (!$aprendiz) { return back()->with('error', 'No se encontró el perfil de aprendiz'); }
 
+        $docAprCol = $this->getDocumentoAprendizColumn();
+        $aprId = $this->getAprendizId($aprendiz);
         $documento = DB::table('documentos')
             ->where('id_documento', $id)
-            ->where('id_aprendiz', $aprendiz->id_aprendiz)
+            ->where($docAprCol, $aprId)
             ->first();
 
         if (!$documento) {
