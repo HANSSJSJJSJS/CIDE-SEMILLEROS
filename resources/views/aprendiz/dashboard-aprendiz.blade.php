@@ -33,7 +33,7 @@
                         <div class="metric-title mb-1">Documentos Pendientes</div>
                         <div id="documentosPendientes" class="metric-value">{{ $documentosPendientes ?? 0 }}</div>
                         <div class="metric-aux mt-2">
-                            <a href="{{ route('aprendiz.archivos.index') }}" class="text-decoration-none">Subir Documentos</a>
+                            <a href="{{ route('aprendiz.documentos.index') }}" class="text-decoration-none">Subir Documentos</a>
                         </div>
                     </div>
                 </div>
@@ -267,6 +267,8 @@
                         <div class="me-2">
                             <div class="fw-bold" ${tip}>${ev.titulo || 'Reunión'}${ev.proyecto? ' · '+ev.proyecto: ''} ${chip}</div>
                             <div class="text-muted" style="font-size:.9rem;" ${urgente}>${fmt}${ev.duracion? ' · '+ev.duracion+' min':''}</div>
+                            ${ev.lider ? `<div class="text-muted" style="font-size:.85rem;">Asignada por: ${ev.lider}</div>` : ''}
+                            ${Array.isArray(ev.participantes) && ev.participantes.length ? `<div class="text-muted" style="font-size:.85rem;">Participantes: ${ev.participantes.slice(0,3).join(', ')}${ev.participantes.length>3 ? ' +' + (ev.participantes.length-3) + ' más' : ''}</div>` : ''}
                         </div>
                         <div class="d-flex gap-2">
                             ${ev.link_virtual? `<a class="btn btn-sm btn-success" href="${ev.link_virtual}" target="_blank" rel="noopener">Unirme</a>`: ''}

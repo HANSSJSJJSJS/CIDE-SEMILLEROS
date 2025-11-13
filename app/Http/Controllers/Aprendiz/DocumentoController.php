@@ -74,12 +74,6 @@ class DocumentoController extends Controller
             ->whereRaw("documentos.documento NOT LIKE 'PLACEHOLDER%'")
             ->whereNotNull('documentos.ruta_archivo')
             ->where('documentos.ruta_archivo', '!=', '')
-            ->when(\Illuminate\Support\Facades\Schema::hasColumn('documentos','tamanio'), function($q){
-                $q->where('documentos.tamanio', '>', 0);
-            })
-            ->when(\Illuminate\Support\Facades\Schema::hasColumn('documentos','estado'), function($q){
-                $q->where('documentos.estado', '!=', 'pendiente');
-            })
             ->select(
                 'documentos.*',
                 'proyectos.nombre_proyecto'
@@ -93,12 +87,6 @@ class DocumentoController extends Controller
             ->where(function($q){
                 $q->whereNull('documentos.ruta_archivo')
                   ->orWhere('documentos.ruta_archivo', '=', '');
-                if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','tamanio')) {
-                    $q->orWhere('documentos.tamanio', '=', 0);
-                }
-            })
-            ->when(\Illuminate\Support\Facades\Schema::hasColumn('documentos','estado'), function($q){
-                $q->where('documentos.estado', 'pendiente');
             })
             ->select('documentos.*','proyectos.nombre_proyecto')
             ->orderBy('documentos.fecha_subida','desc')
@@ -237,9 +225,16 @@ class DocumentoController extends Controller
         $aprendiz = $this->getAprendizByUserId($userId);
         if (!$aprendiz) { return back()->with('error', 'No se encontró el perfil de aprendiz'); }
 
-        $request->validate([
-            'archivo' => 'required|file|max:10240',
-        ]);
+        // Validar: permitir archivo o link_url
+        if ($request->hasFile('archivo')) {
+            $request->validate([
+                'archivo' => 'required|file|max:10240',
+            ]);
+        } else {
+            $request->validate([
+                'link_url' => 'required|url',
+            ]);
+        }
 
         $docAprCol = $this->getDocumentoAprendizColumn();
         $aprId = $this->getAprendizId($aprendiz);
@@ -250,23 +245,34 @@ class DocumentoController extends Controller
             ->first();
         if (!$documento) { return back()->with('error', 'Documento no encontrado'); }
 
-        $archivo = $request->file('archivo');
-        $nombreOriginal = $archivo->getClientOriginalName();
-        $extension = $archivo->getClientOriginalExtension();
-        $tamanio = $archivo->getSize();
-        $tipoArchivo = strtolower($extension ?? '');
-        $nombreArchivo = time() . '_' . $aprId . '_' . $nombreOriginal;
-        $ruta = \Illuminate\Support\Facades\Storage::disk('public')->putFileAs('documentos', $archivo, $nombreArchivo);
-
-        $update = [
-            'ruta_archivo' => $ruta,
-            'tipo_archivo' => $tipoArchivo,
-            'tamanio' => $tamanio,
-            'fecha_subida' => now(),
-        ];
-        if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','estado')) {
-            $update['estado'] = 'completado';
+        // Construir datos a actualizar según tipo
+        if ($request->hasFile('archivo')) {
+            $archivo = $request->file('archivo');
+            $nombreOriginal = $archivo->getClientOriginalName();
+            $extension = $archivo->getClientOriginalExtension();
+            $tamanio = $archivo->getSize();
+            $tipoArchivo = strtolower($extension ?? '');
+            $nombreArchivo = time() . '_' . $aprId . '_' . $nombreOriginal;
+            $ruta = \Illuminate\Support\Facades\Storage::disk('public')->putFileAs('documentos', $archivo, $nombreArchivo);
+            $update = [
+                'ruta_archivo' => $ruta,
+                'tipo_archivo' => $tipoArchivo,
+                'tamanio' => $tamanio,
+                'fecha_subida' => now(),
+            ];
+        } else {
+            $link = trim((string)$request->input('link_url'));
+            $update = [
+                'ruta_archivo' => $link,
+                // No cambiar tipo_archivo para evitar truncamiento en ENUM; mantener el tipo que definió el líder (p.ej. 'Enlace')
+                'tamanio' => 0,
+                'fecha_subida' => now(),
+            ];
+            if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','mime_type')) {
+                $update['mime_type'] = 'text/uri-list';
+            }
         }
+        // No actualizar 'estado' para evitar truncado en esquemas con ENUM desconocido
         DB::table('documentos')
             ->where('id_documento', $id)
             ->update($update);
@@ -295,6 +301,11 @@ class DocumentoController extends Controller
 
         if (!$documento) {
             return back()->with('error', 'Documento no encontrado');
+        }
+
+        // Si es un enlace externo, redirigir al URL
+        if (filter_var($documento->ruta_archivo, FILTER_VALIDATE_URL)) {
+            return redirect()->away($documento->ruta_archivo);
         }
 
         if (!Storage::disk('public')->exists($documento->ruta_archivo)) {
@@ -331,9 +342,11 @@ class DocumentoController extends Controller
             return back()->with('error', 'No se puede eliminar este registro');
         }
 
-        // Eliminar archivo físico
-        if (Storage::disk('public')->exists($documento->ruta_archivo)) {
-            Storage::disk('public')->delete($documento->ruta_archivo);
+        // Eliminar archivo físico solo si es local (no URL)
+        if (!filter_var($documento->ruta_archivo, FILTER_VALIDATE_URL)) {
+            if (Storage::disk('public')->exists($documento->ruta_archivo)) {
+                Storage::disk('public')->delete($documento->ruta_archivo);
+            }
         }
 
         // Eliminar registro de la base de datos
