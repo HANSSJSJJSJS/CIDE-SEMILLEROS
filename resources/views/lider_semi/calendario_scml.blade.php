@@ -475,20 +475,30 @@ function goToStep(step){
 const participantsList = document.getElementById('participants-list');
 const participantsSearch = document.getElementById('search-participants');
 const selectAllBtn = document.getElementById('select-all-participants');
-if (participantsSearch){
-  participantsSearch.addEventListener('input', ()=>{
-    const q = participantsSearch.value.trim().toLowerCase();
-    participantsList.querySelectorAll('.participant-item-modal').forEach(item=>{
-      const name = item.dataset.aprendizName || '';
-      item.style.display = name.includes(q) ? '' : 'none';
-    });
+let currentProjectIds = null; // Set<number> | null
+function applyParticipantsFilters(){
+  const q = (participantsSearch?.value || '').trim().toLowerCase();
+  participantsList.querySelectorAll('.participant-item-modal').forEach(item=>{
+    const id = parseInt(item.getAttribute('data-aprendiz-id'));
+    const name = (item.dataset.aprendizName || '');
+    const byProject = !currentProjectIds || currentProjectIds.has(id);
+    const bySearch = !q || name.includes(q);
+    item.style.display = (byProject && bySearch) ? '' : 'none';
   });
+}
+if (participantsSearch){
+  participantsSearch.addEventListener('input', applyParticipantsFilters);
 }
 if (selectAllBtn){
   selectAllBtn.addEventListener('click', ()=>{
     const boxes = participantsList.querySelectorAll('.participant-checkbox-modal');
     const allChecked = Array.from(boxes).every(b=>b.checked);
-    boxes.forEach(b=> b.checked = !allChecked);
+    boxes.forEach(b=>{
+      const parent = b.closest('.participant-item-modal');
+      if (parent && parent.style.display !== 'none'){
+        b.checked = !allChecked;
+      }
+    });
     updateSelectedCount();
   });
 }
@@ -501,15 +511,17 @@ function updateSelectedCount(){
   if (countEl) countEl.textContent = String(count);
 }
 
-// Proyecto -> marcar aprendices asignados
+// Proyecto -> limitar aprendices visibles y marcar asignados
 const proyectoSelect = document.getElementById('event-proyecto');
 if (proyectoSelect){
   proyectoSelect.addEventListener('change', ()=>{
     const opt = proyectoSelect.selectedOptions[0];
     try{
       const ids = JSON.parse(opt?.getAttribute('data-aprendices')||'[]');
+      currentProjectIds = Array.isArray(ids) && ids.length ? new Set(ids.map(n=>parseInt(n))) : null;
       const boxes = participantsList.querySelectorAll('.participant-checkbox-modal');
-      boxes.forEach(b=> b.checked = ids.includes(parseInt(b.value)));
+      boxes.forEach(b=> b.checked = currentProjectIds ? currentProjectIds.has(parseInt(b.value)) : false);
+      applyParticipantsFilters();
       updateSelectedCount();
     }catch(_){ /* ignore */ }
   });

@@ -1412,7 +1412,7 @@ class SemilleroController extends Controller
                 ->get();
         }
 
-        // Obtener proyectos con sus aprendices (relación a través de documentos)
+        // Obtener proyectos con sus aprendices (priorizar grupos del proyecto)
         $proyectos = collect([]);
 
         if (Schema::hasTable('proyectos')) {
@@ -1421,19 +1421,68 @@ class SemilleroController extends Controller
                 ->orderBy('nombre_proyecto')
                 ->get();
 
-            // Adjuntar aprendices por proyecto usando 'documentos' como relación disponible
+            // Construir aprendices por proyecto
             $aprPorProyecto = [];
-            if (Schema::hasTable('documentos') && Schema::hasColumn('documentos','id_proyecto') && Schema::hasColumn('documentos','id_aprendiz')) {
-                $rows = DB::table('documentos')
-                    ->select('id_proyecto','id_aprendiz')
-                    ->whereIn('id_proyecto', $proyectos->pluck('id_proyecto')->all() ?: [0])
-                    ->distinct()
-                    ->get()
-                    ->groupBy('id_proyecto');
-                foreach ($rows as $pid => $items) {
-                    $aprPorProyecto[$pid] = collect($items)->map(function($r){ return (object)['id_aprendiz' => $r->id_aprendiz]; });
+            $pids = $proyectos->pluck('id_proyecto')->all() ?: [0];
+            if (Schema::hasTable('grupos') && Schema::hasTable('grupo_aprendices')) {
+                // 1) Usar grupos del proyecto
+                $projCol = Schema::hasColumn('grupos','id_proyecto') ? 'id_proyecto' : (Schema::hasColumn('grupos','proyecto_id') ? 'proyecto_id' : null);
+                $grows = $projCol ? DB::table('grupos')->whereIn($projCol, $pids)->select('id_grupo', $projCol.' as pid')->get() : collect();
+                $pidToGids = $grows->groupBy('pid')->map(fn($g)=> $g->pluck('id_grupo')->all());
+                $allGids = $grows->pluck('id_grupo')->unique()->values();
+                if ($allGids->isNotEmpty()){
+                    if (Schema::hasColumn('grupo_aprendices','id_aprendiz')){
+                        $q = DB::table('grupo_aprendices')->whereIn('id_grupo', $allGids);
+                        if (Schema::hasColumn('grupo_aprendices','activo')) { $q->where('activo',1); }
+                        $links = $q->select('id_grupo','id_aprendiz')->get()->groupBy('id_grupo');
+                        foreach ($pidToGids as $pid => $gids){
+                            $aprIds = collect($gids)->flatMap(fn($gid)=> ($links[$gid] ?? collect())->pluck('id_aprendiz'))->unique()->values();
+                            $aprPorProyecto[$pid] = $aprIds->map(fn($id)=> (object)['id_aprendiz'=>$id]);
+                        }
+                    } else {
+                        $userCol = Schema::hasColumn('grupo_aprendices','id_usuario') ? 'id_usuario' : (Schema::hasColumn('grupo_aprendices','user_id') ? 'user_id' : null);
+                        if ($userCol && Schema::hasTable('aprendices')){
+                            $q = DB::table('grupo_aprendices')->whereIn('id_grupo', $allGids);
+                            if (Schema::hasColumn('grupo_aprendices','activo')) { $q->where('activo',1); }
+                            $links = $q->select('id_grupo', DB::raw($userCol.' as uid'))->get()->groupBy('id_grupo');
+                            $dbName = DB::getDatabaseName();
+                            $cols = collect(DB::select("SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'aprendices' AND COLUMN_NAME IN ('id_usuario','id_user','user_id')", [$dbName]))->pluck('c')->all();
+                            $aprUserFk = in_array('id_usuario', $cols, true) ? 'id_usuario' : (in_array('id_user', $cols, true) ? 'id_user' : (in_array('user_id', $cols, true) ? 'user_id' : null));
+                            if ($aprUserFk){
+                                foreach ($pidToGids as $pid => $gids){
+                                    $uids = collect($gids)->flatMap(fn($gid)=> ($links[$gid] ?? collect())->pluck('uid'))->unique()->values();
+                                    $aprIds = $uids->isNotEmpty() ? DB::table('aprendices')->whereIn($aprUserFk, $uids)->pluck('id_aprendiz') : collect();
+                                    $aprPorProyecto[$pid] = $aprIds->map(fn($id)=> (object)['id_aprendiz'=>$id]);
+                                }
+                            }
+                        }
+                    }
                 }
             }
+            // 2) Fallback a pivotes proyecto_aprendiz / aprendiz_proyecto / proyecto_user
+            if (empty($aprPorProyecto)){
+                if (Schema::hasTable('proyecto_aprendiz')){
+                    $rows = DB::table('proyecto_aprendiz')->whereIn('id_proyecto',$pids)->select('id_proyecto','id_aprendiz')->get()->groupBy('id_proyecto');
+                    foreach ($rows as $pid => $items) { $aprPorProyecto[$pid] = collect($items)->map(fn($r)=> (object)['id_aprendiz'=>$r->id_aprendiz]); }
+                } elseif (Schema::hasTable('aprendiz_proyecto')){
+                    $rows = DB::table('aprendiz_proyecto')->whereIn('id_proyecto',$pids)->select('id_proyecto','id_aprendiz')->get()->groupBy('id_proyecto');
+                    foreach ($rows as $pid => $items) { $aprPorProyecto[$pid] = collect($items)->map(fn($r)=> (object)['id_aprendiz'=>$r->id_aprendiz]); }
+                } elseif (Schema::hasTable('proyecto_user') && Schema::hasTable('aprendices')){
+                    $dbName = DB::getDatabaseName();
+                    $cols = collect(DB::select("SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'aprendices' AND COLUMN_NAME IN ('id_usuario','id_user','user_id')", [$dbName]))->pluck('c')->all();
+                    $aprUserFk = in_array('id_usuario', $cols, true) ? 'id_usuario' : (in_array('id_user', $cols, true) ? 'id_user' : (in_array('user_id', $cols, true) ? 'user_id' : null));
+                    if ($aprUserFk){
+                        $rows = DB::table('proyecto_user as pu')
+                            ->join('aprendices as a', DB::raw('a.'.$aprUserFk), '=', 'pu.user_id')
+                            ->whereIn('pu.id_proyecto', $pids)
+                            ->select('pu.id_proyecto','a.id_aprendiz')
+                            ->get()
+                            ->groupBy('id_proyecto');
+                        foreach ($rows as $pid => $items) { $aprPorProyecto[$pid] = collect($items)->map(fn($r)=> (object)['id_aprendiz'=>$r->id_aprendiz]); }
+                    }
+                }
+            }
+
             // Asegurar propiedad 'aprendices' para cada proyecto (collection)
             $proyectos->transform(function($p) use ($aprPorProyecto){
                 $p->aprendices = $aprPorProyecto[$p->id_proyecto] ?? collect();
@@ -1480,6 +1529,21 @@ class SemilleroController extends Controller
             return response()->json([
                 'success' => true,
                 'eventos' => $eventos->map(function($evento) {
+                    // Participantes desde grupo/proyecto
+                    $aprIds = [];
+                    if (!empty($evento->id_proyecto)) {
+                        $aprIds = $this->getProjectAprendizIds((int)$evento->id_proyecto);
+                    }
+                    $aprIds = array_values(array_unique(array_filter(array_map('intval', $aprIds))));
+                    $parts = collect();
+                    if (!empty($aprIds) && Schema::hasTable('aprendices')) {
+                        $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
+                            ? 'aprendices.nombre_completo'
+                            : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
+                        $rows = DB::table('aprendices')->whereIn('id_aprendiz', $aprIds)->select('id_aprendiz', DB::raw($nameExpr.' as nombre'))->get();
+                        $parts = $rows->map(fn($r)=> ['id'=>$r->id_aprendiz, 'nombre_completo'=>$r->nombre]);
+                    }
+
                     return [
                         'id' => $evento->id_evento,
                         'titulo' => $evento->titulo,
@@ -1493,13 +1557,7 @@ class SemilleroController extends Controller
                         'codigo_reunion' => $evento->codigo_reunion,
                         'recordatorio' => $evento->recordatorio,
                         'proyecto' => $evento->proyecto ? $evento->proyecto->nombre_proyecto : null,
-                        'participantes' => $evento->participantes->map(function($p) {
-                            return [
-                                // Compatibilidad: si existe alias id_aprendiz úsalo; de lo contrario id_usuario
-                                'id' => $p->id_aprendiz ?? $p->id_usuario,
-                                'nombre_completo' => $p->nombre_completo
-                            ];
-                        })
+                        'participantes' => $parts
                     ];
                 })
             ]);
@@ -1607,9 +1665,16 @@ class SemilleroController extends Controller
                 'recordatorio' => is_numeric($validated['recordatorio'] ?? null) ? (int)$validated['recordatorio'] : 0
             ]);
 
-            // Asignar participantes
-            if (!empty($validated['participantes'])) {
-                $evento->participantes()->attach($validated['participantes']);
+            // Participantes del evento: si hay proyecto, sincronizar con TODOS los aprendices del proyecto
+            $aprendizIdsProyecto = [];
+            if (!empty($validated['id_proyecto'])) {
+                $aprendizIdsProyecto = $this->getProjectAprendizIds((int)$validated['id_proyecto']);
+            }
+            if (!empty($aprendizIdsProyecto)) {
+                $evento->participantes()->sync($aprendizIdsProyecto);
+            } elseif (!empty($validated['participantes'])) {
+                // Compat: si no hay proyecto, usar los enviados explícitamente
+                $evento->participantes()->sync($validated['participantes']);
             }
 
             // Cargar relaciones para la respuesta (con alias seguro)
@@ -1786,8 +1851,14 @@ class SemilleroController extends Controller
 
             $evento->update($updateData);
 
-            // Actualizar participantes
-            if (isset($validated['participantes'])) {
+            // Actualizar participantes: si hay proyecto (nuevo o existente), forzar a los del proyecto
+            $pid = $updateData['id_proyecto'] ?? $evento->id_proyecto ?? null;
+            if (!empty($pid)) {
+                $aprendizIdsProyecto = $this->getProjectAprendizIds((int)$pid);
+                if (!empty($aprendizIdsProyecto)) {
+                    $evento->participantes()->sync($aprendizIdsProyecto);
+                }
+            } elseif (isset($validated['participantes'])) {
                 $evento->participantes()->sync($validated['participantes']);
             }
 
@@ -1947,6 +2018,90 @@ class SemilleroController extends Controller
                 'message' => 'Error al obtener información'
             ], 500);
         }
+    }
+
+    /**
+     * Obtener IDs de aprendices asignados a un proyecto, normalizando conforme a pivotes disponibles.
+     * Devuelve un array de id_aprendiz.
+     */
+    private function getProjectAprendizIds(int $projectId): array
+    {
+        try {
+            // 0) Si hay esquema de grupos, usar estrictamente los integrantes del grupo del proyecto
+            if (Schema::hasTable('grupos') && Schema::hasTable('grupo_aprendices')) {
+                // Detectar columna de proyecto en grupos
+                $projCol = Schema::hasColumn('grupos','id_proyecto') ? 'id_proyecto' : (Schema::hasColumn('grupos','proyecto_id') ? 'proyecto_id' : null);
+                $gids = $projCol
+                    ? DB::table('grupos')->where($projCol, $projectId)->pluck('id_grupo')->all()
+                    : [];
+                if (!empty($gids)) {
+                    // Si la pivote guarda id_aprendiz directamente
+                    if (Schema::hasColumn('grupo_aprendices','id_aprendiz')) {
+                        $q = DB::table('grupo_aprendices')->whereIn('id_grupo', $gids);
+                        if (Schema::hasColumn('grupo_aprendices','activo')) { $q->where('activo', 1); }
+                        $ids = $q->pluck('id_aprendiz')->map(fn($v)=>(int)$v)->unique()->values()->all();
+                        if (!empty($ids)) return $ids;
+                    }
+                    // Si la pivote guarda id_usuario/user_id, mapear a aprendices.id_aprendiz
+                    $userCol = Schema::hasColumn('grupo_aprendices','id_usuario') ? 'id_usuario' : (Schema::hasColumn('grupo_aprendices','user_id') ? 'user_id' : null);
+                    if ($userCol) {
+                        $q = DB::table('grupo_aprendices')->whereIn('id_grupo', $gids);
+                        if (Schema::hasColumn('grupo_aprendices','activo')) { $q->where('activo', 1); }
+                        $userIds = $q->pluck($userCol)->map(fn($v)=>(int)$v)->unique()->values()->all();
+                        if (!empty($userIds) && Schema::hasTable('aprendices')) {
+                            $dbName = DB::getDatabaseName();
+                            $cols = collect(DB::select("SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'aprendices' AND COLUMN_NAME IN ('id_usuario','id_user','user_id')", [$dbName]))->pluck('c')->all();
+                            $aprUserFk = in_array('id_usuario', $cols, true) ? 'id_usuario' : (in_array('id_user', $cols, true) ? 'id_user' : (in_array('user_id', $cols, true) ? 'user_id' : null));
+                            if ($aprUserFk) {
+                                $ids = DB::table('aprendices')->whereIn($aprUserFk, $userIds)->pluck('id_aprendiz')->map(fn($v)=>(int)$v)->unique()->values()->all();
+                                if (!empty($ids)) return $ids;
+                            }
+                        }
+                        // Si no hay aprendices mapeables, devolver vacío para evitar incluir todos
+                        return [];
+                    }
+                }
+            }
+            if (Schema::hasTable('proyecto_aprendiz')) {
+                $ids = DB::table('proyecto_aprendiz')
+                    ->where('id_proyecto', $projectId)
+                    ->pluck('id_aprendiz')
+                    ->map(fn($v)=> (int)$v)
+                    ->all();
+                if (!empty($ids)) return $ids;
+            }
+            if (Schema::hasTable('aprendiz_proyecto')) {
+                $ids = DB::table('aprendiz_proyecto')
+                    ->where('id_proyecto', $projectId)
+                    ->pluck('id_aprendiz')
+                    ->map(fn($v)=> (int)$v)
+                    ->all();
+                if (!empty($ids)) return $ids;
+            }
+            if (Schema::hasTable('proyecto_user')) {
+                $userIds = DB::table('proyecto_user')
+                    ->where('id_proyecto', $projectId)
+                    ->pluck('user_id')
+                    ->map(fn($v)=> (int)$v)
+                    ->all();
+                if (!empty($userIds) && Schema::hasTable('aprendices')) {
+                    $dbName = DB::getDatabaseName();
+                    $cols = collect(DB::select("SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'aprendices' AND COLUMN_NAME IN ('id_usuario','id_user','user_id')", [$dbName]))->pluck('c')->all();
+                    $userFkCol = in_array('id_usuario', $cols, true) ? 'id_usuario' : (in_array('id_user', $cols, true) ? 'id_user' : (in_array('user_id', $cols, true) ? 'user_id' : null));
+                    if ($userFkCol) {
+                        $ids = DB::table('aprendices')
+                            ->whereIn($userFkCol, $userIds)
+                            ->pluck('id_aprendiz')
+                            ->map(fn($v)=> (int)$v)
+                            ->all();
+                        if (!empty($ids)) return $ids;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // noop
+        }
+        return [];
     }
 
     // Helper: generar enlace según plataforma
