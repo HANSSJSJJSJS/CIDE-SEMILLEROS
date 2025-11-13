@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UsuarioController as AdminUsuarioController;
 use App\Http\Controllers\Admin\PerfilController as AdminPerfilController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
+use App\Http\Controllers\Admin\DashboardController;
 
 use App\Http\Controllers\Admin\SemilleroController;              // ← sin alias
 use App\Http\Controllers\Admin\ProyectoSemilleroController;
@@ -138,9 +139,9 @@ Route::middleware(['auth', 'role:ADMIN'])
     ->group(function () {
 
         // DASHBOARD
-        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/dashboard/stats',  [AdminDashboardController::class, 'stats'])->name('dashboard.stats');
-        Route::get('/dashboard/charts', [AdminDashboardController::class, 'charts'])->name('dashboard.charts');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/stats',  [DashboardController::class, 'stats'])->name('dashboard.stats');
+        Route::get('/dashboard/charts', [DashboardController::class, 'charts'])->name('dashboard.charts');
 
         // USUARIOS
         Route::resource('usuarios', AdminUsuarioController::class);
@@ -390,6 +391,7 @@ Route::middleware(['auth', 'role:APRENDIZ'])
         // Documentos
         Route::get('/documentos', [DocumentoController::class, 'index'])->name('documentos.index');
         Route::post('/documentos', [DocumentoController::class, 'store'])->name('documentos.store');
+        Route::post('/documentos/{id}/upload-assigned', [DocumentoController::class, 'uploadAssigned'])->whereNumber('id')->name('documentos.uploadAssigned');
         Route::get('/documentos/{id}/download', [DocumentoController::class, 'download'])->whereNumber('id')->name('documentos.download');
         Route::delete('/documentos/{id}', [DocumentoController::class, 'destroy'])->whereNumber('id')->name('documentos.destroy');
 

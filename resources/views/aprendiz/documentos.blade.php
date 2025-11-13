@@ -45,7 +45,7 @@
                             <select name="id_proyecto" id="id_proyecto" class="form-select @error('id_proyecto') is-invalid @enderror" required>
                                 <option value="">Selecciona un proyecto</option>
                                 @foreach($proyectos as $proyecto)
-                                    <option value="{{ $proyecto->id_proyecto }}">{{ $proyecto->nombre_proyecto }}</option>
+                                    <option value="{{ $proyecto->id_proyecto }}" {{ (string)request('proyecto') === (string)$proyecto->id_proyecto ? 'selected' : '' }}>{{ $proyecto->nombre_proyecto }}</option>
                                 @endforeach
                             </select>
                             @error('id_proyecto')
@@ -59,11 +59,11 @@
                                 <div class="dz-content">
                                     <i class="bi bi-file-earmark-arrow-up"></i>
                                     <div class="fw-bold">Arrastra archivo aquí</div>
-                                    <small>O haz clic para seleccionar PDF</small>
+                                    <small>O haz clic para seleccionar archivo</small>
                                 </div>
-                                <input type="file" name="archivo" id="archivo" accept="application/pdf" class="dropzone-input @error('archivo') is-invalid @enderror" required>
+                                <input type="file" name="archivo" id="archivo" accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/*,text/plain,text/csv,application/zip,application/x-rar-compressed" class="dropzone-input @error('archivo') is-invalid @enderror" required>
                             </div>
-                            <small class="text-muted">Solo PDF. Tamaño máximo: 10MB</small>
+                            <small class="text-muted">Tipos permitidos: PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, Imágenes, TXT, CSV, ZIP/RAR. Tamaño máximo: 10MB</small>
                             @error('archivo')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
@@ -106,6 +106,48 @@
             </div>
         </div>
     </div>
+
+    @if(isset($pendientesAsignadas) && $pendientesAsignadas->isNotEmpty())
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="fas fa-hourglass-half"></i> Evidencias Asignadas Pendientes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Proyecto</th>
+                                    <th>Título</th>
+                                    <th>Fecha límite</th>
+                                    <th>Subir archivo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($pendientesAsignadas as $p)
+                                <tr>
+                                    <td>{{ $p->nombre_proyecto }}</td>
+                                    <td>{{ $p->documento }}</td>
+                                    <td>{{ !empty($p->fecha_limite) ? \Carbon\Carbon::parse($p->fecha_limite)->format('Y-m-d') : '—' }}</td>
+                                    <td style="min-width:320px;">
+                                        <form action="{{ route('aprendiz.documentos.uploadAssigned', $p->id_documento) }}" method="POST" enctype="multipart/form-data" class="d-flex gap-2 pending-upload-form">
+                                            @csrf
+                                            <input type="file" name="archivo" class="form-control" required>
+                                            <button class="btn btn-success"><i class="fas fa-upload"></i> Subir</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 
     {{-- Lista de documentos subidos --}}
     <div class="row">
@@ -176,6 +218,17 @@
 document.addEventListener('DOMContentLoaded', function(){
   const form = document.getElementById('formUploadDoc');
   if (!form) return;
+  const dz = form.querySelector('.dropzone-box');
+  const input = form.querySelector('#archivo');
+  const dzText = form.querySelector('.dz-content .fw-bold');
+  if (dz && input){
+    dz.addEventListener('click', function(e){
+      if (e.target !== input) { input.click(); }
+    });
+    input.addEventListener('change', function(){
+      if (input.files && input.files.length > 0 && dzText){ dzText.textContent = input.files[0].name; }
+    });
+  }
   form.addEventListener('submit', async function(e){
     try{
       e.preventDefault();
@@ -184,10 +237,22 @@ document.addEventListener('DOMContentLoaded', function(){
       const fd = new FormData(form);
       const resp = await fetch(form.action, {
         method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
         body: fd
       });
-      if(!resp.ok){ throw new Error('Error HTTP '+resp.status); }
+      if(!resp.ok){
+        let msg = 'Error HTTP '+resp.status;
+        try { const err = await resp.json();
+          if (err?.message) msg = err.message;
+          if (err?.errors){
+            const firstKey = Object.keys(err.errors)[0];
+            if (firstKey && Array.isArray(err.errors[firstKey]) && err.errors[firstKey][0]){
+              msg = err.errors[firstKey][0];
+            }
+          }
+        } catch(_e){}
+        throw new Error(msg);
+      }
       const data = await resp.json();
       if (!data?.ok){ throw new Error('Respuesta inválida'); }
       const tBody = document.getElementById('docsTbody');
@@ -210,6 +275,7 @@ document.addEventListener('DOMContentLoaded', function(){
         tBody.prepend(tr);
         // Reset form
         form.reset();
+        if (dzText){ dzText.textContent = 'Arrastra archivo aquí'; }
         // Aviso
         const ok = document.createElement('div');
         ok.className = 'alert alert-success mt-3';
@@ -222,11 +288,43 @@ document.addEventListener('DOMContentLoaded', function(){
       }
     } catch(err){
       console.error(err);
-      alert('No se pudo subir el documento. Inténtalo nuevamente.');
+      alert((err && err.message) ? err.message : 'No se pudo subir el documento. Inténtalo nuevamente.');
     } finally {
       const btn = form.querySelector('button[type="submit"]');
       if (btn){ btn.disabled = false; if (btn.dataset._label) btn.innerHTML = btn.dataset._label; }
     }
+  });
+
+  // Envío AJAX para formularios de evidencias pendientes
+  const pendingForms = document.querySelectorAll('form.pending-upload-form');
+  pendingForms.forEach((pf) => {
+    pf.addEventListener('submit', async function(ev){
+      ev.preventDefault();
+      const btn = pf.querySelector('button[type="submit"], button');
+      try {
+        if (btn){ btn.disabled = true; btn.dataset._label = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo...'; }
+        const fd = new FormData(pf);
+        const resp = await fetch(pf.action, {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+          body: fd
+        });
+        if (!resp.ok){
+          let msg = 'Error HTTP '+resp.status;
+          try { const err = await resp.json(); if (err?.message) msg = err.message; } catch(_e){}
+          throw new Error(msg);
+        }
+        const data = await resp.json();
+        if (!data?.ok){ throw new Error('Respuesta inválida'); }
+        // Recargar para reflejar que la evidencia ya no está pendiente y aparece en la lista inferior
+        window.location.reload();
+      } catch(err){
+        console.error(err);
+        alert((err && err.message) ? err.message : 'No se pudo subir la evidencia.');
+      } finally {
+        if (btn){ btn.disabled = false; if (btn.dataset._label) btn.innerHTML = btn.dataset._label; }
+      }
+    });
   });
 });
 </script>

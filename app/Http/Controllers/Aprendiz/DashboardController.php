@@ -67,6 +67,8 @@ class DashboardController extends Controller
         $projCols   = ['id_proyecto','proyecto_id','idProyecto'];
         $userCols   = ['user_id','id_usuario','id_aprendiz','aprendiz_id','idAprendiz'];
 
+        $ids = collect();
+
         foreach ($pivotTables as $tbl) {
             if (!Schema::hasTable($tbl)) continue;
             $pcol = null; $ucol = null;
@@ -74,27 +76,100 @@ class DashboardController extends Controller
             foreach ($userCols as $c) { if (Schema::hasColumn($tbl, $c)) { $ucol = $c; break; } }
             if ($pcol && $ucol) {
                 try {
-                    return (int) DB::table($tbl)
-                        ->where($ucol, $userId)
-                        ->distinct()
-                        ->count($pcol);
+                    // Si la columna de usuario en la pivote representa un id de aprendiz, mapear antes
+                    $aprColsPivot = ['id_aprendiz','aprendiz_id','idAprendiz'];
+                    if (in_array($ucol, $aprColsPivot, true)) {
+                        if (Schema::hasTable('aprendices')) {
+                            $userFkCandidates = ['id_usuario','user_id'];
+                            $aprPkCandidates  = ['id_aprendiz','id'];
+                            $userFkCol = null; $aprPkCol = null;
+                            foreach ($userFkCandidates as $cand) { if (Schema::hasColumn('aprendices', $cand)) { $userFkCol = $cand; break; } }
+                            foreach ($aprPkCandidates as $cand) { if (Schema::hasColumn('aprendices', $cand)) { $aprPkCol = $cand; break; } }
+                            if ($userFkCol && $aprPkCol) {
+                                $aprendizIds = DB::table('aprendices')
+                                    ->where($userFkCol, $userId)
+                                    ->pluck($aprPkCol)
+                                    ->filter()
+                                    ->all();
+                                if (!empty($aprendizIds)) {
+                                    $ids = $ids->merge(
+                                        DB::table($tbl)
+                                            ->whereIn($ucol, $aprendizIds)
+                                            ->distinct()
+                                            ->pluck($pcol)
+                                    );
+                                }
+                            }
+                        }
+                    } else {
+                        // Caso normal: la columna en pivote referencia directamente al user id
+                        $ids = $ids->merge(
+                            DB::table($tbl)
+                                ->where($ucol, $userId)
+                                ->distinct()
+                                ->pluck($pcol)
+                        );
+                    }
                 } catch (\Exception $e) {
-                    // intentar siguiente
+                    // continuar con el siguiente pivote
                 }
             }
         }
 
-        // Fallback: contar proyectos desde documentos si existe esa relación implícita
-        if (Schema::hasTable('documentos') && Schema::hasColumn('documentos','id_proyecto') && Schema::hasColumn('documentos','id_usuario')) {
-            try {
-                return (int) DB::table('documentos')
-                    ->where('id_usuario', $userId)
-                    ->distinct()
-                    ->count('id_proyecto');
-            } catch (\Exception $e) {}
+        // Fallbacks desde documentos
+        if (Schema::hasTable('documentos') && Schema::hasColumn('documentos','id_proyecto')) {
+            // 1) documentos.id_usuario
+            if (Schema::hasColumn('documentos','id_usuario')) {
+                try {
+                    $ids = $ids->merge(
+                        DB::table('documentos')
+                            ->where('id_usuario', $userId)
+                            ->distinct()
+                            ->pluck('id_proyecto')
+                    );
+                } catch (\Exception $e) {}
+            }
+            // 2) documentos.id_aprendiz mapeando desde users -> aprendices
+            if (Schema::hasColumn('documentos','id_aprendiz') && Schema::hasTable('aprendices')) {
+                $aprId = null;
+                $aprPkCols = [];
+                if (Schema::hasColumn('aprendices','id_aprendiz')) { $aprPkCols[] = 'id_aprendiz'; }
+                if (Schema::hasColumn('aprendices','id')) { $aprPkCols[] = 'id'; }
+                if (Schema::hasColumn('aprendices','id_usuario')) {
+                    foreach ($aprPkCols as $pk) {
+                        $aprId = DB::table('aprendices')->where('id_usuario', $userId)->value($pk);
+                        if (!is_null($aprId)) break;
+                    }
+                }
+                if (is_null($aprId) && Schema::hasColumn('aprendices','user_id')) {
+                    foreach ($aprPkCols as $pk) {
+                        $aprId = DB::table('aprendices')->where('user_id', $userId)->value($pk);
+                        if (!is_null($aprId)) break;
+                    }
+                }
+                if (is_null($aprId) && Schema::hasColumn('aprendices','email')) {
+                    $email = DB::table('users')->where('id', $userId)->value('email');
+                    if ($email) {
+                        foreach ($aprPkCols as $pk) {
+                            $aprId = DB::table('aprendices')->where('email', $email)->value($pk);
+                            if (!is_null($aprId)) break;
+                        }
+                    }
+                }
+                if (!is_null($aprId)) {
+                    try {
+                        $ids = $ids->merge(
+                            DB::table('documentos')
+                                ->where('id_aprendiz', $aprId)
+                                ->distinct()
+                                ->pluck('id_proyecto')
+                        );
+                    } catch (\Exception $e) {}
+                }
+            }
         }
 
-        return 0;
+        return $ids->filter()->map(fn($v)=> (int)$v)->unique()->count();
     }
 
     private function contarDocumentosUsuario(int $userId, string $estado): int

@@ -11,7 +11,7 @@ class Evidencia extends Model
     public $timestamps = true;
 
     protected $fillable = [
-        'id_proyecto',
+        'proyecto_id',
         'id_usuario',
         'nombre',
         'estado',
@@ -20,7 +20,7 @@ class Evidencia extends Model
     // Relación inversa con Proyecto
     public function proyecto()
     {
-        return $this->belongsTo(Proyecto::class, 'id_proyecto', 'id_proyecto');
+        return $this->belongsTo(Proyecto::class, 'proyecto_id', 'id_proyecto');
     }
 
     // Autor (Aprendiz) que subió la evidencia

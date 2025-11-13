@@ -419,20 +419,26 @@ class ProyectoController extends Controller
             if (Schema::hasTable('proyecto_aprendiz')) {
                 // Primero intentar como id_aprendiz directo
                 DB::table('proyecto_aprendiz')->where(['id_proyecto'=>$id,'id_aprendiz'=>$targetId])->delete();
-                // Luego, si venía un user_id, mapear a id_aprendiz
-                $aprId = DB::table('aprendices')->where($userFkCol, $targetId)->value('id_aprendiz');
-                if ($aprId) {
-                    DB::table('proyecto_aprendiz')->where(['id_proyecto'=>$id,'id_aprendiz'=>$aprId])->delete();
+                // Luego, si venía un user_id, mapear a id_aprendiz (solo si conocemos la FK)
+                if ($userFkCol) {
+                    $aprId = DB::table('aprendices')->where($userFkCol, $targetId)->value('id_aprendiz');
+                    if ($aprId) {
+                        DB::table('proyecto_aprendiz')->where(['id_proyecto'=>$id,'id_aprendiz'=>$aprId])->delete();
+                    }
                 }
             } elseif (Schema::hasTable('aprendiz_proyecto')) {
                 DB::table('aprendiz_proyecto')->where(['id_proyecto'=>$id,'id_aprendiz'=>$targetId])->delete();
-                $aprId = DB::table('aprendices')->where($userFkCol, $targetId)->value('id_aprendiz');
-                if ($aprId) {
-                    DB::table('aprendiz_proyecto')->where(['id_proyecto'=>$id,'id_aprendiz'=>$aprId])->delete();
+                if ($userFkCol) {
+                    $aprId = DB::table('aprendices')->where($userFkCol, $targetId)->value('id_aprendiz');
+                    if ($aprId) {
+                        DB::table('aprendiz_proyecto')->where(['id_proyecto'=>$id,'id_aprendiz'=>$aprId])->delete();
+                    }
                 }
             }
-            // Siempre intentar en proyecto_user por compatibilidad
-            DB::table('proyecto_user')->where(['id_proyecto'=>$id,'user_id'=>$targetId])->delete();
+            // Fallback: solo intentar en proyecto_user si la tabla existe
+            if (Schema::hasTable('proyecto_user')) {
+                DB::table('proyecto_user')->where(['id_proyecto'=>$id,'user_id'=>$targetId])->delete();
+            }
             return response()->json(['ok' => true]);
         } catch (\Throwable $e) {
             return response()->json(['ok' => false, 'error' => $e->getMessage()], 500);

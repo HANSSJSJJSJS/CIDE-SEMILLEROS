@@ -112,7 +112,7 @@ class ArchivoController extends Controller
 
             // Crear evidencia asociada para reflejarse en el detalle del proyecto
             Evidencia::create([
-                'id_proyecto' => $request->proyecto_id,
+                'proyecto_id' => $request->proyecto_id,
                 'id_usuario'  => Auth::id(),
                 'nombre'      => $nombreOriginal,
                 'estado'      => 'pendiente',
@@ -216,6 +216,36 @@ class ArchivoController extends Controller
             foreach ($userCols as $c) { if (Schema::hasColumn($tbl, $c)) { $ucol = $c; break; } }
             if ($pcol && $ucol) {
                 try {
+                    // Si la pivote usa id_aprendiz/aprendiz_id, mapear desde users -> aprendices
+                    $aprColsPivot = ['id_aprendiz','aprendiz_id','idAprendiz'];
+                    if (in_array($ucol, $aprColsPivot, true)) {
+                        $aprTable = 'aprendices';
+                        if (Schema::hasTable($aprTable)) {
+                            $userFkCandidates = ['id_usuario','user_id'];
+                            $aprPkCandidates  = ['id_aprendiz','id'];
+                            $userFkCol = null; $aprPkCol = null;
+                            foreach ($userFkCandidates as $cand) { if (Schema::hasColumn($aprTable, $cand)) { $userFkCol = $cand; break; } }
+                            foreach ($aprPkCandidates as $cand) { if (Schema::hasColumn($aprTable, $cand)) { $aprPkCol = $cand; break; } }
+                            if ($userFkCol && $aprPkCol) {
+                                $aprendizIds = DB::table($aprTable)
+                                    ->where($userFkCol, $userId)
+                                    ->pluck($aprPkCol)
+                                    ->map(fn($v)=> (int)$v)
+                                    ->all();
+                                if (!empty($aprendizIds)) {
+                                    return DB::table($tbl)
+                                        ->whereIn($ucol, $aprendizIds)
+                                        ->distinct()
+                                        ->pluck($pcol)
+                                        ->map(fn($v)=> (int)$v)
+                                        ->all();
+                                }
+                            }
+                        }
+                        continue; // probar siguiente pivote si no mapeó
+                    }
+
+                    // Caso normal: la pivote referencia directamente al user id
                     return DB::table($tbl)
                         ->where($ucol, $userId)
                         ->distinct()
