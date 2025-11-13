@@ -1482,12 +1482,12 @@ class SemilleroController extends Controller
                 $proyectos = collect([]);
             }
 
-<<<<<<< HEAD
             // Construir aprendices por proyecto
             $aprPorProyecto = [];
             $pids = $proyectos->pluck('id_proyecto')->all() ?: [0];
+
+            // 1) Usar grupos del proyecto si existen
             if (Schema::hasTable('grupos') && Schema::hasTable('grupo_aprendices')) {
-                // 1) Usar grupos del proyecto
                 $projCol = Schema::hasColumn('grupos','id_proyecto') ? 'id_proyecto' : (Schema::hasColumn('grupos','proyecto_id') ? 'proyecto_id' : null);
                 $grows = $projCol ? DB::table('grupos')->whereIn($projCol, $pids)->select('id_grupo', $projCol.' as pid')->get() : collect();
                 $pidToGids = $grows->groupBy('pid')->map(fn($g)=> $g->pluck('id_grupo')->all());
@@ -1518,40 +1518,41 @@ class SemilleroController extends Controller
                                 }
                             }
                         }
-=======
-            // Adjuntar aprendices por proyecto usando la pivote real (más preciso que documentos)
-            $aprPorProyecto = [];
-            $projIds = $proyectos->pluck('id_proyecto')->all() ?: [];
-            if (!empty($projIds)) {
-                $pivot = $this->pivotProyectoAprendiz();
-                if (!empty($pivot)) {
-                    // Determinar cómo unir con aprendices según si la pivote guarda id_usuario/user_id o id_aprendiz
-                    $pivotUsaUsuario = in_array($pivot['aprCol'], ['id_usuario','user_id'], true);
-                    $aprJoinCol = 'id_aprendiz';
-                    if ($pivotUsaUsuario && Schema::hasColumn('aprendices','id_usuario')) {
-                        $aprJoinCol = 'id_usuario';
-                    }
-
-                    $rows = DB::table($pivot['table'] . ' as pv')
-                        ->join('aprendices', 'aprendices.' . $aprJoinCol, '=', DB::raw('pv.' . $pivot['aprCol']))
-                        ->whereIn(DB::raw('pv.' . $pivot['projCol']), $projIds)
-                        ->when(Schema::hasColumn('aprendices','documento'), function($q){
-                            $q->where('aprendices.documento','!=','SIN_ASIGNAR');
-                        })
-                        ->select(
-                            DB::raw('pv.' . $pivot['projCol'] . ' as pid'),
-                            DB::raw('aprendices.id_aprendiz as id_aprendiz')
-                        )
-                        ->distinct()
-                        ->get()
-                        ->groupBy('pid');
-
-                    foreach ($rows as $pid => $items) {
-                        $aprPorProyecto[$pid] = collect($items)->map(function($r){ return (object)['id_aprendiz' => $r->id_aprendiz]; });
->>>>>>> b86c1fc (detalles reunion lider)
                     }
                 }
             }
+
+            // 1b) Si sigue vacío, usar pivote real proyecto↔aprendiz
+            if (empty($aprPorProyecto)) {
+                $projIds = $proyectos->pluck('id_proyecto')->all() ?: [];
+                if (!empty($projIds)) {
+                    $pivot = $this->pivotProyectoAprendiz();
+                    if (!empty($pivot)) {
+                        $pivotUsaUsuario = in_array($pivot['aprCol'], ['id_usuario','user_id'], true);
+                        $aprJoinCol = 'id_aprendiz';
+                        if ($pivotUsaUsuario && Schema::hasColumn('aprendices','id_usuario')) {
+                            $aprJoinCol = 'id_usuario';
+                        }
+                        $rows = DB::table($pivot['table'] . ' as pv')
+                            ->join('aprendices', 'aprendices.' . $aprJoinCol, '=', DB::raw('pv.' . $pivot['aprCol']))
+                            ->whereIn(DB::raw('pv.' . $pivot['projCol']), $projIds)
+                            ->when(Schema::hasColumn('aprendices','documento'), function($q){
+                                $q->where('aprendices.documento','!=','SIN_ASIGNAR');
+                            })
+                            ->select(
+                                DB::raw('pv.' . $pivot['projCol'] . ' as pid'),
+                                DB::raw('aprendices.id_aprendiz as id_aprendiz')
+                            )
+                            ->distinct()
+                            ->get()
+                            ->groupBy('pid');
+                        foreach ($rows as $pid => $items) {
+                            $aprPorProyecto[$pid] = collect($items)->map(function($r){ return (object)['id_aprendiz' => $r->id_aprendiz]; });
+                        }
+                    }
+                }
+            }
+
             // 2) Fallback a pivotes proyecto_aprendiz / aprendiz_proyecto / proyecto_user
             if (empty($aprPorProyecto)){
                 if (Schema::hasTable('proyecto_aprendiz')){
