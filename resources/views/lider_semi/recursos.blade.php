@@ -1,79 +1,177 @@
+@extends('layouts.lider_semi')
+
 @php
     $activos = $activos ?? collect();
     $completados = $completados ?? collect();
 @endphp
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recursos</title>
-    <style>
-        body{font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; margin: 0; background:#f7f7f7;}
-        .container{max-width:1100px;margin:24px auto;padding:0 16px}
-        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-        h1{font-size:22px;margin:0}
-        .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-        .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px}
-        .title{font-weight:600;font-size:16px;margin:0 0 4px}
-        .desc{color:#6b7280;font-size:13px;min-height:34px}
-        .meta{display:flex;gap:8px;margin-top:10px;font-size:12px;color:#374151}
-        .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px}
-        .badge.activo{background:#e0f2fe;color:#0369a1}
-        .badge.completado{background:#ecfccb;color:#3f6212}
-        .section-title{margin:20px 0 10px;font-size:14px;color:#374151;text-transform:uppercase;letter-spacing:.04em}
-        .empty{color:#6b7280;font-size:14px;border:1px dashed #d1d5db;border-radius:12px;padding:18px;background:#fff}
-    </style>
-</head>
-<body>
-<div class="container">
-    <div class="header">
-        <h1>Recursos de Proyectos</h1>
-    </div>
 
-    <div>
-        <div class="section-title">Proyectos activos</div>
-        @if($activos->isEmpty())
-            <div class="empty">No hay proyectos activos.</div>
-        @else
-            <div class="grid">
-                @foreach($activos as $p)
-                    <div class="card">
-                        <div class="badge activo">Activo</div>
-                        <h2 class="title">{{ $p['nombre'] ?? 'Proyecto' }} (ID {{ $p['id'] }})</h2>
-                        <div class="desc">{{ $p['descripcion'] ?? 'Sin descripción' }}</div>
-                        <div class="meta">
-                            <div>Entregas: <strong>{{ $p['entregas'] }}</strong></div>
-                            <div>Pendientes: <strong>{{ $p['pendientes'] }}</strong></div>
-                            <div>Aprobadas: <strong>{{ $p['aprobadas'] }}</strong></div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        @endif
-    </div>
+@section('content')
+<div class="container-fluid recursos-page py-4">
+    <div class="container">
+        <h1 class="fs-3 fw-bold mb-4">Recursos de Proyectos</h1>
 
-    <div>
-        <div class="section-title">Proyectos completados</div>
-        @if($completados->isEmpty())
-            <div class="empty">No hay proyectos completados.</div>
-        @else
-            <div class="grid">
-                @foreach($completados as $p)
-                    <div class="card">
-                        <div class="badge completado">Completado</div>
-                        <h2 class="title">{{ $p['nombre'] ?? 'Proyecto' }} (ID {{ $p['id'] }})</h2>
-                        <div class="desc">{{ $p['descripcion'] ?? 'Sin descripción' }}</div>
-                        <div class="meta">
-                            <div>Entregas: <strong>{{ $p['entregas'] }}</strong></div>
-                            <div>Pendientes: <strong>{{ $p['pendientes'] }}</strong></div>
-                            <div>Aprobadas: <strong>{{ $p['aprobadas'] }}</strong></div>
+        {{-- Proyectos activos --}}
+        <section class="mb-4">
+            <h2 class="seccion-titulo">Proyectos Activos</h2>
+            @if($activos->isEmpty())
+                <div class="recursos-empty">No hay proyectos activos.</div>
+            @else
+                <div class="row g-3">
+                    @foreach($activos as $p)
+                        <div class="col-12 col-md-6 col-xl-4">
+                            <div class="recurso-card shadow-sm">
+                                <div class="recurso-card-header d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h3 class="recurso-titulo">{{ $p['nombre'] ?? 'Proyecto' }}</h3>
+                                        <p class="recurso-desc mb-0">{{ $p['descripcion'] ?? 'Sin descripción' }}</p>
+                                    </div>
+                                    <span class="badge-estado badge-estado-activo">ACTIVO</span>
+                                </div>
+
+                                <div class="recurso-metricas d-flex justify-content-between text-center mb-3">
+                                    <div class="flex-fill">
+                                        <div class="recurso-metrica-num">{{ $p['entregas'] }}</div>
+                                        <div class="recurso-metrica-label">Entregas</div>
+                                    </div>
+                                    <div class="flex-fill">
+                                        <div class="recurso-metrica-num">{{ $p['pendientes'] }}</div>
+                                        <div class="recurso-metrica-label">Pendientes</div>
+                                    </div>
+                                    <div class="flex-fill">
+                                        <div class="recurso-metrica-num">{{ $p['aprobadas'] }}</div>
+                                        <div class="recurso-metrica-label">Aprobadas</div>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid">
+                                    <button type="button" class="btn btn-success recurso-btn">
+                                        Ver Entregas
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                @endforeach
-            </div>
-        @endif
+                    @endforeach
+                </div>
+            @endif
+        </section>
+{{--condicional--}}
+        {{-- Proyectos completados --}}
+        <section>
+            <h2 class="seccion-titulo">Proyectos Completados</h2>
+            @if($completados->isEmpty())
+                <div class="recursos-empty">No hay proyectos completados.</div>
+            @else
+                <div class="row g-3">
+                    @foreach($completados as $p)
+                        <div class="col-12 col-md-6 col-xl-4">
+                            <div class="recurso-card shadow-sm">
+                                <div class="recurso-card-header d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h3 class="recurso-titulo">{{ $p['nombre'] ?? 'Proyecto' }}</h3>
+                                        <p class="recurso-desc mb-0">{{ $p['descripcion'] ?? 'Sin descripción' }}</p>
+                                    </div>
+                                    <span class="badge-estado badge-estado-completado">COMPLETADO</span>
+                                </div>
+
+                                <div class="recurso-metricas d-flex justify-content-between text-center mb-3">
+                                    <div class="flex-fill">
+                                        <div class="recurso-metrica-num">{{ $p['entregas'] }}</div>
+                                        <div class="recurso-metrica-label">Entregas</div>
+                                    </div>
+                                    <div class="flex-fill">
+                                        <div class="recurso-metrica-num">{{ $p['pendientes'] }}</div>
+                                        <div class="recurso-metrica-label">Pendientes</div>
+                                    </div>
+                                    <div class="flex-fill">
+                                        <div class="recurso-metrica-num">{{ $p['aprobadas'] }}</div>
+                                        <div class="recurso-metrica-label">Aprobadas</div>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid">
+                                    <button type="button" class="btn btn-success recurso-btn">
+                                        Ver Entregas
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </section>
     </div>
 </div>
-</body>
-</html>
+@endsection
+
+@push('styles')
+<style>
+    .recursos-page {
+        background: #f5f7fb url('{{ asset('img/fondo_robot_semillero.png') }}') no-repeat center center;
+        background-size: contain;
+        min-height: calc(100vh - 70px);
+    }
+    .seccion-titulo {
+        font-size: 1.1rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        margin-bottom: .75rem;
+    }
+    .recursos-empty {
+        border-radius: 10px;
+        border: 1px dashed #d1d5db;
+        background: #ffffffcc;
+        padding: 1rem 1.25rem;
+        color: #6b7280;
+        font-size: .95rem;
+    }
+    .recurso-card {
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        padding: 1rem 1.25rem 1.1rem;
+    }
+    .recurso-titulo {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0 0 .15rem;
+    }
+    .recurso-desc {
+        font-size: .85rem;
+        color: #6b7280;
+    }
+    .badge-estado {
+        display: inline-block;
+        padding: .2rem .6rem;
+        border-radius: 999px;
+        font-size: .7rem;
+        font-weight: 700;
+    }
+    .badge-estado-activo {
+        background: #e0f2fe;
+        color: #0369a1;
+    }
+    .badge-estado-completado {
+        background: #e4ffc9;
+        color: #3f6212;
+    }
+    .recurso-metricas .recurso-metrica-num {
+        font-size: 1.2rem;
+        font-weight: 700;
+        line-height: 1.1;
+    }
+    .recurso-metricas .recurso-metrica-label {
+        font-size: .8rem;
+        color: #6b7280;
+    }
+    .recurso-btn {
+        font-weight: 600;
+        background-color: #39A900;
+        border-color: #39A900;
+    }
+    .recurso-btn:hover {
+        background-color: #2f8a00;
+        border-color: #2f8a00;
+    }
+</style>
+@endpush

@@ -36,8 +36,8 @@ class CalendarioController extends Controller
 
         $uid = $user->id;
 
-        // Determinar posibles IDs del aprendiz en la pivote (user id o id_aprendiz)
-        $aprendizIdsPivot = [$uid];
+        // Determinar IDs reales del aprendiz para usar en evento_participantes (id_aprendiz)
+        $aprendizIdsPivot = [];
         if (Schema::hasTable('aprendices')) {
             $aprPkCols = [];
             if (Schema::hasColumn('aprendices','id_aprendiz')) { $aprPkCols[] = 'id_aprendiz'; }
@@ -56,19 +56,24 @@ class CalendarioController extends Controller
             if (!is_null($aprId)) { $aprendizIdsPivot[] = $aprId; }
         }
 
+        // Si no pudimos resolver ningún id_aprendiz, usar un valor imposible para que no traiga eventos ajenos
+        if (empty($aprendizIdsPivot)) { $aprendizIdsPivot[] = -1; }
+
         $hasEventoUsuario = Schema::hasColumn('eventos','id_usuario');
         $hasEventoLider = Schema::hasColumn('eventos','id_lider');
-        $query->where(function ($q) use ($uid, $proyectosIds, $hasEventoUsuario, $hasEventoLider) {
-            // iniciar grupo seguro
+        $query->where(function ($q) use ($uid, $hasEventoUsuario, $hasEventoLider) {
+            // iniciar grupo seguro: solo eventos creados/asignados directamente al usuario
             $q->whereRaw('1=0');
             if ($hasEventoUsuario) { $q->orWhere('id_usuario', $uid); }
             if ($hasEventoLider) { $q->orWhere('id_lider', $uid); }
-            if ($proyectosIds->isNotEmpty()) { $q->orWhereIn('id_proyecto', $proyectosIds); }
         })->orWhereExists(function ($sub) use ($aprendizIdsPivot) {
             $sub->from('evento_participantes as ep')
                 ->whereColumn('ep.id_evento', 'eventos.id_evento')
                 ->whereIn('ep.id_aprendiz', $aprendizIdsPivot);
         });
+
+        // Mostrar solo reuniones futuras o vigentes
+        $query->where('fecha_hora', '>=', now());
 
         // Evitar duplicados y ordenar
         $eventos = $query->select('eventos.*')->orderBy('fecha_hora', 'asc')->get()->unique('id_evento')->values();
@@ -127,13 +132,13 @@ class CalendarioController extends Controller
         $uid = $user->id;
         $hasEventoUsuario = Schema::hasColumn('eventos','id_usuario');
         $hasEventoLider = Schema::hasColumn('eventos','id_lider');
-        $query->where(function ($q) use ($uid, $proyectosIds, $hasEventoUsuario, $hasEventoLider) {
+        $query->where(function ($q) use ($uid, $hasEventoUsuario, $hasEventoLider) {
             $q->whereRaw('1=0');
             if ($hasEventoUsuario) { $q->orWhere('id_usuario', $uid); }
             if ($hasEventoLider) { $q->orWhere('id_lider', $uid); }
-            if ($proyectosIds->isNotEmpty()) { $q->orWhereIn('id_proyecto', $proyectosIds); }
         })->orWhereExists(function ($sub) use ($uid) {
-            $aprendizIdsPivot = [$uid];
+            // Resolver id_aprendiz del usuario para filtrar en evento_participantes
+            $aprendizIdsPivot = [];
             if (Schema::hasTable('aprendices')) {
                 $aprPkCols = [];
                 if (Schema::hasColumn('aprendices','id_aprendiz')) { $aprPkCols[] = 'id_aprendiz'; }
@@ -146,10 +151,14 @@ class CalendarioController extends Controller
                 }
                 if (!is_null($aprId)) { $aprendizIdsPivot[] = $aprId; }
             }
+            if (empty($aprendizIdsPivot)) { $aprendizIdsPivot[] = -1; }
             $sub->from('evento_participantes as ep')
                 ->whereColumn('ep.id_evento', 'eventos.id_evento')
                 ->whereIn('ep.id_aprendiz', $aprendizIdsPivot);
         });
+
+        // Solo eventos futuros o vigentes en el calendario
+        $query->where('fecha_hora', '>=', now());
 
         $eventos = $query->select('eventos.*')->orderBy('fecha_hora', 'asc')->get()->unique('id_evento')->values();
 
@@ -197,6 +206,24 @@ class CalendarioController extends Controller
 
     private function proyectoIdsUsuario(int $userId): array
     {
+        // Resolver id_aprendiz del usuario (si existe) para pivotes basadas en aprendices
+        $aprId = null;
+        if (Schema::hasTable('aprendices')) {
+            try {
+                $aprPkCols = [];
+                if (Schema::hasColumn('aprendices','id_aprendiz')) { $aprPkCols[] = 'id_aprendiz'; }
+                if (Schema::hasColumn('aprendices','id')) { $aprPkCols[] = 'id'; }
+                if (Schema::hasColumn('aprendices','id_usuario')) {
+                    foreach ($aprPkCols as $pk) { $aprId = DB::table('aprendices')->where('id_usuario', $userId)->value($pk); if (!is_null($aprId)) break; }
+                }
+                if (is_null($aprId) && Schema::hasColumn('aprendices','user_id')) {
+                    foreach ($aprPkCols as $pk) { $aprId = DB::table('aprendices')->where('user_id', $userId)->value($pk); if (!is_null($aprId)) break; }
+                }
+            } catch (\Throwable $e) {
+                $aprId = null;
+            }
+        }
+
         // Intentar con pivotes conocidas
         $pivotTables = ['proyecto_user', 'aprendiz_proyecto', 'aprendices_proyectos', 'aprendiz_proyectos', 'proyecto_aprendiz', 'proyectos_aprendices', 'proyecto_aprendices'];
         $projCols   = ['id_proyecto','proyecto_id','idProyecto'];
@@ -209,8 +236,17 @@ class CalendarioController extends Controller
             foreach ($userCols as $c) { if (Schema::hasColumn($tbl, $c)) { $ucol = $c; break; } }
             if ($pcol && $ucol) {
                 try {
+                    $value = $userId;
+                    // Si la pivote usa id_aprendiz/aprendiz_id, mapear el userId al id_aprendiz real
+                    if (in_array($ucol, ['id_aprendiz','aprendiz_id','idAprendiz'], true)) {
+                        if (is_null($aprId)) {
+                            continue; // no podemos mapear, pasar a la siguiente pivote
+                        }
+                        $value = $aprId;
+                    }
+
                     return DB::table($tbl)
-                        ->where($ucol, $userId)
+                        ->where($ucol, $value)
                         ->distinct()
                         ->pluck($pcol)
                         ->map(fn($v)=> (int)$v)
@@ -275,8 +311,8 @@ class CalendarioController extends Controller
 
             $uid = $user->id;
 
-            // Posibles IDs del aprendiz usados en ep.id_aprendiz (puede ser user_id o id_aprendiz)
-            $aprIds = [$uid];
+            // IDs de aprendiz usados en ep.id_aprendiz (id_aprendiz real)
+            $aprIds = [];
             $aprId = null;
             if (Schema::hasTable('aprendices')) {
                 try {
@@ -294,10 +330,12 @@ class CalendarioController extends Controller
                         }
                     }
                 } catch (\Throwable $ex) {
-                    // continuar con $aprIds por defecto
+                    // continuar sin $aprId
                 }
-                if (!is_null($aprId) && $aprId != $uid) { $aprIds[] = $aprId; }
+                if (!is_null($aprId)) { $aprIds[] = $aprId; }
             }
+
+            if (empty($aprIds)) { $aprIds[] = -1; }
 
             // Construir consulta evitando columnas inexistentes en eventos
             $query = Evento::query()->with(['proyecto:id_proyecto,nombre_proyecto','lider:id,name'])

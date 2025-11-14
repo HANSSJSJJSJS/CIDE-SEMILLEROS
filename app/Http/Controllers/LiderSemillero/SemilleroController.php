@@ -502,13 +502,26 @@ class SemilleroController extends Controller
         $proyecto = Proyecto::select('id_proyecto', DB::raw('COALESCE(nombre_proyecto, "Proyecto") as nombre'))
             ->where('id_proyecto', $proyectoId)->firstOrFail();
 
- ModuloAdmin
-            ->select(DB::raw($selectIdAs), DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),'aprendices.correo_institucional')
-            ->orderByRaw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))")
+        // Determinar columna de unión en aprendices que corresponde al aprCol del pivote
+        $aprJoinCol = null;
+        if (Schema::hasColumn('aprendices', $pivot['aprCol'])) {
+            $aprJoinCol = $pivot['aprCol'];
+        } else {
+            // Fallback comunes
+            foreach (['id_aprendiz','id_usuario','user_id'] as $cand) {
+                if (Schema::hasColumn('aprendices', $cand)) { $aprJoinCol = $cand; break; }
+            }
+        }
 
-
+        // Construir consulta de aprendices asignados al proyecto según pivote
+        $rows = DB::table('aprendices')
+            ->join($pivot['table'], function($join) use ($pivot, $aprJoinCol){
+                // aprendices.<aprJoinCol> = pivot.<aprCol>
+                $join->on(DB::raw('aprendices.' . $aprJoinCol), '=', DB::raw($pivot['table'] . '.' . $pivot['aprCol']));
+            })
+            ->where(DB::raw($pivot['table'].'.'.$pivot['projCol']), '=', $proyectoId)
             ->select(
-                DB::raw($selectIdAs),
+                'aprendices.id_aprendiz',
                 DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),
                 'aprendices.correo_institucional',
                 'aprendices.programa',
@@ -517,8 +530,8 @@ class SemilleroController extends Controller
                 'aprendices.apellidos'
             )
             ->orderByRaw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))")
-
             ->get();
+
         // Simular relación para la vista
         $proyecto->aprendices = $rows;
         return view('lider_semi.proyecto_aprendices', compact('proyecto'));
