@@ -164,7 +164,7 @@ class ProyectoController extends Controller
             foreach (['id_aprendiz','id','id_usuario','user_id'] as $cand) { if (Schema::hasColumn('aprendices',$cand)) { $ownerKey = $cand; break; } }
             if ($ownerKey) {
                 $queryDocs->leftJoin('aprendices', DB::raw('aprendices.'.$ownerKey), '=', DB::raw('documentos.'.$docAprCol))
-                          ->whereRaw("$nameExpr LIKE ?", ["%$nombre%"]); 
+                          ->whereRaw("$nameExpr LIKE ?", ["%$nombre%"]);
             } else {
                 // Fallback: filtrar por users.name si docAprCol apunta a id de usuario
                 if ($docAprCol === 'id_usuario' && Schema::hasTable('users')) {
@@ -247,13 +247,13 @@ class ProyectoController extends Controller
                                     ->pluck($aprPkCol)
                                     ->map(fn($v)=> (int)$v)
                                     ->all();
-                                if (!empty($aprendizIds)) {
-                                    return DB::table($tbl)
-                                        ->whereIn($ucol, $aprendizIds)
-                                        ->distinct()
-                                        ->pluck($pcol)
-                                        ->map(fn($v)=> (int)$v)
-                                        ->all();
+                            if (!empty($aprendizIds)) {
+                                return DB::table($tbl)
+                                    ->whereIn($aprPkCol, $aprendizIds)
+                                    ->distinct()
+                                    ->pluck($pcol)
+                                    ->map(fn($v)=> (int)$v)
+                                    ->all();
                                 }
                             }
                         }
