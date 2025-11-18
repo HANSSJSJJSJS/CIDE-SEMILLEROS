@@ -75,6 +75,14 @@ class CalendarioController extends Controller
         // Mostrar solo reuniones futuras o vigentes
         $query->where('fecha_hora', '>=', now());
 
+        // Excluir reuniones canceladas si existe la columna estado
+        if (Schema::hasColumn('eventos','estado')) {
+            $query->where(function ($q) {
+                $q->whereNull('estado')
+                  ->orWhere('estado', '<>', 'cancelado');
+            });
+        }
+
         // Evitar duplicados y ordenar
         $eventos = $query->select('eventos.*')->orderBy('fecha_hora', 'asc')->get()->unique('id_evento')->values();
 
@@ -159,6 +167,14 @@ class CalendarioController extends Controller
 
         // Solo eventos futuros o vigentes en el calendario
         $query->where('fecha_hora', '>=', now());
+
+        // Excluir eventos cancelados
+        if (Schema::hasColumn('eventos','estado')) {
+            $query->where(function ($q) {
+                $q->whereNull('estado')
+                  ->orWhere('estado', '<>', 'cancelado');
+            });
+        }
 
         $eventos = $query->select('eventos.*')->orderBy('fecha_hora', 'asc')->get()->unique('id_evento')->values();
 
@@ -340,6 +356,14 @@ class CalendarioController extends Controller
             // Construir consulta evitando columnas inexistentes en eventos
             $query = Evento::query()->with(['proyecto:id_proyecto,nombre_proyecto','lider:id,name'])
                 ->whereDate('fecha_hora', '>=', now()->startOfDay());
+
+            // Excluir eventos cancelados del dashboard
+            if (Schema::hasColumn('eventos','estado')) {
+                $query->where(function ($q) {
+                    $q->whereNull('estado')
+                      ->orWhere('estado', '<>', 'cancelado');
+                });
+            }
 
             $query->where(function ($q) use ($uid) {
                 // arranque seguro

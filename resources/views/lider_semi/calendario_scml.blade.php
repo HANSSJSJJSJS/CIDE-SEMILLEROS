@@ -70,7 +70,7 @@
             </div>
             <button class="close-modal-calendario" id="close-modal">&times;</button>
         </div>
-        
+
         <!-- Indicador de pasos -->
         <div class="wizard-steps">
             <div class="wizard-step active" data-step="1">
@@ -86,25 +86,25 @@
                 <div class="step-label">Detalles</div>
             </div>
         </div>
-        
+
         <form id="event-form">
             @csrf
             <input type="hidden" id="event-id">
             <input type="hidden" id="event-date">
             <input type="hidden" id="event-time">
-            
+
             <!-- PASO 1: Información Básica -->
             <div class="wizard-content" id="step-1" style="display: block;">
                 <div class="step-header">
                     <h4><i class="fas fa-info-circle"></i> Información Básica de la Reunión</h4>
                     <p class="text-muted">Completa los datos principales de tu reunión</p>
                 </div>
-                
+
                 <div class="form-group-calendario">
                     <label for="event-title">Título de la reunión <span class="required">*</span></label>
                     <input type="text" id="event-title" name="titulo" class="form-control-calendario" placeholder="Ej: Reunión Semillero IA" required>
                 </div>
-                
+
                 <div class="form-group-calendario">
                     <label for="event-type">Tipo de reunión <span class="required">*</span></label>
                     <select id="event-type" name="tipo" class="form-control-calendario" required>
@@ -117,7 +117,7 @@
                         <option value="general">Reunión general</option>
                     </select>
                 </div>
-                
+
                 <div class="form-grid-2">
                     <div class="form-group-calendario">
                         <label for="event-duration">Duración <span class="required">*</span></label>
@@ -130,7 +130,7 @@
                             <option value="240">4 horas</option>
                         </select>
                     </div>
-                    
+
                     <div class="form-group-calendario">
                         <label>Hora seleccionada</label>
                         <div class="selected-time-display" id="selected-time-display">
@@ -139,7 +139,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="form-group-calendario">
                     <label for="event-location">Ubicación <span class="required">*</span></label>
                     <select id="event-location" name="ubicacion" class="form-control-calendario" required>
@@ -150,14 +150,14 @@
                     </select>
                 </div>
             </div>
-            
+
             <!-- PASO 2: Configuración -->
             <div class="wizard-content" id="step-2" style="display: none;">
                 <div class="step-header">
                     <h4><i class="fas fa-cog"></i> Configuración de la Reunión</h4>
                     <p class="text-muted">Selecciona el proyecto y los participantes</p>
                 </div>
-                
+
                 <div class="form-group-calendario">
                     <label for="event-proyecto">Proyecto Asociado</label>
                     <select id="event-proyecto" class="form-control-calendario">
@@ -170,7 +170,7 @@
                     </select>
                     <small class="form-help">Al seleccionar un proyecto, se mostrarán sus aprendices asignados</small>
                 </div>
-                
+
                 <div class="form-section-calendario">
                     <div class="participants-header">
                         <h4 class="section-title-modal">Participantes <span class="required">*</span></h4>
@@ -178,17 +178,17 @@
                             <i class="fas fa-users"></i> Seleccionar Todos
                         </button>
                     </div>
-                    
+
                     <div class="participants-filter">
                         <input type="text" id="search-participants" class="form-control-calendario" placeholder="Buscar aprendiz...">
                     </div>
-                    
+
                     <div class="participants-container-modal" id="participants-list">
                         @foreach($aprendices as $aprendiz)
                         @php($fullName = trim(($aprendiz->nombres ?? '').' '.($aprendiz->apellidos ?? '')))
                         <div class="participant-item-modal" data-aprendiz-id="{{ $aprendiz->id_aprendiz }}" data-aprendiz-name="{{ strtolower($fullName ?: ($aprendiz->nombre_completo ?? '')) }}" data-doc-type="{{ strtolower($aprendiz->tipo_documento ?? '') }}" data-doc="{{ strtolower($aprendiz->documento ?? '') }}">
-                            <input type="checkbox" id="participant-{{ $aprendiz->id_aprendiz }}" 
-                                   class="participant-checkbox-modal" 
+                            <input type="checkbox" id="participant-{{ $aprendiz->id_aprendiz }}"
+                                   class="participant-checkbox-modal"
                                    value="{{ $aprendiz->id_aprendiz }}">
                             <label for="participant-{{ $aprendiz->id_aprendiz }}" class="participant-info-modal">
                                 <div class="participant-name-modal">{{ $fullName ?: ($aprendiz->nombre_completo ?? 'Aprendiz') }}</div>
@@ -197,27 +197,27 @@
                         </div>
                         @endforeach
                     </div>
-                    
-                    <div class="participants-count"> 
+
+                    <div class="participants-count">
                         <i class="fas fa-user-check"></i>
                         <span id="selected-count">0</span> participante(s) seleccionado(s)
                     </div>
                 </div>
             </div>
-            
+
             <!-- PASO 3: Detalles -->
             <div class="wizard-content" id="step-3" style="display: none;">
                 <div class="step-header">
                     <h4><i class="fas fa-file-alt"></i> Detalles de la Reunión</h4>
                     <p class="text-muted">Agrega información adicional y recordatorios</p>
                 </div>
-                
+
                 <div class="form-group-calendario">
                     <label for="event-description">Descripción de la reunión</label>
                     <textarea id="event-description" class="form-control-calendario" rows="5" placeholder="Describe los temas a tratar, objetivos de la reunión, materiales necesarios, etc."></textarea>
                     <small class="form-help">Esta información será visible para todos los participantes</small>
                 </div>
-                
+
                 <div class="form-section-calendario">
                     <h4 class="section-title-modal">Recordatorios</h4>
                     <p class="text-muted small">Selecciona cuándo deseas recibir un recordatorio</p>
@@ -259,7 +259,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Resumen de la reunión -->
                 <div class="meeting-summary">
                     <h4><i class="fas fa-clipboard-check"></i> Resumen de la Reunión</h4>
@@ -283,7 +283,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Botones de navegación del wizard -->
             <div class="wizard-actions">
                 <button type="button" class="btn-calendario btn-secondary-calendario" id="btn-prev-step" style="display: none;">
@@ -365,6 +365,7 @@
             <div id="detail-descripcion" class="drawer-description">--</div>
         </section>
         <div class="drawer-actions">
+            <button type="button" class="btn-calendario btn-danger-calendario" id="drawer-cancel-btn" style="display:none;">Cancelar reunión</button>
             <button type="button" class="btn-calendario btn-secondary-calendario" id="drawer-close-cta">Cerrar</button>
         </div>
     </div>
@@ -399,6 +400,7 @@ const ROUTES = {
   baseEventos: "{{ route('lider_semi.eventos.crear', [], false) }}"
 };
 const CSRF = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+const CURRENT_USER_ID = {{ Auth::id() }};
 // Mapa id->nombre de aprendices para mostrar participantes en el detalle
 const PARTICIPANTS_MAP = @json(isset($aprendices) ? $aprendices->pluck('nombre_completo','id_aprendiz') : []);
 
@@ -423,6 +425,7 @@ const wizardNextBtn = document.getElementById('btn-next-step');
 const wizardPrevBtn = document.getElementById('btn-prev-step');
 const wizardSubmitBtn = document.getElementById('btn-submit');
 const drawerCloseCta = document.getElementById('drawer-close-cta');
+const drawerCancelBtn = document.getElementById('drawer-cancel-btn');
 const deleteBtn = document.getElementById('deleteBtn');
 const selectedDateDisplay = document.getElementById('selectedDateDisplay');
 const modalTitle = document.getElementById('modal-title');
@@ -446,6 +449,7 @@ if (wizardCancelBtn) wizardCancelBtn.addEventListener('click', closeEventModal);
 if (wizardNextBtn) wizardNextBtn.addEventListener('click', ()=> goToStep(currentWizardStep+1));
 if (wizardPrevBtn) wizardPrevBtn.addEventListener('click', ()=> goToStep(currentWizardStep-1));
 if (deleteBtn) deleteBtn.addEventListener('click', deleteEvent);
+if (drawerCancelBtn) drawerCancelBtn.addEventListener('click', deleteEvent);
 if (eventForm) eventForm.addEventListener('submit', saveEvent);
 
 viewBtns.forEach(btn => { btn.addEventListener('click', async () => { viewBtns.forEach(b => b.classList.remove('active')); btn.classList.add('active'); currentView = btn.dataset.view; await loadEventsForCurrentPeriod(); renderCalendar(); }); });
@@ -605,7 +609,10 @@ async function loadEventsForCurrentPeriod(){
       if (!participantsNames.length && participantsIds.length){
         participantsNames = participantsIds.map(id => PARTICIPANTS_MAP?.[id] || `Aprendiz #${id}`);
       }
-      return { id: ev.id, date: datePart, time: timePart||'09:00', title: ev.titulo, duration: ev.duracion||60, type: ev.tipo||'general', location: ev.ubicacion||'', description: ev.descripcion||'', researchLine: ev.linea_investigacion || '', link: ev.link_virtual || '', participantsIds, participantsNames };
+      // incluir identificador de creador y estado para manejar permisos/estilos
+      const creatorId = ev.leader_id ?? ev.id_lider ?? ev.id_usuario ?? null;
+      const estado = ev.estado ?? 'programada';
+      return { id: ev.id, date: datePart, time: timePart||'09:00', title: ev.titulo, duration: ev.duracion||60, type: ev.tipo||'general', location: ev.ubicacion||'', description: ev.descripcion||'', researchLine: ev.linea_investigacion || '', link: ev.link_virtual || '', participantsIds, participantsNames, creatorId, estado };
     });
   }catch(e){ console.error('Error cargando eventos', e); events = []; }
 }
@@ -683,9 +690,59 @@ function renderDayView(){
   events.filter(e=>e.date===dateStr).forEach(event=>{ slotsCol.appendChild(createDayEventElement(event)); }); dayGrid.appendChild(slotsCol);
 }
 
-function createEventElement(event){ const el=document.createElement('div'); el.className='event'; el.draggable=true; el.dataset.id=event.id; el.innerHTML=`<div class="event-time">${event.time}</div><div class="event-title">${event.title}</div>`; el.addEventListener('click',(e)=>{ e.stopPropagation(); showEventDetails(event); }); el.addEventListener('dragstart',(e)=>{ draggedEvent=event; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }); el.addEventListener('dragend',()=>{ el.classList.remove('dragging'); draggedEvent=null; }); return el; }
-function createWeekEventElement(event){ const el=document.createElement('div'); el.className='week-event'; el.draggable=true; el.dataset.id=event.id; const [h]=event.time.split(':').map(Number); const top=(h-8)*60+4; const height=Math.max(20, ((event.duration||60)/60*60) -8); el.style.top=`${top}px`; el.style.height=`${height}px`; el.innerHTML=`<div style="font-weight:600;">${event.time}</div><div style="font-size:10px;">${event.title}</div>`; el.addEventListener('click',(e)=>{ e.stopPropagation(); showEventDetails(event); }); el.addEventListener('dragstart',(e)=>{ draggedEvent=event; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }); el.addEventListener('dragend',()=>{ el.classList.remove('dragging'); draggedEvent=null; }); return el; }
-function createDayEventElement(event){ const el=document.createElement('div'); el.className='day-event'; el.draggable=true; el.dataset.id=event.id; const [h]=event.time.split(':').map(Number); const top=(h-8)*80+4; const height=Math.max(24, ((event.duration||60)/60*80) -8); el.style.top=`${top}px`; el.style.height=`${height}px`; el.innerHTML=`<div style="font-weight:600;font-size:13px;">${event.time}</div><div style="font-size:12px;margin-top:2px;">${event.title}</div>`; el.addEventListener('click',(e)=>{ e.stopPropagation(); showEventDetails(event); }); el.addEventListener('dragstart',(e)=>{ draggedEvent=event; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }); el.addEventListener('dragend',()=>{ el.classList.remove('dragging'); draggedEvent=null; }); return el; }
+function createEventElement(event){
+  const el=document.createElement('div');
+  el.className='event';
+  el.draggable=true;
+  el.dataset.id=event.id;
+  el.innerHTML=`<div class="event-time">${event.time}</div><div class="event-title">${event.title}</div>`;
+  // Estilo opaco para eventos cancelados
+  if (String(event.estado||'').toLowerCase()==='cancelado'){
+    el.style.opacity = '0.45';
+  }
+  el.addEventListener('click',(e)=>{ e.stopPropagation(); showEventDetails(event); });
+  el.addEventListener('dragstart',(e)=>{ draggedEvent=event; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
+  el.addEventListener('dragend',()=>{ el.classList.remove('dragging'); draggedEvent=null; });
+  return el;
+}
+function createWeekEventElement(event){
+  const el=document.createElement('div');
+  el.className='week-event';
+  el.draggable=true;
+  el.dataset.id=event.id;
+  const [h]=event.time.split(':').map(Number);
+  const top=(h-8)*60+4;
+  const height=Math.max(20, ((event.duration||60)/60*60) -8);
+  el.style.top=`${top}px`;
+  el.style.height=`${height}px`;
+  el.innerHTML=`<div style="font-weight:600;">${event.time}</div><div style="font-size:10px;">${event.title}</div>`;
+  if (String(event.estado||'').toLowerCase()==='cancelado'){
+    el.style.opacity = '0.45';
+  }
+  el.addEventListener('click',(e)=>{ e.stopPropagation(); showEventDetails(event); });
+  el.addEventListener('dragstart',(e)=>{ draggedEvent=event; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
+  el.addEventListener('dragend',()=>{ el.classList.remove('dragging'); draggedEvent=null; });
+  return el;
+}
+function createDayEventElement(event){
+  const el=document.createElement('div');
+  el.className='day-event';
+  el.draggable=true;
+  el.dataset.id=event.id;
+  const [h]=event.time.split(':').map(Number);
+  const top=(h-8)*80+4;
+  const height=Math.max(24, ((event.duration||60)/60*80) -8);
+  el.style.top=`${top}px`;
+  el.style.height=`${height}px`;
+  el.innerHTML=`<div style="font-weight:600;font-size:13px;">${event.time}</div><div style="font-size:12px;margin-top:2px;">${event.title}</div>`;
+  if (String(event.estado||'').toLowerCase()==='cancelado'){
+    el.style.opacity = '0.45';
+  }
+  el.addEventListener('click',(e)=>{ e.stopPropagation(); showEventDetails(event); });
+  el.addEventListener('dragstart',(e)=>{ draggedEvent=event; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
+  el.addEventListener('dragend',()=>{ el.classList.remove('dragging'); draggedEvent=null; });
+  return el;
+}
 
 // Indicador flotante de hora durante drag
 let dragTimeIndicatorEl=null;
@@ -876,6 +933,12 @@ function showEventDetails(event){
       ? names.map(n=>`<span class="chip">${n}</span>`).join(' ')
       : '--';
   }
+  // Mostrar/ocultar botón de cancelar según creador y estado
+  if (drawerCancelBtn){
+    const isCreator   = parseInt(event.creatorId ?? 0) === CURRENT_USER_ID;
+    const isCancelled = String(event.estado || '').toLowerCase() === 'cancelado';
+    drawerCancelBtn.style.display = (isCreator && !isCancelled) ? 'inline-flex' : 'none';
+  }
   if (genBtn) genBtn.onclick = async () => {
     try {
       const res = await fetch(`${ROUTES.baseEventos}/${event.id}/generar-enlace`, { method:'POST', headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json','X-Requested-With':'XMLHttpRequest','Content-Type':'application/json'}, body: JSON.stringify({ plataforma: 'teams' }) });
@@ -932,12 +995,30 @@ function editEvent(event){
 function editFromDetail(){ const event=events.find(e=>e.id===editingEventId); if(event){ closeDetailDrawer(); editEvent(event); } }
 
 async function deleteEvent(){
-  if(!editingEventId) return; if(!confirm('¿Estás seguro de que quieres eliminar esta reunión?')) return;
+  if(!editingEventId) return; if(!confirm('¿Estás seguro de que quieres cancelar esta reunión?')) return;
   try{
-    const res = await fetch(`${ROUTES.baseEventos}/${editingEventId}`,{method:'DELETE',headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});
-    if(!res.ok){ const txt = await res.text(); console.error('Error eliminando', res.status, txt); showToast('No se pudo eliminar.','error'); return; }
-    closeEventModal(); closeDetailDrawer(); await loadEventsForCurrentPeriod(); renderCalendar();
-  }catch(err){ console.error('Error eliminando evento',err); showToast('Error eliminando (red).','error'); }
+    const res = await fetch(`${ROUTES.baseEventos}/${editingEventId}`,{
+      method:'DELETE',
+      headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}
+    });
+    let data = null;
+    try{ data = await res.json(); }catch(_){ /* puede no venir JSON */ }
+    const okFlag = data && (data.success === true || data.ok === true);
+    if(!res.ok || okFlag === false){
+      const msg = (data && data.message) ? data.message : 'No se pudo cancelar la reunión.';
+      console.error('Error cancelando', res.status, data);
+      showToast(msg,'error');
+      return;
+    }
+    closeEventModal();
+    closeDetailDrawer();
+    await loadEventsForCurrentPeriod();
+    renderCalendar();
+    showToast('Reunión cancelada correctamente','success');
+  }catch(err){
+    console.error('Error cancelando evento',err);
+    showToast('Error de red al cancelar la reunión.','error');
+  }
 }
 
 async function updateEventOnServer(id,newDateStr,newTime){

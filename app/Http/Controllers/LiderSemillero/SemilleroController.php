@@ -280,7 +280,7 @@ class SemilleroController extends Controller
 
     public function create()
     {
-        return view('usuarios.create'); 
+        return view('usuarios.create');
     }
 
     public function store(Request $request)
@@ -306,6 +306,60 @@ class SemilleroController extends Controller
     public function destroy($id)
     {
         // eliminar semillero
+    }
+
+    /**
+     * Eliminar (cancelar) una reunión del calendario del líder.
+     * En realidad no se borra el registro, solo se marca estado = 'cancelado'.
+     * Solo puede hacerlo el líder que la creó/asignó.
+     */
+    public function eliminarEvento($eventoId)
+    {
+        $userId = Auth::id();
+
+        // Buscar el evento por su PK real (id_l_evento) o por id_evento según el esquema
+        $evento = Evento::query()
+            ->when(Schema::hasColumn('eventos','id_l_evento'), fn($q) => $q->where('id_l_evento', $eventoId))
+            ->when(!Schema::hasColumn('eventos','id_l_evento') && Schema::hasColumn('eventos','id_evento'), fn($q) => $q->orWhere('id_evento', $eventoId))
+            ->first();
+
+        if (!$evento) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Evento no encontrado'
+            ]);
+        }
+
+        // Determinar el creador/líder del evento usando la misma lógica que en obtenerEventos
+        $leaderCol = Schema::hasColumn('eventos','id_lider_semi')
+            ? 'id_lider_semi'
+            : (Schema::hasColumn('eventos','id_lider_usuario') ? 'id_lider_usuario' : 'id_lider');
+
+        $creatorId = $evento->{$leaderCol} ?? null;
+
+        if ((int)$creatorId !== (int)$userId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No autorizado para cancelar esta reunión'
+            ]);
+        }
+
+        // Marcar como cancelado (no borrar) si la columna existe
+        if (Schema::hasColumn('eventos','estado')) {
+            $evento->estado = 'cancelado';
+            $evento->save();
+            return response()->json([
+                'success' => true,
+                'message' => 'Reunión cancelada correctamente'
+            ]);
+        }
+
+        // Si no existe columna estado, aplicar comportamiento anterior: eliminar físicamente
+        $evento->delete();
+        return response()->json([
+            'success' => true,
+            'message' => 'Reunión eliminada correctamente'
+        ]);
     }
 
     // --- Gestión de aprendices asignados ---
@@ -1634,9 +1688,13 @@ class SemilleroController extends Controller
             $eventos = $query->orderBy('fecha_hora', 'asc')->get();
 
             $tz = config('app.timezone', 'America/Bogota');
+            $leaderCol = $leaderCol ?? (Schema::hasColumn('eventos','id_lider_semi')
+                ? 'id_lider_semi'
+                : (Schema::hasColumn('eventos','id_lider_usuario') ? 'id_lider_usuario' : 'id_lider'));
+
             return response()->json([
                 'success' => true,
-                'eventos' => $eventos->map(function($evento) use ($tz) {
+                'eventos' => $eventos->map(function($evento) use ($tz, $leaderCol) {
                     // Normalizar fecha a timezone de app en formato 'Y-m-d H:i:s'
                     $dt = $evento->fecha_hora instanceof \DateTimeInterface
                         ? Carbon::instance($evento->fecha_hora)
@@ -1667,6 +1725,7 @@ class SemilleroController extends Controller
 
                     return [
                         'id' => $evento->id_evento,
+                        'leader_id' => $evento->{$leaderCol} ?? null,
                         'titulo' => $evento->titulo,
                         'descripcion' => $evento->descripcion,
                         'linea_investigacion' => $evento->linea_investigacion,
@@ -1674,6 +1733,7 @@ class SemilleroController extends Controller
                         'duracion' => $evento->duracion,
                         'tipo' => $evento->tipo,
                         'ubicacion' => $evento->ubicacion,
+                        'estado' => $evento->estado ?? null,
                         'link_virtual' => $evento->link_virtual,
                         'codigo_reunion' => $evento->codigo_reunion,
                         'recordatorio' => $evento->recordatorio,
@@ -2051,30 +2111,6 @@ class SemilleroController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al actualizar el evento'
-            ], 500);
-        }
-    }
-
-    // Eliminar evento
-    public function eliminarEvento($id)
-    {
-        try {
-            $evento = Evento::where('id_evento', $id)
-                ->where('id_lider', Auth::id())
-                ->firstOrFail();
-
-            $evento->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Evento eliminado exitosamente'
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error al eliminar evento: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al eliminar el evento'
             ], 500);
         }
     }
