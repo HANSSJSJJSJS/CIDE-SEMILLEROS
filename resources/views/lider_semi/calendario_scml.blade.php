@@ -365,7 +365,6 @@
             <div id="detail-descripcion" class="drawer-description">--</div>
         </section>
         <div class="drawer-actions">
-            <button type="button" class="btn-calendario btn-danger-calendario" id="drawer-cancel-btn" style="display:none;">Cancelar reunión</button>
             <button type="button" class="btn-calendario btn-secondary-calendario" id="drawer-close-cta">Cerrar</button>
         </div>
     </div>
@@ -425,7 +424,6 @@ const wizardNextBtn = document.getElementById('btn-next-step');
 const wizardPrevBtn = document.getElementById('btn-prev-step');
 const wizardSubmitBtn = document.getElementById('btn-submit');
 const drawerCloseCta = document.getElementById('drawer-close-cta');
-const drawerCancelBtn = document.getElementById('drawer-cancel-btn');
 const deleteBtn = document.getElementById('deleteBtn');
 const selectedDateDisplay = document.getElementById('selectedDateDisplay');
 const modalTitle = document.getElementById('modal-title');
@@ -449,7 +447,6 @@ if (wizardCancelBtn) wizardCancelBtn.addEventListener('click', closeEventModal);
 if (wizardNextBtn) wizardNextBtn.addEventListener('click', ()=> goToStep(currentWizardStep+1));
 if (wizardPrevBtn) wizardPrevBtn.addEventListener('click', ()=> goToStep(currentWizardStep-1));
 if (deleteBtn) deleteBtn.addEventListener('click', deleteEvent);
-if (drawerCancelBtn) drawerCancelBtn.addEventListener('click', deleteEvent);
 if (eventForm) eventForm.addEventListener('submit', saveEvent);
 
 viewBtns.forEach(btn => { btn.addEventListener('click', async () => { viewBtns.forEach(b => b.classList.remove('active')); btn.classList.add('active'); currentView = btn.dataset.view; await loadEventsForCurrentPeriod(); renderCalendar(); }); });
@@ -932,12 +929,6 @@ function showEventDetails(event){
     chips.innerHTML = names.length
       ? names.map(n=>`<span class="chip">${n}</span>`).join(' ')
       : '--';
-  }
-  // Mostrar/ocultar botón de cancelar según creador y estado
-  if (drawerCancelBtn){
-    const isCreator   = parseInt(event.creatorId ?? 0) === CURRENT_USER_ID;
-    const isCancelled = String(event.estado || '').toLowerCase() === 'cancelado';
-    drawerCancelBtn.style.display = (isCreator && !isCancelled) ? 'inline-flex' : 'none';
   }
   if (genBtn) genBtn.onclick = async () => {
     try {
