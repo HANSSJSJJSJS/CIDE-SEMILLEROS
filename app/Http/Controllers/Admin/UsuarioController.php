@@ -36,7 +36,7 @@ public function index(Request $request)
             DB::raw('COALESCE(sa.nombre, sl.nombre) as semillero_nombre'),
             DB::raw('COALESCE(sa.id_semillero, sl.id_semillero) as semillero_id'),
             DB::raw('COALESCE(sa.linea_investigacion, sl.linea_investigacion) as linea_investigacion'),
-            DB::raw("CASE 
+            DB::raw("CASE
                         WHEN users.role = 'ADMIN'            THEN 'Líder general'
                         WHEN users.role = 'LIDER_SEMILLERO'  THEN 'Líder semillero'
                         WHEN users.role = 'APRENDIZ'         THEN 'Aprendiz'
@@ -294,7 +294,8 @@ public function index(Request $request)
     } catch (\Throwable $e) {
         report($e);
 
-        if ($request->wantsJson()) {
+        // Usamos el helper request() para evitar avisos de variable indefinida en algunos analizadores
+        if (request()->wantsJson()) {
             return response()->json([
                 'ok'      => false,
                 'message' => 'Ocurrió un error al crear el usuario.',
@@ -439,7 +440,7 @@ public function index(Request $request)
         } catch (\Throwable $e) {
             report($e);
 
-            if ($request->wantsJson()) {
+            if (request()->wantsJson()) {
                 return response()->json([
                     'ok'      => false,
                     'message' => 'Ocurrió un error al actualizar el usuario.',
