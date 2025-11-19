@@ -361,7 +361,8 @@ class DocumentosController extends Controller
                 ->orderBy('d.fecha_subido', 'desc')
                 ->get();
 
-            $entregas = $entregas->map(function($entrega) {
+            $ahora = new \DateTime();
+            $entregas = $entregas->map(function($entrega) use ($ahora) {
                 if ($entrega->ruta_archivo) {
                     if (filter_var($entrega->ruta_archivo, FILTER_VALIDATE_URL)) {
                         $entrega->archivo_url = $entrega->ruta_archivo;
@@ -369,10 +370,16 @@ class DocumentosController extends Controller
                         $entrega->archivo_url = asset('storage/' . $entrega->ruta_archivo);
                     }
                 }
+
+                $entrega->recien_actualizada = false;
                 if ($entrega->fecha) {
                     try {
                         $fecha = new \DateTime($entrega->fecha);
                         $entrega->fecha = $fecha->format('Y-m-d');
+                        $diffSegundos = $ahora->getTimestamp() - $fecha->getTimestamp();
+                        if ($diffSegundos >= 0 && $diffSegundos <= 86400) {
+                            $entrega->recien_actualizada = true;
+                        }
                     } catch (\Exception $e) { }
                 }
                 return $entrega;

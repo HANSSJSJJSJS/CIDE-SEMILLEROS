@@ -203,10 +203,43 @@
                                             <td>{{ number_format($doc->tamanio / 1024, 2) }} KB</td>
                                             <td>{{ \Carbon\Carbon::parse($doc->fecha_subida)->format('d/m/Y H:i') }}</td>
                                             <td>
-                                                <a href="{{ route('aprendiz.documentos.download', $doc->id_documento) }}" class="btn btn-sm btn-success" title="Descargar">
+                                                {{-- Descargar --}}
+                                                <a href="{{ route('aprendiz.documentos.download', $doc->id_documento) }}" class="btn btn-sm btn-success me-1" title="Descargar">
                                                     <i class="fas fa-download"></i>
                                                 </a>
-                                                <form action="{{ route('aprendiz.documentos.destroy', $doc->id_documento) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de eliminar este documento?')">
+
+                                                @if(!empty($doc->ruta_archivo))
+                                                    {{-- Editar / reemplazar archivo --}}
+                                                    <form action="{{ route('aprendiz.documentos.update', $doc->id_documento) }}"
+                                                          method="POST"
+                                                          enctype="multipart/form-data"
+                                                          class="d-inline-block align-middle mt-1"
+                                                          style="max-width: 230px;">
+                                                        @csrf
+                                                        @method('PUT')
+                                                        <input type="file"
+                                                               name="archivo"
+                                                               class="form-control form-control-sm mb-1"
+                                                               style="width: 180px;"
+                                                               title="Selecciona un nuevo archivo para reemplazar">
+                                                        <input type="text"
+                                                               name="descripcion"
+                                                               class="form-control form-control-sm mb-1"
+                                                               placeholder="Nuevo título (opcional)"
+                                                               value="{{ $doc->documento }}">
+                                                        <button type="submit" class="btn btn-sm btn-secondary w-100" title="Editar entrega">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <span class="badge bg-warning text-dark ms-1">Aún sin archivo, no editable</span>
+                                                @endif
+
+                                                {{-- Eliminar --}}
+                                                <form action="{{ route('aprendiz.documentos.destroy', $doc->id_documento) }}"
+                                                      method="POST"
+                                                      class="d-inline ms-1"
+                                                      onsubmit="return confirm('¿Estás seguro de eliminar este documento?')">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">

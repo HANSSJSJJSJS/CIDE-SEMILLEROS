@@ -248,6 +248,94 @@ class DocumentoController extends Controller
         return back()->with('success', 'Documento subido correctamente');
     }
 
+    /**
+     * Editar /reemplazar un documento existente de un aprendiz
+     */
+
+    public function update(Request $request, $id)
+    {
+        $userId = Auth::id();
+        $aprendiz = $this->getAprendizByUserId($userId);
+        if (!$aprendiz){
+            return back()->with('error','No se encontro el perfil de aprendiz');
+        }
+
+        // 1) Buscar el documento que pertenece a este aprendiz
+        $docAprCol = $this->getDocumentoAprendizColumn(); // ya existe en este controlador
+        $aprId = $this->getAprendizId($aprendiz); // ya existe en este controlador
+
+        $documento = DB::table('documentos')
+            ->where('id_documento', $id)
+            ->where($docAprCol, $aprId)
+            ->first();
+
+        if (!$documento) {
+            return back()->with('error', 'Documento no encontrado o no te pertenece');
+        }
+
+        // Si por algún motivo este registro aún no tiene archivo, no permitir actualizarlo aquí
+        if (empty($documento->ruta_archivo)) {
+            return back()->with('error', 'Este documento aún no tiene un archivo cargado para actualizar.');
+        }
+
+        // 2) Validar campos de edición
+        $request->validate([
+            'archivo'     => 'nullable|file|max:10240',
+            'descripcion' => 'nullable|string|max:255',
+        ]);
+
+        $dataUpdate = [];
+
+        // Actualizar descripción/título si viene
+        if ($request->filled('descripcion')) {
+            $dataUpdate['documento'] = $request->descripcion;
+        }
+
+        // 3) Si se sube un nuevo archivo, reemplazarlo
+        if ($request->hasFile('archivo')) {
+
+            // Borrar archivo anterior (si existe en disco)
+            if (!empty($documento->ruta_archivo)) {
+                try {
+                    Storage::disk('public')->delete($documento->ruta_archivo);
+                } catch (\Throwable $e) {
+                    // en caso de error al borrar, lo ignoramos para no romper la edición
+                }
+            }
+
+            $archivo        = $request->file('archivo');
+            $nombreOriginal = $archivo->getClientOriginalName();
+            $extension      = $archivo->getClientOriginalExtension();
+            $tamanio        = $archivo->getSize();
+            $tipoArchivo    = strtolower($extension ?? '');
+
+            // Generar nombre único
+            $nombreArchivo = time() . '_' . $aprendiz->id_aprendiz . '_' . $nombreOriginal;
+
+            // Guardar nuevo archivo
+            $ruta = $archivo->storeAs('documentos', $nombreArchivo, 'public');
+
+            $dataUpdate['ruta_archivo'] = $ruta;
+            $dataUpdate['tipo_archivo'] = $tipoArchivo;
+            $dataUpdate['tamanio']      = $tamanio;
+            $dataUpdate['fecha_subida'] = now();
+
+            // Si no se envió la descripción nueva, usar el nombre del archivo
+            if (empty($dataUpdate['documento'])) {
+                $dataUpdate['documento'] = $nombreOriginal;
+            }
+        }
+
+        if (!empty($dataUpdate)) {
+            DB::table('documentos')
+                ->where('id_documento', $id)
+                ->update($dataUpdate);
+        }
+
+        return back()->with('success', 'Entrega actualizada correctamente.');
+    }
+
+
     public function uploadAssigned(Request $request, $id)
     {
         $userId = Auth::id();

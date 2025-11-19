@@ -45,7 +45,7 @@
                             <span class="badge badge-activo">ACTIVO</span>
                         </div>
                         <p class="proyecto-descripcion">{{ $proyecto->descripcion ?: 'Sin descripción' }}</p>
-                        
+
                         <!-- Estadísticas -->
                         <div class="row text-center proyecto-estadisticas">
                             <div class="col-4">
@@ -95,7 +95,7 @@
                             <span class="badge badge-completado">COMPLETADO</span>
                         </div>
                         <p class="proyecto-descripcion">{{ $proyecto->descripcion ?: 'Sin descripción' }}</p>
-                        
+
                         <!-- Estadísticas -->
                         <div class="row text-center proyecto-estadisticas">
                             <div class="col-4">
@@ -137,10 +137,10 @@
 <div class="modal-overlay" id="modalEvidencia">
     <div class="modal-evidencia">
         <h2 id="tituloModalEvidencia">Registrar Evidencia de Avance</h2>
-        
+
         <form id="formEvidencia">
             @csrf
-            
+
             <!-- Nombre del Proyecto -->
             <div class="mb-3">
                 <label class="form-label-evidencia">Nombre del Proyecto</label>
@@ -157,7 +157,7 @@
                 </select>
                 <small class="text-muted" id="mensaje-aprendices">Selecciona un proyecto para ver los aprendices asignados</small>
             </div>
-            
+
             <!-- Lista de Evidencias Existentes (solo visible en modo edición) -->
             <div id="evidencias-existentes" style="display: none;">
                 <h4 style="color: #1e4620; font-weight: 700; margin-bottom: 1rem;">Evidencias Subidas</h4>
@@ -167,14 +167,14 @@
             <!-- Título del Avance -->
             <div class="mb-3">
                 <label class="form-label-evidencia">Título del Avance</label>
-                <input type="text" class="form-control-evidencia" id="titulo" name="titulo" 
+                <input type="text" class="form-control-evidencia" id="titulo" name="titulo"
                        placeholder="Ej: Informe de pruebas funcionales" required>
             </div>
 
             <!-- Descripción del Avance -->
             <div class="mb-3">
                 <label class="form-label-evidencia">Descripción del Avance</label>
-                <textarea class="form-control-evidencia form-textarea-evidencia" id="descripcion" name="descripcion" 
+                <textarea class="form-control-evidencia form-textarea-evidencia" id="descripcion" name="descripcion"
                           placeholder="Describe brevemente el avance realizado..." required></textarea>
             </div>
 
@@ -217,7 +217,7 @@
     <div class="modal-entregas">
         <button class="btn-cerrar-modal" onclick="cerrarModalEntregas()">×</button>
         <h2 id="tituloModalEntregas">Entregas - Proyecto</h2>
-        
+
         <div id="contenedorEntregas">
             <!-- Las entregas se cargarán aquí dinámicamente -->
         </div>
@@ -229,11 +229,11 @@
     <div class="modal-evidencia">
         <button class="btn-cerrar-modal" onclick="cerrarModalEditarEvidencia()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 2rem; color: #666; cursor: pointer;">×</button>
         <h2>Editar Evidencias - <span id="nombreProyectoEditar"></span></h2>
-        
+
         <form id="formEditarEvidencia">
             @csrf
             <input type="hidden" id="edit_documento_id" name="documento_id">
-            
+
             <!-- Nombre del Aprendiz (Solo lectura) -->
             <div class="mb-3">
                 <label class="form-label-evidencia">Aprendiz</label>
@@ -305,17 +305,17 @@ let proyectoNombreActual = '';
 // Sistema de Notificaciones Bonitas
 function showNotification(title, message, type = 'success') {
     const container = document.getElementById('notificationContainer');
-    
+
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
-    
+
     const iconMap = {
         success: '<i class="fas fa-check-circle"></i>',
         error: '<i class="fas fa-exclamation-circle"></i>',
         warning: '<i class="fas fa-exclamation-triangle"></i>',
         info: '<i class="fas fa-info-circle"></i>'
     };
-    
+
     notification.innerHTML = `
         <div class="notification-icon">
             ${iconMap[type] || iconMap.success}
@@ -328,9 +328,9 @@ function showNotification(title, message, type = 'success') {
             <i class="fas fa-times"></i>
         </button>
     `;
-    
+
     container.appendChild(notification);
-    
+
     // Auto-cerrar después de 5 segundos
     setTimeout(() => {
         closeNotification(notification.querySelector('.notification-close'));
@@ -369,13 +369,19 @@ function cargarEntregas(proyectoId) {
             console.log('Datos recibidos:', data); // Debug
             if (data.entregas && data.entregas.length > 0) {
                 let html = '';
+                let hayActualizadas = false;
                 data.entregas.forEach(entrega => {
                     console.log('Entrega:', entrega); // Debug
-                    const estadoBadge = entrega.estado === 'pendiente' ? 'badge-pendiente' : 
+                    const estadoBadge = entrega.estado === 'pendiente' ? 'badge-pendiente' :
                                        entrega.estado === 'aprobado' ? 'badge-aprobado' : 'badge-rechazado';
-                    const estadoTexto = entrega.estado === 'pendiente' ? 'PENDIENTE' : 
+                    const estadoTexto = entrega.estado === 'pendiente' ? 'PENDIENTE' :
                                        entrega.estado === 'aprobado' ? 'APROBADO' : 'RECHAZADO';
-                    
+
+                    const flagActualizada = entrega.recien_actualizada === true || entrega.recien_actualizada === 1 || entrega.recien_actualizada === '1';
+                    if (flagActualizada) {
+                        hayActualizadas = true;
+                    }
+
                     html += `
                         <div class="entrega-card" style="position: relative;">
                             <!-- Botón de editar solo si NO está aprobado -->
@@ -388,10 +394,11 @@ function cargarEntregas(proyectoId) {
                                     <i class="fas fa-lock"></i>
                                 </div>
                             `}
-                            
+
                             <div class="entrega-header">
                                 <h3 class="entrega-nombre">${entrega.nombre_aprendiz}</h3>
                                 <span class="${estadoBadge}">${estadoTexto}</span>
+                                ${flagActualizada ? `<span style="margin-left:8px; padding:3px 8px; border-radius:999px; background:#0d6efd; color:white; font-size:0.75rem;">Actualizada por el aprendiz</span>` : ''}
                             </div>
                             <div class="entrega-info">
                                 ${entrega.archivo_nombre || 'Sin archivo'} · ${entrega.fecha}
@@ -420,6 +427,14 @@ function cargarEntregas(proyectoId) {
                     `;
                 });
                 contenedor.innerHTML = html;
+
+                if (hayActualizadas) {
+                    showNotification(
+                        'Nuevas actualizaciones',
+                        'Uno o varios aprendices han actualizado recientemente sus evidencias en este proyecto.',
+                        'info'
+                    );
+                }
             } else {
                 contenedor.innerHTML = `
                     <div class="entregas-vacio">
@@ -519,27 +534,27 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'pdf':
                 descripcionTipo = 'El aprendiz deberá subir un documento en formato PDF';
                 break;
-            
+
             case 'enlace':
                 descripcionTipo = 'El aprendiz deberá proporcionar un enlace (Google Drive, OneDrive, etc.)';
                 break;
-            
+
             case 'documento':
                 descripcionTipo = 'El aprendiz deberá subir un documento Word (.doc o .docx)';
                 break;
-            
+
             case 'presentacion':
                 descripcionTipo = 'El aprendiz deberá subir una presentación (PowerPoint, PDF, etc.)';
                 break;
-            
+
             case 'video':
                 descripcionTipo = 'El aprendiz deberá proporcionar un enlace de video (YouTube, Vimeo, etc.)';
                 break;
-            
+
             case 'imagen':
                 descripcionTipo = 'El aprendiz deberá subir una imagen (JPG, PNG, etc.)';
                 break;
-            
+
             case 'otro':
                 descripcionTipo = 'El aprendiz deberá subir un archivo del tipo especificado';
                 break;
@@ -584,7 +599,7 @@ document.addEventListener('DOMContentLoaded', function() {
         modalOverlay.classList.remove('active');
         formEvidencia.reset();
         inputFecha.value = hoy;
-        
+
         // Restaurar estado original del modal
         document.getElementById('tituloModalEvidencia').textContent = 'Registrar Evidencia de Avance';
         const selectProyecto = document.getElementById('proyecto_id');
@@ -623,7 +638,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const proyectoId = this.value;
         const selectAprendiz = document.getElementById('aprendiz_id');
         const mensajeAprendices = document.getElementById('mensaje-aprendices');
-        
+
         if (!proyectoId) {
             selectAprendiz.innerHTML = '<option value="">Selecciona primero un proyecto...</option>';
             selectAprendiz.disabled = true;
@@ -631,18 +646,18 @@ document.addEventListener('DOMContentLoaded', function() {
             mensajeAprendices.className = 'text-muted';
             return;
         }
-        
+
         // Mostrar estado de carga
         selectAprendiz.innerHTML = '<option value="">Cargando aprendices...</option>';
         selectAprendiz.disabled = true;
-        
+
         // Cargar aprendices del proyecto
         fetch(`/lider_semi/proyectos/${proyectoId}/aprendices-list`)
             .then(response => response.json())
             .then(data => {
                 selectAprendiz.innerHTML = '<option value="">Sin asignar a un aprendiz específico</option>';
                 selectAprendiz.disabled = false;
-                
+
                 if (data.aprendices && data.aprendices.length > 0) {
                     data.aprendices.forEach(aprendiz => {
                         const option = document.createElement('option');
@@ -670,11 +685,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Enviar formulario
     formEvidencia.addEventListener('submit', function(e) {
         e.preventDefault();
-        
+
         // Validar que la fecha no sea anterior a hoy
         const fechaSeleccionada = document.getElementById('fecha').value;
         const fechaHoy = new Date().toISOString().split('T')[0];
-        
+
         if (fechaSeleccionada < fechaHoy) {
             showNotification(
                 'Fecha Inválida',
@@ -683,10 +698,10 @@ document.addEventListener('DOMContentLoaded', function() {
             );
             return;
         }
-        
+
         const formData = new FormData(formEvidencia);
         const btnGuardar = formEvidencia.querySelector('.btn-guardar-modal');
-        
+
         btnGuardar.disabled = true;
         btnGuardar.textContent = 'Guardando...';
 
@@ -740,19 +755,19 @@ function abrirModalEditarEvidencia(documentoId, nombreAprendiz, archivoNombre, f
     document.getElementById('edit_nombre_aprendiz').value = nombreAprendiz;
     document.getElementById('edit_archivo_nombre').value = archivoNombre || 'Sin archivo';
     document.getElementById('edit_fecha_subida').value = fecha;
-    
+
     // Mostrar estado en texto legible
-    const estadoTexto = estado === 'pendiente' ? 'Pendiente' : 
+    const estadoTexto = estado === 'pendiente' ? 'Pendiente' :
                        estado === 'aprobado' ? 'Aprobado' : 'Rechazado';
     document.getElementById('edit_estado_texto').value = estadoTexto;
-    
+
     // Llenar campos editables (vacíos por defecto para que el líder los complete)
     document.getElementById('edit_tipo_documento').value = '';
     document.getElementById('edit_fecha_limite').value = '';
     document.getElementById('edit_descripcion').value = descripcion || '';
-    
+
     document.getElementById('nombreProyectoEditar').textContent = proyectoNombreActual || proyectoNombre;
-    
+
     // Abrir modal
     document.getElementById('modalEditarEvidencia').classList.add('active');
 }
@@ -766,20 +781,20 @@ function cerrarModalEditarEvidencia() {
 // Manejar el envío del formulario de editar evidencia
 document.addEventListener('DOMContentLoaded', function() {
     const formEditarEvidencia = document.getElementById('formEditarEvidencia');
-    
+
     if (formEditarEvidencia) {
         formEditarEvidencia.addEventListener('submit', function(e) {
             e.preventDefault();
-            
+
             const documentoId = document.getElementById('edit_documento_id').value;
             const tipoDocumento = document.getElementById('edit_tipo_documento').value;
             const fechaLimite = document.getElementById('edit_fecha_limite').value;
             const descripcion = document.getElementById('edit_descripcion').value;
-            
+
             const btnGuardar = formEditarEvidencia.querySelector('.btn-guardar-modal');
             btnGuardar.disabled = true;
             btnGuardar.textContent = 'Guardando...';
-            
+
             // Actualizar el documento
             fetch(`/lider_semi/documentos/${documentoId}/actualizar`, {
                 method: 'PUT',
