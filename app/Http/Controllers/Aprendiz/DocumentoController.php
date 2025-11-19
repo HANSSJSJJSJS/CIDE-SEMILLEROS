@@ -188,10 +188,12 @@ class DocumentoController extends Controller
             $docAprCol => $aprId,
             'documento' => $request->descripcion ?: $nombreOriginal,
             'ruta_archivo' => $ruta,
-            'tipo_archivo' => $tipoArchivo,
             'tamanio' => $tamanio,
             'fecha_subida' => now(),
         ];
+        // Ajustar tipo_archivo según el esquema de la DB (ENUM/VARCHAR) para evitar truncamiento
+        $tipoSeguro = $this->getTipoArchivoSafe($tipoArchivo);
+        if (!is_null($tipoSeguro)) { $dataInsert['tipo_archivo'] = $tipoSeguro; }
         if (!is_null($nextId)) {
             $dataInsert['id_documento'] = $nextId;
             DB::table('documentos')->insert($dataInsert);
@@ -285,10 +287,11 @@ class DocumentoController extends Controller
             $ruta = \Illuminate\Support\Facades\Storage::disk('public')->putFileAs('documentos', $archivo, $nombreArchivo);
             $update = [
                 'ruta_archivo' => $ruta,
-                'tipo_archivo' => $tipoArchivo,
                 'tamanio' => $tamanio,
                 'fecha_subida' => now(),
             ];
+            $tipoSeguro = $this->getTipoArchivoSafe($tipoArchivo);
+            if (!is_null($tipoSeguro)) { $update['tipo_archivo'] = $tipoSeguro; }
         } else {
             $link = trim((string)$request->input('link_url'));
             $update = [
@@ -418,5 +421,70 @@ class DocumentoController extends Controller
         if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','id_aprendiz')) { return 'id_aprendiz'; }
         if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','id_usuario')) { return 'id_usuario'; }
         return 'id_aprendiz';
+    }
+
+    // Normaliza el valor de tipo_archivo según el esquema real (ENUM o VARCHAR con longitud) para evitar truncamientos
+    private function getTipoArchivoSafe(?string $ext): ?string
+    {
+        $ext = strtolower((string)($ext ?? ''));
+        if ($ext === '') { return null; }
+
+        try {
+            $db = \DB::getDatabaseName();
+            $col = \DB::table('information_schema.columns')
+                ->where('table_schema', $db)
+                ->where('table_name', 'documentos')
+                ->where('column_name', 'tipo_archivo')
+                ->select('data_type', 'column_type', 'character_maximum_length')
+                ->first();
+            if (!$col) { return $ext; }
+
+            // Si es ENUM, intentar mapear a un valor permitido
+            if (isset($col->data_type) && strtolower($col->data_type) === 'enum' && !empty($col->column_type)) {
+                // column_type: enum('PDF','DOC','XLS')
+                $m = [];
+                if (preg_match("/enum\\((.*)\\)/i", $col->column_type, $m)) {
+                    $vals = array_map(function($v){ return trim($v, "'\" "); }, explode(',', $m[1]));
+                    // Intentar coincidencia exacta (case-insensitive)
+                    foreach ($vals as $v) {
+                        if (strcasecmp($v, $ext) === 0) { return $v; }
+                    }
+                    // Mapear extensiones comunes a valores típicos
+                    $map = [
+                        'docx' => 'DOC', 'doc' => 'DOC',
+                        'xlsx' => 'XLS', 'xls' => 'XLS',
+                        'pptx' => 'PPT', 'ppt' => 'PPT',
+                        'jpeg' => 'JPG', 'jpg' => 'JPG',
+                        'png'  => 'PNG', 'pdf' => 'PDF',
+                        'zip'  => 'ZIP', 'rar' => 'RAR',
+                        'txt'  => 'TXT', 'csv' => 'CSV',
+                    ];
+                    if (isset($map[$ext])) {
+                        // Usar la variante que exista en el ENUM (case-insensitive)
+                        foreach ($vals as $v) {
+                            if (strcasecmp($v, $map[$ext]) === 0) { return $v; }
+                        }
+                    }
+                    // Si no hay mapeo válido, no escribir tipo_archivo
+                    return null;
+                }
+            }
+
+            // Si es VARCHAR/CHAR, respetar longitud máxima
+            if (isset($col->character_maximum_length) && $col->character_maximum_length) {
+                $len = (int)$col->character_maximum_length;
+                if ($len > 0) {
+                    // Convención: usar mayúsculas si longitud es muy corta (3-4)
+                    $val = strlen($ext) > $len ? substr($ext, 0, $len) : $ext;
+                    if ($len <= 4) { $val = strtoupper($val); }
+                    return $val;
+                }
+            }
+
+            return $ext;
+        } catch (\Throwable $e) {
+            // Ante cualquier problema, devolver la extensión original para no romper el flujo
+            return $ext;
+        }
     }
 }

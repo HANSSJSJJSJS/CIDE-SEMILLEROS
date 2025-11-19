@@ -41,6 +41,7 @@ use App\Http\Controllers\Aprendiz\ArchivoController;
 use App\Http\Controllers\Aprendiz\DocumentoController;
 use App\Http\Controllers\Aprendiz\CalendarioController;
 
+
 /*
 |--------------------------------------------------------------------------
 | RUTAS PÚBLICAS
@@ -62,10 +63,9 @@ Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('l
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
 
 // Cierre de sesión (logout)
-Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
+Route::post('/logout', [AuthenticatedSessionController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
-
 
 // ======================================================
 // RUTAS PROTEGIDAS (paneles, dashboard, etc.)

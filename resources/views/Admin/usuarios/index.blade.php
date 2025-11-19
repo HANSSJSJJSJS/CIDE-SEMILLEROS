@@ -1,98 +1,14 @@
 @extends('layouts.admin')
 
-{{-- =========================================================
-     ESTILOS: Marca de agua + Transparencia tabla + Encabezado
-   ========================================================= --}}
-@push('styles')
-<style>
-/* ===== Marca de agua SOLO para esta vista ===== */
-.wm-page{
-  position: relative;
-  z-index: 0;
-  background: transparent !important;
-}
-.wm-page::before{
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: url("{{ asset('images/bg-semillero.png') }}") no-repeat center 180px / 900px auto;
-  opacity: .12;               /* intensidad del logo */
-  pointer-events: none;
-  z-index: -1;                /* detrás de todo */
-}
-
-/* ===== Transparencia real en filtros y tabla ===== */
-.card.filters-card,
-.card.table-card,
-.card.table-card > .card-body,
-.card.table-card .table-responsive {
-  background-color: rgba(255,255,255,0.50) !important;
-  backdrop-filter: blur(6px);
-  border: 1px solid rgba(255,255,255,0.2) !important;
-  border-radius: 14px;
-}
-
-/* ===== Quitar fondos sólidos ===== */
-.card.table-card .table,
-.card.table-card .table thead,
-.card.table-card .table tbody,
-.card.table-card .table tr,
-.card.table-card .table th,
-.card.table-card .table td {
-  background-color: transparent !important;
-}
-
-/* Variables Bootstrap para que no repinten */
-.card.table-card .table {
-  --bs-table-bg: transparent !important;
-  --bs-table-striped-bg: rgba(11,46,77,.03) !important;
-  --bs-table-hover-bg: rgba(11,46,77,.06) !important;
-  --bs-table-color: inherit !important;
-}
-
-/* ===== Encabezado más compacto y centrado ===== */
-.card.table-card .thead-blue th {
-  background-color: rgba(5,53,94,0.85) !important; /* azul con alpha */
-  color: #fff !important;
-  text-align: center !important;
-  font-weight: 600 !important;
-  font-size: .90rem !important;
-  letter-spacing: .3px;
-  padding-top: .65rem !important;
-  padding-bottom: .65rem !important;
-  border: 0 !important;
-}
-
-/* Zebra y hover suaves */
-.card.table-card .table-zebra tbody tr:nth-child(odd){
-  background-color: rgba(11,46,77,0.03) !important;
-}
-.card.table-card .table-zebra tbody tr:hover{
-  background-color: rgba(11,46,77,0.06) !important;
-}
-
-/* Quitar fondo “fantasma” */
-.card.table-card .bg-white,
-.card.table-card .bg-light,
-.card.table-card [class*="bg-"]{
-  background-color: transparent !important;
-}
-</style>
-@endpush
-
-
 @section('module-title','Gestión de Usuarios')
 @section('module-subtitle','Administra roles, estados y semilleros')
 
 @section('content')
-<div class="wm-page"> {{-- Marca de agua activa --}}
 
-  <div class="container-fluid mt-3 px-3">
+<div class="container-fluid mt-3 px-3">
 
-    {{-- ==============================
-         FILTROS + BOTONES
-    =============================== --}}
-    <form method="GET" class="card filters-card border-0 shadow-sm mb-3">
+    {{-- FILTROS + BOTONES --}}
+    <form method="GET" class="card border-0 shadow-sm mb-3 glass-card">
       <div class="card-body">
         <div class="row g-3 align-items-end">
 
@@ -101,7 +17,9 @@
             <label class="form-label fw-semibold">Rol</label>
             <select name="role" class="form-select">
               <option value="">Todos</option>
-              @php $roleSelected = $roleFilter ?? request('role'); @endphp
+              @php 
+                $roleSelected = $roleFilter ?? request('role'); 
+              @endphp
               @foreach(($roles ?? []) as $value => $label)
                 <option value="{{ $value }}" @selected($roleSelected === $value)>{{ $label }}</option>
               @endforeach
@@ -130,18 +48,20 @@
                    placeholder="Nombre, apellido o email">
           </div>
 
-          {{-- Botones Buscar / Limpiar / Nuevo --}}
+          {{-- Botones --}}
           <div class="col-12 col-md-2 col-lg-3">
             <label class="form-label fw-semibold d-none d-md-block">&nbsp;</label>
-            <div class="btn-group-flex">
-              <button class="btn btn-sena btn-eq">
-                <i class="bi bi-search"></i> Buscar
+            <div class="d-flex flex-wrap gap-2">
+              <button class="btn btn-nuevo-semillero" type="submit">
+                <i class="bi bi-search me-1"></i> Buscar
               </button>
-              <a href="{{ route('admin.usuarios.index') }}" class="btn btn-ghost-blue btn-eq">
-                <i class="bi bi-x-lg"></i> Limpiar
+
+              <a href="{{ route('admin.usuarios.index') }}" class="btn btn-accion-ver">
+                <i class="bi bi-x-lg me-1"></i> Limpiar
               </a>
-              <a href="{{ route('admin.usuarios.create') }}" class="btn btn-outline-green btn-eq">
-                <i class="bi bi-person-plus"></i> Nuevo
+
+              <a href="{{ route('admin.usuarios.create') }}" class="btn btn-nuevo-semillero">
+                <i class="bi bi-person-plus me-1"></i> Nuevo
               </a>
             </div>
           </div>
@@ -150,98 +70,91 @@
       </div>
     </form>
 
-    {{-- ==============================
-         TABLA DE USUARIOS
-    =============================== --}}
-    <div class="card border-0 shadow-sm table-card">
+    {{-- TABLA DE USUARIOS --}}
+    <div class="card border-0 shadow-sm glass-card">
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-hover table-zebra mb-0">
-            <thead class="thead-blue">
+          <table class="table table-hover mb-0 tabla-usuarios">
+            <thead>
               <tr>
-                <th class="py-3 px-4">USUARIO</th>
-                <th class="py-3">ROL</th>
-                <th class="py-3">SEMILLERO</th>
-                <th class="py-3">ESTADO</th>
-                <th class="py-3">ÚLTIMA VEZ ACTIVO</th>
-                <th class="py-3 text-end pe-4">ACCIONES</th>
+                <th class="py-3 px-4">Usuario</th>
+                <th class="py-3">Rol</th>
+                <th class="py-3">Semillero</th>
+                <th class="py-3">Estado</th>
+                <th class="py-3">Última actividad</th>
+                <th class="py-3 text-end pe-4">Acciones</th>
               </tr>
             </thead>
+
             <tbody>
               @forelse($usuarios as $u)
                 @php
-                  $nombreCompleto = trim(($u->name ?? '').' '.($u->apellidos ?? '')) ?: ($u->nombre_completo ?? 'Usuario');
-                  $nPartes = preg_split('/\s+/', trim($u->name ?? ''), -1, PREG_SPLIT_NO_EMPTY);
-                  $aPartes = preg_split('/\s+/', trim($u->apellidos ?? ''), -1, PREG_SPLIT_NO_EMPTY);
-                  $ini1 = strtoupper(substr($nPartes[0] ?? 'U', 0, 1));
-                  $ini2 = strtoupper(substr($aPartes[0] ?? ($nPartes[1] ?? 'S'), 0, 1));
+                  $nombreCompleto = trim(($u->name ?? '').' '.($u->apellidos ?? ''))
+                    ?: ($u->nombre_completo ?? 'Usuario');
+
                   $activo = $u->estado === 'Activo' || ($u->is_active ?? false);
+
                   $roleLabel = $u->role_label
                     ?? match($u->role ?? null) {
                         'ADMIN' => 'Líder general',
-                        'LIDER_SEMILLERO' => 'Líder semillero',
+                        'LIDER_SEMILLERO' => 'Líder de semillero',
                         'APRENDIZ' => 'Aprendiz',
                         default => ($u->role ?? '—'),
                     };
+
+                  $roleColor = match($u->role ?? '') {
+                      'ADMIN' => 'bg-danger',
+                      'LIDER_SEMILLERO' => 'bg-success',
+                      'APRENDIZ' => 'bg-primary',
+                      default => 'bg-secondary',
+                  };
+
+                  $last = $u->last_login_at ?? $u->updated_at ?? null;
                 @endphp
 
                 <tr>
-                  {{-- USUARIO --}}
                   <td class="py-3 px-4">
-                    <div class="d-flex align-items-center gap-3">
-                      <div class="avatar-pill">{{ $ini1 }}{{ $ini2 }}</div>
-                      <div>
-                        <div class="fw-semibold">{{ $nombreCompleto }}</div>
-                        <small class="text-muted">{{ $u->email ?? 'Sin correo' }}</small>
-                      </div>
-                    </div>
+                    <div class="fw-semibold">{{ $nombreCompleto }}</div>
+                    <small class="text-muted">{{ $u->email ?? 'Sin correo' }}</small>
                   </td>
 
-                  {{-- ROL --}}
                   <td class="py-3">
-                    <span class="badge-role">{{ $roleLabel }}</span>
+                    <span class="badge {{ $roleColor }}">{{ $roleLabel }}</span>
                   </td>
 
-                  {{-- SEMILLERO --}}
                   <td class="py-3">{{ $u->semillero_nombre ?? '—' }}</td>
 
-                  {{-- ESTADO --}}
                   <td class="py-3">
-                    <span class="status-badge {{ $activo ? 'ok' : 'ko' }}">
+                    <span class="badge {{ $activo ? 'bg-success' : 'bg-secondary' }}">
                       {{ $activo ? 'Activo' : 'Inactivo' }}
                     </span>
                   </td>
 
-                  {{-- ÚLTIMA VEZ ACTIVO --}}
                   <td class="py-3">
-                    @php $last = $u->last_login_at ?? $u->updated_at ?? null; @endphp
-                    {{ $last ? \Carbon\Carbon::parse($last)->diffForHumans() : '—' }}
+                    {{ $last ? \Carbon\Carbon::parse($last)->locale('es')->diffForHumans() : '—' }}
                   </td>
 
-                  {{-- ACCIONES --}}
-                  <td class="py-3 text-end pe-4">
-                    <div class="action-buttons d-flex justify-content-end gap-2 flex-wrap">
-                      <a href="{{ route('admin.usuarios.edit', $u->id) }}"
-                         class="btn btn-action-blue btn-eq">
-                        <i class="bi bi-pencil"></i> <span>Editar</span>
-                      </a>
-                      <form action="{{ route('admin.usuarios.destroy', $u->id) }}"
-                            method="POST" class="d-inline"
-                            onsubmit="return confirm('¿Eliminar este usuario?');">
-                        @csrf
-                        @method('DELETE')
-                        <button class="btn btn-action-red btn-eq">
-                          <i class="bi bi-trash"></i> <span>Eliminar</span>
-                        </button>
-                      </form>
-                    </div>
+                  <td class="py-3 text-end pe-4 d-flex justify-content-end gap-2">
+                    <a href="{{ route('admin.usuarios.edit', $u->id) }}"
+                       class="btn btn-sm btn-accion-editar">
+                      <i class="bi bi-pencil me-1"></i> Editar
+                    </a>
+
+                    <form action="{{ route('admin.usuarios.destroy', $u->id) }}"
+                          method="POST"
+                          onsubmit="return confirm('¿Deseas eliminar este usuario?');">
+                      @csrf
+                      @method('DELETE')
+                      <button class="btn btn-sm btn-accion-eliminar" type="submit">
+                        <i class="bi bi-trash me-1"></i> Eliminar
+                      </button>
+                    </form>
                   </td>
                 </tr>
               @empty
                 <tr>
                   <td colspan="6" class="text-center py-5 text-muted">
-                    <i class="fas fa-users fa-3x mb-3 opacity-25"></i>
-                    <p>No hay usuarios registrados</p>
+                    No hay usuarios registrados.
                   </td>
                 </tr>
               @endforelse
@@ -258,6 +171,51 @@
       </div>
     @endif
 
-  </div>{{-- /.container-fluid --}}
-</div>{{-- /.wm-page --}}
+  </div>
+</div>
+
 @endsection
+
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/admin/semilleros.css') }}">
+
+<style>
+/* Glass para tarjeta de filtros y tabla */
+.glass-card {
+    background: rgba(255,255,255,0.45) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    border-radius: 14px !important;
+    border: 1px solid rgba(255,255,255,0.25) !important;
+}
+
+/* Mantenemos el fondo transparente para el cuerpo de la tabla */
+.glass-card table {
+    --bs-table-bg: transparent !important;
+    --bs-table-striped-bg: rgba(255,255,255,0.15) !important;
+    --bs-table-hover-bg: rgba(255,255,255,0.25) !important;
+}
+.glass-card tbody tr,
+.glass-card tbody td {
+    background: transparent !important;
+}
+
+/* Encabezado SOLO de esta tabla de usuarios */
+.tabla-usuarios thead th {
+    background-color: #0b2e4d !important;   /* tu blue-900 */
+    color: #ffffff !important;
+    font-size: 0.85rem;                     /* más pequeño */
+    font-weight: 600;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+    letter-spacing: 0.03em;
+    border-bottom: 2px solid rgba(255,255,255,0.25) !important;
+}
+
+/* Hover un poco más notorio, manteniendo transparencia */
+.tabla-usuarios.table-hover tbody tr:hover {
+    background-color: rgba(11, 46, 77, 0.28) !important;
+    transition: background-color 0.15s ease-in-out;
+}
+</style>
+@endpush
