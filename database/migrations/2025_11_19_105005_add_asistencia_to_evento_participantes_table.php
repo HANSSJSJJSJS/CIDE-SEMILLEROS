@@ -6,23 +6,19 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('evento_participantes', function (Blueprint $table) {
-            //
+            $table->enum('asistencia', ['pendiente', 'asistio', 'no_asistio'])
+                  ->default('pendiente')
+                  ->after('id_aprendiz');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('evento_participantes', function (Blueprint $table) {
-            //
+            $table->dropColumn('asistencia');
         });
     }
 };

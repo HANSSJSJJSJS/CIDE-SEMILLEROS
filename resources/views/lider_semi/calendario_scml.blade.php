@@ -356,14 +356,11 @@
                 </div>
             </div>
         </section>
-        <section class="drawer-section">
-            <h4 class="drawer-section-title">Participantes</h4>
-            <div id="detail-participantes" class="participants-chips">--</div>
-        </section>
         <section class="drawer-section" id="detail-asistencia-section" style="display:none;">
-            <h4 class="drawer-section-title">Asistencia</h4>
-            <p class="text-muted" style="font-size:12px;">Marca si los participantes asistieron o no a la reunión virtual.</p>
+            <h4 class="drawer-section-title">Participantes</h4>
+            <p class="text-muted" style="font-size:12px;">Marca si el participante asistió o no a la reunión virtual.</p>
             <div id="detail-asistencia-list" class="attendance-list"></div>
+            <div id="detail-asistencia-summary" class="attendance-summary" style="margin-top:16px; display:none;"></div>
         </section>
         <section class="drawer-section">
             <h4 class="drawer-section-title">Descripción</h4>
@@ -961,19 +958,32 @@ function showEventDetails(event){
   // Checklist de asistencia (solo reuniones virtuales)
   const asistenciaSection = document.getElementById('detail-asistencia-section');
   const asistenciaList = document.getElementById('detail-asistencia-list');
-  if (asistenciaSection && asistenciaList) {
+  const asistenciaSummary = document.getElementById('detail-asistencia-summary');
+  if (asistenciaSection && asistenciaList && asistenciaSummary) {
     if (isVirtualMeeting && Array.isArray(event.participantsDetails) && event.participantsDetails.length) {
       asistenciaSection.style.display = 'block';
       asistenciaList.innerHTML = '';
       event.participantsDetails.forEach(p => {
         const row = document.createElement('div');
-        row.className = 'attendance-item';
+        row.className = 'attendance-item-card';
         row.innerHTML = `
-          <div class="attendance-name">${p.nombre}</div>
-          <div class="attendance-options">
-            <label><input type="radio" name="asistencia-${event.id}-${p.id}" value="pendiente"> Pendiente</label>
-            <label><input type="radio" name="asistencia-${event.id}-${p.id}" value="asistio"> Asistió</label>
-            <label><input type="radio" name="asistencia-${event.id}-${p.id}" value="no_asistio"> No asistió</label>
+          <div class="attendance-card-header">
+            <div class="attendance-name">${p.nombre}</div>
+          </div>
+          <div class="attendance-card-body">
+            <div class="attendance-label">Asistencia</div>
+            <p class="attendance-help">Marca si el participante asistió o no a la reunión virtual.</p>
+            <div class="attendance-options">
+              <label class="attendance-option">
+                <input type="radio" name="asistencia-${event.id}-${p.id}" value="pendiente"> Pendiente
+              </label>
+              <label class="attendance-option">
+                <input type="radio" name="asistencia-${event.id}-${p.id}" value="asistio"> Asistió
+              </label>
+              <label class="attendance-option">
+                <input type="radio" name="asistencia-${event.id}-${p.id}" value="no_asistio"> No asistió
+              </label>
+            </div>
           </div>`;
         const radios = row.querySelectorAll('input[type="radio"]');
         radios.forEach(r => {
@@ -1001,6 +1011,7 @@ function showEventDetails(event){
               } else {
                 showToast('Asistencia actualizada','success');
                 p.asistencia = r.value;
+                updateAttendanceSummary(event, asistenciaSummary);
               }
             } catch (err) {
               console.error('Error al actualizar asistencia', err);
@@ -1010,9 +1021,13 @@ function showEventDetails(event){
         });
         asistenciaList.appendChild(row);
       });
+      updateAttendanceSummary(event, asistenciaSummary);
+      asistenciaSummary.style.display = 'block';
     } else {
       asistenciaSection.style.display = 'none';
       asistenciaList.innerHTML = '';
+      asistenciaSummary.innerHTML = '';
+      asistenciaSummary.style.display = 'none';
     }
   }
   if (genBtn) genBtn.onclick = async () => {
@@ -1048,6 +1063,39 @@ function showEventDetails(event){
     }catch(err){ console.error(err); alert('Error eliminando enlace'); }
   };
   openDetailDrawer();
+}
+
+function updateAttendanceSummary(event, summaryEl){
+  if (!summaryEl) return;
+  let pendientes = 0, asistieron = 0, noAsistieron = 0;
+  if (Array.isArray(event.participantsDetails)){
+    event.participantsDetails.forEach(p => {
+      const st = String(p.asistencia || 'pendiente');
+      if (st === 'asistio') asistieron++;
+      else if (st === 'no_asistio') noAsistieron++;
+      else pendientes++;
+    });
+  }
+  summaryEl.innerHTML = `
+    <div class="attendance-summary-card">
+      <div class="attendance-summary-header">Resumen de Asistencia</div>
+      <div class="attendance-summary-subtitle">Estado actual de los participantes de la reunión</div>
+      <div class="attendance-summary-grid">
+        <div class="attendance-summary-item">
+          <div class="attendance-summary-count">${asistieron}</div>
+          <div class="attendance-summary-label">Asistieron</div>
+        </div>
+        <div class="attendance-summary-item">
+          <div class="attendance-summary-count">${noAsistieron}</div>
+          <div class="attendance-summary-label">No asistieron</div>
+        </div>
+        <div class="attendance-summary-item">
+          <div class="attendance-summary-count">${pendientes}</div>
+          <div class="attendance-summary-label">Pendientes</div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function openDetailDrawer(){ detailOverlay.style.display='block'; detailDrawer.style.display='block'; }

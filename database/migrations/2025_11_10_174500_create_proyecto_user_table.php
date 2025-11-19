@@ -11,13 +11,19 @@ return new class extends Migration
         if (!Schema::hasTable('proyecto_user')) {
             Schema::create('proyecto_user', function (Blueprint $table) {
                 $table->id();
-                $table->unsignedBigInteger('id_proyecto');
+
+                // IMPORTANTE: proyectos.id_proyecto = INT(10) UNSIGNED
+                $table->unsignedInteger('id_proyecto');
+
+                // users.id = BIGINT UNSIGNED
                 $table->unsignedBigInteger('user_id');
+
                 $table->timestamps();
 
+                // Evitar duplicados
                 $table->unique(['id_proyecto', 'user_id']);
 
-                // FK a proyectos.id_proyecto (entero sin signo en tu esquema)
+                // FK a proyectos.id_proyecto
                 $table->foreign('id_proyecto')
                     ->references('id_proyecto')
                     ->on('proyectos')

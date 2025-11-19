@@ -1613,23 +1613,57 @@ class SemilleroController extends Controller
                     try {
                         // 1) Intentar desde tabla pivot evento_participantes (sin depender de nombres en aprendices)
                         if (Schema::hasTable('evento_participantes')) {
+                            $hasAsistenciaCol = Schema::hasColumn('evento_participantes', 'asistencia');
                             $rows = DB::table('evento_participantes')
                                 ->where('id_evento', $evento->id_evento)
                                 ->select(
                                     'id_aprendiz',
-                                    DB::raw("COALESCE(asistencia, 'pendiente') as asistencia")
+                                    DB::raw($hasAsistenciaCol
+                                        ? "COALESCE(asistencia, 'pendiente') as asistencia"
+                                        : "'pendiente' as asistencia"
+                                    )
                                 )
                                 ->get();
 
-                            $parts = $rows->map(function($r){
-                                $id = (int) $r->id_aprendiz;
-                                $nombre = 'Aprendiz #'.$id;
-                                return [
-                                    'id' => $id,
-                                    'nombre_completo' => $nombre,
-                                    'asistencia' => $r->asistencia,
-                                ];
-                            });
+                            // Intentar obtener nombres reales desde aprendices en un solo query
+                            $parts = collect();
+                            if ($rows->isNotEmpty() && Schema::hasTable('aprendices')) {
+                                $aprIds = $rows->pluck('id_aprendiz')->map(fn($v)=>(int)$v)->unique()->values()->all();
+                                $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
+                                    ? "COALESCE(aprendices.nombre_completo, CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')))"
+                                    : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
+                                $aprRows = DB::table('aprendices')
+                                    ->whereIn('id_aprendiz', $aprIds)
+                                    ->select('id_aprendiz', DB::raw($nameExpr.' as nombre'))
+                                    ->get()
+                                    ->keyBy('id_aprendiz');
+
+                                $parts = $rows->map(function($r) use ($aprRows){
+                                    $id = (int) $r->id_aprendiz;
+                                    $nombre = '';
+                                    if ($aprRows->has($id)) {
+                                        $nombre = trim((string)($aprRows[$id]->nombre ?? ''));
+                                    }
+                                    if ($nombre === '') {
+                                        $nombre = 'Aprendiz #'.$id;
+                                    }
+                                    return [
+                                        'id' => $id,
+                                        'nombre_completo' => $nombre,
+                                        'asistencia' => $r->asistencia,
+                                    ];
+                                });
+                            } else {
+                                // Fallback: sin tabla aprendices, usar placeholder
+                                $parts = $rows->map(function($r){
+                                    $id = (int) $r->id_aprendiz;
+                                    return [
+                                        'id' => $id,
+                                        'nombre_completo' => 'Aprendiz #'.$id,
+                                        'asistencia' => $r->asistencia,
+                                    ];
+                                });
+                            }
                         }
 
                         // 2) Si no hay registros en evento_participantes, usar la relación participantes del modelo
@@ -1658,7 +1692,7 @@ class SemilleroController extends Controller
                             $aprIds = array_values(array_unique(array_filter(array_map('intval', $aprIds))));
                             if (!empty($aprIds) && Schema::hasTable('aprendices')) {
                                 $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
-                                    ? 'aprendices.nombre_completo'
+                                    ? "COALESCE(aprendices.nombre_completo, CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')))"
                                     : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
                                 $rows = DB::table('aprendices')
                                     ->whereIn('id_aprendiz', $aprIds)
@@ -1861,13 +1895,16 @@ class SemilleroController extends Controller
             }
 
             // Cargar relaciones para la respuesta (con alias seguro)
+            // Si existe nombre_completo, usarlo pero haciendo COALESCE con CONCAT(nombres, apellidos)
             $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
-                ? 'aprendices.nombre_completo'
+                ? "COALESCE(aprendices.nombre_completo, CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')))"
                 : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
             $evento->load([
                 'participantes' => function($q) use ($nameExpr){
                     $q->select(
                         DB::raw('aprendices.id_aprendiz as id_aprendiz'),
+                        'aprendices.nombres',
+                        'aprendices.apellidos',
                         DB::raw($nameExpr.' as nombre_completo')
                     );
                 },
@@ -1897,9 +1934,16 @@ class SemilleroController extends Controller
                     'codigo_reunion' => $evento->codigo_reunion,
                     'proyecto' => $evento->proyecto ? $evento->proyecto->nombre_proyecto : null,
                     'participantes' => $evento->participantes->map(function($p) {
+                        $nombre = trim((string)($p->nombre_completo ?? ''));
+                        if ($nombre === '') {
+                            $nombre = trim(trim((string)($p->nombres ?? '')) . ' ' . trim((string)($p->apellidos ?? '')));
+                        }
+                        if ($nombre === '') {
+                            $nombre = 'Aprendiz #'.$p->id_aprendiz;
+                        }
                         return [
                             'id' => $p->id_aprendiz,
-                            'nombre' => $p->nombre_completo
+                            'nombre' => $nombre
                         ];
                     })
                 ]
@@ -2063,13 +2107,16 @@ class SemilleroController extends Controller
                 foreach ($idsBase as $aid) {
                     $aid = (int) $aid;
                     if ($aid <= 0) continue;
-                    $insert[] = [
+                    $row = [
                         'id_evento' => $evento->id_evento,
                         'id_aprendiz' => $aid,
-                        'asistencia' => 'pendiente',
                         'created_at' => $now,
                         'updated_at' => $now,
                     ];
+                    if ($hasAsistenciaCol) {
+                        $row['asistencia'] = 'pendiente';
+                    }
+                    $insert[] = $row;
                 }
 
                 if (!empty($insert)) {
@@ -2078,13 +2125,16 @@ class SemilleroController extends Controller
             }
 
             // Cargar relaciones para la respuesta (con alias seguro)
+            // Si existe nombre_completo, usar COALESCE con CONCAT(nombres, apellidos)
             $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
-                ? 'aprendices.nombre_completo'
+                ? "COALESCE(aprendices.nombre_completo, CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')))"
                 : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
             $evento->load([
                 'participantes' => function($q) use ($nameExpr){
                     $q->select(
                         DB::raw('aprendices.id_aprendiz as id_aprendiz'),
+                        'aprendices.nombres',
+                        'aprendices.apellidos',
                         DB::raw($nameExpr.' as nombre_completo')
                     );
                 },
@@ -2222,18 +2272,32 @@ class SemilleroController extends Controller
                 ], 500);
             }
 
+            if (!Schema::hasColumn('evento_participantes', 'asistencia')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "La columna 'asistencia' no existe en evento_participantes"
+                ], 500);
+            }
+
             $data = $request->validate([
                 'asistencia' => 'required|string|in:pendiente,asistio,no_asistio',
             ]);
 
-            // Verificar que el evento pertenezca al líder autenticado
-            $leaderCol = Schema::hasColumn('eventos','id_lider_semi')
-                ? 'id_lider_semi'
-                : (Schema::hasColumn('eventos','id_lider_usuario') ? 'id_lider_usuario' : 'id_lider');
+            // Verificar que el evento pertenezca al líder autenticado (si existe columna de líder)
+            $leaderCol = null;
+            if (Schema::hasColumn('eventos','id_lider_semi')) {
+                $leaderCol = 'id_lider_semi';
+            } elseif (Schema::hasColumn('eventos','id_lider_usuario')) {
+                $leaderCol = 'id_lider_usuario';
+            } elseif (Schema::hasColumn('eventos','id_lider')) {
+                $leaderCol = 'id_lider';
+            }
 
-            $evento = Evento::where('id_evento', $eventoId)
-                ->where($leaderCol, Auth::id())
-                ->first();
+            $eventoQuery = Evento::where('id_evento', $eventoId);
+            if ($leaderCol) {
+                $eventoQuery->where($leaderCol, Auth::id());
+            }
+            $evento = $eventoQuery->first();
 
             if (!$evento) {
                 return response()->json([
@@ -2304,13 +2368,11 @@ class SemilleroController extends Controller
                                 if (!empty($ids)) return $ids;
                             }
                         }
-                        // Si no hay aprendices mapeables, devolver vacío para evitar incluir todos
-                        return [];
                     }
                 }
             }
-            if (Schema::hasTable('proyecto_aprendiz')) {
-                $ids = DB::table('proyecto_aprendiz')
+            if (Schema::hasTable('aprendiz_proyecto')) {
+                $ids = DB::table('aprendiz_proyecto')
                     ->where('id_proyecto', $projectId)
                     ->pluck('id_aprendiz')
                     ->map(fn($v)=> (int)$v)
