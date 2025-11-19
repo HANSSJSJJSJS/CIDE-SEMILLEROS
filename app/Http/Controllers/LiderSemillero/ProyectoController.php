@@ -108,23 +108,40 @@ class ProyectoController extends Controller
             $userFkCol = in_array('id_usuario', $cols, true) ? 'id_usuario' : (in_array('id_user', $cols, true) ? 'id_user' : (in_array('user_id', $cols, true) ? 'user_id' : null));
             if (!$userFkCol) return response()->json(['error'=>'Columna de relación usuario no encontrada en aprendices'], 500);
 
+            // Determinar el semillero al que pertenece el proyecto
+            $semilleroId = null;
+            if (Schema::hasTable('proyectos') && Schema::hasColumn('proyectos','id_semillero')) {
+                $semilleroId = DB::table('proyectos')->where('id_proyecto', $id)->value('id_semillero');
+            }
+
+            // Si no hay semillero asociado al proyecto, no ofrecer aprendices
+            if (!$semilleroId || !Schema::hasTable('aprendiz_semillero')) {
+                return response()->json([]);
+            }
+
             if (Schema::hasTable('proyecto_aprendiz')) {
                 $sub = DB::table('proyecto_aprendiz')->select('id_aprendiz')->where('id_proyecto', $id);
                 $rows = DB::table('aprendices as a')
                     ->join('users as u', DB::raw('u.id'), '=', DB::raw('a.'.$userFkCol))
+                    ->join('aprendiz_semillero as aps', 'aps.id_aprendiz', '=', 'a.id_aprendiz')
                     ->where('u.role','APRENDIZ')
+                    ->where('aps.id_semillero', $semilleroId)
                     ->whereNotIn('a.id_aprendiz', $sub);
             } elseif (Schema::hasTable('aprendiz_proyecto')) {
                 $sub = DB::table('aprendiz_proyecto')->select('id_aprendiz')->where('id_proyecto', $id);
                 $rows = DB::table('aprendices as a')
                     ->join('users as u', DB::raw('u.id'), '=', DB::raw('a.'.$userFkCol))
+                    ->join('aprendiz_semillero as aps', 'aps.id_aprendiz', '=', 'a.id_aprendiz')
                     ->where('u.role','APRENDIZ')
+                    ->where('aps.id_semillero', $semilleroId)
                     ->whereNotIn('a.id_aprendiz', $sub);
             } else {
                 $sub = DB::table('proyecto_user')->select('user_id')->where('id_proyecto', $id);
                 $rows = DB::table('users as u')
                     ->join('aprendices as a', DB::raw('a.'.$userFkCol), '=', DB::raw('u.id'))
+                    ->join('aprendiz_semillero as aps', 'aps.id_aprendiz', '=', 'a.id_aprendiz')
                     ->where('u.role','APRENDIZ')
+                    ->where('aps.id_semillero', $semilleroId)
                     ->whereNotIn('u.id', $sub);
             }
             $rows = $rows

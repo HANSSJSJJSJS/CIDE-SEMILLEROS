@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\RecursoController;
 
 // Líder semillero
 use App\Http\Controllers\LiderSemillero\SemilleroController as LiderSemilleroUIController;
+use App\Http\Controllers\LiderSemillero\AprendicesController as LiderAprendicesController;
 use App\Http\Controllers\LiderSemillero\DashboardController_semi;
 use App\Http\Controllers\LiderSemillero\ProyectoController as LiderProyectoController;
 use App\Http\Controllers\LiderSemillero\SemilleroAprendizController;
@@ -301,7 +302,7 @@ Route::middleware(['auth','lider.semillero'])
 
         // Vistas principales
         Route::get('/semilleros', [LiderSemilleroUIController::class, 'semilleros'])->name('semilleros');
-        Route::get('/aprendices', [LiderSemilleroUIController::class, 'aprendices'])->name('aprendices');
+        Route::get('/aprendices', [LiderAprendicesController::class, 'index'])->name('aprendices');
         // Recursos (solo Líder Semillero)
         Route::prefix('recursos')->name('recursos.')->group(function () {
             Route::get('/',              [RecursosController::class, 'index'])->name('index');
@@ -347,6 +348,7 @@ Route::middleware(['auth','lider.semillero'])
         Route::delete('/eventos/{evento}', [LiderSemilleroUIController::class, 'eliminarEvento'])->name('eventos.eliminar');
         Route::post('/eventos/{evento}/generar-enlace', [LiderSemilleroUIController::class, 'generarEnlace'])->name('eventos.generar-enlace');
         Route::get('/eventos/{evento}/info', [LiderSemilleroUIController::class, 'getInfoReunion'])->name('eventos.info');
+        Route::put('/eventos/{evento}/participantes/{aprendiz}/asistencia', [LiderSemilleroUIController::class, 'actualizarAsistencia'])->name('eventos.participantes.asistencia');
     });
 
 /*
