@@ -9,14 +9,18 @@ return new class extends Migration {
     {
         if (!Schema::hasTable('proyecto_aprendiz')) {
             Schema::create('proyecto_aprendiz', function (Blueprint $table) {
+
                 $table->bigIncrements('id');
-                $table->unsignedBigInteger('id_proyecto');
-                $table->unsignedBigInteger('id_aprendiz');
+
+                // Aquí uso los tipos correctos SEGÚN TU BD real
+                $table->unsignedInteger('id_proyecto');   // INT(10) UNSIGNED en tabla proyectos
+                $table->unsignedBigInteger('id_aprendiz'); // BIGINT UNSIGNED en tabla aprendices
+
                 $table->timestamps();
 
                 $table->unique(['id_proyecto', 'id_aprendiz'], 'proyecto_aprendiz_unique');
 
-                // Claves foráneas acorde a tu esquema
+                // FK correctas
                 $table->foreign('id_proyecto')
                     ->references('id_proyecto')->on('proyectos')
                     ->onDelete('cascade');
