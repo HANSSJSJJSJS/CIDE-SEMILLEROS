@@ -39,11 +39,11 @@
               </tr>
             </thead>
             <tbody>
-            @forelse(($integrantes ?? []) as $i)
+            @forelse(($integrantes ?? []) as $apr)
               <tr>
-                <td>{{ $i->nombre }}</td>
-                <td>{{ $i->correo }}</td>
-                <td>{{ $i->telefono }}</td>
+                <td>{{ $apr->nombre_completo ?? trim(($apr->nombres ?? '') . ' ' . ($apr->apellidos ?? '')) }}</td>
+                <td>{{ $apr->correo_institucional ?? $apr->correo_personal ?? '—' }}</td>
+                <td>{{ $apr->celular ?? '—' }}</td>
               </tr>
             @empty
               <tr><td colspan="3" class="text-center py-3 text-muted">Sin integrantes registrados.</td></tr>
@@ -72,8 +72,8 @@
             <tbody>
             @forelse(($documentacion ?? []) as $doc)
               <tr>
-                <td>{{ $doc->nombre }}</td>
-                <td>{{ $doc->fecha }}</td>
+                <td>{{ $doc->titulo_avance ?? $doc->documento ?? 'Archivo' }}</td>
+                <td>{{ optional($doc->fecha_subida)->format('Y-m-d') ?? '—' }}</td>
                 <td class="text-end pe-3">
                   <button class="btn btn-sm btn-outline-primary" disabled>
                     <i class="bi bi-download"></i> Descargar
@@ -96,14 +96,7 @@
       <i class="bi bi-chat-text me-1"></i> Observaciones del líder
     </div>
     <div class="card-body">
-      <form action="#" method="POST">
-        <textarea class="form-control mb-3" rows="4" placeholder="Escribe observaciones aquí...">{{ $observaciones ?? '' }}</textarea>
-        <div class="text-end">
-          <button class="btn btn-success" disabled>
-            <i class="bi bi-save"></i> Guardar cambios (demo)
-          </button>
-        </div>
-      </form>
+      <textarea class="form-control mb-0" rows="4" placeholder="Sin observaciones registradas" disabled>{{ $observaciones ?? '' }}</textarea>
     </div>
   </div>
 

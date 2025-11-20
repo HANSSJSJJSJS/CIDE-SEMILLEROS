@@ -39,7 +39,11 @@ class ProyectoSemilleroController extends Controller
                 ->with('openModal', 'modalCrearProyecto');
         }
 
+        // La tabla proyectos no tiene AUTO_INCREMENT en id_proyecto, calculamos el siguiente id manualmente
+        $nextId = (int) (\App\Models\Proyecto::max('id_proyecto') ?? 0) + 1;
+
         Proyecto::create([
+            'id_proyecto'     => $nextId,
             'id_semillero'    => $semillero->id_semillero,
             'nombre_proyecto' => $request->nombre_proyecto,
             'descripcion'     => $request->descripcion,
@@ -81,42 +85,49 @@ class ProyectoSemilleroController extends Controller
     }
 
     // GET /admin/semilleros/{semillero}/proyectos/{proyecto}/detalle
-public function detalle(Semillero $semillero, Proyecto $proyecto)
-{
-    // === MOCK de datos para vista previa (reemplaza con tus relaciones reales luego) ===
-    $integrantes = collect([
-        (object)['nombre'=>'Ana Pérez','correo'=>'ana.perez@example.com','telefono'=>'3001234567'],
-        (object)['nombre'=>'Carlos Gómez','correo'=>'carlos.gomez@example.com','telefono'=>'3107654321'],
-        (object)['nombre'=>'Sofía Rodríguez','correo'=>'sofia.rod@example.com','telefono'=>'3159876543'],
-    ]);
+    public function detalle(Semillero $semillero, Proyecto $proyecto)
+    {
+        // Cargar relaciones reales: aprendices vinculados y documentos del proyecto
+        $proyecto->load([
+            'aprendices' => function ($q) {
+                $q->select(
+                    'aprendices.id_aprendiz',
+                    'aprendices.nombres',
+                    'aprendices.apellidos',
+                    'aprendices.correo_institucional',
+                    'aprendices.correo_personal',
+                    'aprendices.celular'
+                );
+            },
+            'documentos' => function ($q) {
+                $q->orderByDesc('fecha_subida');
+            },
+        ]);
 
-    $documentacion = collect([
-        (object)['nombre'=>'Acta de inicio.pdf','fecha'=>'2025-10-03'],
-        (object)['nombre'=>'Informe parcial.docx','fecha'=>'2025-11-01'],
-    ]);
+        $integrantes   = $proyecto->aprendices;
+        $documentacion = $proyecto->documentos;
+        $observaciones = null; // pendiente definir de dónde se obtienen
 
-    $observaciones = "El proyecto avanza correctamente; fortalecer la documentación técnica.";
-
-    return view('Admin.semilleros.detalle_proyecto',
-        compact('semillero','proyecto','integrantes','documentacion','observaciones')
-    );
-}
-public function editAjax(Semillero $semillero, Proyecto $proyecto)
-{
-    // seguridad: que el proyecto pertenezca al semillero
-    if ($proyecto->id_semillero !== $semillero->id_semillero) {
-        abort(404);
+        return view('Admin.semilleros.detalle_proyecto',
+            compact('semillero','proyecto','integrantes','documentacion','observaciones')
+        );
     }
 
-    return response()->json([
-        'id_proyecto'     => $proyecto->id_proyecto,
-        'nombre_proyecto' => $proyecto->nombre_proyecto,
-        'descripcion'     => $proyecto->descripcion,
-        'estado'          => $proyecto->estado,
-        'fecha_inicio'    => optional($proyecto->fecha_inicio)->format('Y-m-d'),
-        'fecha_fin'       => optional($proyecto->fecha_fin)->format('Y-m-d'),
-    ]);
-}
+    // AJAX: datos para editar proyecto en modal
+    public function editAjax(Semillero $semillero, Proyecto $proyecto)
+    {
+        // seguridad: que el proyecto pertenezca al semillero
+        if ($proyecto->id_semillero !== $semillero->id_semillero) {
+            abort(404);
+        }
 
-
+        return response()->json([
+            'id_proyecto'     => $proyecto->id_proyecto,
+            'nombre_proyecto' => $proyecto->nombre_proyecto,
+            'descripcion'     => $proyecto->descripcion,
+            'estado'          => $proyecto->estado,
+            'fecha_inicio'    => optional($proyecto->fecha_inicio)->format('Y-m-d'),
+            'fecha_fin'       => optional($proyecto->fecha_fin)->format('Y-m-d'),
+        ]);
+    }
 }

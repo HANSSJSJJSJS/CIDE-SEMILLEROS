@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Panel de Administración - CIDE SEMILLERO</title>
+    <title>Panel de Lider de Grupo de Investigacion CIDEINNOVA</title>
     <link rel="stylesheet" href="../css/Style_layouts.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -19,7 +19,7 @@
             <div class="user-avatar">JC</div>
             <span style="font-weight: 600; color: var(--gray-700);">Joaquín cañon</span>
         </div>
-        <h1 class="header-title">Bienvenido a CIDE SEMILLERO Admin</h1>
+        <h1 class="header-title">Bienvenido al modulo Lider de Grupo de Investigacion CIDEINNOVA</h1>
         <button class="logout-btn" type="button" onclick="logout()">
             <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>

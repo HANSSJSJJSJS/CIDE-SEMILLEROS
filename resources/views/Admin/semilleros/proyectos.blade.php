@@ -22,7 +22,7 @@
   </script>
 @endif
 
-<div class="container-fluid mt-4 px-4">
+<div class="container-fluid mt-4 px-4"> 
   @if(session('ok'))
     <div class="alert alert-success">{{ session('ok') }}</div>
   @endif
@@ -46,7 +46,7 @@
         </div>
       </div>
     </div>
-    <a href="{{ url()->previous() }}" class="btn btn-outline-secondary">
+    <a href="{{ route('admin.semilleros.index') }}" class="btn btn-outline-secondary">
       <i class="bi bi-arrow-left"></i> Volver
     </a>
   </div>
@@ -90,8 +90,24 @@
                 @endphp
                 <span class="badge {{ $b[1] }}">{{ $b[0] }}</span>
               </td>
-              <td>{{ optional($p->fecha_inicio)->format('Y-m-d') ?? '—' }}</td>
-              <td>{{ optional($p->fecha_fin)->format('Y-m-d') ?? '—' }}</td>
+              <td>
+                @if($p->fecha_inicio)
+                  <span class="badge rounded-pill bg-light text-primary border border-primary px-3">
+                    {{ $p->fecha_inicio }}
+                  </span>
+                @else
+                  —
+                @endif
+              </td>
+              <td>
+                @if($p->fecha_fin)
+                  <span class="badge rounded-pill bg-light text-success border border-success px-3">
+                    {{ $p->fecha_fin }}
+                  </span>
+                @else
+                  —
+                @endif
+              </td>
               <td class="text-truncate" style="max-width:360px;">{{ $p->descripcion }}</td>
               <td class="text-end pe-3">
 

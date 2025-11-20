@@ -2,38 +2,43 @@
      id="modalNuevoSemillero"
      tabindex="-1"
      aria-hidden="true"
-     data-bs-backdrop="false"
+     data-bs-backdrop="true"
      data-bs-keyboard="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Nuevo Semillero</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <h5 class="modal-title fw-semibold mb-0">Nuevo Semillero</h5>
+          <small class="text-muted">Registra un nuevo semillero y asigna (opcional) un líder</small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
 
       <form action="{{ route('admin.semilleros.store') }}" method="POST" id="form-semillero">
         @csrf
-        <div class="modal-body">
+        <div class="modal-body pt-3">
           <div class="row g-3">
             <div class="col-md-6">
-              <label class="form-label fw-semibold">Nombre del semillero</label>
+              <label class="form-label fw-semibold">Nombre del semillero <span class="text-danger">*</span></label>
               <input type="text" name="nombre" class="form-control" value="{{ old('nombre') }}" required>
-              @error('nombre') <div class="text-danger small">{{ $message }}</div> @enderror
+              <div class="form-text">Usa un nombre claro y fácil de identificar.</div>
+              @error('nombre') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
             </div>
             <div class="col-md-6">
-              <label class="form-label fw-semibold">Línea de investigación</label>
+              <label class="form-label fw-semibold">Línea de investigación <span class="text-danger">*</span></label>
               <input type="text" name="linea_investigacion" class="form-control" value="{{ old('linea_investigacion') }}" required>
-              @error('linea_investigacion') <div class="text-danger small">{{ $message }}</div> @enderror
+              <div class="form-text">Ej: Seguridad Alimentaria, TIC, Energías renovables…</div>
+              @error('linea_investigacion') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-semibold">Líder de semillero (opcional)</label>
+              <label class="form-label fw-semibold">Líder de semillero <span class="text-muted">(opcional)</span></label>
               <select name="id_lider_semi" id="select-lider-disponible" class="form-select">
                 <option value="">— Sin asignar —</option>
                 {{-- Se llenará por AJAX al abrir --}}
               </select>
-              @error('id_lider_semi') <div class="text-danger small">{{ $message }}</div> @enderror
               <div class="form-text">Solo aparecen líderes sin semillero asignado.</div>
+              @error('id_lider_semi') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
             </div>
           </div>
 
@@ -48,21 +53,38 @@
           @endif
         </div>
 
-        <div class="modal-footer">
+        <div class="modal-footer border-0 pt-0">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-success">Guardar</button>
+          <button type="submit" class="btn btn-success px-4">
+            <i class="bi bi-check2-circle me-1"></i> Guardar
+          </button>
         </div>
       </form>
     </div>
   </div>
 </div>
 
+@push('styles')
+<style>
+  /* Backdrop específico para el modal de semilleros */
+  .modal-backdrop.modal-blur {
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    background-color: rgba(15, 23, 42, 0.75); /* más oscuro para que se note */
+    opacity: 1 !important; /* sobrescribe la opacidad por defecto de Bootstrap */
+  }
+</style>
+@endpush
+
 @push('scripts')
 @if ($errors->any())
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   if (window.bootstrap?.Modal) {
-    new bootstrap.Modal(document.getElementById('modalNuevoSemillero')).show();
+    new bootstrap.Modal(document.getElementById('modalNuevoSemillero'), {
+      backdrop: 'static',
+      keyboard: false
+    }).show();
   }
 });
 </script>
@@ -81,6 +103,8 @@ document.addEventListener('DOMContentLoaded', () => {
   modalEl.addEventListener('hidden.bs.modal', cleanupBackdrop);
 
   modalEl.addEventListener('shown.bs.modal', async () => {
+    // Aplicar blur al backdrop solo para este modal
+    document.querySelectorAll('.modal-backdrop').forEach(b => b.classList.add('modal-blur'));
     const select = document.getElementById('select-lider-disponible');
     if (!select || select.dataset.loaded === '1') return;
 

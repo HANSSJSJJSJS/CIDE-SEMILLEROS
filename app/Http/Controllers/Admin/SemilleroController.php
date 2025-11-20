@@ -88,8 +88,6 @@ class SemilleroController extends Controller
                 }
             }
         }
-
-<<<<<<< HEAD
         // Unicidad manual por nombre
         $dup = DB::table($tblS)->where($sNom, $data['nombre'])->exists();
         if ($dup) {
@@ -109,30 +107,18 @@ class SemilleroController extends Controller
             $sLinea => $data['linea_investigacion'],
         ];
         if ($sLider) { $insert[$sLider] = $data['id_lider_semi'] ?? null; }
+
+        // Si la tabla usa PK 'id_semillero' sin columna 'id', calculamos manualmente el siguiente id
+        if (Schema::hasColumn($tblS, 'id_semillero') && !Schema::hasColumn($tblS, 'id')) {
+            $nextId = (int) (DB::table($tblS)->max('id_semillero') ?? 0) + 1;
+            $insert['id_semillero'] = $nextId;
+        }
         if (Schema::hasColumn($tblS,'created_at')) { $insert['created_at'] = now(); }
         if (Schema::hasColumn($tblS,'updated_at')) { $insert['updated_at'] = now(); }
         if (Schema::hasColumn($tblS,'creado_en'))   { $insert['creado_en']   = now(); }
         if (Schema::hasColumn($tblS,'actualizado_en')) { $insert['actualizado_en'] = now(); }
 
         DB::table($tblS)->insert($insert);
-=======
-        $insert = [
-            'nombre'              => $data['nombre'],
-            'linea_investigacion' => $data['linea_investigacion'],
-            'id_lider_semi'       => $data['id_lider_semi'] ?? null,
-        ];
-
-        // Si la tabla usa PK 'id_semillero' sin autoincrement, calcular siguiente id
-        $tbl = 'semilleros';
-        if (Schema::hasColumn($tbl, 'id_semillero') && !Schema::hasColumn($tbl, 'id')) {
-            // Intenta detectar si requiere valor manual (no AI) asumiendo NOT NULL sin default
-            // Estrategia simple: setear id = max + 1
-            $next = (int) (DB::table($tbl)->max('id_semillero') ?? 0) + 1;
-            $insert['id_semillero'] = $next;
-        }
-
-        DB::table('semilleros')->insert($insert);
->>>>>>> PreFu
 
         return redirect()->route('admin.semilleros.index')
             ->with('success', 'Semillero creado correctamente.');
@@ -158,6 +144,14 @@ class SemilleroController extends Controller
 
         if (!$row) return response()->json(['error' => 'Semillero no encontrado'], 404);
         return response()->json($row);
+    }
+
+    /**
+     * Redirige a la vista de proyectos asociados a un semillero.
+     */
+    public function show($id)
+    {
+        return redirect()->route('admin.semilleros.proyectos.index', ['semillero' => $id]);
     }
 
     /**
@@ -202,20 +196,20 @@ class SemilleroController extends Controller
      * Actualiza SOLO el semillero (nombre, línea) y la relación con el líder.
      * No modifica la tabla users ni datos del líder.
      */
-public function update(Request $request, $id)
-{
-    // 1) Validar lo que realmente envía el form: id_lider_semi (opcional)
-    $data = $request->validate([
-        'nombre'              => ['required','string','max:150'],
-        'linea_investigacion' => ['required','string','max:255'],
-        'id_lider_semi'       => ['nullable','integer','exists:lideres_semillero,id_lider_semi'],
-    ], [], [
-        'nombre'              => 'nombre',
-        'linea_investigacion' => 'línea de investigación',
-        'id_lider_semi'       => 'líder de semillero',
-    ]);
+    public function update(Request $request, $id)
+    {
+        // 1) Validar lo que realmente envía el form: id_lider_semi (opcional)
+        $data = $request->validate([
+            'nombre'              => ['required','string','max:150'],
+            'linea_investigacion' => ['required','string','max:255'],
+            'id_lider_semi'       => ['nullable','integer','exists:lideres_semillero,id_lider_semi'],
+        ], [], [
+            'nombre'              => 'nombre',
+            'linea_investigacion' => 'línea de investigación',
+            'id_lider_semi'       => 'líder de semillero',
+        ]);
 
-    $tbl = 'semilleros';
+        $tbl = 'semilleros';
 
     // 2) Resolver nombres reales de columnas según tu esquema
     $idCol     = Schema::hasColumn($tbl,'id_semillero') ? 'id_semillero' : 'id';
@@ -254,7 +248,19 @@ public function update(Request $request, $id)
     return back()->with('success', 'Semillero actualizado correctamente.');
 }
 
-    
+    /**
+     * Elimina un semillero por su PK real.
+     */
+    public function destroy($id)
+    {
+        $tbl = 'semilleros';
 
-    
+        // Resolver nombre de columna de ID (id_semillero o id)
+        $idCol = Schema::hasColumn($tbl, 'id_semillero') ? 'id_semillero' : 'id';
+
+        DB::table($tbl)->where($idCol, $id)->delete();
+
+        return redirect()->route('admin.semilleros.index')
+            ->with('success', 'Semillero eliminado correctamente.');
+    }
 }
