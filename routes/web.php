@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UsuarioController as AdminUsuarioController;
 use App\Http\Controllers\Admin\PerfilController as AdminPerfilController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
+use App\Http\Controllers\Admin\DashboardController;
 
 use App\Http\Controllers\Admin\SemilleroController;              // ← sin alias
 use App\Http\Controllers\Admin\ProyectoSemilleroController;
@@ -31,6 +32,7 @@ use App\Http\Controllers\LiderSemillero\ProyectoController as LiderProyectoContr
 use App\Http\Controllers\LiderSemillero\SemilleroAprendizController;
 use App\Http\Controllers\LiderSemillero\PerfilController as LiderPerfilController;
 use App\Http\Controllers\LiderSemillero\RecursosController;
+use App\Http\Controllers\LiderSemillero\DocumentosController;
 
 // Aprendiz
 use App\Http\Controllers\Aprendiz\DashboardController as AprendizDashboardController;
@@ -39,6 +41,7 @@ use App\Http\Controllers\Aprendiz\ProyectoController;
 use App\Http\Controllers\Aprendiz\ArchivoController;
 use App\Http\Controllers\Aprendiz\DocumentoController;
 use App\Http\Controllers\Aprendiz\CalendarioController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -54,8 +57,20 @@ Route::get('/', function () {
         : redirect()->route('login');
 })->name('home');
 
-// Las rutas de login/logout se gestionan en routes/auth.php (Breeze)
+<<<<<<< HEAD
+// Vista de login personalizada
+Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 
+// Envío del formulario de login
+Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.post');
+
+// Cierre de sesión (logout)
+Route::post('/logout', [AuthenticatedSessionController::class, 'logout'])
+    ->middleware('auth')
+    ->name('logout');
+=======
+// Las rutas de login/logout se gestionan en routes/auth.php (Breeze)
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
 
 // ======================================================
 // RUTAS PROTEGIDAS (paneles, dashboard, etc.)
@@ -124,9 +139,9 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INTERMEDIARIO,LIDER_GENERAL', \App\
     ->group(function () {
 
         // DASHBOARD
-        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/dashboard/stats',  [AdminDashboardController::class, 'stats'])->name('dashboard.stats');
-        Route::get('/dashboard/charts', [AdminDashboardController::class, 'charts'])->name('dashboard.charts');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/stats',  [DashboardController::class, 'stats'])->name('dashboard.stats');
+        Route::get('/dashboard/charts', [DashboardController::class, 'charts'])->name('dashboard.charts');
 
         // USUARIOS
         Route::resource('usuarios', AdminUsuarioController::class);
@@ -321,14 +336,14 @@ Route::middleware(['auth','lider.semillero'])
         Route::delete('/proyectos/{proyecto}/aprendices/{aprendiz}', [LiderSemilleroUIController::class, 'detachProyectoAprendiz'])->name('proyectos.aprendices.detach');
         Route::post('/proyectos/{proyecto}/aprendices/create', [LiderSemilleroUIController::class, 'createAndAttachProyectoAprendiz'])->name('proyectos.aprendices.create');
 
-        // Documentos / entregas / evidencias
-        Route::get('/documentos', [LiderSemilleroUIController::class, 'documentos'])->name('documentos');
-        Route::get('/proyectos/list', [LiderSemilleroUIController::class, 'listarProyectos'])->name('proyectos.list');
-        Route::get('/proyectos/{proyecto}/aprendices-list', [LiderSemilleroUIController::class, 'obtenerAprendicesProyecto'])->name('proyectos.aprendices.list');
-        Route::post('/evidencias/store', [LiderSemilleroUIController::class, 'guardarEvidencia'])->name('evidencias.store');
-        Route::get('/proyectos/{proyecto}/entregas', [LiderSemilleroUIController::class, 'obtenerEntregas'])->name('proyectos.entregas');
-        Route::put('/entregas/{entrega}/estado', [LiderSemilleroUIController::class, 'cambiarEstadoEntrega'])->name('entregas.estado');
-        Route::put('/documentos/{documento}/actualizar', [LiderSemilleroUIController::class, 'actualizarDocumento'])->name('documentos.actualizar');
+        // Documentos / entregas / evidencias (controlador dedicado)
+        Route::get('/documentos', [DocumentosController::class, 'documentos'])->name('documentos');
+        Route::get('/proyectos/list', [DocumentosController::class, 'listarProyectos'])->name('proyectos.list');
+        Route::get('/proyectos/{proyecto}/aprendices-list', [DocumentosController::class, 'obtenerAprendicesProyecto'])->name('proyectos.aprendices.list');
+        Route::post('/evidencias/store', [DocumentosController::class, 'guardarEvidencia'])->name('evidencias.store');
+        Route::get('/proyectos/{proyecto}/entregas', [DocumentosController::class, 'obtenerEntregas'])->name('proyectos.entregas');
+        Route::put('/entregas/{entrega}/estado', [DocumentosController::class, 'cambiarEstadoEntrega'])->name('entregas.estado');
+        Route::put('/documentos/{documento}/actualizar', [DocumentosController::class, 'actualizarDocumento'])->name('documentos.actualizar');
 
         // Calendario
         Route::get('/calendario', [LiderSemilleroUIController::class, 'calendario'])->name('calendario');

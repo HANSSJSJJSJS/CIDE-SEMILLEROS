@@ -64,12 +64,30 @@ document.addEventListener('DOMContentLoaded', function() {
         return new Date(parts[0], parts[1]-1, parts[2], 0, 0, 0, 0);
     };
 
+    // Parser local robusto para 'YYYY-MM-DD HH:MM[:SS[.fff]][Z]' o con 'T'
+    window.parseLocalDateTime = function(str) {
+        if (!str) return null;
+        const s = String(str).trim().replace('T', ' ');
+        const [datePartRaw, timePartRaw = '00:00:00'] = s.split(' ');
+        const [yStr, mStr, dStr] = datePartRaw.split('-');
+        const [hStr='00', minStr='00', secStrRaw='00'] = timePartRaw.split(':');
+        // Limpiar segundos de milisegundos y zona (e.g., '00.000000Z')
+        const secStr = (secStrRaw.match(/^\d+/) || ['00'])[0];
+        const y = parseInt(yStr, 10) || new Date().getFullYear();
+        const m = parseInt(mStr, 10) || 1;
+        const d = parseInt(dStr, 10) || 1;
+        const H = parseInt(hStr, 10) || 0;
+        const M = parseInt(minStr, 10) || 0;
+        const S = parseInt(secStr, 10) || 0;
+        return new Date(y, m-1, d, H, M, S, 0);
+    };
+
 // Reprogramar evento (mover fecha manteniendo la hora original)
 function updateEventDate(eventId, targetDate) {
     const ev = eventos.find(e => e.id == eventId);
     if (!ev) return;
 
-    const oldDate = new Date(ev.fecha_hora);
+    const oldDate = parseLocalDateTime(ev.fecha_hora);
     const newDateTime = new Date(targetDate);
     newDateTime.setHours(oldDate.getHours(), oldDate.getMinutes(), 0, 0);
 
@@ -408,7 +426,7 @@ function goToNextMonth() {
 // Funciones de eventos
 function getEventsForDay(date) {
     return eventos.filter(event => {
-        const eventDate = new Date(event.fecha_hora);
+        const eventDate = parseLocalDateTime(event.fecha_hora);
         return eventDate.getDate() === date.getDate() &&
                eventDate.getMonth() === date.getMonth() &&
                eventDate.getFullYear() === date.getFullYear();
@@ -426,7 +444,15 @@ function cargarEventos() {
         .then(data => {
             console.log('Respuesta del servidor:', data);
             if (data.success) {
-                eventos = data.eventos;
+                // Normalizar eventos para asegurar 'fecha_hora'
+                const deriveFecha = (e) => e.fecha_hora || e.fecha || e.inicio || e.start || e.start_at || e.fechaInicio || e.fecha_inicio || null;
+                eventos = (data.eventos || []).map(e => {
+                    const fh = deriveFecha(e);
+                    if (!fh) {
+                        console.warn('[Eventos] Evento sin fecha detectado:', e);
+                    }
+                    return { ...e, fecha_hora: fh };
+                });
                 console.log(`Eventos cargados: ${eventos.length}`);
                 if (typeof renderEventsList === 'function' && eventsList && emptyEvents) {
                     renderEventsList();
@@ -457,10 +483,10 @@ function renderEventsList() {
     emptyEvents.style.display = 'none';
     
     // Ordenar eventos por fecha
-    const sortedEvents = [...eventos].sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora));
+    const sortedEvents = [...eventos].sort((a, b) => parseLocalDateTime(a.fecha_hora) - parseLocalDateTime(b.fecha_hora));
     
     // Mostrar solo los próximos 5 eventos
-    const upcomingEvents = sortedEvents.filter(event => new Date(event.fecha_hora) >= new Date());
+    const upcomingEvents = sortedEvents.filter(event => parseLocalDateTime(event.fecha_hora) >= new Date());
     
     console.log('Próximos eventos:', upcomingEvents.length);
     
@@ -474,7 +500,7 @@ function renderEventsList() {
         const eventElement = document.createElement('li');
         eventElement.className = 'event-item';
         
-        const eventDate = new Date(event.fecha_hora);
+        const eventDate = parseLocalDateTime(event.fecha_hora);
         const timeString = eventDate.toLocaleTimeString('es-ES', { 
             hour: '2-digit', 
             minute: '2-digit' 
@@ -491,7 +517,7 @@ function renderEventsList() {
                     <i class="far fa-clock"></i> ${timeString}
                 </div>
                 <div>|</div>
-                <div>${eventDate.toLocaleDateString('es-ES')}</div>
+                <div>${eventDate.toLocaleDateString('es-ES', { timeZone: 'America/Bogota' })}</div>
             </div>
             <div class="event-description" style="font-size: 13px; margin-top: 5px; color: #666;">
                 ${event.descripcion || 'Sin descripción'}
@@ -556,7 +582,12 @@ function closeEventModal() {
 
 function formatDateForInput(date) {
     if (!date) return '';
-    return date.toISOString().split('T')[0];
+    // Construir YYYY-MM-DD en hora local para evitar desfase por UTC
+    const d = (date instanceof Date) ? date : new Date(date);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
 }
 
 function saveEvent(e) {
@@ -605,7 +636,7 @@ function saveEvent(e) {
     const reminderSelected = document.querySelector('input[name="reminder"]:checked');
     const reminder = reminderSelected ? reminderSelected.value : 'none';
     
-    const fechaHora = `${date}T${time}:00`;
+    const fechaHora = `${date} ${time}:00`;
     
     const eventData = {
         titulo,
@@ -618,6 +649,7 @@ function saveEvent(e) {
         link_virtual: linkVirtual,
         recordatorio: reminder,
         participantes,
+        timeZone: 'America/Bogota',
         generar_enlace: generarEnlace // Para auto-generación en backend
     };
     
@@ -673,7 +705,7 @@ function editEvent(eventId) {
     const typeSel = document.getElementById('event-type');
     if (typeSel) typeSel.value = event.tipo || '';
     
-    const eventDate = new Date(event.fecha_hora);
+    const eventDate = parseLocalDateTime(event.fecha_hora);
     document.getElementById('event-date').value = formatDateForInput(eventDate);
     document.getElementById('event-time').value = eventDate.toTimeString().slice(0, 5);
     document.getElementById('event-duration').value = event.duracion;
@@ -741,12 +773,36 @@ function openEventDrawerById(eventId) {
     const ev = eventos.find(e => String(e.id) === String(eventId));
     if (!ev) return;
 
+    // Guardar evento actual lo antes posible para depuración
+    window.currentDrawerEvent = ev;
+
     const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val ?? '--'; };
 
+    // DEBUG: inspeccionar evento que alimenta el Drawer
+    try {
+        console.log('[Drawer] Evento seleccionado:', JSON.parse(JSON.stringify(ev)));
+    } catch (e) {
+        console.log('[Drawer] Evento seleccionado (raw):', ev);
+    }
+
     // Fecha y hora legibles
-    const d = new Date(ev.fecha_hora);
-    const fechaStr = d.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
-    const horaStr = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    // Algunas respuestas antiguas pueden venir con otras claves
+    const rawFecha = ev.fecha_hora || ev.fecha || ev.inicio || ev.start || ev.start_at || ev.fechaInicio || ev.fecha_inicio;
+    if (!rawFecha) {
+        console.warn('[Drawer] El evento no tiene fecha_hora. Claves disponibles:', Object.keys(ev || {}));
+    }
+    // Derivar SIEMPRE desde el string crudo para evitar cualquier shift
+    const s = (rawFecha || '').toString();
+    const [datePartRaw, timePartRaw = '00:00:00'] = s.replace('T', ' ').split(' ');
+    const [yStr, mStr, dStr] = (datePartRaw || '').split('-');
+    const [H='00', M='00'] = (timePartRaw || '').split(':');
+    const y = parseInt(yStr, 10) || new Date().getFullYear();
+    const m = (parseInt(mStr, 10) || 1) - 1;
+    const dNum = parseInt(dStr, 10) || 1;
+    // Construir fecha a las 12:00 locales para blindar contra desfases
+    const d = new Date(y, m, dNum, 12, 0, 0, 0);
+    let fechaStr = d.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Bogota' });
+    let horaStr = `${String(H).padStart(2,'0')}:${String(M).padStart(2,'0')}`;
 
     setText('detail-titulo', ev.titulo || 'Reunión');
     setText('detail-tipo', ev.tipo || 'general');

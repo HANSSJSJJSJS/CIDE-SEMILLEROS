@@ -8,6 +8,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany; // Importar BelongsToMany
 use App\Models\Proyecto;
+use App\Models\Aprendiz;
+use App\Models\Administrador;
+use App\Models\Documento;
+use App\Models\Evidencia;
+use App\Models\LiderSemillero;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -90,7 +95,8 @@ public function administrador()
 
 public function evidencias()
 {
-    return $this->hasMany(Evidencias::class, 'proyecto_id', 'id_proyecto');
+    // Evidencias subidas por este usuario (FK en evidencias: id_usuario -> users.id)
+    return $this->hasMany(Evidencia::class, 'id_usuario', 'id');
 }
  public function documentos()
 {

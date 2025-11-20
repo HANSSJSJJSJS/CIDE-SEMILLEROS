@@ -46,15 +46,21 @@
         </div>
       </div>
     </div>
+<<<<<<< HEAD
+   <a href="{{ route('admin.semilleros.index') }}" class="btn btn-accion-ver">
+    <i class="bi bi-arrow-left me-1"></i> Volver
+</a>
+=======
     <a href="{{ route('admin.semilleros.index') }}" class="btn btn-outline-secondary">
       <i class="bi bi-arrow-left"></i> Volver
     </a>
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
   </div>
 
   {{-- Barra de acciones --}}
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h5 class="mb-0">Proyectos</h5>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCrearProyecto">
+    <button class="btn btn-nuevo-semillero" data-bs-toggle="modal" data-bs-target="#modalCrearProyecto">
       <i class="bi bi-plus-lg me-1"></i> Crear proyecto
     </button>
   </div>
@@ -113,16 +119,16 @@
 
                 {{-- Ver detalle --}}
                 <a href="{{ route('admin.semilleros.proyectos.detalle', [$semillero->id_semillero, $p->id_proyecto]) }}"
-                   class="btn btn-sm btn-outline-info">
-                  <i class="bi bi-eye"></i> Ver detalle
+                   class="btn btn-sm btn-accion-ver">
+                  <i class="bi bi-eye me-1"></i> Ver detalle
                 </a>
 
-                {{-- Editar (dejado como demo; si deseas, lo conectamos por AJAX) --}}
+                {{-- Editar --}}
                 <button type="button"
-                        class="btn btn-sm btn-outline-primary btn-edit-proyecto"
+                        class="btn btn-sm btn-accion-editar btn-edit-proyecto"
                         data-semillero="{{ $semillero->id_semillero }}"
                         data-proyecto="{{ $p->id_proyecto }}">
-                  <i class="bi bi-pencil-square"></i> Editar
+                  <i class="bi bi-pencil-square me-1"></i> Editar
                 </button>
 
                 {{-- Eliminar --}}
@@ -131,8 +137,8 @@
                       onsubmit="return confirm('¿Seguro que deseas eliminar este proyecto?');">
                   @csrf
                   @method('DELETE')
-                  <button class="btn btn-sm btn-outline-danger" type="submit">
-                    <i class="bi bi-trash"></i> Eliminar
+                  <button class="btn btn-sm btn-accion-eliminar" type="submit">
+                    <i class="bi bi-trash me-1"></i> Eliminar
                   </button>
                 </form>
 
@@ -206,13 +212,14 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cerrar</button>
-        <button class="btn btn-success" type="submit">Guardar</button>
+        <button class="btn btn-nuevo-semillero" type="submit">
+          <i class="bi bi-save me-1"></i> Guardar
+        </button>
       </div>
     </form>
   </div>
 </div>
 @endsection
-
 
 {{-- Modal Editar Proyecto --}}
 <div class="modal fade" id="modalEditarProyecto" tabindex="-1" aria-hidden="true">
@@ -255,7 +262,9 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
-        <button class="btn btn-success" type="submit">Guardar cambios</button>
+        <button class="btn btn-nuevo-semillero" type="submit">
+          <i class="bi bi-save me-1"></i> Guardar cambios
+        </button>
       </div>
     </form>
   </div>
@@ -299,3 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
+
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/admin/semilleros.css') }}">
+@endpush

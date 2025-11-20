@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Proyecto;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 
 class ProyectoController extends Controller
@@ -10,7 +11,7 @@ class ProyectoController extends Controller
     // Muestra la lista de proyectos asignados al aprendiz
     public function index()
     {
-        $proyectos = Proyecto::where('aprendiz_id', auth()->id())->get();
+        $proyectos = Proyecto::where('aprendiz_id', Auth::id())->get();
         return view('aprendiz.proyectos.index', compact('proyectos'));
     }
 

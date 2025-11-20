@@ -337,7 +337,7 @@ function renderYearMonth(month, year) {
         
         // Verificar si tiene eventos
         const hasEvents = eventos.some(event => {
-            const eventDate = new Date(event.fecha_hora);
+            const eventDate = (typeof parseLocalDateTime === 'function') ? parseLocalDateTime(event.fecha_hora) : new Date(event.fecha_hora);
             return eventDate.getDate() === day &&
                    eventDate.getMonth() === month &&
                    eventDate.getFullYear() === year;
@@ -416,7 +416,7 @@ function renderWeekView() {
             cellDateTime.setHours(parseInt(h), parseInt(m), 0, 0);
             
             const eventInSlot = eventos.find(event => {
-                const eventDate = new Date(event.fecha_hora);
+                const eventDate = (typeof parseLocalDateTime === 'function') ? parseLocalDateTime(event.fecha_hora) : new Date(event.fecha_hora);
                 // Comparar fecha, hora y minuto (ignorar segundos y milisegundos)
                 return eventDate.getFullYear() === cellDateTime.getFullYear() &&
                        eventDate.getMonth() === cellDateTime.getMonth() &&
@@ -546,7 +546,7 @@ function renderDayView() {
         cellDateTime.setHours(parseInt(h), parseInt(m), 0, 0);
         
         const eventsInSlot = eventos.filter(event => {
-            const eventDate = new Date(event.fecha_hora);
+            const eventDate = (typeof parseLocalDateTime === 'function') ? parseLocalDateTime(event.fecha_hora) : new Date(event.fecha_hora);
             // Comparar fecha, hora y minuto (ignorar segundos y milisegundos)
             return eventDate.getFullYear() === cellDateTime.getFullYear() &&
                    eventDate.getMonth() === cellDateTime.getMonth() &&
@@ -713,7 +713,7 @@ function renderTimeSlots(preselectedHour) {
         slotDateTime.setHours(parseInt(h), parseInt(m), 0);
         
         const isOccupied = eventos.some(event => {
-            const eventDate = new Date(event.fecha_hora);
+            const eventDate = (typeof parseLocalDateTime === 'function') ? parseLocalDateTime(event.fecha_hora) : new Date(event.fecha_hora);
             return eventDate.getTime() === slotDateTime.getTime();
         });
         

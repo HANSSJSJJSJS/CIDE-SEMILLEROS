@@ -137,70 +137,118 @@
               </div>
             </div>
 
-            {{-- ===== APRENDIZ ===== --}}
-            <div id="box-aprendiz" class="row g-3 d-none mt-2">
-              <div class="col-12"><span class="section-label"><i class="bi bi-person-workspace"></i> Aprendiz</span></div>
+       {{-- ===== APRENDIZ ===== --}}
+<div id="box-aprendiz" class="row g-3 d-none mt-2">
+  <div class="col-12">
+    <span class="section-label"><i class="bi bi-person-workspace"></i> Aprendiz</span>
+  </div>
 
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Nombre</label>
-                <input name="nombre" class="form-control" value="{{ old('nombre') }}">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Apellido</label>
-                <input name="apellido" class="form-control" value="{{ old('apellido') }}">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Ficha</label>
-                <input name="ap_ficha" class="form-control" value="{{ old('ap_ficha') }}">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Programa</label>
-                <input name="ap_programa" class="form-control" value="{{ old('ap_programa') }}">
-              </div>
+  <div class="col-md-6">
+    <label class="form-label fw-semibold">Nombre</label>
+    <input name="nombre" class="form-control" value="{{ old('nombre') }}">
+  </div>
+  <div class="col-md-6">
+    <label class="form-label fw-semibold">Apellido</label>
+    <input name="apellido" class="form-control" value="{{ old('apellido') }}">
+  </div>
 
-              {{-- CAMBIO: Select con CC / TI / CE para aprendiz --}}
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Tipo documento</label>
-                <select name="ap_tipo_documento" class="form-select @error('ap_tipo_documento') is-invalid @enderror">
-                  <option value="">Seleccione...</option>
-                  <option value="CC" @selected(old('ap_tipo_documento')==='CC')>CC</option>
-                  <option value="TI" @selected(old('ap_tipo_documento')==='TI')>TI</option>
-                  <option value="CE" @selected(old('ap_tipo_documento')==='CE')>CE</option>
-                </select>
-                @error('ap_tipo_documento') <div class="text-danger small">{{ $message }}</div> @enderror
-              </div>
+  {{-- ¿Vinculado al SENA? --}}
+  <div class="col-12">
+    <label class="form-label fw-semibold">¿Actualmente está vinculado a un programa del SENA?</label>
+    <div class="d-flex gap-3">
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="radio_vinculado_sena" id="vinc_sena_si" value="1" {{ old('radio_vinculado_sena','1')=='1' ? 'checked' : '' }}>
+        <label class="form-check-label" for="vinc_sena_si">Sí</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="radio_vinculado_sena" id="vinc_sena_no" value="0" {{ old('radio_vinculado_sena')==='0' ? 'checked' : '' }}>
+        <label class="form-check-label" for="vinc_sena_no">No</label>
+      </div>
+    </div>
+  </div>
 
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Documento</label>
-                <input name="ap_documento" class="form-control" value="{{ old('ap_documento') }}">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Celular</label>
-                <input name="ap_celular" class="form-control" value="{{ old('ap_celular') }}">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Correo personal</label>
-                <input name="ap_correo_institucional" type="email" class="form-control" value="{{ old('ap_correo_institucional') }}">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Contraseña</label>
-                <div class="input-group">
-                  <input type="password" id="pass-ap" name="password" class="form-control">
-                  <button class="btn btn-outline-secondary" type="button" data-toggle-pass="#pass-ap"><i class="bi bi-eye"></i></button>
-                  <button class="btn btn-outline-success" type="button" data-generate-pass="#pass-ap"><i class="bi bi-magic"></i></button>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Contacto nombre</label>
-                <input name="ap_contacto_nombre" class="form-control" value="{{ old('ap_contacto_nombre') }}">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Contacto celular</label>
-                <input name="ap_contacto_celular" class="form-control" value="{{ old('ap_contacto_celular') }}">
-              </div>
-            </div>
+  {{-- SÍ vinculado → Ficha / Programa --}}
+  <div id="box-ap-vinculado" class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label fw-semibold">Ficha</label>
+      <input name="ap_ficha" class="form-control" value="{{ old('ap_ficha') }}">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label fw-semibold">Programa</label>
+      <input name="ap_programa" class="form-control" value="{{ old('ap_programa') }}">
+    </div>
+  </div>
 
-          </div>
+  {{-- NO vinculado → Institución --}}
+  <div id="box-ap-no-vinculado" class="row g-3 d-none">
+    <div class="col-md-12">
+      <label class="form-label fw-semibold">Institución</label>
+      <input name="institucion" class="form-control" value="{{ old('institucion') }}" placeholder="Ej: Universidad X, Colegio Y, etc.">
+    </div>
+  </div>
+
+  {{-- SEMILLERO Y LÍNEA (siempre) --}}
+  <div class="col-md-6">
+    <label class="form-label fw-semibold">Semillero <span class="text-danger">*</span></label>
+    <select name="semillero_id" id="semillero_id" class="form-select" required>
+      <option value="">Seleccione un semillero...</option>
+      @foreach ($semilleros as $s)
+        <option
+          value="{{ $s->id_semillero }}"
+          data-linea="{{ $s->linea_investigacion ?? '' }}"
+          @selected(old('semillero_id') == $s->id_semillero)
+        >{{ $s->nombre }}</option>
+      @endforeach
+    </select>
+    <div class="invalid-feedback">Selecciona un semillero.</div>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label fw-semibold">Línea de investigación</label>
+    <input id="linea_investigacion" class="form-control" value="{{ old('semillero_id') ? ($semilleros->firstWhere('id_semillero', old('semillero_id'))->linea_investigacion ?? '') : '' }}" readonly>
+    <div class="form-text">Se llena automáticamente según el semillero.</div>
+  </div>
+
+  {{-- Documento / Celular / Correos / Contacto --}}
+  <div class="col-md-4">
+    <label class="form-label fw-semibold">Tipo documento</label>
+    <select name="ap_tipo_documento" class="form-select @error('ap_tipo_documento') is-invalid @enderror">
+      <option value="">Seleccione...</option>
+      <option value="CC" @selected(old('ap_tipo_documento')==='CC')>CC</option>
+      <option value="TI" @selected(old('ap_tipo_documento')==='TI')>TI</option>
+      <option value="CE" @selected(old('ap_tipo_documento')==='CE')>CE</option>
+    </select>
+    @error('ap_tipo_documento') <div class="text-danger small">{{ $message }}</div> @enderror
+  </div>
+  <div class="col-md-4">
+    <label class="form-label fw-semibold">Documento</label>
+    <input name="ap_documento" class="form-control" value="{{ old('ap_documento') }}">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label fw-semibold">Celular</label>
+    <input name="ap_celular" class="form-control" value="{{ old('ap_celular') }}">
+  </div>
+  <div class="col-md-6">
+    <label class="form-label fw-semibold">Correo institucional / personal</label>
+    <input name="ap_correo_institucional" type="email" class="form-control" value="{{ old('ap_correo_institucional') }}">
+  </div>
+  <div class="col-md-6">
+    <label class="form-label fw-semibold">Contraseña</label>
+    <div class="input-group">
+      <input type="password" id="pass-ap" name="password" class="form-control">
+      <button class="btn btn-outline-secondary" type="button" data-toggle-pass="#pass-ap"><i class="bi bi-eye"></i></button>
+      <button class="btn btn-outline-success" type="button" data-generate-pass="#pass-ap"><i class="bi bi-magic"></i></button>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label fw-semibold">Contacto nombre</label>
+    <input name="ap_contacto_nombre" class="form-control" value="{{ old('ap_contacto_nombre') }}">
+  </div>
+  <div class="col-md-6">
+    <label class="form-label fw-semibold">Contacto celular</label>
+    <input name="ap_contacto_celular" class="form-control" value="{{ old('ap_contacto_celular') }}">
+  </div>
+</div>
+
 
           <div class="mt-4 sticky-actions">
             <a href="{{ route('admin.usuarios.index') }}" class="btn btn-outline-secondary">Cancelar</a>
@@ -304,4 +352,66 @@
   });
 })();
 </script>
+
+
+<script>
+(function(){
+  const sel   = document.getElementById('semillero_id');
+  const linea = document.getElementById('linea_investigacion');
+
+  if (!sel || !linea) return;
+
+  function updateLinea(){
+    const opt = sel.options[sel.selectedIndex];
+    linea.value = opt ? (opt.getAttribute('data-linea') || '') : '';
+  }
+
+  sel.addEventListener('change', updateLinea);
+  // Inicializa por si viene con old() seleccionado
+  updateLinea();
+})();
+</script>
+
+<script>
+(function(){
+  const rads  = document.querySelectorAll('input[name="radio_vinculado_sena"]');
+  const boxSi = document.getElementById('box-ap-vinculado');
+  const boxNo = document.getElementById('box-ap-no-vinculado');
+
+  function syncVinculado(){
+    const v = document.querySelector('input[name="radio_vinculado_sena"]:checked')?.value || '1';
+    if (v === '1') {
+      boxSi.classList.remove('d-none');
+      boxNo.classList.add('d-none');
+      document.querySelector('[name="ap_ficha"]')?.setAttribute('required','required');
+      document.querySelector('[name="ap_programa"]')?.setAttribute('required','required');
+      document.querySelector('[name="institucion"]')?.removeAttribute('required');
+    } else {
+      boxSi.classList.add('d-none');
+      boxNo.classList.remove('d-none');
+      document.querySelector('[name="ap_ficha"]')?.removeAttribute('required');
+      document.querySelector('[name="ap_programa"]')?.removeAttribute('required');
+      document.querySelector('[name="institucion"]')?.setAttribute('required','required');
+    }
+  }
+  rads.forEach(r=>r.addEventListener('change', syncVinculado));
+  syncVinculado();
+
+  // Línea de investigación
+  const sel = document.getElementById('semillero_id');
+  const lin = document.getElementById('linea_investigacion');
+  function updateLinea(){
+    const opt = sel?.options[sel.selectedIndex];
+    if (lin && opt) lin.value = opt.getAttribute('data-linea') || '';
+  }
+  sel?.addEventListener('change', updateLinea);
+  updateLinea();
+})();
+</script>
+
+
+
+
+
+
 @endpush
