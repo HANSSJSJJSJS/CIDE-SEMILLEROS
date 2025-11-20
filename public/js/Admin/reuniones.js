@@ -122,8 +122,17 @@
   drawerCloseBtn?.addEventListener('click', closeDetailDrawer);
   drawerCloseCta?.addEventListener('click', closeDetailDrawer);
   cancelBtn?.addEventListener('click', closeEventModal);
-  deleteBtn?.addEventListener('click', deleteEvent);
-  eventForm?.addEventListener('submit', saveEvent);
+
+  // Respeta modo solo lectura para LIDER_INTERMEDIARIO
+  const READ_ONLY = !!window.READ_ONLY_INTER;
+  if (!READ_ONLY) {
+    deleteBtn?.addEventListener('click', deleteEvent);
+    eventForm?.addEventListener('submit', saveEvent);
+  } else {
+    // Oculta controles de edición/creación
+    deleteBtn && (deleteBtn.style.display = 'none');
+    eventForm && (eventForm.querySelectorAll('input,select,textarea,button[type="submit"]').forEach(el => el.disabled = true));
+  }
   viewBtns.forEach(btn => {
     btn.addEventListener('click', async () => {
       viewBtns.forEach(b => b.classList.remove('active'));
@@ -228,7 +237,7 @@
 
     // reglas de bloqueo
     const disabled = isWeekend(date) || HOLIDAYS.includes(dateStr) || isPastDay(date);
-    if (disabled) {
+    if (disabled || READ_ONLY) {
       cell.classList.add('disabled');
     } else {
       cell.addEventListener('click', (e) => {
@@ -292,22 +301,23 @@
         const isLunch = hm >= 1200 && hm <= 1355;
         const allowed = !disabledDay && hm >= 800 && hm <= 1650 && !isLunch;
 
-        if (!allowed) {
-          slot.classList.add('disabled');
-        } else {
-          slot.addEventListener('click', () => {
-            const eventDate = new Date(date);
-            eventDate.setHours(hour, 0, 0, 0);
-            openEventModal(eventDate);
-          });
-          slot.addEventListener('dragover', handleDragOver);
-          slot.addEventListener('drop', (e) => {
-            const eventDate = new Date(date);
-            eventDate.setHours(hour, 0, 0, 0);
-            handleDrop(e, eventDate);
-          });
-          slot.addEventListener('dragleave', handleDragLeave);
-        }
+if (!allowed || READ_ONLY) {
+slot.classList.add('disabled');
+} else {
+slot.addEventListener('click', () => {
+const eventDate = new Date(date);
+eventDate.setHours(hour, 0, 0, 0);
+openEventModal(eventDate);
+});
+slot.addEventListener('dragover', handleDragOver);
+slot.addEventListener('drop', (e) => {
+const eventDate = new Date(date);
+eventDate.setHours(hour, 0, 0, 0);
+handleDrop(e, eventDate);
+});
+slot.addEventListener('dragleave', handleDragLeave);
+}
+});
       });
 
       events.filter(e => e.date === dateStr)
@@ -461,6 +471,7 @@
     editingEventId = null;
     if (modalTitle) modalTitle.textContent = 'Nueva Reunión';
     if (deleteBtn)  deleteBtn.style.display = 'none';
+    if (READ_ONLY) { alert('Solo lectura: no puedes crear reuniones.'); return; }
 
     eventForm?.reset();
 
@@ -688,6 +699,7 @@
 
   async function deleteEvent() {
     if (!editingEventId) return;
+    if (READ_ONLY) { alert('Solo lectura: no puedes eliminar reuniones.'); return; }
     if (!confirm('¿Estás seguro de que quieres eliminar esta reunión?')) return;
     try {
       await fetchJSON(`${ROUTES.baseEventos}/${editingEventId}`, { method: 'DELETE' });

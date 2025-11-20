@@ -17,6 +17,7 @@
                     x-model="role" required>
                 <option value="" disabled {{ old('role') ? '' : 'selected' }}>Seleccione un rol</option>
                 <option value="ADMIN" @selected(old('role')==='ADMIN')>ADMIN</option>
+                <option value="LIDER_INTERMEDIARIO" @selected(old('role')==='LIDER_INTERMEDIARIO')>LÍDER INTERMEDIARIO</option>
                 <option value="LIDER_SEMILLERO" @selected(old('role')==='LIDER_SEMILLERO')>LÍDER SEMILLERO</option>
                 <option value="APRENDIZ" @selected(old('role')==='APRENDIZ')>APRENDIZ</option>
                 <option value="LIDER GENERAL" @selected(old('role')==='LIDER GENERAL')>LÍDER GENERAL</option>

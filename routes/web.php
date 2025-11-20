@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\SemilleroController;              // ← sin alia
 use App\Http\Controllers\Admin\ProyectoSemilleroController;
 use App\Http\Controllers\Admin\ReunionesLideresController;
 use App\Http\Controllers\Admin\RecursoController;
+use App\Http\Controllers\Admin\UserPermissionController;
 
 // Líder semillero
 use App\Http\Controllers\LiderSemillero\SemilleroController as LiderSemilleroUIController;
@@ -56,6 +57,7 @@ Route::get('/', function () {
         : redirect()->route('login');
 })->name('home');
 
+<<<<<<< HEAD
 // Vista de login personalizada
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 
@@ -66,21 +68,16 @@ Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('l
 Route::post('/logout', [AuthenticatedSessionController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
+=======
+// Las rutas de login/logout se gestionan en routes/auth.php (Breeze)
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
 
 // ======================================================
 // RUTAS PROTEGIDAS (paneles, dashboard, etc.)
 // ======================================================
-// Solo accesibles si el usuario está autenticado
-// y con prevención del uso del botón "Atrás" tras logout
+// Grupo protegido genérico (agrega aquí rutas internas si aplica)
 Route::middleware(['auth', 'prevent-back-history'])->group(function () {
-
-    // Dashboard principal del administrador
-    Route::get('/dashboard', fn() => view('admin.dashboard.index'))->name('dashboard');
-
-    // 🔽 Aquí puedes agregar todas tus rutas internas protegidas
-    // Ejemplo:
-    // Route::get('/proyectos', [ProyectoController::class, 'index'])->name('proyectos.index');
-    // Route::get('/recursos', [RecursoController::class, 'index'])->name('recursos.index');
+    // Tus rutas protegidas adicionales aquí...
 });
 
 
@@ -131,10 +128,12 @@ Route::middleware(['auth'])->group(function () {
         ->whereNumber('semillero')->name('lider_semi.semilleros.aprendices.update');
 });
 
-// ======================================================
-//                  RUTAS ADMIN
-// ======================================================
-Route::middleware(['auth', 'role:ADMIN'])
+/*
+|--------------------------------------------------------------------------
+| ADMIN (ÚNICO BLOQUE CONSOLIDADO)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:ADMIN,LIDER_INTERMEDIARIO,LIDER_GENERAL', \App\Http\Middleware\AdminReadOnlyMiddleware::class])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
@@ -230,6 +229,12 @@ Route::prefix('semilleros')->name('semilleros.')->group(function () {
         // NOTIFICACIONES
         Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');
         Route::post('/notifications/read-all', [AdminNotificationController::class, 'readAll'])->name('notifications.read_all');
+
+        // Permisos por usuario (ADMIN)
+        Route::prefix('usuarios')->group(function () {
+            Route::get('{id}/permisos', [UserPermissionController::class, 'show'])->whereNumber('id')->name('usuarios.permisos.show');
+            Route::post('{id}/permisos', [UserPermissionController::class, 'update'])->whereNumber('id')->name('usuarios.permisos.update');
+        });
     });
 
 
@@ -246,6 +251,7 @@ Route::get('/dashboard', function () {
 
     $map = [
         'ADMIN'          => 'admin.dashboard',
+        'LIDER_INTERMEDIARIO' => 'admin.dashboard',
         'INSTRUCTOR'     => 'lider_semi.dashboard',
         'APRENDIZ'       => 'aprendiz.dashboard',
         'LIDER_SEMILLERO'=> 'lider_semi.dashboard',

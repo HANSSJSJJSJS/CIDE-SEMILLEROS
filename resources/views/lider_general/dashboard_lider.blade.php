@@ -161,25 +161,25 @@
           <aside class="side-panel h-100">
             <div class="side-inner h-100">
               <div class="d-grid gap-3">
-                <a class="menu-btn" href="#">
+                <a class="menu-btn" href="{{ route('admin.usuarios.index') }}">
                   <span>Gestión de Usuarios</span><i class="bi bi-people-fill"></i>
                 </a>
-                <a class="menu-btn" href="#">
+                <a class="menu-btn" href="{{ route('admin.semilleros.index') }}">
                   <span>Gestión de Proyectos</span><i class="bi bi-kanban-fill"></i>
                 </a>
-                <a class="menu-btn" href="#">
+                <a class="menu-btn" href="{{ route('admin.recursos.index') }}">
                   <span>Documentación</span><i class="bi bi-file-earmark-text-fill"></i>
                 </a>
-                <a class="menu-btn" href="#">
+                <a class="menu-btn" href="{{ route('grupos.index') }}">
                   <span>Investigación</span><i class="bi bi-lightbulb-fill"></i>
                 </a>
-                <a class="menu-btn" href="#">
+                <a class="menu-btn" href="{{ route('admin.reuniones-lideres.index') }}">
                   <span>Reportes y Avances</span><i class="bi bi-graph-up-arrow"></i>
                 </a>
-                <a class="menu-btn" href="#">
+                <a class="menu-btn" href="{{ route('admin.dashboard.charts') }}">
                   <span>Presentaciones</span><i class="bi bi-easel-fill"></i>
                 </a>
-                <a class="menu-btn" href="#">
+                <a class="menu-btn" href="{{ route('admin.perfil.edit') }}">
                   <span>Ver Perfil</span><i class="bi bi-person-circle"></i>
                 </a>
               </div>
@@ -200,12 +200,34 @@
 
             <div class="alert alert-success" role="alert">
               <i class="bi bi-shield-check me-2"></i>
-              Recuerda: solo tú puedes <strong>inhabilitar proyectos</strong>.
+              Recuerda: solo tú puedes <strong>inhabilitar proyectos y Permisos</strong>.
             </div>
           </section>
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- Modal base para acciones de Líder General (misma estructura que modales Admin) -->
+  <div class="modal fade" id="modalLiderGeneral" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <form id="formLiderGeneral" class="modal-content" method="POST">
+        @csrf
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalLiderGeneralTitle">Acción de Líder General</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div id="modalLiderGeneralBody">
+            <!-- Contenido dinámico del modal de Líder General -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cerrar</button>
+          <button class="btn btn-success" type="submit" id="modalLiderGeneralSubmit">Guardar</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

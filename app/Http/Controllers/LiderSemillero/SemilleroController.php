@@ -88,6 +88,7 @@ class SemilleroController extends Controller
             Log::info("Buscando semilleros del líder ID: {$userId}");
             $semillerosDelLider = [];
             if (Schema::hasTable('semilleros') && Schema::hasColumn('proyectos', 'id_semillero')) {
+<<<<<<< HEAD
                 $semillerosDelLider = DB::table('semilleros')
                     ->where('id_lider_semi', $userId)
                     ->pluck('id_semillero')
@@ -98,6 +99,31 @@ class SemilleroController extends Controller
             if (!empty($semillerosDelLider)) {
                 $qb->whereIn('p.id_semillero', $semillerosDelLider);
                 Log::info("Filtrando proyectos por semilleros: " . implode(', ', $semillerosDelLider));
+=======
+                // Resolver columna de líder en semilleros: id_lider_usuario o id_lider_semi
+                if (Schema::hasColumn('semilleros', 'id_lider_usuario')) {
+                    // Caso sencillo: semilleros.id_lider_usuario referencia directamente a users.id
+                    $qb->join('semilleros as s', 's.id_semillero', '=', 'p.id_semillero')
+                       ->where('s.id_lider_usuario', $userId);
+                } elseif (Schema::hasColumn('semilleros', 'id_lider_semi')) {
+                    // Caso como tu BD: semilleros.id_lider_semi -> lideres_semillero -> users
+                    $dbName = DB::getDatabaseName();
+                    $colsLeader = collect(DB::select("SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'lideres_semillero'", [$dbName]))
+                        ->pluck('c')->all();
+                    $leaderUserFkCol = in_array('id_usuario', $colsLeader, true)
+                        ? 'id_usuario'
+                        : (in_array('user_id', $colsLeader, true)
+                            ? 'user_id'
+                            : (in_array('id_user', $colsLeader, true) ? 'id_user' : null));
+                    $leaderIdCol = in_array('id_lider_semi', $colsLeader, true) ? 'id_lider_semi' : (in_array('id_lider', $colsLeader, true) ? 'id_lider' : null);
+
+                    if ($leaderUserFkCol && $leaderIdCol) {
+                        $qb->join('semilleros as s', 's.id_semillero', '=', 'p.id_semillero')
+                           ->join('lideres_semillero as ls', DB::raw('ls.'.$leaderIdCol), '=', DB::raw('s.id_lider_semi'))
+                           ->where(DB::raw('ls.'.$leaderUserFkCol), $userId);
+                    }
+                }
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
             } else {
                 Log::warning("El líder no tiene semilleros asignados o no existe relación");
                 // Forzamos condición imposible para no devolver proyectos ajenos
@@ -275,6 +301,11 @@ class SemilleroController extends Controller
             });
         }
 
+<<<<<<< HEAD
+=======
+        // Reusar la misma vista de "Mis Proyectos" para mostrar semilleros cuando
+        // no hay proyectos asociados; la vista espera una colección $semilleros.
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
         return view('lider_semi.proyectos', compact('semilleros'));
     }
 
@@ -555,6 +586,7 @@ class SemilleroController extends Controller
         if (empty($pivot)) abort(404, 'Relación proyecto-aprendiz no configurada');
         $proyecto = Proyecto::select('id_proyecto', DB::raw('COALESCE(nombre_proyecto, "Proyecto") as nombre'))
             ->where('id_proyecto', $proyectoId)->firstOrFail();
+<<<<<<< HEAD
 
         // Determinar columna de unión en aprendices que corresponde al aprCol del pivote
         $aprJoinCol = null;
@@ -574,6 +606,12 @@ class SemilleroController extends Controller
                 $join->on(DB::raw('aprendices.' . $aprJoinCol), '=', DB::raw($pivot['table'] . '.' . $pivot['aprCol']));
             })
             ->where(DB::raw($pivot['table'].'.'.$pivot['projCol']), '=', $proyectoId)
+=======
+        $rows = DB::table($pivot['table'].' as pvt')
+            ->join('aprendices as a','a.id_aprendiz','=',DB::raw('pvt.'.$pivot['aprCol']))
+            ->leftJoin('users as u','u.id','=','a.user_id')
+            ->where(DB::raw('pvt.'.$pivot['projCol']), $proyectoId)
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
             ->select(
                 'aprendices.id_aprendiz',
                 DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),
@@ -583,7 +621,11 @@ class SemilleroController extends Controller
                 'aprendices.nombres',
                 'aprendices.apellidos'
             )
+<<<<<<< HEAD
             ->orderByRaw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))")
+=======
+            ->orderByRaw("COALESCE(NULLIF(TRIM(CONCAT(COALESCE(a.nombres,''),' ',COALESCE(a.apellidos,''))),''), NULLIF(TRIM(u.name),''), 'zzz')")
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
             ->get();
 
         // Simular relación para la vista

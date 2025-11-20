@@ -303,8 +303,7 @@ main {
   --wm-offset: clamp(16px, 6vh, 48px);
   /* Desplazar un poco hacia la izquierda (X) y hacia arriba (Y) */
   --wm-shift-x: clamp(72px, 12vw, 320px);
-  background: url("../images/logo_semillero.png") no-repeat calc(50% - var(--wm-shift-x)) calc(var(--wm-offset) - 112px) / var(--wm-size) auto !important;
+  background: url("/images/logo_semillero.png") no-repeat calc(50% - var(--wm-shift-x)) calc(var(--wm-offset) - 112px) / var(--wm-size) auto !important;
   opacity: .45 !important;
   filter: brightness(0.25) contrast(0.90);
 }
-

@@ -1,15 +1,15 @@
 @extends('layouts.lider_semi')
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/documentos.css') }}">
-<link rel="stylesheet" href="{{ asset('css/documentos-page.css') }}">
+<link rel="stylesheet" href="{{ asset('css/lider/documentos.css') }}">
+<link rel="stylesheet" href="{{ asset('css/lider/documentos-page.css') }}">
 @endpush
 
 @section('content')
 <!-- Contenedor de Notificaciones -->
 <div class="notification-container" id="notificationContainer"></div>
 
-<div class="container-fluid mt-4 px-4">
+<div class="container-fluid mt-4 px-4 documentos-wallpaper">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4 documentos-header">
         <div>
@@ -485,9 +485,25 @@ function cambiarEstadoEntrega(entregaId, nuevoEstado) {
     });
 }
 
-// Ver documento
+// Ver documento (soporta URLs absolutas y rutas relativas almacenadas en BD)
 function verDocumento(url) {
-    window.open(url, '_blank');
+    if (!url) return;
+
+    try {
+        const isAbsolute = /^https?:\/\//i.test(url);
+        let finalUrl = url;
+
+        if (!isAbsolute) {
+            // Si viene sin barra inicial, asumimos que es un path relativo en storage
+            if (!url.startsWith('/')) {
+                finalUrl = '/storage/' + url.replace(/^storage\//, '');
+            }
+        }
+
+        window.open(finalUrl, '_blank');
+    } catch (e) {
+        console.error('No se pudo abrir el documento', e);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {

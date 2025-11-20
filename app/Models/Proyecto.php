@@ -12,11 +12,12 @@ class Proyecto extends Model
 {
     protected $table = 'proyectos';
     protected $primaryKey = 'id_proyecto';
-    public $incrementing = true;
+    public $incrementing = false;
     protected $keyType = 'int';
     public $timestamps = false;
 
     protected $fillable = [
+        'id_proyecto',
         'id_semillero',
         'id_tipo_proyecto',
         'nombre_proyecto',

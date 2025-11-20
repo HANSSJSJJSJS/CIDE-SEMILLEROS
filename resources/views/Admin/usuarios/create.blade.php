@@ -29,7 +29,9 @@
           </div>
         </div>
 
-        {{-- Errores generales --}}
+      {{-- CONTENIDO --}}
+
+      {{-- Errores generales --}}
         @if ($errors->any())
           <div class="alert alert-danger">
             <strong>Revisa los campos:</strong>

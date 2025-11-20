@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="es">
-<head
+<head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>@yield('title','Panel del Administrador')</title>
+  <title>@yield('title','Lider de Grupo de Investigacion CIDEINNOVA')</title>
   <link rel="icon" type="image/png" href="{{ asset('images/logo_pestaña.png') }}">
 
 
@@ -14,8 +14,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   {{-- Estilos del sistema --}}
-  <link href="{{ asset('css/admin-layout.css') }}?v={{ time() }}" rel="stylesheet">
-  <link href="{{ asset('css/admin-views.css') }}?v={{ time() }}" rel="stylesheet">
+  <link href="{{ asset('css/global/admin-layout.css') }}?v={{ time() }}" rel="stylesheet">
+  <link href="{{ asset('css/admin/admin-views.css') }}?v={{ time() }}" rel="stylesheet">
 
   @stack('styles')
   @yield('styles')
@@ -28,7 +28,7 @@
     <aside id="admSidebar" class="adm-sidebar">
       <div class="adm-brand brand-large">
         <img src="{{ asset('images/logo-sena.png') }}" alt="Logo SENA" class="brand-logo-lg">
-        <div class="brand-system-lg">Sistema de Gestión Semillero</div>
+        <div class="brand-system-lg">Sistema de Gestión CIDEINNOVA</div>
       </div>
 
       <div class="menu-card">
@@ -76,7 +76,7 @@
           <button id="sidebarToggle" class="btn btn-outline-light d-lg-none">
             <i class="bi bi-list"></i>
           </button>
-          <h1 class="h5 m-0 title-green">Líder General</h1>
+          <h1 class="h5 m-0 title-green">Lider de Grupo de Investigacion CIDEINNOVA</h1>
         </div>
 
         <div class="profile-info">
@@ -85,10 +85,9 @@
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">3</span>
           </button>
 
-          <div class="avatar">{{ strtoupper(substr(Auth::user()->name ?? 'AD', 0, 2)) }}</div>
           <div class="me-2 text-end d-none d-sm-block">
-            <div class="fw-semibold">{{ Auth::user()->name }}</div>
-            <small class="opacity-75">Líder General</small>
+            <div class="fw-semibold">{{ Auth::user()->name ?? '' }}</div>
+            <small class="opacity-75">Líder de Investigación</small>
           </div>
 
           <form method="POST" action="{{ route('logout') }}">

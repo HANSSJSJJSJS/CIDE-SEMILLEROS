@@ -2,8 +2,17 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
+<<<<<<< HEAD:cide_sena .sql
 -- Servidor: 127.0.0.1
 -- Tiempo de generación: 19-11-2025 a las 17:32:00
+=======
+-- Servidor: localhost
+-- Tiempo de generación: 12-11-2025 a las 17:23:15
+-- Versión del servidor: 10.4.28-MariaDB
+-- Versión de PHP: 8.0.28
+-- Servidor: 127.0.0.1
+-- Tiempo de generación: 06-11-2025 a las 20:09:56
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3:cide_sena.sql
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.4.13
 
@@ -16,6 +25,14 @@ SET time_zone = "+00:00";
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
+
+--
+-- ** ELIMINAR Y CREAR BASE DE DATOS (AÑADIDO) **
+--
+
+DROP DATABASE IF EXISTS `cide_sena`;
+CREATE DATABASE `cide_sena` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE `cide_sena`;
 
 --
 -- Base de datos: `cide_sena`
@@ -495,6 +512,33 @@ CREATE TABLE `recursos` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `recursos`
+--
+
+CREATE TABLE `recursos` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `nombre_archivo` varchar(255) NOT NULL,
+  `archivo` varchar(255) NOT NULL,
+  `categoria` enum('plantillas','manuales','otros') NOT NULL DEFAULT 'otros',
+  `descripcion` text DEFAULT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `recursos`
+--
+
+INSERT INTO `recursos` (`id`, `nombre_archivo`, `archivo`, `categoria`, `descripcion`, `user_id`, `created_at`, `updated_at`) VALUES
+(1, 'Plantilla rx56', 'recursos/faSamm8ZixAHq20lMqMKqXrXUev6HkoqWIZi8KuS', 'plantillas', NULL, 4, '2025-11-06 00:35:15', '2025-11-06 00:35:15'),
+(2, 'presentación', 'recursos/4t95SzzAdZAP8Cou7udSbvL9mAFq8gqELNWlC41T.pptx', 'plantillas', NULL, 4, '2025-11-06 00:37:48', '2025-11-06 00:37:48'),
+(3, 'pdf', 'recursos/hdvjPd2002AqrPwdumMXCeeOsWgqVFyn7vls3cOn.pdf', 'otros', 'Es un pdf', 4, '2025-11-06 00:40:35', '2025-11-06 00:40:35'),
+(4, 'manual', 'recursos/5D9qIWMCzjjhlR4l4Yr2Mi2vL8KmkgjDODHSvpG7.pdf', 'manuales', 'esto es un manual', 4, '2025-11-06 00:41:15', '2025-11-06 00:41:15');
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `semilleros`
 --
 
@@ -542,9 +586,14 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
+<<<<<<< HEAD:cide_sena .sql
 ('8O7Qiw21FXUGBwBJtPBYBKnXcNyaQJNeBRGsgXjv', 83, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiQVFtZEhwRWNObm9uRjkzY3U5aDZiQ1Jxa0gwVlYzNVF6TDNqUWtkTiI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozODoiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2FkbWluL3NlbWlsbGVyb3MiO31zOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czo0NDoiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2FkbWluL2Rhc2hib2FyZC9jaGFydHMiO3M6NToicm91dGUiO3M6MjI6ImFkbWluLmRhc2hib2FyZC5jaGFydHMiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTo4Mzt9', 1763569416),
 ('9wPUgLwexJteoRa21ocNxTCT7e9JkiCOaZ33iinl', 83, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiVTNvbDRDSW9HWXhuRHJ2VllyT0x1eW12QjRDQXV3YnoxNXhLcGJwUiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9kYXNoYm9hcmQvY2hhcnRzIjtzOjU6InJvdXRlIjtzOjIyOiJhZG1pbi5kYXNoYm9hcmQuY2hhcnRzIjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6ODM7fQ==', 1763481721),
 ('aiLvIB5hDcfLzo7kuw57ioFeEuBwY3roNbfpmWv7', 83, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiaGVXc0R4azViQ3JIcVAyQjQ4WEc1eFR1a0F4NDNQcVFZbDhTZ1VuQiI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozNjoiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2FkbWluL3VzdWFyaW9zIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9kYXNoYm9hcmQvY2hhcnRzIjtzOjU6InJvdXRlIjtzOjIyOiJhZG1pbi5kYXNoYm9hcmQuY2hhcnRzIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6ODM7fQ==', 1763493547);
+=======
+('LXBjf9psXLMcaZqaJMJp3WoFSjMX6ZjKxzSbZmrt', 70, '127.0.0.1', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiZmQ2Z2t3UTRUUVFaekhpRlVyT2hJZThobFkzd3JPYUJWSDRsd3RWQiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDM6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9saWRlcl9zZW1pL3NlbWlsbGVyb3MiO3M6NToicm91dGUiO3M6MjE6ImxpZGVyX3NlbWkuc2VtaWxsZXJvcyI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjcwO30=', 1762957940);
+('DGjlJwuYgAi421K9ueQP6L4FZ2KMzpBtu9HmsH4u', 4, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiQ2RPdkN0bFNqeTlnWk9kWlcyNFV0c0lsZnV2T3RTelpwSmV1ZThSMCI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi91c3Vhcmlvcy82Ny9lZGl0Ijt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6NDt9', 1762456117);
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3:cide_sena.sql
 
 -- --------------------------------------------------------
 
@@ -776,7 +825,11 @@ ALTER TABLE `proyectos` ADD FULLTEXT KEY `ft_proyectos` (`nombre_proyecto`,`desc
 -- Indices de la tabla `recursos`
 --
 ALTER TABLE `recursos`
+<<<<<<< HEAD:cide_sena .sql
   ADD KEY `fk_recursos_user` (`user_id`);
+=======
+  ADD PRIMARY KEY (`id`);
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3:cide_sena.sql
 
 --
 -- Indices de la tabla `semilleros`
@@ -787,6 +840,7 @@ ALTER TABLE `semilleros`
   ADD UNIQUE KEY `uk_semilleros_lider` (`id_lider_semi`);
 
 --
+<<<<<<< HEAD:cide_sena .sql
 -- Indices de la tabla `sessions`
 --
 ALTER TABLE `sessions`
@@ -810,11 +864,13 @@ ALTER TABLE `user_module_permissions`
   ADD UNIQUE KEY `user_module_permissions_user_id_module_unique` (`user_id`,`module`);
 
 --
+=======
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3:cide_sena.sql
 -- AUTO_INCREMENT de las tablas volcadas
 --
 
 --
--- AUTO_INCREMENT de la tabla `aprendices`
+-- AUTO_INCREMENT de la tabla `recursos`
 --
 ALTER TABLE `aprendices`
   MODIFY `id_aprendiz` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=94;

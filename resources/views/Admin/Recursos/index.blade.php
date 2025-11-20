@@ -154,7 +154,19 @@
 @section('content')
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
+<<<<<<< HEAD
   {{-- CABECERA: ahora todo queda junto, sin ms-auto --}}
+=======
+  @php($__ROLE = strtoupper(str_replace([' ', '-'], '_', auth()->user()->role ?? '')))
+  @php($__REC_PERM = null)
+  @if ($__ROLE === 'ADMIN')
+    @php($__REC_PERM = \DB::table('user_module_permissions')
+      ->where('user_id', auth()->id())
+      ->where('module', 'recursos')
+      ->first())
+  @endif
+
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
   <div class="rec-head">
     <div class="input-group rec-search">
       <span class="input-group-text">🔍</span>
@@ -169,14 +181,37 @@
       <option value="otros">Otros</option>
     </select>
 
+<<<<<<< HEAD
     <button class="btn btn-success rec-upload-btn"
             data-bs-toggle="modal"
             data-bs-target="#recUploadModal">
       <i class="bi bi-upload"></i> Subir recurso
     </button>
+=======
+    @php($__CAN_CREATE_REC = ($__ROLE !== 'ADMIN') || (int)($__REC_PERM->can_create ?? 0) === 1)
+    @if ($__CAN_CREATE_REC)
+      <button class="btn btn-success ms-auto" data-bs-toggle="modal" data-bs-target="#recUploadModal">
+        <i class="bi bi-upload"></i> Subir recurso
+      </button>
+    @endif
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
   </div>
 
   <div id="recContainer"></div>
+  <script>
+    window.READ_ONLY_INTER = (
+      "{{ $__ROLE }}" === 'ADMIN'
+      && !(
+        {{ (int)($__REC_PERM->can_create ?? 0) }}
+        || {{ (int)($__REC_PERM->can_update ?? 0) }}
+        || {{ (int)($__REC_PERM->can_delete ?? 0) }}
+      )
+    );
+    window.REC_CAN_DELETE = (
+      ("{{ $__ROLE }}" !== 'ADMIN')
+      || ({{ (int)($__REC_PERM->can_delete ?? 0) }} === 1)
+    );
+  </script>
 
   {{-- Modal subir --}}
   <div class="modal fade"
@@ -329,11 +364,15 @@
     arr.forEach(r => {
       const card = document.createElement('div');
       card.className = 'rec-card';
+<<<<<<< HEAD
 
       const deleteBtnHtml = r.can_delete
         ? `<button class="btn btn-sm btn-eliminar btn-outline-danger" data-id="${r.id}">Eliminar</button>`
         : '';
 
+=======
+      const canDelete = !!window.REC_CAN_DELETE;
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
       card.innerHTML = `
         <div class="d-flex justify-content-between align-items-start">
           <span class="badge-cat">${r.categoria}</span>
@@ -342,16 +381,29 @@
         <h5>${iconFromMime(r.mime)} ${escapeHtml(r.titulo)}</h5>
         <p>${escapeHtml(r.descripcion || '')}</p>
         <div class="rec-actions">
+<<<<<<< HEAD
           <a class="btn btn-sm btn-ver btn-outline-success" href="${r.url}" target="_blank" rel="noopener">Ver</a>
           <a class="btn btn-sm btn-descargar btn-primary" href="${r.download}">Descargar</a>
           ${deleteBtnHtml}
+=======
+          <a class="btn btn-sm btn-outline-primary" href="${r.url}" target="_blank" rel="noopener">Ver</a>
+          <a class="btn btn-sm btn-primary" href="${r.download}">Descargar</a>
+          ${canDelete ? `<button class="btn btn-sm btn-outline-danger" data-id="${r.id}">Eliminar</button>` : ''}
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
         </div>
       `;
       grid.appendChild(card);
 
+<<<<<<< HEAD
       if (deleteBtnHtml) {
         const deleteBtn = card.querySelector('button.btn-outline-danger');
         deleteBtn.addEventListener('click', async (e) => {
+=======
+      // eliminar (solo si existe el botón)
+      const delBtn = card.querySelector('button.btn-outline-danger');
+      if (delBtn) {
+        delBtn.addEventListener('click', async (e) => {
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
           const id = e.currentTarget.getAttribute('data-id');
           if (!confirm('¿Eliminar este recurso?')) return;
           await fetch(ENDPOINTS.destroy(id), {
@@ -386,6 +438,10 @@
 
   recForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (window.READ_ONLY_INTER) {
+      alert('No tienes permisos para subir recursos.');
+      return;
+    }
 
     const fd = new FormData(recForm);
     setLoading(true);

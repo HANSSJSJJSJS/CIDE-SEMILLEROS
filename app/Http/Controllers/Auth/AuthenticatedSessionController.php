@@ -13,6 +13,12 @@ use App\Models\User;
 
 class AuthenticatedSessionController extends Controller
 {
+<<<<<<< HEAD
+=======
+    /**
+     * Mostrar la vista de inicio de sesión.
+     */
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
     public function create(): View
     {
         return view('auth.login', [
@@ -21,6 +27,12 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
+<<<<<<< HEAD
+=======
+    /**
+     * Gestionar una solicitud de autenticación entrante.
+     */
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
@@ -37,9 +49,21 @@ class AuthenticatedSessionController extends Controller
         $rol = strtoupper(str_replace([' ', '-'], '_', trim($user->role ?? $user->rol ?? '')));
 
         $map = [
+<<<<<<< HEAD
             'ADMIN'           => 'admin.dashboard',
             'INSTRUCTOR'      => 'lider_semi.dashboard',
             'APRENDIZ'        => 'aprendiz.dashboard',
+=======
+            'ADMIN' => 'admin.dashboard',
+            'LIDER_INTERMEDIARIO' => 'admin.dashboard',
+
+            // CORRECCIÓN: Se incluye el rol INSTRUCTOR
+
+            
+            'INSTRUCTOR' => 'lider_semi.dashboard',
+
+            'APRENDIZ' => 'aprendiz.dashboard',
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
             'LIDER_SEMILLERO' => 'lider_semi.dashboard',
             'LIDER_GENERAL'   => 'lider_general.dashboard',
         ];
@@ -50,7 +74,11 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
+<<<<<<< HEAD
      * Cerrar sesión (ruta nueva).
+=======
+     * Destruir una sesión autenticada.
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
      */
     public function logout(Request $request): RedirectResponse
     {

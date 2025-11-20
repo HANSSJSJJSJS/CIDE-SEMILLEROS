@@ -2,12 +2,21 @@
 
 @push('styles')
 @php($v = time())
-<link rel="stylesheet" href="{{ asset('css/calendario.css') }}?v={{ $v }}">
-<link rel="stylesheet" href="{{ asset('css/calendario-views.css') }}?v={{ $v }}">
+<link rel="stylesheet" href="{{ asset('css/global/calendario.css') }}?v={{ $v }}">
+<link rel="stylesheet" href="{{ asset('css/global/calendario-views.css') }}?v={{ $v }}">
 @endpush
 
 @section('content')
 <meta name="csrf-token" content="{{ csrf_token() }}">
+
+@php($__ROLE = strtoupper(str_replace([' ', '-'], '_', auth()->user()->role ?? '')))
+@php($__REU_PERM = null)
+@if ($__ROLE === 'ADMIN')
+  @php($__REU_PERM = \DB::table('user_module_permissions')
+      ->where('user_id', auth()->id())
+      ->where('module', 'reuniones-lideres')
+      ->first())
+@endif
 
 <div class="container">
   <div class="header">
@@ -190,6 +199,21 @@
   ],
   'feriados' => config('app.feriados', []),
 ], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}
+</script>
+
+{{-- Flags de permisos para ADMIN (CIDEINNOVA) --}}
+<script>
+  window.PERM_REUN = {
+    role: "{{ $__ROLE }}",
+    create: {{ (int)($__REU_PERM->can_create ?? 0) }},
+    update: {{ (int)($__REU_PERM->can_update ?? 0) }},
+    delete: {{ (int)($__REU_PERM->can_delete ?? 0) }}
+  };
+  // Solo lectura si es ADMIN y no tiene ningún permiso en este módulo
+  window.READ_ONLY_INTER = (
+    window.PERM_REUN.role === 'ADMIN' &&
+    !(window.PERM_REUN.create || window.PERM_REUN.update || window.PERM_REUN.delete)
+  );
 </script>
 
 @push('scripts')

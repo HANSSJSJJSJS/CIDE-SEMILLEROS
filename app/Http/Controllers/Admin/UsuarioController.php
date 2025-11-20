@@ -22,9 +22,51 @@ public function index(Request $request)
     $roleFilter  = trim($request->get('role',''));
     $semilleroId = $request->integer('semillero_id');
 
+<<<<<<< HEAD
     if ($roleFilter === 'LIDER_GENERAL') $roleFilter = 'ADMIN';
 
     $aprFk = Schema::hasColumn('aprendices', 'id_usuario') ? 'id_usuario' : 'user_id';
+=======
+        // Normaliza filtro para coincidir con el valor real en BD
+        // En BD el super admin se guarda como 'LIDER GENERAL' (con espacio)
+        if ($roleFilter === 'LIDER_GENERAL') {
+            $roleFilter = 'LIDER GENERAL';
+        }
+
+        $usuarios = User::query()
+            ->leftJoin('lideres_semillero as ls', 'ls.id_lider_semi', '=', 'users.id')
+            ->leftJoin('semilleros as s', 's.id_lider_semi', '=', 'ls.id_lider_semi')
+            ->select([
+                'users.*',
+                DB::raw('s.nombre as semillero_nombre'),
+                DB::raw('s.id_semillero as semillero_id'),
+                DB::raw("CASE 
+                            WHEN users.role = 'ADMIN'            THEN 'Líder grupo de investigación CIDEINNOVA'
+                            WHEN users.role = 'LIDER GENERAL'    THEN 'Líder General'
+                            WHEN users.role = 'LIDER_SEMILLERO'  THEN 'Líder semillero'
+                            WHEN users.role = 'APRENDIZ'         THEN 'Aprendiz'
+                            ELSE users.role
+                         END AS role_label")
+            ])
+            ->when($q !== '', function ($w) use ($q) {
+                $w->where(function ($s) use ($q) {
+                    $s->where('users.name','like',"%{$q}%")
+                      ->orWhere('users.apellidos','like',"%{$q}%")
+                      ->orWhere('users.email','like',"%{$q}%");
+                });
+            })
+            ->when($roleFilter !== '', function($w) use ($roleFilter) {
+                if ($roleFilter === 'LIDER_GENERAL' || $roleFilter === 'LIDER GENERAL') {
+                    $w->whereIn('users.role', ['LIDER_GENERAL','LIDER GENERAL']);
+                } else {
+                    $w->where('users.role', $roleFilter);
+                }
+            })
+            ->when($semilleroId, fn($w) => $w->where('s.id_semillero', $semilleroId))
+            ->orderByDesc('users.created_at')
+            ->paginate(12)
+            ->withQueryString();
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
 
     $usuarios = User::query()
         ->leftJoin('lideres_semillero as ls', 'ls.id_lider_semi', '=', 'users.id')
@@ -62,10 +104,19 @@ public function index(Request $request)
         ->paginate(12)
         ->withQueryString();
 
+<<<<<<< HEAD
     $semilleros = DB::table('semilleros')
         ->select('id_semillero','nombre')
         ->orderBy('nombre')
         ->get();
+=======
+        $roles = [
+            'LIDER_GENERAL'       => 'Líder General',
+            'ADMIN'               => 'Líder grupo de investigación CIDEINNOVA',
+            'LIDER_SEMILLERO'     => 'Líder semillero',
+            'APRENDIZ'            => 'Aprendiz',
+        ];
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
 
     $roles = [
         'ADMIN'           => 'Líder general',
@@ -139,6 +190,7 @@ public function index(Request $request)
             'institucion'             => 'nullable|string|max:160',
         ];
 
+<<<<<<< HEAD
         // refuerzo condicional
         if ((int)$request->input('radio_vinculado_sena') === 1) {
             // SÍ está en SENA → pedir ficha/programa
@@ -147,6 +199,164 @@ public function index(Request $request)
         } else {
             // NO está en SENA → pedir institución
             $rules['institucion'] = 'required|string|max:160';
+=======
+        // Reglas condicionales
+        if ($request->role === 'LIDER_SEMILLERO') {
+            $rules += [
+                'ls_tipo_documento' => 'required|string|max:5',
+                'ls_documento'      => 'required|string|max:40',
+            ];
+        }
+        if ($request->role === 'APRENDIZ') {
+            $rules += [
+                'ap_ficha'                => 'required|string|max:30',
+                'ap_programa'             => 'required|string|max:160',
+                'ap_tipo_documento'       => 'nullable|string|max:5',
+                'ap_documento'            => 'required|string|max:40',
+                'ap_correo_institucional' => 'required|email|max:160',
+                'ap_celular'              => 'nullable|string|max:30',
+                'ap_contacto_nombre'      => 'nullable|string|max:160',
+                'ap_contacto_celular'     => 'nullable|string|max:30',
+            ];
+        }
+
+        // Mensajes y alias de atributos (ES)
+        $messages = [
+            'required' => 'El campo :attribute es obligatorio.',
+            'email'    => 'El campo :attribute debe ser un correo válido.',
+            'max'      => 'El campo :attribute no puede superar :max caracteres.',
+            'min'      => 'El campo :attribute debe tener al menos :min caracteres.',
+            'in'       => 'El valor seleccionado de :attribute no es válido.',
+            'unique'   => 'El :attribute ya está registrado.',
+        ];
+        $attributes = [
+            'role'                   => 'rol',
+            'nombre'                 => 'nombre',
+            'apellido'               => 'apellido',
+            'email'                  => 'correo',
+            'password'               => 'contraseña',
+            'ls_tipo_documento'      => 'tipo de documento (líder semillero)',
+            'ls_documento'           => 'documento (líder semillero)',
+            'ap_ficha'               => 'ficha (aprendiz)',
+            'ap_programa'            => 'programa (aprendiz)',
+            'ap_tipo_documento'      => 'tipo de documento (aprendiz)',
+            'ap_documento'           => 'documento (aprendiz)',
+            'ap_correo_institucional'=> 'correo institucional (aprendiz)',
+            'ap_celular'             => 'celular (aprendiz)',
+            'ap_contacto_nombre'     => 'contacto (aprendiz)',
+            'ap_contacto_celular'    => 'celular del contacto (aprendiz)',
+        ];
+
+        $data = $request->validate($rules, $messages, $attributes);
+
+        // Normaliza "LIDER_GENERAL" -> "ADMIN"
+        $role = match ($data['role']) {
+            'LIDER_GENERAL' => 'ADMIN',
+            default          => $data['role'],
+        };
+
+        // Helper para label visible
+        $roleLabel = match ($role) {
+            'ADMIN'               => 'Líder general',
+            'LIDER_INTERMEDIARIO' => 'Líder intermediario',
+            'LIDER_SEMILLERO'     => 'Líder semillero',
+            'APRENDIZ'            => 'Aprendiz',
+            default               => $role,
+        };
+
+        $userId = null;
+
+        try {
+            DB::transaction(function () use (&$userId, $data, $role) {
+                // users
+                $userId = DB::table('users')->insertGetId([
+                    'name'       => $data['nombre'],
+                    'apellidos'  => $data['apellido'],
+                    'email'      => $data['email'],
+                    'password'   => Hash::make($data['password']),
+                    'role'       => $role,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // perfil
+                switch ($role) {
+                    case 'ADMIN':
+                        DB::table('administradores')->insert([
+                            'id_usuario'     => $userId,
+                            'nombres'        => $data['nombre'],
+                            'apellidos'      => $data['apellido'],
+                            'creado_en'      => now(),
+                            'actualizado_en' => now(),
+                        ]);
+                        break;
+
+                    case 'LIDER_SEMILLERO':
+                        DB::table('lideres_semillero')->insert([
+                            'id_lider_semi'        => $userId,
+                            'nombres'              => $data['nombre'],
+                            'apellidos'            => $data['apellido'],
+                            'tipo_documento'       => $data['ls_tipo_documento'],
+                            'documento'            => $data['ls_documento'],
+                            'correo_institucional' => $data['email'],
+                            'creado_en'            => now(),
+                            'actualizado_en'       => now(),
+                        ]);
+                        break;
+
+                    case 'APRENDIZ':
+                        $colUserFk = DB::getSchemaBuilder()->hasColumn('aprendices', 'id_usuario')
+                            ? 'id_usuario'
+                            : 'user_id';
+                        DB::table('aprendices')->insert([
+                            $colUserFk             => $userId,
+                            'nombres'              => $data['nombre'],
+                            'apellidos'            => $data['apellido'],
+                            'ficha'                => $data['ap_ficha'],
+                            'programa'             => $data['ap_programa'],
+                            'tipo_documento'       => $data['ap_tipo_documento'],
+                            'documento'            => $data['ap_documento'],
+                            'celular'              => $data['ap_celular'] ?? null,
+                            'correo_institucional' => $data['ap_correo_institucional'],
+                            'correo_personal'      => $data['email'],
+                            'contacto_nombre'      => $data['ap_contacto_nombre'] ?? null,
+                            'contacto_celular'     => $data['ap_contacto_celular'] ?? null,
+                            'creado_en'            => now(),
+                            'actualizado_en'       => now(),
+                        ]);
+                        break;
+                }
+            });
+
+            // Respuesta según expectativa del cliente (AJAX vs normal)
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'ok'      => true,
+                    'message' => 'Usuario creado correctamente.',
+                    'usuario' => [
+                        'id'        => $userId,
+                        'correo'    => $data['email'],
+                        'rol'       => $role,
+                        'rol_label' => $roleLabel,
+                    ],
+                ], 201);
+            }
+
+            return back()->with('success', 'Usuario creado correctamente.');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'ok'      => false,
+                    'message' => 'Ocurrió un error al crear el usuario.',
+                ], 500);
+            }
+
+            return back()->withErrors(['general' => 'Ocurrió un error al crear el usuario.'])
+                         ->withInput();
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
         }
     }
 
@@ -311,15 +521,24 @@ public function index(Request $request)
     // ============================================================
     // FORMULARIO DE EDICIÓN (solo vista)
     // ============================================================
+    public function edit(User $usuario)
+    {
+        return $this->editForm($usuario);
+    }
+
     public function editForm(User $usuario)
     {
         return view('admin.usuarios.edit', compact('usuario'));
     }
+<<<<<<< HEAD
 
     public function edit(User $usuario)
     {
         return $this->editForm($usuario);
     }
+=======
+    
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
 
     // ============================================================
     // OBTENER DATOS PARA EDICIÓN (AJAX)

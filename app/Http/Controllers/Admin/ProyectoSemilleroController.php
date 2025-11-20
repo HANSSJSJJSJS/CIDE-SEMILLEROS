@@ -39,7 +39,11 @@ class ProyectoSemilleroController extends Controller
                 ->with('openModal', 'modalCrearProyecto');
         }
 
+        // La tabla proyectos no tiene AUTO_INCREMENT en id_proyecto, calculamos el siguiente id manualmente
+        $nextId = (int) (\App\Models\Proyecto::max('id_proyecto') ?? 0) + 1;
+
         Proyecto::create([
+            'id_proyecto'     => $nextId,
             'id_semillero'    => $semillero->id_semillero,
             'nombre_proyecto' => $request->nombre_proyecto,
             'descripcion'     => $request->descripcion,
@@ -84,6 +88,7 @@ class ProyectoSemilleroController extends Controller
     // GET /admin/semilleros/{semillero}/proyectos/{proyecto}/detalle
     public function detalle(Semillero $semillero, Proyecto $proyecto)
     {
+<<<<<<< HEAD
         // Validar pertenencia
         if ($proyecto->id_semillero !== $semillero->id_semillero) {
             abort(404, 'El proyecto no pertenece a este semillero');
@@ -125,13 +130,52 @@ class ProyectoSemilleroController extends Controller
         // Aseguramos que el proyecto pertenece al semillero
         if ((int) $proyecto->id_semillero !== (int) $semillero->id_semillero) {
             abort(404, 'El proyecto no pertenece a este semillero');
+=======
+        // Cargar relaciones reales: aprendices vinculados y documentos del proyecto
+        $proyecto->load([
+            'aprendices' => function ($q) {
+                $q->select(
+                    'aprendices.id_aprendiz',
+                    'aprendices.nombres',
+                    'aprendices.apellidos',
+                    'aprendices.correo_institucional',
+                    'aprendices.correo_personal',
+                    'aprendices.celular'
+                );
+            },
+            'documentos' => function ($q) {
+                $q->orderByDesc('fecha_subida');
+            },
+        ]);
+
+        $integrantes   = $proyecto->aprendices;
+        $documentacion = $proyecto->documentos;
+        $observaciones = null; // pendiente definir de dónde se obtienen
+
+        return view('Admin.semilleros.detalle_proyecto',
+            compact('semillero','proyecto','integrantes','documentacion','observaciones')
+        );
+    }
+
+    // AJAX: datos para editar proyecto en modal
+    public function editAjax(Semillero $semillero, Proyecto $proyecto)
+    {
+        // seguridad: que el proyecto pertenezca al semillero
+        if ($proyecto->id_semillero !== $semillero->id_semillero) {
+            abort(404);
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
         }
 
         return response()->json([
             'id_proyecto'     => $proyecto->id_proyecto,
             'nombre_proyecto' => $proyecto->nombre_proyecto,
+<<<<<<< HEAD
             'estado'          => $proyecto->estado,
             'descripcion'     => $proyecto->descripcion,
+=======
+            'descripcion'     => $proyecto->descripcion,
+            'estado'          => $proyecto->estado,
+>>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
             'fecha_inicio'    => optional($proyecto->fecha_inicio)->format('Y-m-d'),
             'fecha_fin'       => optional($proyecto->fecha_fin)->format('Y-m-d'),
         ]);
