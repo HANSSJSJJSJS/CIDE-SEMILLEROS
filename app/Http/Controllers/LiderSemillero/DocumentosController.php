@@ -229,19 +229,65 @@ class DocumentosController extends Controller
             $columns = DB::select("SHOW COLUMNS FROM documentos WHERE Field = 'id_aprendiz'");
             $allowsNull = !empty($columns) && $columns[0]->Null === 'YES';
 
+            // Mapear tipo_evidencia (front) a enum tipo_archivo (BD)
+            $tipoEvidencia = strtolower($request->tipo_evidencia);
+            switch ($tipoEvidencia) {
+                case 'pdf':
+                    $tipoArchivoEnum = 'PDF';
+                    break;
+                case 'documento': // Documento Word en el formulario
+                    $tipoArchivoEnum = 'WORD';
+                    break;
+                case 'presentacion':
+                    $tipoArchivoEnum = 'PRESENTACION';
+                    break;
+                case 'video':
+                    $tipoArchivoEnum = 'VIDEO';
+                    break;
+                case 'imagen':
+                    $tipoArchivoEnum = 'IMAGEN';
+                    break;
+                case 'enlace':
+                    $tipoArchivoEnum = 'ENLACE';
+                    break;
+                case 'otro':
+                default:
+                    $tipoArchivoEnum = 'OTRO';
+                    break;
+            }
+
             $dataToInsert = [
                 'id_proyecto' => $request->proyecto_id,
                 'documento' => $request->titulo,
-                'ruta_archivo' => '',
-                'tipo_archivo' => $request->tipo_evidencia,
-                'tamanio' => 0,
-                'mime_type' => '',
-                'fecha_subida' => now(),
-                'fecha_limite' => $request->fecha,
-                'estado' => 'pendiente',
-                'tipo_documento' => $request->tipo_evidencia,
-                'descripcion' => $request->descripcion
             ];
+
+            if (Schema::hasColumn('documentos', 'ruta_archivo')) {
+                $dataToInsert['ruta_archivo'] = '';
+            }
+            if (Schema::hasColumn('documentos', 'tipo_archivo')) {
+                $dataToInsert['tipo_archivo'] = $tipoArchivoEnum;
+            }
+            if (Schema::hasColumn('documentos', 'tamanio')) {
+                $dataToInsert['tamanio'] = 0;
+            }
+            if (Schema::hasColumn('documentos', 'mime_type')) {
+                $dataToInsert['mime_type'] = '';
+            }
+            if (Schema::hasColumn('documentos', 'fecha_subida')) {
+                $dataToInsert['fecha_subida'] = now();
+            }
+            if (Schema::hasColumn('documentos', 'fecha_limite')) {
+                $dataToInsert['fecha_limite'] = $request->fecha;
+            }
+            if (Schema::hasColumn('documentos', 'estado')) {
+                $dataToInsert['estado'] = 'pendiente';
+            }
+            if (Schema::hasColumn('documentos', 'tipo_documento')) {
+                $dataToInsert['tipo_documento'] = $request->tipo_evidencia;
+            }
+            if (Schema::hasColumn('documentos', 'descripcion')) {
+                $dataToInsert['descripcion'] = $request->descripcion;
+            }
 
             if ($request->has('aprendiz_id') && $request->aprendiz_id) {
                 $dataToInsert['id_aprendiz'] = $request->aprendiz_id;

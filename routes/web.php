@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\RecursoController;
 
 // Líder semillero
 use App\Http\Controllers\LiderSemillero\SemilleroController as LiderSemilleroUIController;
+use App\Http\Controllers\LiderSemillero\CalendarioLiderController;
 use App\Http\Controllers\LiderSemillero\AprendicesController as LiderAprendicesController;
 use App\Http\Controllers\LiderSemillero\DashboardController_semi;
 use App\Http\Controllers\LiderSemillero\ProyectoController as LiderProyectoController;
@@ -340,15 +341,15 @@ Route::middleware(['auth','lider.semillero'])
         Route::put('/entregas/{entrega}/estado', [DocumentosController::class, 'cambiarEstadoEntrega'])->name('entregas.estado');
         Route::put('/documentos/{documento}/actualizar', [DocumentosController::class, 'actualizarDocumento'])->name('documentos.actualizar');
 
-        // Calendario
-        Route::get('/calendario', [LiderSemilleroUIController::class, 'calendario'])->name('calendario');
-        Route::get('/eventos', [LiderSemilleroUIController::class, 'obtenerEventos'])->name('eventos.obtener');
-        Route::post('/eventos', [LiderSemilleroUIController::class, 'crearEvento'])->name('eventos.crear');
-        Route::put('/eventos/{evento}', [LiderSemilleroUIController::class, 'actualizarEvento'])->name('eventos.actualizar');
-        Route::delete('/eventos/{evento}', [LiderSemilleroUIController::class, 'eliminarEvento'])->name('eventos.eliminar');
-        Route::post('/eventos/{evento}/generar-enlace', [LiderSemilleroUIController::class, 'generarEnlace'])->name('eventos.generar-enlace');
-        Route::get('/eventos/{evento}/info', [LiderSemilleroUIController::class, 'getInfoReunion'])->name('eventos.info');
-        Route::put('/eventos/{evento}/participantes/{aprendiz}/asistencia', [LiderSemilleroUIController::class, 'actualizarAsistencia'])->name('eventos.participantes.asistencia');
+        // Calendario (controlador dedicado)
+        Route::get('/calendario', [CalendarioLiderController::class, 'calendario'])->name('calendario');
+        Route::get('/eventos', [CalendarioLiderController::class, 'obtenerEventos'])->name('eventos.obtener');
+        Route::post('/eventos', [CalendarioLiderController::class, 'crearEvento'])->name('eventos.crear');
+        Route::put('/eventos/{evento}', [CalendarioLiderController::class, 'actualizarEvento'])->name('eventos.actualizar');
+        Route::delete('/eventos/{evento}', [CalendarioLiderController::class, 'eliminarEvento'])->name('eventos.eliminar');
+        Route::post('/eventos/{evento}/generar-enlace', [CalendarioLiderController::class, 'generarEnlace'])->name('eventos.generar-enlace');
+        Route::get('/eventos/{evento}/info', [CalendarioLiderController::class, 'getInfoReunion'])->name('eventos.info');
+        Route::put('/eventos/{evento}/participantes/{aprendiz}/asistencia', [CalendarioLiderController::class, 'actualizarAsistencia'])->name('eventos.participantes.asistencia');
     });
 
 /*
