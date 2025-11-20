@@ -7,7 +7,7 @@
 @push('styles')
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="{{ asset('css/aprendiz/style.css') }}">
-<link rel="stylesheet" href="{{ asset('css/aprendiz-calendario.css') }}">
+<link rel="stylesheet" href="{{ asset('css/aprendiz/aprendiz-calendario.css') }}">
 @endpush
 
 @section('content')

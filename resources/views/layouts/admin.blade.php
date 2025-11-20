@@ -14,8 +14,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   {{-- Estilos del sistema --}}
-  <link href="{{ asset('css/admin-layout.css') }}?v={{ time() }}" rel="stylesheet">
-  <link href="{{ asset('css/admin-views.css') }}?v={{ time() }}" rel="stylesheet">
+  <link href="{{ asset('css/global/admin-layout.css') }}?v={{ time() }}" rel="stylesheet">
+  <link href="{{ asset('css/admin/admin-views.css') }}?v={{ time() }}" rel="stylesheet">
 
   @stack('styles')
   @yield('styles')

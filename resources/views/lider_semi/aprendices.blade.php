@@ -1,7 +1,11 @@
 @extends('layouts.lider_semi')
 
+@section('styles')
+<link rel="stylesheet" href="{{ asset('css/lider/mis-proyectos.css') }}">
+@endsection
+
 @section('content')
-<div class="container-fluid mt-4 px-4">
+<div class="container-fluid mt-4 px-4 projects-wallpaper aprendices-page">
     <div class="mb-4">
         <h3 class="fw-bold" style="color:#2d572c;">Aprendices del Grupo</h3>
         <p class="text-muted">Supervisa el progreso y desempeño de tus aprendices</p>

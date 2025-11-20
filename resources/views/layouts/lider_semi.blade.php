@@ -11,8 +11,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="{{ asset('css/admin-layout.css') }}?v={{ time() }}" rel="stylesheet">
-    <link href="{{ asset('css/admin-views.css') }}?v={{ time() }}" rel="stylesheet">
+    <link href="{{ asset('css/global/admin-layout.css') }}?v={{ time() }}" rel="stylesheet">
+    <link href="{{ asset('css/admin/admin-views.css') }}?v={{ time() }}" rel="stylesheet">
     @stack('styles')
     @yield('styles')
 </head>

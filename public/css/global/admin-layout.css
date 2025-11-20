@@ -88,12 +88,8 @@
 >>>>>>> PreFu
 .adm-page::before{
   content:""; position:absolute; inset:0; z-index:-1;
-  /* Mostrar imagen completa de forma responsiva */
-  background-image: url("../images/bg-semillero.png");
-  background-repeat:no-repeat;
-  background-position:center 38%; /* subir más la imagen manteniendo centrado */
-  background-size:clamp(520px, 60vw, 1400px) auto; /* más grande y responsiva */
-  opacity:.40; /* más oscuro */
+  /* Fondo base neutro: los módulos que necesiten ilustración usan sus propios fondos */
+  background:none;
   pointer-events:none;
 }
 .adm-page-head{ margin:4px 4px 16px; }
