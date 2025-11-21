@@ -30,7 +30,7 @@
                 </div>
                 <div class="col-md-4 mb-3">
                     <div class="card-metric">
-                        <div class="metric-title mb-1">Documentos Pendientes</div>
+                        <div class="metric-title mb-1">Proyectos Pendientes</div>
                         <div id="documentosPendientes" class="metric-value">{{ $documentosPendientes ?? 0 }}</div>
                         <div class="metric-aux mt-2">
                             <a href="{{ route('aprendiz.documentos.index') }}" class="text-decoration-none">Subir Documentos</a>
@@ -39,7 +39,7 @@
                 </div>
                 <div class="col-md-4 mb-3">
                     <div class="card-metric">
-                        <div class="metric-title mb-1">Documentos Completados</div>
+                        <div class="metric-title mb-1">proyectos Completados</div>
                         <div id="documentosCompletados" class="metric-value">{{ $documentosCompletados ?? 0 }}</div>
                         <div class="metric-aux mt-2">Últimos 30 Días</div>
                     </div>
