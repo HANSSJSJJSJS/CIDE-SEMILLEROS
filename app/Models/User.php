@@ -92,33 +92,35 @@ class User extends Authenticatable
     //   PERMISOS POR MÓDULO
     // ==============================
 
-    public function modulePermissions()
-    {
-        return $this->hasMany(UserModulePermission::class, 'user_id');
+ public function canManageModule(string $module, string $action): bool
+{
+    // ADMIN siempre puede todo
+    if ($this->role === 'ADMIN') {
+        return true;
     }
 
-    public function canManageModule(string $module, string $action): bool
-    {
-        // Admin siempre puede todo
-        if ($this->role === 'ADMIN') {
-            return true;
-        }
-
-        $perm = $this->modulePermissions()->where('module', $module)->first();
-
-        if (! $perm) {
-            return false;
-        }
-
-        if ($action === 'view') {
-            return (bool) ($perm->can_create || $perm->can_update || $perm->can_delete);
-        }
-
-        return match ($action) {
-            'create' => (bool) $perm->can_create,
-            'update' => (bool) $perm->can_update,
-            'delete' => (bool) $perm->can_delete,
-            default => false,
-        };
+    // LÍDER DE INVESTIGACIÓN también puede TODO siempre
+    if ($this->role === 'LIDER_INVESTIGACION') {
+        return true;
     }
+
+    // Para los demás roles (líder semillero, aprendiz)
+    $perm = $this->modulePermissions()->where('module', $module)->first();
+
+    if (! $perm) {
+        return false;
+    }
+
+    if ($action === 'view') {
+        return (bool) ($perm->can_create || $perm->can_update || $perm->can_delete);
+    }
+
+    return match ($action) {
+        'create' => (bool) $perm->can_create,
+        'update' => (bool) $perm->can_update,
+        'delete' => (bool) $perm->can_delete,
+        default => false,
+    };
+}
+
 } 
