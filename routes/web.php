@@ -18,6 +18,8 @@ use App\Http\Controllers\Admin\UsuarioController as AdminUsuarioController;
 use App\Http\Controllers\Admin\PerfilController as AdminPerfilController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\UsuarioController;
+
 
 use App\Http\Controllers\Admin\SemilleroController;              // ← sin alias
 use App\Http\Controllers\Admin\ProyectoSemilleroController;
@@ -150,6 +152,9 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
             ->whereNumber('id')->name('usuarios.edit.ajax');
         Route::post('/usuarios/ajax/store', [AdminUsuarioController::class, 'storeAjax'])
             ->name('usuarios.store.ajax');
+
+          Route::post('usuarios/{usuario}/toggle-permisos-investigacion', [UsuarioController::class, 'togglePermisosInvestigacion'])
+        ->name('usuarios.togglePermisosInvestigacion');
 
         // FUNCIONES ADMIN
         Route::get('/funciones', [AdminController::class, 'index'])->name('functions');

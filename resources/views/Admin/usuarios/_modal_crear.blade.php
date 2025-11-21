@@ -1,179 +1,204 @@
-{{-- resources/views/admin/usuarios/_modal_crear.blade.php --}}
+<div class="modal fade" id="modalCrearUsuario" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
 
-<div class="modal fade" id="modalCrearUsuario" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-centered">
-    <div class="modal-content">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content user-modal">
 
+      {{-- HEADER --}}
       <div class="modal-header">
         <h5 class="modal-title">
-          <i class="bi bi-person-plus me-1 text-success"></i>
+          <i class="bi bi-person-plus"></i>
           Agregar usuario
         </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
-      <div class="modal-body">
-        {{-- Errores generales --}}
-        @if ($errors->any())
-          <div class="alert alert-danger">
-            <strong>Revisa los campos:</strong>
-            <ul class="mb-0 mt-1">
-              @foreach ($errors->all() as $error) <li>{{ $error }}</li> @endforeach
-            </ul>
-          </div>
-        @endif
+      {{-- FORM --}}
+      <form id="formCrearUsuario" method="POST"
+            action="{{ route('admin.usuarios.store') }}"
+            class="needs-validation" novalidate>
+        @csrf
 
-        <form id="form-usuario"
-              action="{{ route('admin.usuarios.store') }}"
-              method="POST"
-              class="needs-validation"
-              novalidate>
-          @csrf
+        <div class="modal-body">
 
-          <div class="row g-3">
-
-            {{-- 1) Rol --}}
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Rol <span class="text-danger">*</span></label>
-              <select id="rol" name="role" class="form-select @error('role') is-invalid @enderror" required>
-                <option value="">Seleccione...</option>
-                <option value="ADMIN"                @selected(old('role')==='ADMIN')>Líder general</option>
-                <option value="LIDER_INVESTIGACION"  @selected(old('role')==='LIDER_INVESTIGACION')>Líder de investigación</option>
-                <option value="LIDER_SEMILLERO"      @selected(old('role')==='LIDER_SEMILLERO')>Líder semillero</option>
-                <option value="APRENDIZ"             @selected(old('role')==='APRENDIZ')>Aprendiz</option>
-              </select>
-              <div class="invalid-feedback">Selecciona un rol.</div>
-              @error('role') <div class="text-danger small">{{ $message }}</div> @enderror
+          {{-- ROL + EMAIL --}}
+          <div class="card-section">
+            <div class="user-modal-section-title">
+              <i class="bi bi-person-badge"></i> Datos básicos
             </div>
 
-            {{-- 2) Correo --}}
-            <div id="box-correo" class="col-md-6 d-none">
-              <label class="form-label fw-semibold">Correo <span class="text-danger">*</span></label>
-              <input id="correo" type="email" name="email"
-                     class="form-control @error('email') is-invalid @enderror"
-                     value="{{ old('email') }}">
-              <div class="invalid-feedback">Ingresa un correo válido.</div>
-              <div class="field-note">Usa el institucional si aplica.</div>
-              @error('email') <div class="text-danger small">{{ $message }}</div> @enderror
-            </div>
-
-            {{-- ===== ADMIN / LIDER_INVESTIGACION ===== --}}
-            <div id="box-admin" class="row g-3 d-none mt-2">
-              <div class="col-12">
-                <span class="section-label">
-                  <i class="bi bi-shield-lock"></i> Líder general / investigación
-                </span>
-              </div>
-
+            <div class="row g-3">
               <div class="col-md-6">
-                <label class="form-label fw-semibold">Nombre</label>
-                <input name="nombre" class="form-control @error('nombre') is-invalid @enderror" value="{{ old('nombre') }}">
-                <div class="invalid-feedback">Ingresa el nombre.</div>
-                @error('nombre') <div class="text-danger small">{{ $message }}</div> @enderror
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Apellido</label>
-                <input name="apellido" class="form-control @error('apellido') is-invalid @enderror" value="{{ old('apellido') }}">
-                <div class="invalid-feedback">Ingresa el apellido.</div>
-                @error('apellido') <div class="text-danger small">{{ $message }}</div> @enderror
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Contraseña</label>
-                <div class="input-group">
-                  <input type="password" id="pass-admin" name="password" class="form-control @error('password') is-invalid @enderror">
-                  <button class="btn btn-outline-secondary" type="button" data-toggle-pass="#pass-admin">
-                    <i class="bi bi-eye"></i>
-                  </button>
-                  <button class="btn btn-outline-success" type="button" data-generate-pass="#pass-admin">
-                    <i class="bi bi-magic"></i>
-                  </button>
-                </div>
-                <div class="field-note">Mínimo 8 caracteres.</div>
-                <div class="invalid-feedback">La contraseña es obligatoria.</div>
-                @error('password') <div class="text-danger small">{{ $message }}</div> @enderror
-              </div>
-            </div>
-
-            {{-- ===== LÍDER SEMILLERO ===== --}}
-            <div id="box-lider" class="row g-3 d-none mt-2">
-              <div class="col-12">
-                <span class="section-label"><i class="bi bi-mortarboard"></i> Líder semillero</span>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Nombre</label>
-                <input name="nombre" class="form-control" value="{{ old('nombre') }}">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Apellido</label>
-                <input name="apellido" class="form-control" value="{{ old('apellido') }}">
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Tipo documento</label>
-                <select name="ls_tipo_documento" class="form-select @error('ls_tipo_documento') is-invalid @enderror">
-                  <option value="">Seleccione...</option>
-                  <option value="CC" @selected(old('ls_tipo_documento')==='CC')>CC</option>
-                  <option value="CE" @selected(old('ls_tipo_documento')==='CE')>CE</option>
+                <label class="form-label">Rol <span class="text-danger">*</span></label>
+                <select name="role" id="select-role" class="form-select" required>
+                  <option value="">Seleccionar…</option>
+                  <option value="ADMIN">Líder general</option>
+                  <option value="LIDER_SEMILLERO">Líder semillero</option>
+                  <option value="LIDER_INVESTIGACION">Líder de investigación</option>
+                  <option value="APRENDIZ">Aprendiz</option>
                 </select>
-                @error('ls_tipo_documento') <div class="text-danger small">{{ $message }}</div> @enderror
+                <div class="invalid-feedback">Elige un rol.</div>
               </div>
 
               <div class="col-md-6">
-                <label class="form-label fw-semibold">Documento</label>
-                <input name="ls_documento" class="form-control" value="{{ old('ls_documento') }}">
+                <label class="form-label">Correo <span class="text-danger">*</span></label>
+                <input type="email" name="email" class="form-control"
+                       placeholder="nombre@correo.com" required>
+                <div class="invalid-feedback">Ingresa un correo válido.</div>
               </div>
+
               <div class="col-md-6">
-                <label class="form-label fw-semibold">Contraseña</label>
+                <label class="form-label">Nombre <span class="text-danger">*</span></label>
+                <input type="text" name="nombre" class="form-control" required>
+                <div class="invalid-feedback">Ingresa el nombre.</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Apellido <span class="text-danger">*</span></label>
+                <input type="text" name="apellido" class="form-control" required>
+                <div class="invalid-feedback">Ingresa el apellido.</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Contraseña <span class="text-danger">*</span></label>
                 <div class="input-group">
-                  <input type="password" id="pass-lider" name="password" class="form-control">
-                  <button class="btn btn-outline-secondary" type="button" data-toggle-pass="#pass-lider">
+                  <input type="password" name="password" id="create_password"
+                         class="form-control" required minlength="6"
+                         placeholder="Mínimo 6 caracteres">
+                  <button class="btn btn-outline-secondary btn-sm"
+                          type="button"
+                          data-toggle-pass="#create_password">
                     <i class="bi bi-eye"></i>
                   </button>
-                  <button class="btn btn-outline-success" type="button" data-generate-pass="#pass-lider">
+                  <button class="btn btn-outline-success btn-sm"
+                          type="button"
+                          data-generate-pass="#create_password">
                     <i class="bi bi-magic"></i>
                   </button>
                 </div>
+                <small class="text-muted">Se enviará o comunicará por fuera del sistema.</small>
+                <div class="invalid-feedback">Ingresa una contraseña válida.</div>
+              </div>
+            </div>
+          </div>
+
+          {{-- LÍDER SEMILLERO --}}
+          <div id="box-lider-semillero" class="card-section d-none">
+            <div class="user-modal-section-title">
+              <i class="bi bi-people"></i> Datos del líder de semillero
+            </div>
+
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">Tipo documento</label>
+                <input type="text" name="ls_tipo_documento" class="form-control">
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">Documento</label>
+                <input type="text" name="ls_documento" class="form-control">
+              </div>
+            </div>
+          </div>
+
+          {{-- LÍDER INVESTIGACIÓN --}}
+          <div id="box-lider-investigacion" class="card-section d-none">
+            <div class="user-modal-section-title">
+              <i class="bi bi-search-heart"></i> Líder de investigación
+            </div>
+            <p class="text-muted mb-0">
+              Este rol no requiere información adicional por ahora.
+            </p>
+          </div>
+
+          {{-- APRENDIZ --}}
+          <div id="box-aprendiz" class="card-section d-none">
+            <div class="user-modal-section-title">
+              <i class="bi bi-mortarboard"></i> Datos del aprendiz
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <label class="form-label">Tipo documento</label>
+                <input type="text" name="ap_tipo_documento" class="form-control">
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">Documento</label>
+                <input type="text" name="ap_documento" class="form-control">
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">Celular</label>
+                <input type="text" name="ap_celular" class="form-control">
               </div>
             </div>
 
-            {{-- ===== APRENDIZ ===== --}}
-            {{-- (tu bloque completo de aprendiz tal cual lo tienes) --}}
-            {!! '-- pega aquí tal cual tu bloque #box-aprendiz (no hace falta repetirlo para ahorrar espacio en el mensaje) --' !!}
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Semillero <span class="text-danger">*</span></label>
+                <select name="semillero_id" class="form-select">
+                  <option value="">Seleccionar…</option>
+                  @foreach($semilleros as $s)
+                    <option value="{{ $s->id_semillero }}">{{ $s->nombre }}</option>
+                  @endforeach
+                </select>
+                <div class="invalid-feedback">Selecciona un semillero.</div>
+              </div>
 
-          </div> {{-- row g-3 --}}
+              <div class="col-md-6">
+                <label class="form-label">Correo institucional</label>
+                <input type="email" name="ap_correo_institucional" class="form-control">
+              </div>
+            </div>
 
-          <div class="mt-4 sticky-actions">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-              Cancelar
-            </button>
-            <button type="submit" class="btn btn-success">
-              <i class="bi bi-check2-circle me-1"></i> Guardar
-            </button>
+            <div class="mb-3">
+              <label class="form-label">¿Vinculado al SENA?</label>
+              <div class="d-flex gap-4">
+                <label class="form-check">
+                  <input class="form-check-input" type="radio"
+                         name="radio_vinculado_sena" value="1" checked>
+                  <span class="form-check-label">Sí</span>
+                </label>
+
+                <label class="form-check">
+                  <input class="form-check-input" type="radio"
+                         name="radio_vinculado_sena" value="0">
+                  <span class="form-check-label">No</span>
+                </label>
+              </div>
+            </div>
+
+            <div id="box-aprendiz-sena" class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Ficha</label>
+                <input type="text" name="ap_ficha" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Programa</label>
+                <input type="text" name="ap_programa" class="form-control">
+              </div>
+            </div>
+
+            <div id="box-aprendiz-otra" class="mb-2 d-none">
+              <label class="form-label">Institución</label>
+              <input type="text" name="institucion" class="form-control">
+            </div>
+
           </div>
-        </form>
 
-      </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-user-secondary" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-user-primary">
+            <i class="bi bi-check-circle me-1"></i> Guardar
+          </button>
+        </div>
+
+      </form>
     </div>
   </div>
 </div>
-
-@push('styles')
-<style>
-  .brand-title{color:#2d572c}
-  .section-label{
-      font-size:.85rem;font-weight:600;color:#2d572c;
-      background:#e9f2ea;border-radius:999px;
-      padding:.2rem .6rem;display:inline-flex;gap:.4rem;align-items:center
-  }
-  .field-note{font-size:.8rem;color:#6c757d}
-  .sticky-actions{display:flex;gap:.5rem;justify-content:flex-end}
-</style>
-
-@push('scripts')
-<script src="{{ asset('js/admin/usuarios.js') }}"></script>
-@endpush
-
-
-
-@endpush

@@ -36,18 +36,20 @@ class AuthenticatedSessionController extends Controller
 
         $rol = strtoupper(str_replace([' ', '-'], '_', trim($user->role ?? $user->rol ?? '')));
 
-        $map = [
-            'ADMIN'           => 'admin.dashboard',
-            'INSTRUCTOR'      => 'lider_semi.dashboard',
-            'APRENDIZ'        => 'aprendiz.dashboard',
-            'LIDER_SEMILLERO' => 'lider_semi.dashboard',
-            'LIDER_GENERAL'   => 'lider_general.dashboard',
-        ];
+            $map = [
+                'ADMIN'               => 'admin.dashboard',
+                'LIDER_GENERAL'       => 'admin.dashboard',         // si lo usas
+                'LIDER_INVESTIGACION' => 'admin.dashboard',         // 👈 NUEVO
 
-        $route = $map[$rol] ?? 'dashboard';
+                'LIDER_SEMILLERO'     => 'lider_semi.dashboard',
+                'INSTRUCTOR'          => 'lider_semi.dashboard',
 
-        return redirect()->route($route);
-    }
+                'APRENDIZ'            => 'aprendiz.dashboard',
+            ];
+
+            $route = $map[$rol] ?? 'dashboard';
+            return redirect()->route($route);
+                }
 
     /**
      * Cerrar sesión (ruta nueva).
