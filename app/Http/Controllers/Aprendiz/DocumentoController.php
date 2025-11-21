@@ -80,12 +80,24 @@ class DocumentoController extends Controller
         // Obtener documentos del aprendiz (excluir placeholders)
         $docAprCol = $this->getDocumentoAprendizColumn();
         $aprId = $this->getAprendizId($aprendiz);
+        $limiteAprobadas = now()->subDays(2);
+
         $documentos = DB::table('documentos')
             ->join('proyectos', 'proyectos.id_proyecto', '=', 'documentos.id_proyecto')
             ->where('documentos.' . $docAprCol, $aprId)
             ->whereRaw("documentos.documento NOT LIKE 'PLACEHOLDER%'")
             ->whereNotNull('documentos.ruta_archivo')
             ->where('documentos.ruta_archivo', '!=', '')
+            // Si existe columna estado, ocultar evidencias aprobadas con más de 2 días
+            ->when(\Illuminate\Support\Facades\Schema::hasColumn('documentos','estado'), function($q) use ($limiteAprobadas) {
+                $q->where(function($inner) use ($limiteAprobadas) {
+                    $inner->whereIn('documentos.estado', ['pendiente','rechazado'])
+                          ->orWhere(function($sub) use ($limiteAprobadas) {
+                              $sub->where('documentos.estado', 'aprobado')
+                                  ->where('documentos.fecha_subida', '>=', $limiteAprobadas);
+                          });
+                });
+            })
             ->select(
                 'documentos.*',
                 'proyectos.nombre_proyecto'
@@ -275,6 +287,14 @@ class DocumentoController extends Controller
             return back()->with('error', 'Documento no encontrado o no te pertenece');
         }
 
+        // Si la evidencia ya fue aprobada por el líder, no permitir que el aprendiz la modifique
+        if (property_exists($documento, 'estado')) {
+            $estadoActual = strtolower((string)($documento->estado ?? ''));
+            if ($estadoActual === 'aprobado') {
+                return back()->with('error', 'Esta evidencia ya fue aprobada y no puede ser modificada.');
+            }
+        }
+
         // Si por algún motivo este registro aún no tiene archivo, no permitir actualizarlo aquí
         if (empty($documento->ruta_archivo)) {
             return back()->with('error', 'Este documento aún no tiene un archivo cargado para actualizar.');
@@ -288,9 +308,13 @@ class DocumentoController extends Controller
 
         $dataUpdate = [];
 
-        // Actualizar descripción/título si viene
-        if ($request->filled('descripcion')) {
-            $dataUpdate['documento'] = $request->descripcion;
+        // Actualizar descripción/título solo si cambia
+        if ($request->has('descripcion')) {
+            $nuevaDescripcion = (string)$request->input('descripcion');
+            $descripcionActual = (string)($documento->documento ?? '');
+            if ($nuevaDescripcion !== $descripcionActual) {
+                $dataUpdate['documento'] = $nuevaDescripcion;
+            }
         }
 
         // 3) Si se sube un nuevo archivo, reemplazarlo
@@ -328,11 +352,13 @@ class DocumentoController extends Controller
             }
         }
 
-        if (!empty($dataUpdate)) {
-            DB::table('documentos')
-                ->where('id_documento', $id)
-                ->update($dataUpdate);
+        if (empty($dataUpdate)) {
+            return back()->with('error', 'Debes seleccionar un nuevo archivo o cambiar la descripción para actualizar la evidencia.');
         }
+
+        DB::table('documentos')
+            ->where('id_documento', $id)
+            ->update($dataUpdate);
 
         return back()->with('success', 'Entrega actualizada correctamente.');
     }
@@ -343,18 +369,6 @@ class DocumentoController extends Controller
         $userId = Auth::id();
         $aprendiz = $this->getAprendizByUserId($userId);
         if (!$aprendiz) { return back()->with('error', 'No se encontró el perfil de aprendiz'); }
-
-        // Validar: permitir archivo o link_url
-        if ($request->hasFile('archivo')) {
-            $request->validate([
-                'archivo' => 'required|file|max:10240',
-            ]);
-        } else {
-            $request->validate([
-                'link_url' => 'required|url',
-            ]);
-        }
-
         $docAprCol = $this->getDocumentoAprendizColumn();
         $aprId = $this->getAprendizId($aprendiz);
 
@@ -364,8 +378,74 @@ class DocumentoController extends Controller
             ->first();
         if (!$documento) { return back()->with('error', 'Documento no encontrado'); }
 
+        // Determinar el tipo definido por el líder (base textual)
+        $tipoBase = strtolower(trim((string)($documento->tipo_documento ?? $documento->tipo_archivo ?? '')));
+
+        // Normalizar algunos alias
+        if (in_array($tipoBase, ['doc', 'docx', 'word', 'documento'], true)) {
+            $tipoBase = 'word';
+        } elseif (in_array($tipoBase, ['ppt', 'pptx', 'presentacion', 'presentación'], true)) {
+            $tipoBase = 'presentacion';
+        } elseif (in_array($tipoBase, ['img', 'imagen', 'image'], true)) {
+            $tipoBase = 'imagen';
+        } elseif (in_array($tipoBase, ['link', 'enlace', 'url'], true)) {
+            $tipoBase = 'enlace';
+        }
+
+        // Reglas de validación según el tipo asignado por el líder
+        if ($tipoBase === 'enlace') {
+            // Debe ser un link, no se acepta archivo físico
+            if ($request->hasFile('archivo')) {
+                return back()->with('error', 'Para esta evidencia solo se permite enviar un enlace, no un archivo.');
+            }
+            $request->validate([
+                'link_url' => 'required|url',
+            ]);
+        } else {
+            // Debe ser un archivo; no permitimos solo link_url
+            if (!$request->hasFile('archivo')) {
+                return back()->with('error', 'Debes seleccionar un archivo del tipo asignado para esta evidencia.');
+            }
+
+            // Validar tamaño máximo
+            $request->validate([
+                'archivo' => 'required|file|max:10240',
+            ]);
+
+            // Verificar extensión explícitamente según el tipo definido por el líder
+            $archivo = $request->file('archivo');
+            $extension = strtolower((string)$archivo->getClientOriginalExtension());
+
+            $extPermitidas = [];
+            switch ($tipoBase) {
+                case 'pdf':
+                    $extPermitidas = ['pdf'];
+                    break;
+                case 'word':
+                    $extPermitidas = ['doc', 'docx'];
+                    break;
+                case 'presentacion':
+                    $extPermitidas = ['ppt', 'pptx'];
+                    break;
+                case 'imagen':
+                    $extPermitidas = ['jpg', 'jpeg', 'png', 'gif'];
+                    break;
+                case 'video':
+                    $extPermitidas = ['mp4', 'avi', 'mov', 'mkv'];
+                    break;
+                default:
+                    // Tipo genérico u "otro": permitir cualquier archivo (solo se controla tamaño)
+                    $extPermitidas = [];
+                    break;
+            }
+
+            if (!empty($extPermitidas) && !in_array($extension, $extPermitidas, true)) {
+                return back()->with('error', 'El tipo de archivo seleccionado no coincide con el tipo asignado para esta evidencia.');
+            }
+        }
+
         // Construir datos a actualizar según tipo
-        if ($request->hasFile('archivo')) {
+        if ($tipoBase !== 'enlace' && $request->hasFile('archivo')) {
             $archivo = $request->file('archivo');
             $nombreOriginal = $archivo->getClientOriginalName();
             $extension = $archivo->getClientOriginalExtension();

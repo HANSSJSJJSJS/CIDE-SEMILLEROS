@@ -295,7 +295,7 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_SEMILLERO,LIDER_GENERAL'])->group(f
 | LÍDER_SEMI (UI)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth','lider.semillero'])
+Route::middleware(['auth', 'role:LIDER_SEMILLERO'])
     ->prefix('lider_semi')
     ->name('lider_semi.')
     ->group(function () {
@@ -335,11 +335,13 @@ Route::middleware(['auth','lider.semillero'])
         // Documentos / entregas / evidencias (controlador dedicado)
         Route::get('/documentos', [DocumentosController::class, 'documentos'])->name('documentos');
         Route::get('/proyectos/list', [DocumentosController::class, 'listarProyectos'])->name('proyectos.list');
-        Route::get('/proyectos/{proyecto}/aprendices-list', [DocumentosController::class, 'obtenerAprendicesProyecto'])->name('proyectos.aprendices.list');
+        Route::get('/proyectos/{id}/aprendices-list', [DocumentosController::class, 'obtenerAprendicesProyecto'])->name('proyectos.aprendices.list');
         Route::post('/evidencias/store', [DocumentosController::class, 'guardarEvidencia'])->name('evidencias.store');
-        Route::get('/proyectos/{proyecto}/entregas', [DocumentosController::class, 'obtenerEntregas'])->name('proyectos.entregas');
-        Route::put('/entregas/{entrega}/estado', [DocumentosController::class, 'cambiarEstadoEntrega'])->name('entregas.estado');
-        Route::put('/documentos/{documento}/actualizar', [DocumentosController::class, 'actualizarDocumento'])->name('documentos.actualizar');
+        Route::get('/proyectos/{id}/entregas', [DocumentosController::class, 'obtenerEntregas'])->name('proyectos.entregas');
+        Route::put('/entregas/{id}/estado', [DocumentosController::class, 'cambiarEstadoEntrega'])->name('entregas.estado');
+        Route::put('/documentos/{id}', [DocumentosController::class, 'actualizarDocumento'])->name('documentos.actualizar');
+        Route::get('/documentos/{id}/ver', [DocumentosController::class, 'verDocumento'])->name('documentos.ver');
+        Route::get('/documentos/{id}/descargar', [DocumentosController::class, 'descargarDocumento'])->name('documentos.descargar');
 
         // Calendario (controlador dedicado)
         Route::get('/calendario', [CalendarioLiderController::class, 'calendario'])->name('calendario');

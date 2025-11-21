@@ -83,6 +83,39 @@ class DocumentosController extends Controller
         return view('lider_semi.documentos', compact('proyectosActivos','proyectosCompletados'));
     }
 
+    /**
+     * Permitir al líder abrir/ver el archivo asociado a una entrega.
+     */
+    public function verDocumento($id)
+    {
+        if (!Schema::hasTable('documentos')) {
+            abort(404);
+        }
+
+        $doc = DB::table('documentos')->where('id_documento', $id)->first();
+        if (!$doc) {
+            abort(404);
+        }
+
+        // Si la ruta es una URL completa (Drive, etc.), redirigir
+        if (!empty($doc->ruta_archivo) && filter_var($doc->ruta_archivo, FILTER_VALIDATE_URL)) {
+            return redirect()->away($doc->ruta_archivo);
+        }
+
+        // Caso contrario, asumir archivo en storage/app/public
+        if (empty($doc->ruta_archivo)) {
+            abort(404);
+        }
+
+        $path = storage_path('app/public/' . ltrim($doc->ruta_archivo, '/'));
+        if (!file_exists($path)) {
+            abort(404);
+        }
+
+        // Devolver el archivo para visualizar/descargar en el navegador
+        return response()->file($path);
+    }
+
     // Listar proyectos para el select del modal
     public function listarProyectos(Request $request)
     {
@@ -411,9 +444,11 @@ class DocumentosController extends Controller
             $entregas = $entregas->map(function($entrega) use ($ahora) {
                 if ($entrega->ruta_archivo) {
                     if (filter_var($entrega->ruta_archivo, FILTER_VALIDATE_URL)) {
+                        // URL externa (Drive, etc.)
                         $entrega->archivo_url = $entrega->ruta_archivo;
                     } else {
-                        $entrega->archivo_url = asset('storage/' . $entrega->ruta_archivo);
+                        // Ruta local: usar la ruta protegida del líder semillero
+                        $entrega->archivo_url = route('lider_semi.documentos.ver', ['id' => $entrega->id]);
                     }
                 }
 
