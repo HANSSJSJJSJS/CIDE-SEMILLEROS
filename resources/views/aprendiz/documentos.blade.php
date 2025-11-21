@@ -121,7 +121,6 @@
                                 <tr>
                                     <th>Proyecto</th>
                                     <th>Título</th>
-                                    <th>Descripción</th>
                                     <th>Fecha límite</th>
                                     <th>Subir archivo</th>
                                 </tr>
@@ -131,26 +130,13 @@
                                 <tr>
                                     <td>{{ $p->nombre_proyecto }}</td>
                                     <td>{{ $p->documento }}</td>
-                                    <td>{{ $p->descripcion ?? '—' }}</td>
                                     <td>{{ !empty($p->fecha_limite) ? \Carbon\Carbon::parse($p->fecha_limite)->format('Y-m-d') : '—' }}</td>
                                     <td style="min-width:320px;">
-                                        @php
-                                            $tipo = strtolower(trim((string)($p->tipo_archivo ?? $p->tipo_documento ?? '')));
-                                            $esLink = ($tipo === 'link') || str_contains($tipo, 'enlace');
-                                        @endphp
-                                        @if($esLink)
-                                            <form action="{{ route('aprendiz.documentos.uploadAssigned', $p->id_documento) }}" method="POST" class="d-flex gap-2 pending-upload-form">
-                                                @csrf
-                                                <input type="url" name="link_url" class="form-control" placeholder="https://github.com/usuario/repo ..." required>
-                                                <button class="btn btn-success"><i class="fas fa-paper-plane"></i> Enviar link</button>
-                                            </form>
-                                        @else
-                                            <form action="{{ route('aprendiz.documentos.uploadAssigned', $p->id_documento) }}" method="POST" enctype="multipart/form-data" class="d-flex gap-2 pending-upload-form">
-                                                @csrf
-                                                <input type="file" name="archivo" class="form-control" required>
-                                                <button class="btn btn-success"><i class="fas fa-upload"></i> Subir</button>
-                                            </form>
-                                        @endif
+                                        <form action="{{ route('aprendiz.documentos.uploadAssigned', $p->id_documento) }}" method="POST" enctype="multipart/form-data" class="d-flex gap-2 pending-upload-form">
+                                            @csrf
+                                            <input type="file" name="archivo" class="form-control" required>
+                                            <button class="btn btn-success"><i class="fas fa-upload"></i> Subir</button>
+                                        </form>
                                     </td>
                                 </tr>
                                 @endforeach

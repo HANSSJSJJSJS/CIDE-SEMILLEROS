@@ -1,4 +1,3 @@
-<link rel="icon" type="image/png" href="{{ asset('images/logo_pestaña.png') }}">
 <div class="modal fade"
      id="modalNuevoSemillero"
      tabindex="-1"

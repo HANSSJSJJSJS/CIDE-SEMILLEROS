@@ -17,7 +17,6 @@ class Recurso extends Model
         'archivo',
         'descripcion',
         'categoria',
-        'dirigido_a',  
         'user_id',
     ];
 

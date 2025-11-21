@@ -183,31 +183,6 @@
             allDaySlot: false,
             nowIndicator: true,
             events: reuniones,
-            eventContent: function(arg){
-                try{
-                    const p = (arg.event.extendedProps?.participantes)||[];
-                    const lider = arg.event.extendedProps?.lider || '';
-                    const wrap = document.createElement('div');
-                    const title = document.createElement('div');
-                    title.className = 'fc-event-title fc-sticky';
-                    title.textContent = arg.event.title || 'Reunión';
-                    wrap.appendChild(title);
-                    const meta = document.createElement('div');
-                    meta.style.fontSize = '.75rem';
-                    meta.style.opacity = '0.9';
-                    meta.style.whiteSpace = 'nowrap';
-                    meta.style.overflow = 'hidden';
-                    meta.style.textOverflow = 'ellipsis';
-                    const parts = [];
-                    if (lider) parts.push(`Líder: ${lider}`);
-                    if (Array.isArray(p) && p.length){
-                        const txt = p.slice(0,2).join(', ') + (p.length>2 ? ` +${p.length-2}` : '');
-                        parts.push(`Participantes: ${txt}`);
-                    }
-                    if (parts.length){ meta.textContent = parts.join(' • '); wrap.appendChild(meta); }
-                    return { domNodes: [wrap] };
-                }catch(e){ return {}; }
-            },
             // Bloque de almuerzo sombreado (12:00 - 14:00)
             eventSources: [
                 function(fetchInfo, successCallback) {

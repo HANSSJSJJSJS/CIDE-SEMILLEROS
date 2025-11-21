@@ -56,7 +56,7 @@ class RecursosController extends Controller
         $total = collect();
         $pend  = collect();
         $aprob = collect();
-        if ($ids->isNotEmpty() && Schema::hasTable('archivos')) {
+        if ($ids->isNotEmpty()) {
             $total = DB::table('archivos')
                 ->select('proyecto_id', DB::raw('COUNT(*) as c'))
                 ->whereIn('proyecto_id', $ids)

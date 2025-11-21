@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Archivo;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class ArchivoController extends Controller
@@ -39,7 +38,7 @@ class ArchivoController extends Controller
 
         // Crear un nuevo registro en la base de datos
         Archivo::create([
-            'user_id' => Auth::id(),
+            'user_id' => auth()->id(),
             'proyecto_id' => $request->proyecto_id,
             'nombre_original' => $nombreOriginal,
             'nombre_almacenado' => $nombreAlmacenado,
@@ -53,10 +52,9 @@ class ArchivoController extends Controller
     }
 
     public function download($id)
-{
-    $archivo = Archivo::findOrFail($id);
-    $path = storage_path('app/public/'.$archivo->ruta);
-
-    return response()->download($path, $archivo->nombre_original);
-}
+    {
+        // Descargar un archivo específico
+        $archivo = Archivo::findOrFail($id);
+        return Storage::disk('public')->download($archivo->ruta, $archivo->nombre_original);
+    }
 }

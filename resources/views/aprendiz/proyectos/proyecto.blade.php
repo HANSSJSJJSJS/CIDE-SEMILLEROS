@@ -39,30 +39,29 @@
           </div>
         </div>
       </div>
-
+      
 
       <div class="mt-4">
         <div class="row g-4 g-xxl-5">
           @forelse ($proyectos as $proyecto)
             <div class="col-12 col-md-6 col-xl-4 d-flex">
               <div class="project-card shadow-sm w-100">
-                @php
-                  $st = $stats[$proyecto->id_proyecto] ?? ['progreso_pct'=>0,'completos'=>0,'subidos'=>0];
-                  $pct = (int)($st['progreso_pct'] ?? 0);
-                  $comp = (int)($st['completos'] ?? 0);
-                  $sub  = (int)($st['subidos'] ?? 0);
-                  $estadoTexto = $pct >= 100 ? 'FINALIZADO' : 'EN PROGRESO';
-                @endphp
                 <div class="project-topband">
                   <div>
                     <h5 class="m-0 fw-bolder">{{ $proyecto->nombre_proyecto }}</h5>
-                    <small class="opacity-75">{{ $estadoTexto }}</small>
+                    <small class="opacity-75">{{ $proyecto->estado ?? 'En progreso' }}</small>
                   </div>
                 </div>
                 <div class="p-3 p-lg-4">
                   <p class="text-muted mb-3">{{ $proyecto->descripcion ?? '—' }}</p>
                   <div class="fw-bold mb-1">Progreso</div>
                   <div class="progress progress-rounded my-2">
+                    @php
+                      $st = $stats[$proyecto->id_proyecto] ?? ['progreso_pct'=>0,'completos'=>0,'subidos'=>0];
+                      $pct = (int)($st['progreso_pct'] ?? 0);
+                      $comp = (int)($st['completos'] ?? 0);
+                      $sub  = (int)($st['subidos'] ?? 0);
+                    @endphp
                     <div class="progress-bar bg-success" role="progressbar" style="width: {{ $pct }}%" aria-valuenow="{{ $pct }}" aria-valuemin="0" aria-valuemax="100"></div>
                   </div>
                   <div class="fw-bold mb-3">Documentos: <span class="opacity-75">{{ $comp }}/{{ $sub }}</span></div>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -18,8 +19,12 @@ class DashboardController extends Controller
     // ===== Tarjetas KPI ======================================================
     public function stats()
     {
+        // Ajusta nombres de tablas si difieren
         $semilleros = DB::table('semilleros')->count();
+
+        // FIX: role correcto para líderes
         $lideres    = DB::table('users')->where('role', 'LIDER_SEMILLERO')->count();
+
         $aprendices = DB::table('aprendices')->count();
         $proyectos  = DB::table('proyectos')->count();
         $recursos   = DB::table('recursos')->count();
@@ -33,92 +38,123 @@ class DashboardController extends Controller
         ]);
     }
 
-    // ===== Datos para las tablas / gráficas ==================================
+    // ===== Datos para las 4 gráficas ========================================
     public function charts()
     {
         try {
-            // ============================================================
-            // 1) TABLA — Aprendices por semillero
-            // ============================================================
-            $tablaAprendicesSem = DB::table('semilleros as s')
-                ->leftJoin('aprendices as a', 'a.semillero_id', '=', 's.id_semillero')
-                ->select(
-                    's.id_semillero',
-                    's.nombre as semillero',
-                    DB::raw('COUNT(a.id_aprendiz) as total_aprendices')
-                )
-                ->groupBy('s.id_semillero', 's.nombre')
-                ->orderBy('s.nombre', 'asc')
-                ->get();
+            // ---- Helpers de columnas (detecta PK/nombre dinámicamente)
+            $semPK   = Schema::hasColumn('semilleros', 'id') ? 'id' :
+                       (Schema::hasColumn('semilleros', 'id_semillero') ? 'id_semillero' : 'id');
+            $semName = Schema::hasColumn('semilleros', 'nombre') ? 'nombre' :
+                       (Schema::hasColumn('semilleros', 'name') ? 'name' : 'nombre');
 
-            // ============================================================
-            // 2) TABLA — Proyectos por semillero (últimos 5)
-            // ============================================================
-            $semilleros = DB::table('semilleros')
-                ->orderBy('nombre')
-                ->get();
+            $apPK    = Schema::hasColumn('aprendices', 'id') ? 'id' :
+                       (Schema::hasColumn('aprendices', 'id_aprendiz') ? 'id_aprendiz' : 'id');
 
-            $tablaProyectosSem = [];
-
-            foreach ($semilleros as $s) {
-                $proyectos = DB::table('proyectos')
-                    ->where('id_semillero', $s->id_semillero)
-                    ->orderBy('creado_en', 'desc')
-                    ->limit(5)
+            // ---- a) Aprendices por semillero (Top 10)
+            // Usa pivote si existe; si no, intenta con FK directa aprendices.semillero_id
+            if (Schema::hasTable('aprendiz_semillero')) {
+                // Asumo columnas estándar de la pivote: id_semillero, id_aprendiz
+                $aprPorSem = DB::table('semilleros as s')
+                    ->leftJoin('aprendiz_semillero as ps', "ps.id_semillero", '=', DB::raw("s.$semPK"))
+                    ->leftJoin('aprendices as a', 'a.' . $apPK, '=', 'ps.id_aprendiz')
+                    ->select("s.$semName as semillero", DB::raw("COUNT(a.$apPK) as total"))
+                    ->groupBy("s.$semPK", "s.$semName")
+                    ->orderByDesc('total')
+                    ->limit(10)
                     ->get();
+            } else {
+                // FK directa
+                $fkSemillero = Schema::hasColumn('aprendices', 'semillero_id') ? 'semillero_id' :
+                               (Schema::hasColumn('aprendices', 'id_semillero') ? 'id_semillero' : null);
 
-                $tablaProyectosSem[] = [
-                    'semillero' => $s->nombre,
-                    'proyectos' => $proyectos->pluck('nombre_proyecto'),
-                ];
+                if (!$fkSemillero) {
+                    throw new \RuntimeException('No existe pivote "aprendiz_semillero" ni FK en aprendices hacia semilleros.');
+                }
+
+                $aprPorSem = DB::table('semilleros as s')
+                    ->leftJoin('aprendices as a', "a.$fkSemillero", '=', DB::raw("s.$semPK"))
+                    ->select("s.$semName as semillero", DB::raw("COUNT(a.$apPK) as total"))
+                    ->groupBy("s.$semPK", "s.$semName")
+                    ->orderByDesc('total')
+                    ->limit(10)
+                    ->get();
             }
 
-            // ============================================================
-            // 3) TABLA — Actividad de líderes
-            //    - nombre del líder (users)
-            //    - línea asignada (semilleros.linea_investigacion)
-            //    - último ingreso (users.last_login_at)
-            // ============================================================
-            $lideresRaw = DB::table('users as u')
-                ->where('u.role', 'LIDER_SEMILLERO')
-                ->leftJoin('semilleros as s', 's.id_lider_semi', '=', 'u.id')
-                ->select(
-                    'u.id',
-                    'u.name',
-                    'u.apellidos',
-                    's.linea_investigacion',
-                    'u.last_login_at'
-                )
-                ->orderBy('u.name')
-                ->get();
+            // ---- b) Proyectos por estado (con fallback de nombre de columna)
+            $colEstado = Schema::hasColumn('proyectos', 'estado') ? 'estado' :
+                         (Schema::hasColumn('proyectos', 'status') ? 'status' : null);
 
-            $actividadLideres = $lideresRaw->map(function ($l) {
-                $last = $l->last_login_at
-                    ? Carbon::parse($l->last_login_at)
-                    : null;
+            if ($colEstado) {
+                $projEstado = DB::table('proyectos')
+                    ->select($colEstado . ' as estado', DB::raw('COUNT(*) as total'))
+                    ->groupBy($colEstado)
+                    ->get();
+            } else {
+                $projEstado = collect([ (object)['estado' => 'N/A', 'total' => DB::table('proyectos')->count()] ]);
+            }
 
-                return [
-                    'lider'             => trim($l->name . ' ' . ($l->apellidos ?? '')),
-                    'linea'             => $l->linea_investigacion,
-                    'last_login'        => $last ? $last->format('d/m/Y H:i') : null,
-                    'last_login_humano' => $last ? $last->diffForHumans() : 'Sin registro',
-                ];
-            })->values();
+            // ---- c) Proyectos creados por mes (últimos 12)
+            $desde = Carbon::now()->startOfMonth()->subMonths(11);
+            $crCol = Schema::hasColumn('proyectos', 'created_at') ? 'created_at' :
+                     (Schema::hasColumn('proyectos', 'fecha_creacion') ? 'fecha_creacion' : null);
+            if (!$crCol) {
+                throw new \RuntimeException('No encuentro columna de fecha en proyectos (created_at/fecha_creacion).');
+            }
 
-      
+            $projMesRaw = DB::table('proyectos')
+                ->selectRaw("DATE_FORMAT($crCol, '%Y-%m') as ym, COUNT(*) as total")
+                ->where($crCol, '>=', $desde)
+                ->groupBy('ym')
+                ->orderBy('ym')
+                ->get()
+                ->pluck('total', 'ym')
+                ->all();
+
+            $labelsMes = [];
+            $dataMes   = [];
+            for ($i = 0; $i < 12; $i++) {
+                $key = Carbon::now()->startOfMonth()->subMonths(11 - $i)->format('Y-m');
+                $labelsMes[] = $key;
+                $dataMes[]   = $projMesRaw[$key] ?? 0;
+            }
+
+            // ---- d) Recursos por categoría (fallback)
+            $colCat = Schema::hasColumn('recursos', 'categoria') ? 'categoria' :
+                      (Schema::hasColumn('recursos', 'category') ? 'category' : null);
+
+            if ($colCat) {
+                $recCat = DB::table('recursos')
+                    ->select($colCat . ' as categoria', DB::raw('COUNT(*) as total'))
+                    ->groupBy($colCat)
+                    ->get();
+            } else {
+                $recCat = collect([]);
+            }
+
             return response()->json([
-                'tablaAprendicesSem' => $tablaAprendicesSem,
-                'tablaProyectosSem'  => $tablaProyectosSem,
-                'actividadLideres'   => $actividadLideres,
+                'aprendicesPorSemillero' => [
+                    'labels' => $aprPorSem->pluck('semillero'),
+                    'data'   => $aprPorSem->pluck('total'),
+                ],
+                'proyectosPorEstado' => [
+                    'labels' => $projEstado->pluck('estado'),
+                    'data'   => $projEstado->pluck('total'),
+                ],
+                'proyectosPorMes' => [
+                    'labels' => $labelsMes, // YYYY-MM
+                    'data'   => $dataMes,
+                ],
+                'recursosPorCategoria' => [
+                    'labels' => $recCat->pluck('categoria'),
+                    'data'   => $recCat->pluck('total'),
+                ],
             ]);
 
         } catch (\Throwable $e) {
-            Log::error('Error en DashboardController@charts: ' . $e->getMessage());
-
-            return response()->json([
-                'error'   => true,
-                'message' => $e->getMessage(),
-            ], 500);
+            Log::error('Dashboard charts error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            // Devolver SIEMPRE JSON para que el front no intente parsear HTML
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 }

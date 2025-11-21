@@ -229,22 +229,6 @@ class DocumentosController extends Controller
             $columns = DB::select("SHOW COLUMNS FROM documentos WHERE Field = 'id_aprendiz'");
             $allowsNull = !empty($columns) && $columns[0]->Null === 'YES';
 
-<<<<<<< HEAD
-            $dataToInsert = [
-                'id_proyecto' => $request->proyecto_id,
-                'documento' => $request->titulo,
-                'ruta_archivo' => '',
-                'tipo_archivo' => $request->tipo_evidencia,
-                'tamanio' => 0,
-                'mime_type' => '',
-                'fecha_subida' => now(),
-                'fecha_limite' => $request->fecha,
-                'estado' => 'pendiente',
-                'tipo_documento' => $request->tipo_evidencia,
-                'descripcion' => $request->descripcion
-            ];
-
-=======
             // Mapear tipo_evidencia (front) a enum tipo_archivo (BD)
             $tipoEvidencia = strtolower($request->tipo_evidencia);
             switch ($tipoEvidencia) {
@@ -305,7 +289,6 @@ class DocumentosController extends Controller
                 $dataToInsert['descripcion'] = $request->descripcion;
             }
 
->>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
             if ($request->has('aprendiz_id') && $request->aprendiz_id) {
                 $dataToInsert['id_aprendiz'] = $request->aprendiz_id;
                 if (Schema::hasColumn('documentos', 'id_usuario')) {
@@ -406,11 +389,7 @@ class DocumentosController extends Controller
                 'd.tamanio',
                 'd.fecha_subido as fecha',
                 DB::raw("COALESCE(d.estado, 'pendiente') as estado"),
-<<<<<<< HEAD
-                DB::raw("COALESCE(a.nombre_completo, 'Sin asignar') as nombre_aprendiz"),
-=======
                 DB::raw("COALESCE(NULLIF(TRIM(CONCAT(COALESCE(a.nombres,''),' ',COALESCE(a.apellidos,''))), ''), 'Sin Asignar') as nombre_aprendiz"),
->>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
                 'd.ruta_archivo as archivo_url',
                 'd.documento as archivo_nombre'
             ];

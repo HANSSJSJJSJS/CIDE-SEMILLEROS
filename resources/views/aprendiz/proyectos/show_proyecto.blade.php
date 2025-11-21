@@ -9,7 +9,16 @@
 @endpush
 
 @section('content')
-    
+    <header class="header-bar shadow-sm d-flex justify-content-between align-items-center px-4 py-3 mb-3">
+        <h1 class="m-0 text-success fw-bold">Detalle del Proyecto</h1>
+        <div class="d-flex align-items-center gap-3">
+            <span class="fw-semibold text-dark">{{ Auth::user()->name }}</span>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="btn btn-dark btn-sm px-3 rounded-3">Cerrar sesión</button>
+            </form>
+        </div>
+    </header>
 
     <div class="container px-4">
         <div class="row">

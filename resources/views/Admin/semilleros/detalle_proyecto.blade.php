@@ -1,4 +1,5 @@
 @extends('layouts.admin')
+
 @section('content')
 <div class="container-fluid mt-4 px-4">
 
@@ -37,20 +38,6 @@
                 <th>Teléfono</th>
               </tr>
             </thead>
-<<<<<<< HEAD
-                 <tbody>
-@forelse(($integrantes ?? []) as $i)
-  <tr>
-    <td>{{ trim(($i->nombres ?? '').' '.($i->apellidos ?? '')) }}</td>
-    <td>{{ $i->correo_institucional ?? $i->correo_personal ?? 'Sin correo' }}</td>
-    <td>{{ $i->celular ?? 'N/A' }}</td>
-  </tr>
-@empty
-  <tr><td colspan="3" class="text-center py-3 text-muted">Sin integrantes registrados.</td></tr>
-@endforelse
-</tbody>
-
-=======
             <tbody>
             @forelse(($integrantes ?? []) as $apr)
               <tr>
@@ -62,7 +49,6 @@
               <tr><td colspan="3" class="text-center py-3 text-muted">Sin integrantes registrados.</td></tr>
             @endforelse
             </tbody>
->>>>>>> 56c51368da107633c3e5131aee39af0989631ab3
           </table>
         </div>
       </div>
@@ -103,73 +89,6 @@
       </div>
     </div>
   </div>
-
-
-  {{-- Seguimiento de reuniones (Ejemplo de datos) --}}
-<div class="card shadow-sm mt-4">
-  <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-    <span><i class="bi bi-calendar-check me-1"></i> Seguimiento de reuniones</span>
-    <a class="btn btn-light btn-sm disabled" href="#">
-      <i class="bi bi-plus-circle"></i> Nueva reunión
-    </a>
-  </div>
-
-  <div class="card-body p-0">
-    <table class="table table-hover mb-0 align-middle">
-      <thead class="table-light">
-        <tr>
-          <th style="width: 140px;">Fecha</th>
-          <th style="width: 160px;">Tipo de reunión</th>
-          <th>Aprendiz</th>
-          <th style="width: 140px;">Asistencia</th>
-          <th style="width: 35%;">Comentario del líder</th>
-        </tr>
-      </thead>
-      <tbody>
-        {{-- Reunión 1 --}}
-        <tr>
-          <td rowspan="3">2025-11-05</td>
-          <td rowspan="3">Reunión de avance</td>
-          <td>Laura Rodríguez</td>
-          <td><span class="badge text-bg-success">Asistió</span></td>
-          <td class="text-muted">Excelente participación.</td>
-        </tr>
-        <tr>
-          <td>Carlos Pérez</td>
-          <td><span class="badge text-bg-danger">No asistió</span></td>
-          <td class="text-muted">Justificó inasistencia por enfermedad.</td>
-        </tr>
-        <tr>
-          <td>Valentina Gómez</td>
-          <td><span class="badge text-bg-success">Asistió</span></td>
-          <td class="text-muted">Aportó ideas sobre metodología.</td>
-        </tr>
-
-        {{-- Reunión 2 --}}
-        <tr>
-          <td rowspan="2">2025-10-22</td>
-          <td rowspan="2">Sesión virtual</td>
-          <td>Laura Rodríguez</td>
-          <td><span class="badge text-bg-success">Asistió</span></td>
-          <td class="text-muted">Presentó informe de avances.</td>
-        </tr>
-        <tr>
-          <td>Carlos Pérez</td>
-          <td><span class="badge text-bg-success">Asistió</span></td>
-          <td class="text-muted">Hizo preguntas sobre recolección de datos.</td>
-        </tr>
-
-        {{-- Reunión 3 --}}
-        <tr>
-          <td>2025-10-10</td>
-          <td>Planeación inicial</td>
-          <td colspan="3" class="text-muted">Sin registros de asistencia (solo reunión informativa).</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
 
   {{-- Observaciones --}}
   <div class="card shadow-sm mt-4">

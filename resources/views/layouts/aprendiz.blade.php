@@ -39,8 +39,8 @@
             <i class="bi bi-folder2-open me-2"></i>
             <span>Mis Proyectos</span>
           </a>
-          <a href="{{ route('aprendiz.documentos.index') }}"
-             class="nav-link {{ request()->routeIs('aprendiz.documentos.*') ? 'active' : '' }}">
+          <a href="{{ route('aprendiz.archivos.index') }}"
+             class="nav-link {{ request()->routeIs('aprendiz.archivos.*') ? 'active' : '' }}">
             <i class="bi bi-cloud-upload me-2"></i>
             <span>Subir Documentos</span>
           </a>
