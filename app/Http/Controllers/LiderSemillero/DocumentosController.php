@@ -243,7 +243,7 @@ class DocumentosController extends Controller
         try {
             $request->validate([
                 'proyecto_id' => 'required|integer|exists:proyectos,id_proyecto',
-                'aprendiz_id' => 'nullable|integer|exists:aprendices,id_aprendiz',
+                'aprendiz_id' => 'required|integer|exists:aprendices,id_aprendiz',
                 'titulo' => 'required|string|max:255',
                 'descripcion' => 'required|string',
                 'tipo_evidencia' => 'required|string',
@@ -260,7 +260,6 @@ class DocumentosController extends Controller
             }
 
             $columns = DB::select("SHOW COLUMNS FROM documentos WHERE Field = 'id_aprendiz'");
-            $allowsNull = !empty($columns) && $columns[0]->Null === 'YES';
 
             // Mapear tipo_evidencia (front) a enum tipo_archivo (BD)
             $tipoEvidencia = strtolower($request->tipo_evidencia);
@@ -322,56 +321,17 @@ class DocumentosController extends Controller
                 $dataToInsert['descripcion'] = $request->descripcion;
             }
 
-            if ($request->has('aprendiz_id') && $request->aprendiz_id) {
-                $dataToInsert['id_aprendiz'] = $request->aprendiz_id;
-                if (Schema::hasColumn('documentos', 'id_usuario')) {
-                    $usrId = null;
-                    if (Schema::hasColumn('aprendices', 'id_usuario')) {
-                        $usrId = DB::table('aprendices')->where('id_aprendiz', $request->aprendiz_id)->value('id_usuario');
-                    } elseif (Schema::hasColumn('aprendices', 'user_id')) {
-                        $usrId = DB::table('aprendices')->where('id_aprendiz', $request->aprendiz_id)->value('user_id');
-                    }
-                    if (!is_null($usrId)) {
-                        $dataToInsert['id_usuario'] = (int)$usrId;
-                    }
+            // Siempre debe venir un aprendiz asignado (opción A)
+            $dataToInsert['id_aprendiz'] = $request->aprendiz_id;
+            if (Schema::hasColumn('documentos', 'id_usuario')) {
+                $usrId = null;
+                if (Schema::hasColumn('aprendices', 'id_usuario')) {
+                    $usrId = DB::table('aprendices')->where('id_aprendiz', $request->aprendiz_id)->value('id_usuario');
+                } elseif (Schema::hasColumn('aprendices', 'user_id')) {
+                    $usrId = DB::table('aprendices')->where('id_aprendiz', $request->aprendiz_id)->value('user_id');
                 }
-            } elseif ($allowsNull) {
-                $dataToInsert['id_aprendiz'] = null;
-            } else {
-                $aprendizSinAsignar = DB::table('aprendices')
-                    ->where('documento', '=', 'SIN_ASIGNAR')
-                    ->first();
-
-                if (!$aprendizSinAsignar) {
-                    $idAprendizSinAsignar = DB::table('aprendices')->insertGetId([
-                        'nombres' => 'Sin',
-                        'apellidos' => 'Asignar',
-                        'nombre_completo' => 'Sin Asignar',
-                        'tipo_documento' => 'CC',
-                        'documento' => 'SIN_ASIGNAR',
-                        'celular' => '0000000000',
-                        'correo_institucional' => 'sin.asignar@sena.edu.co',
-                        'correo_personal' => 'sin.asignar@sena.edu.co',
-                        'programa' => 'N/A',
-                        'ficha' => '0000000',
-                        'contacto_nombre' => 'N/A',
-                        'contacto_celular' => '0000000000'
-                    ]);
-                    $dataToInsert['id_aprendiz'] = $idAprendizSinAsignar;
-                } else {
-                    $dataToInsert['id_aprendiz'] = $aprendizSinAsignar->id_aprendiz;
-                }
-
-                if (Schema::hasColumn('documentos', 'id_usuario')) {
-                    $usrId = null;
-                    if (Schema::hasColumn('aprendices', 'id_usuario')) {
-                        $usrId = DB::table('aprendices')->where('id_aprendiz', $dataToInsert['id_aprendiz'])->value('id_usuario');
-                    } elseif (Schema::hasColumn('aprendices', 'user_id')) {
-                        $usrId = DB::table('aprendices')->where('id_aprendiz', $dataToInsert['id_aprendiz'])->value('user_id');
-                    }
-                    if (!is_null($usrId)) {
-                        $dataToInsert['id_usuario'] = (int)$usrId;
-                    }
+                if (!is_null($usrId)) {
+                    $dataToInsert['id_usuario'] = (int)$usrId;
                 }
             }
 
@@ -481,7 +441,8 @@ class DocumentosController extends Controller
     {
         try {
             $request->validate([
-                'estado' => 'required|in:pendiente,aprobado,rechazado'
+                'estado' => 'required|in:pendiente,aprobado,rechazado',
+                'motivo' => 'nullable|string'
             ]);
 
             if (!Schema::hasTable('documentos')) {
@@ -508,11 +469,25 @@ class DocumentosController extends Controller
                 });
             }
 
+            // Asegurar columna descripcion si vamos a guardar motivos de rechazo
+            if (!Schema::hasColumn('documentos', 'descripcion')) {
+                Schema::table('documentos', function($table) {
+                    $table->text('descripcion')->nullable()->after('estado');
+                });
+            }
+
+            $updateData = [
+                'estado' => $request->estado
+            ];
+
+            // Si el líder envía un motivo y el estado es rechazado, guardarlo en descripcion
+            if ($request->estado === 'rechazado' && $request->filled('motivo')) {
+                $updateData['descripcion'] = $request->motivo;
+            }
+
             DB::table('documentos')
                 ->where('id_documento', $entregaId)
-                ->update([
-                    'estado' => $request->estado
-                ]);
+                ->update($updateData);
 
             return response()->json([
                 'success' => true,

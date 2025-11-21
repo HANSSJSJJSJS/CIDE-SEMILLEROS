@@ -826,31 +826,40 @@ class SemilleroController extends Controller
                 ->get();
         }
 
-        // Contadores por proyecto desde documentos
+        // Contadores por proyecto desde documentos (solo evidencias reales, sin PLACEHOLDER_)
         $proyectos->transform(function($proyecto){
-            if (Schema::hasTable('documentos')) {
-                $proyecto->entregas = DB::table('documentos')
-                    ->where('id_proyecto', $proyecto->id_proyecto)
-                    ->count();
-
-                if (Schema::hasColumn('documentos', 'estado')) {
-                    $proyecto->pendientes = DB::table('documentos')
-                        ->where('id_proyecto', $proyecto->id_proyecto)
-                        ->where('estado', 'pendiente')
-                        ->count();
-                    $proyecto->aprobadas = DB::table('documentos')
-                        ->where('id_proyecto', $proyecto->id_proyecto)
-                        ->where('estado', 'aprobado')
-                        ->count();
-                } else {
-                    $proyecto->pendientes = $proyecto->entregas;
-                    $proyecto->aprobadas = 0;
-                }
-            } else {
-                $proyecto->entregas = 0;
+            if (!Schema::hasTable('documentos')) {
+                $proyecto->entregas   = 0;
                 $proyecto->pendientes = 0;
-                $proyecto->aprobadas = 0;
+                $proyecto->aprobadas  = 0;
+                return $proyecto;
             }
+
+            // Base: documentos reales de este proyecto, ignorando registros placeholder
+            $base = DB::table('documentos')
+                ->where('id_proyecto', $proyecto->id_proyecto)
+                ->whereRaw("documento NOT LIKE 'PLACEHOLDER%'");
+
+            // Entregas: documentos reales que ya tienen archivo asociado
+            $proyecto->entregas = (clone $base)
+                ->whereNotNull('ruta_archivo')
+                ->where('ruta_archivo', '!=', '')
+                ->count();
+
+            if (Schema::hasColumn('documentos', 'estado')) {
+                // Pendientes / aprobadas según columna estado sobre documentos reales
+                $proyecto->pendientes = (clone $base)
+                    ->where('estado', 'pendiente')
+                    ->count();
+                $proyecto->aprobadas = (clone $base)
+                    ->where('estado', 'aprobado')
+                    ->count();
+            } else {
+                // Si no hay columna estado, considerar todas las evidencias reales como pendientes
+                $proyecto->pendientes = (clone $base)->count();
+                $proyecto->aprobadas  = 0;
+            }
+
             return $proyecto;
         });
 

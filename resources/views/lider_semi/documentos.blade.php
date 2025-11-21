@@ -149,11 +149,11 @@
                 </select>
             </div>
 
-            <!-- Aprendiz Asignado -->
+            <!-- Aprendiz Asignado (obligatorio) -->
             <div class="mb-3">
                 <label class="form-label-evidencia">Aprendiz Asignado</label>
-                <select class="form-select-evidencia" id="aprendiz_id" name="aprendiz_id">
-                    <option value="">Selecciona primero un proyecto...</option>
+                <select class="form-select-evidencia" id="aprendiz_id" name="aprendiz_id" required>
+                    <option value="" disabled selected>Selecciona primero un proyecto...</option>
                 </select>
                 <small class="text-muted" id="mensaje-aprendices">Selecciona un proyecto para ver los aprendices asignados</small>
             </div>
@@ -372,10 +372,14 @@ function cargarEntregas(proyectoId) {
                 let hayActualizadas = false;
                 data.entregas.forEach(entrega => {
                     console.log('Entrega:', entrega); // Debug
+                    const sinArchivo = !entrega.ruta_archivo;
                     const estadoBadge = entrega.estado === 'pendiente' ? 'badge-pendiente' :
                                        entrega.estado === 'aprobado' ? 'badge-aprobado' : 'badge-rechazado';
-                    const estadoTexto = entrega.estado === 'pendiente' ? 'PENDIENTE' :
-                                       entrega.estado === 'aprobado' ? 'APROBADO' : 'RECHAZADO';
+                    // Si aún no hay archivo, mostrar 'SIN ENTREGAR' aunque el estado sea 'pendiente'
+                    const estadoTexto = sinArchivo && entrega.estado === 'pendiente'
+                        ? 'SIN ENTREGAR'
+                        : (entrega.estado === 'pendiente' ? 'PENDIENTE'
+                           : (entrega.estado === 'aprobado' ? 'APROBADO' : 'RECHAZADO'));
 
                     const flagActualizada = entrega.recien_actualizada === true || entrega.recien_actualizada === 1 || entrega.recien_actualizada === '1';
                     if (flagActualizada) {
@@ -461,13 +465,27 @@ function cambiarEstadoEntrega(entregaId, nuevoEstado) {
         return;
     }
 
+    let motivo = null;
+    if (nuevoEstado === 'rechazado') {
+        motivo = prompt('Por favor indica el motivo del rechazo (este mensaje lo verá el aprendiz):');
+        if (motivo === null) {
+            // Canceló el cuadro de diálogo
+            return;
+        }
+        motivo = motivo.trim();
+        if (!motivo) {
+            alert('Debes escribir un motivo para rechazar la evidencia.');
+            return;
+        }
+    }
+
     fetch(`/lider_semi/entregas/${entregaId}/estado`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         },
-        body: JSON.stringify({ estado: nuevoEstado })
+        body: JSON.stringify({ estado: nuevoEstado, motivo: motivo })
     })
     .then(response => response.json())
     .then(data => {
@@ -655,7 +673,8 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`/lider_semi/proyectos/${proyectoId}/aprendices-list`)
             .then(response => response.json())
             .then(data => {
-                selectAprendiz.innerHTML = '<option value="">Sin asignar a un aprendiz específico</option>';
+                // Siempre forzamos a elegir un aprendiz concreto
+                selectAprendiz.innerHTML = '<option value="" disabled selected>Selecciona un aprendiz...</option>';
                 selectAprendiz.disabled = false;
 
                 if (data.aprendices && data.aprendices.length > 0) {
@@ -668,8 +687,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     mensajeAprendices.textContent = `${data.aprendices.length} aprendiz(es) asignado(s) a este proyecto`;
                     mensajeAprendices.className = 'text-success';
                 } else {
-                    selectAprendiz.innerHTML = '<option value="">No hay aprendices asignados a este proyecto</option>';
-                    mensajeAprendices.textContent = 'Este proyecto no tiene aprendices asignados. La evidencia quedará sin asignar.';
+                    selectAprendiz.innerHTML = '<option value="" disabled selected>No hay aprendices asignados a este proyecto</option>';
+                    mensajeAprendices.textContent = 'Este proyecto no tiene aprendices asignados. No puedes crear evidencias hasta asignar aprendices.';
                     mensajeAprendices.className = 'text-warning';
                 }
             })

@@ -479,6 +479,11 @@
     margin: 0;
 }
 
+.entregas-vacio p {
+  margin: 0;
+  color: #666;
+}
+
 .entrega-info {
     color: #666;
     font-size: 0.9rem;
@@ -613,24 +618,24 @@
         flex-direction: column;
         text-align: center;
     }
-    
+
     .documentos-header .btn-crear-proyecto {
         margin-top: 1rem;
         width: 100%;
     }
-    
+
     .estadistica-numero {
         font-size: 24px;
     }
-    
+
     .modal-evidencia {
         padding: 24px;
     }
-    
+
     .modal-evidencia h2 {
         font-size: 1.5rem;
     }
-    
+
     .modal-botones {
         flex-direction: column;
     }
@@ -640,23 +645,23 @@
     .proyecto-card .card-body {
         padding: 1rem;
     }
-    
+
     .estadistica-numero {
         font-size: 20px;
     }
-    
+
     .estadistica-label {
         font-size: 0.7rem;
     }
-    
+
     .modal-evidencia {
         padding: 20px;
     }
-    
+
     .entrega-acciones {
         flex-direction: column;
     }
-    
+
     .entrega-acciones button {
         width: 100%;
     }

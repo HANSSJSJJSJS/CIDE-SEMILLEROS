@@ -53,7 +53,7 @@
 
                         <div class="mb-3">
                             <label for="id_proyecto" class="form-label">Proyecto *</label>
-                            <select name="id_proyecto" id="id_proyecto" class="form-select @error('id_proyecto') is-invalid @enderror" required>
+                            <select name="id_proyecto" id="id_proyecto" class="form-select @error('id_proyecto') is-invalid @enderror" required @if(empty($pendientesAsignadas) || $pendientesAsignadas->isEmpty()) disabled @endif>
                                 <option value="">Selecciona un proyecto</option>
                                 @foreach($proyectos as $proyecto)
                                     <option value="{{ $proyecto->id_proyecto }}" {{ (string)request('proyecto') === (string)$proyecto->id_proyecto ? 'selected' : '' }}>{{ $proyecto->nombre_proyecto }}</option>
@@ -131,7 +131,7 @@
                                        id="archivo"
                                        accept="{{ $acceptTipos }}"
                                        class="dropzone-input @error('archivo') is-invalid @enderror"
-                                       required>
+                                       @if(empty($pendientesAsignadas) || $pendientesAsignadas->isEmpty()) disabled @else required @endif>
                             </div>
                             <small class="text-muted">
                                 @if($tipoAsignado && $tipoAsignado !== 'enlace')
@@ -154,7 +154,7 @@
                             @enderror
                         </div>
 
-                        <button type="submit" class="btn btn-success w-100">
+                        <button type="submit" class="btn btn-success w-100" @if(empty($pendientesAsignadas) || $pendientesAsignadas->isEmpty()) disabled @endif>
                             <i class="fas fa-upload"></i> Subir Documento
                         </button>
                     </form>
@@ -194,13 +194,11 @@
                         </ul>
                     @else
                         <hr>
-                        <h6>Tipos de archivo permitidos:</h6>
-                        <ul class="small">
-                            <li>Documentos: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX</li>
-                            <li>Imágenes: JPG, PNG, GIF</li>
-                            <li>Comprimidos: ZIP, RAR</li>
-                            <li>Otros: TXT, CSV</li>
-                        </ul>
+                        <h6>No hay evidencias pendientes por entregar.</h6>
+                        <p class="small mb-0">
+                            Tu líder aún no te ha asignado nuevas evidencias para este módulo. Cuando se asignen,
+                            aparecerán aquí con su información de proyecto, título, descripción y fecha límite.
+                        </p>
                     @endif
                 </div>
             </div>
@@ -264,51 +262,53 @@
                                                 @endif
                                             </td>
                                             <td class="text-center align-middle">
-                                                {{-- Descargar --}}
-                                                <a href="{{ route('aprendiz.documentos.download', $doc->id_documento) }}" class="btn btn-sm btn-success me-1" title="Descargar">
-                                                    <i class="fas fa-download"></i>
-                                                </a>
+                                                <div class="acciones-docs">
+                                                    {{-- Descargar --}}
+                                                    <a href="{{ route('aprendiz.documentos.download', $doc->id_documento) }}" class="btn btn-sm btn-success me-1" title="Descargar">
+                                                        <i class="fas fa-download"></i>
+                                                    </a>
 
-                                                @if(!empty($doc->ruta_archivo) && $estado !== 'aprobado')
-                                                    {{-- Editar / reemplazar archivo --}}
-                                                    <form action="{{ route('aprendiz.documentos.update', $doc->id_documento) }}"
+                                                    @if(!empty($doc->ruta_archivo) && $estado !== 'aprobado')
+                                                        {{-- Editar / reemplazar archivo --}}
+                                                        <form action="{{ route('aprendiz.documentos.update', $doc->id_documento) }}"
+                                                              method="POST"
+                                                              enctype="multipart/form-data"
+                                                              class="d-inline-block align-middle mt-1"
+                                                              style="max-width: 230px;">
+                                                            @csrf
+                                                            @method('PUT')
+                                                            <input type="file"
+                                                                   name="archivo"
+                                                                   class="form-control form-control-sm mb-1"
+                                                                   style="width: 180px;"
+                                                                   title="Selecciona un nuevo archivo para reemplazar">
+                                                            <input type="text"
+                                                                   name="descripcion"
+                                                                   class="form-control form-control-sm mb-1"
+                                                                   placeholder="Nuevo título (opcional)"
+                                                                   value="{{ $doc->documento }}">
+                                                            <button type="submit" class="btn btn-sm btn-secondary w-100" title="Editar entrega">
+                                                                <i class="fas fa-edit"></i>
+                                                            </button>
+                                                        </form>
+                                                    @elseif($estado === 'aprobado')
+                                                        <span class="badge bg-success ms-1">Aprobada, no editable</span>
+                                                    @else
+                                                        <span class="badge bg-warning text-dark ms-1">Aún sin archivo, no editable</span>
+                                                    @endif
+
+                                                    {{-- Eliminar --}}
+                                                    <form action="{{ route('aprendiz.documentos.destroy', $doc->id_documento) }}"
                                                           method="POST"
-                                                          enctype="multipart/form-data"
-                                                          class="d-inline-block align-middle mt-1"
-                                                          style="max-width: 230px;">
+                                                          class="d-inline ms-1"
+                                                          onsubmit="return confirm('¿Estás seguro de eliminar este documento?')">
                                                         @csrf
-                                                        @method('PUT')
-                                                        <input type="file"
-                                                               name="archivo"
-                                                               class="form-control form-control-sm mb-1"
-                                                               style="width: 180px;"
-                                                               title="Selecciona un nuevo archivo para reemplazar">
-                                                        <input type="text"
-                                                               name="descripcion"
-                                                               class="form-control form-control-sm mb-1"
-                                                               placeholder="Nuevo título (opcional)"
-                                                               value="{{ $doc->documento }}">
-                                                        <button type="submit" class="btn btn-sm btn-secondary w-100" title="Editar entrega">
-                                                            <i class="fas fa-edit"></i>
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">
+                                                            <i class="fas fa-trash"></i>
                                                         </button>
                                                     </form>
-                                                @elseif($estado === 'aprobado')
-                                                    <span class="badge bg-success ms-1">Aprobada, no editable</span>
-                                                @else
-                                                    <span class="badge bg-warning text-dark ms-1">Aún sin archivo, no editable</span>
-                                                @endif
-
-                                                {{-- Eliminar --}}
-                                                <form action="{{ route('aprendiz.documentos.destroy', $doc->id_documento) }}"
-                                                      method="POST"
-                                                      class="d-inline ms-1"
-                                                      onsubmit="return confirm('¿Estás seguro de eliminar este documento?')">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </form>
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -365,6 +365,13 @@ document.addEventListener('DOMContentLoaded', function(){
       }
       const data = await resp.json();
       if (!data?.ok){ throw new Error('Respuesta inválida'); }
+
+      // Si el backend indica que hay que recargar (por ejemplo, se completó una evidencia pendiente), recargar
+      if (data.reload){
+        window.location.reload();
+        return;
+      }
+
       const tBody = document.getElementById('docsTbody');
       if (tBody){
         const tr = document.createElement('tr');
