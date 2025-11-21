@@ -5,6 +5,13 @@
 
 @section('content')
 
+@php
+    $user      = auth()->user();
+    $canCreate = $user->canManageModule('usuarios','create');
+    $canUpdate = $user->canManageModule('usuarios','update');
+    $canDelete = $user->canManageModule('usuarios','delete');
+@endphp
+
 <div class="container-fluid mt-3 px-3">
 
     {{-- FILTROS + BOTONES --}}
@@ -60,9 +67,14 @@
                 <i class="bi bi-x-lg me-1"></i> Limpiar
               </a>
 
-              <a href="{{ route('admin.usuarios.create') }}" class="btn btn-nuevo-semillero">
-                <i class="bi bi-person-plus me-1"></i> Nuevo
-              </a>
+              @if($canCreate)
+                    <button type="button"
+                            class="btn btn-nuevo-semillero"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalCrearUsuario">
+                      <i class="bi bi-person-plus me-1"></i> Nuevo
+                    </button>
+                  @endif
             </div>
           </div>
 
@@ -96,17 +108,17 @@
 
                   $roleLabel = $u->role_label
                     ?? match($u->role ?? null) {
-                        'ADMIN' => 'Líder general',
+                        'ADMIN'           => 'Líder general',
                         'LIDER_SEMILLERO' => 'Líder de semillero',
-                        'APRENDIZ' => 'Aprendiz',
-                        default => ($u->role ?? '—'),
+                        'APRENDIZ'        => 'Aprendiz',
+                        default           => ($u->role ?? '—'),
                     };
 
                   $roleColor = match($u->role ?? '') {
-                      'ADMIN' => 'bg-danger',
+                      'ADMIN'           => 'bg-danger',
                       'LIDER_SEMILLERO' => 'bg-success',
-                      'APRENDIZ' => 'bg-primary',
-                      default => 'bg-secondary',
+                      'APRENDIZ'        => 'bg-primary',
+                      default           => 'bg-secondary',
                   };
 
                   $last = $u->last_login_at ?? $u->updated_at ?? null;
@@ -135,20 +147,28 @@
                   </td>
 
                   <td class="py-3 text-end pe-4 d-flex justify-content-end gap-2">
-                    <a href="{{ route('admin.usuarios.edit', $u->id) }}"
-                       class="btn btn-sm btn-accion-editar">
-                      <i class="bi bi-pencil me-1"></i> Editar
-                    </a>
+                    @if($canUpdate)
+                      <a href="{{ route('admin.usuarios.edit', $u->id) }}"
+                         class="btn btn-sm btn-accion-editar">
+                        <i class="bi bi-pencil me-1"></i> Editar
+                      </a>
+                    @endif
 
-                    <form action="{{ route('admin.usuarios.destroy', $u->id) }}"
-                          method="POST"
-                          onsubmit="return confirm('¿Deseas eliminar este usuario?');">
-                      @csrf
-                      @method('DELETE')
-                      <button class="btn btn-sm btn-accion-eliminar" type="submit">
-                        <i class="bi bi-trash me-1"></i> Eliminar
-                      </button>
-                    </form>
+                    @if($canDelete)
+                      <form action="{{ route('admin.usuarios.destroy', $u->id) }}"
+                            method="POST"
+                            onsubmit="return confirm('¿Deseas eliminar este usuario?');">
+                        @csrf
+                        @method('DELETE')
+                        <button class="btn btn-sm btn-accion-eliminar" type="submit">
+                          <i class="bi bi-trash me-1"></i> Eliminar
+                        </button>
+                      </form>
+                    @endif
+
+                    @if(!$canUpdate && !$canDelete)
+                      <span class="text-muted small">Sin permisos</span>
+                    @endif
                   </td>
                 </tr>
               @empty
@@ -174,48 +194,11 @@
   </div>
 </div>
 
+@if($canCreate)
+  @include('admin.usuarios._modal_crear')
+@endif
 @endsection
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/admin/semilleros.css') }}">
-
-<style>
-/* Glass para tarjeta de filtros y tabla */
-.glass-card {
-    background: rgba(255,255,255,0.45) !important;
-    backdrop-filter: blur(8px) !important;
-    -webkit-backdrop-filter: blur(8px) !important;
-    border-radius: 14px !important;
-    border: 1px solid rgba(255,255,255,0.25) !important;
-}
-
-/* Mantenemos el fondo transparente para el cuerpo de la tabla */
-.glass-card table {
-    --bs-table-bg: transparent !important;
-    --bs-table-striped-bg: rgba(255,255,255,0.15) !important;
-    --bs-table-hover-bg: rgba(255,255,255,0.25) !important;
-}
-.glass-card tbody tr,
-.glass-card tbody td {
-    background: transparent !important;
-}
-
-/* Encabezado SOLO de esta tabla de usuarios */
-.tabla-usuarios thead th {
-    background-color: #0b2e4d !important;   /* tu blue-900 */
-    color: #ffffff !important;
-    font-size: 0.85rem;                     /* más pequeño */
-    font-weight: 600;
-    padding-top: 0.55rem;
-    padding-bottom: 0.55rem;
-    letter-spacing: 0.03em;
-    border-bottom: 2px solid rgba(255,255,255,0.25) !important;
-}
-
-/* Hover un poco más notorio, manteniendo transparencia */
-.tabla-usuarios.table-hover tbody tr:hover {
-    background-color: rgba(11, 46, 77, 0.28) !important;
-    transition: background-color 0.15s ease-in-out;
-}
-</style>
+<link rel="stylesheet" href="{{ asset('css/admin/usuarios.css') }}">
 @endpush

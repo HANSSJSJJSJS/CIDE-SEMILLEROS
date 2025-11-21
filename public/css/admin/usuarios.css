@@ -1,0 +1,44 @@
+/* ================================
+   TARJETAS GLASS (filtros + tabla)
+   ================================ */
+.glass-card {
+    background: rgba(255,255,255,0.45) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    border-radius: 14px !important;
+    border: 1px solid rgba(255,255,255,0.25) !important;
+}
+
+/* Fondo transparente y estilos de tabla dentro del glass */
+.glass-card table {
+    --bs-table-bg: transparent !important;
+    --bs-table-striped-bg: rgba(255,255,255,0.15) !important;
+    --bs-table-hover-bg: rgba(255,255,255,0.25) !important;
+}
+
+.glass-card tbody tr,
+.glass-card tbody td {
+    background: transparent !important;
+}
+
+/* ================================
+   ENCABEZADO TABLA USUARIOS
+   ================================ */
+.tabla-usuarios thead th {
+    background-color: #0b2e4d !important; /* azul oscuro */
+    color: #ffffff !important;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+    letter-spacing: 0.03em;
+    border-bottom: 2px solid rgba(255,255,255,0.25) !important;
+}
+
+/* ================================
+   HOVER FILAS
+   ================================ */
+.tabla-usuarios.table-hover tbody tr:hover {
+    background-color: rgba(11, 46, 77, 0.28) !important;
+    transition: background-color 0.15s ease-in-out;
+}

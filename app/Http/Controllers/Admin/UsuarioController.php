@@ -37,12 +37,13 @@ public function index(Request $request)
             DB::raw('COALESCE(sa.id_semillero, sl.id_semillero) as semillero_id'),
             DB::raw('COALESCE(sa.linea_investigacion, sl.linea_investigacion) as linea_investigacion'),
             DB::raw("CASE
-                        WHEN users.role = 'ADMIN'            THEN 'Líder general'
-                        WHEN users.role = 'LIDER_SEMILLERO'  THEN 'Líder semillero'
-                        WHEN users.role = 'APRENDIZ'         THEN 'Aprendiz'
-                        ELSE users.role
-                     END AS role_label")
-        ])
+                                WHEN users.role = 'ADMIN'             THEN 'Líder general'
+                                WHEN users.role = 'LIDER_SEMILLERO'   THEN 'Líder semillero'
+                                WHEN users.role = 'APRENDIZ'          THEN 'Aprendiz'
+                                WHEN users.role = 'LIDER_INVESTIGACION' THEN 'Líder de investigación'  -- 👈 NUEVO
+                                ELSE users.role
+                            END AS role_label")
+            ])
         ->when($q !== '', function ($w) use ($q) {
             $w->where(function ($s) use ($q) {
                 $s->where('users.name','like',"%{$q}%")
@@ -70,6 +71,7 @@ public function index(Request $request)
     $roles = [
         'ADMIN'           => 'Líder general',
         'LIDER_SEMILLERO' => 'Líder semillero',
+        'LIDER_INVESTIGACION'=> 'Líder de investigación', 
         'APRENDIZ'        => 'Aprendiz',
     ];
 
@@ -87,6 +89,7 @@ public function index(Request $request)
         $roles = [
             'ADMIN'           => 'Líder general',
             'LIDER_SEMILLERO' => 'Líder semillero',
+            'LIDER_INVESTIGACION'=> 'Líder de investigación',
             'APRENDIZ'        => 'Aprendiz',
         ];
 
@@ -106,7 +109,7 @@ public function index(Request $request)
 {
     // Reglas base
     $rules = [
-        'role'     => 'required|in:ADMIN,LIDER_GENERAL,LIDER_SEMILLERO,APRENDIZ',
+        'role'     => 'required|in:ADMIN,LIDER_GENERAL,LIDER_SEMILLERO,LIDER_INVESTIGACION,APRENDIZ',
         'nombre'   => 'required|string|max:255',
         'apellido' => 'required|string|max:255',
         'email'    => 'required|email|unique:users,email',
@@ -194,6 +197,7 @@ public function index(Request $request)
     $roleLabel = match ($role) {
         'ADMIN'           => 'Líder general',
         'LIDER_SEMILLERO' => 'Líder semillero',
+        'LIDER_INVESTIGACION'=> 'Líder de investigación',
         'APRENDIZ'        => 'Aprendiz',
         default           => $role,
     };
@@ -235,6 +239,14 @@ public function index(Request $request)
                         'correo_institucional' => $data['email'],
                         'creado_en'            => now(),
                         'actualizado_en'       => now(),
+                    ]);
+                    break;
+
+                    case 'LIDER_INVESTIGACION': 
+                    DB::table('lideres_investigacion')->insert([
+                        'user_id'    => $userId,
+                        'created_at' => now(),
+                        'updated_at' => now(),
                     ]);
                     break;
 
@@ -342,6 +354,10 @@ public function index(Request $request)
                     : 'user_id';
                 $perfil = DB::table('aprendices')->where($colUserFk, $id)->first();
                 break;
+
+             case 'LIDER_INVESTIGACION': // 👈 NUEVO (opcional)
+        $perfil = DB::table('lideres_investigacion')->where('user_id', $id)->first();
+        break;
         }
 
         return response()->json(['usuario' => $usuario, 'perfil' => $perfil]);
@@ -471,6 +487,9 @@ public function index(Request $request)
                             ? 'id_usuario'
                             : 'user_id';
                         DB::table('aprendices')->where($colUserFk, $usuario->id)->delete();
+                        break;
+                    case 'LIDER_INVESTIGACION': // 👈 NUEVO
+                        DB::table('lideres_investigacion')->where('user_id', $usuario->id)->delete();
                         break;
                 }
 

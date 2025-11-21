@@ -132,9 +132,9 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // ======================================================
-//                  RUTAS ADMIN
+//                  RUTAS ADMIN / LÍDER INVESTIGACIÓN
 // ======================================================
-Route::middleware(['auth', 'role:ADMIN'])
+Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {

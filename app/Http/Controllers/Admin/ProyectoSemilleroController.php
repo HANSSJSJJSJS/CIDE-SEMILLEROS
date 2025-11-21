@@ -19,7 +19,8 @@ class ProyectoSemilleroController extends Controller
             ->orderByDesc('id_proyecto')
             ->get();
 
-        return view('Admin.semilleros.proyectos', compact('semillero', 'proyectos'));
+        // ✅ vista movida a admin/semilleros/proyectos/index.blade.php
+        return view('admin.semilleros.proyectos.index', compact('semillero','proyectos'));
     }
 
     public function store(Request $request, Semillero $semillero)
@@ -111,7 +112,8 @@ class ProyectoSemilleroController extends Controller
 
         $observaciones = '';
 
-        return view('Admin.semilleros.detalle_proyecto', compact(
+        // ✅ vista movida a admin/semilleros/proyectos/detalle.blade.php
+        return view('admin.semilleros.proyectos.detalle', compact(
             'semillero','proyecto','integrantes','documentacion','observaciones'
         ));
     }
