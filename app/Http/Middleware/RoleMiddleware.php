@@ -37,8 +37,8 @@ class RoleMiddleware
         }
 
         if (! in_array($userRole, $allowed, true)) {
-            // redirigir al dashboard genérico o abort(403)
-            return redirect()->route('dashboard')->withErrors(['error' => 'No tienes permisos para acceder a esta sección.']);
+            // ✅ Aquí usamos 403 en vez de redirect('dashboard')
+            abort(403, 'No tienes permisos para acceder a esta sección.');
         }
 
         return $next($request);

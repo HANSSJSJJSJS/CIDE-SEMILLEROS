@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 19-11-2025 a las 17:32:00
+-- Tiempo de generación: 24-11-2025 a las 16:22:57
 -- Versión del servidor: 10.4.32-MariaDB
--- Versión de PHP: 8.4.13
+-- Versión de PHP: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -29,6 +29,7 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `administradores` (
   `id_usuario` bigint(20) UNSIGNED NOT NULL,
+  `nombre` varchar(120) NOT NULL,
   `nombres` varchar(120) NOT NULL,
   `apellidos` varchar(255) DEFAULT NULL,
   `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -39,12 +40,12 @@ CREATE TABLE `administradores` (
 -- Volcado de datos para la tabla `administradores`
 --
 
-INSERT INTO `administradores` (`id_usuario`, `nombres`, `apellidos`, `creado_en`, `actualizado_en`) VALUES
-(43, 'Sergio', 'nova', '2025-10-22 21:29:19', '2025-10-22 21:29:19'),
-(47, 'maria', 'nova', '2025-10-22 23:53:38', '2025-10-22 23:53:38'),
-(49, 'LOREE', 'nova', '2025-10-23 02:40:11', '2025-10-23 02:40:11'),
-(69, 'luis', 'garcia', '2025-10-30 00:29:35', '2025-10-30 00:29:35'),
-(83, 'joaquin', 'cañon', '2025-11-18 13:52:56', '2025-11-18 13:52:56');
+INSERT INTO `administradores` (`id_usuario`, `nombre`, `nombres`, `apellidos`, `creado_en`, `actualizado_en`) VALUES
+(43, '', 'Sergio', 'nova', '2025-10-22 21:29:19', '2025-10-22 21:29:19'),
+(47, '', 'maria', 'nova', '2025-10-22 23:53:38', '2025-10-22 23:53:38'),
+(49, '', 'LOREE', 'nova', '2025-10-23 02:40:11', '2025-10-23 02:40:11'),
+(69, '', 'luis', 'garcia', '2025-10-30 00:29:35', '2025-10-30 00:29:35'),
+(83, '', 'joaquin', 'cañon', '2025-11-18 13:52:56', '2025-11-18 13:52:56');
 
 -- --------------------------------------------------------
 
@@ -111,7 +112,8 @@ INSERT INTO `aprendices` (`id_aprendiz`, `user_id`, `nombres`, `apellidos`, `nom
 (90, 84, 'Sergio', 'mogoyon', NULL, '3548751', 'Deporte', 1, NULL, 'CC', '15457845', '54648961', 'serm@hsena.com', 'sergius@gmail.com', 'aasd', '21641561', 7, '2025-11-18 13:54:41', '2025-11-18 13:54:41', 'Activo'),
 (91, 85, 'geral', 'fajardo', NULL, '9814728', 'Animacion 3D', 1, NULL, 'CC', '78897773', '3114543378', 'example@gmail.com', 'example@mi.sena.edu.co', 'Madre', 'SOLO HAY UNA', 9, '2025-11-19 13:12:42', '2025-11-19 13:12:42', 'Activo'),
 (92, 86, 'jhon', 'cortes', NULL, '2872387', 'Análisis y Desarrollo de Software', 1, NULL, 'CC', '1023456799', '3105679087', 'example2@gmail.com', 'example2@soy.sena.edu.co', 'la mama', 'pa siempre', 9, '2025-11-19 13:39:28', '2025-11-19 13:39:28', 'Activo'),
-(93, 87, 'Santiago', 'Aves', NULL, '982734893', 'Animacion 3D', 1, NULL, 'CC', '78897876', '3114543678', 'example3@gmail.com', 'example3@soy.sena.edu.co', 'el papa', 'lo abandono', 9, '2025-11-19 13:40:32', '2025-11-19 13:40:32', 'Activo');
+(93, 87, 'Santiago', 'Aves', NULL, '982734893', 'Animacion 3D', 1, NULL, 'CC', '78897876', '3114543678', 'example3@gmail.com', 'example3@soy.sena.edu.co', 'el papa', 'lo abandono', 9, '2025-11-19 13:40:32', '2025-11-19 13:40:32', 'Activo'),
+(94, 88, 'jhonnatan', 'rico', NULL, '254426554', 'adso', 1, NULL, 'CC', '6541651665', '54321643241', 'asdadsj@hotmail', 'kg22@gmail.com', 'asda', 'sumakmsa', 9, '2025-11-20 18:49:06', '2025-11-20 18:49:06', 'Activo');
 
 -- --------------------------------------------------------
 
@@ -146,7 +148,9 @@ INSERT INTO `aprendiz_proyecto` (`id`, `id_aprendiz`, `id_proyecto`) VALUES
 (20, 69, 6),
 (21, 91, 7),
 (22, 92, 7),
-(23, 86, 7);
+(23, 86, 7),
+(24, 85, 7),
+(25, 94, 7);
 
 -- --------------------------------------------------------
 
@@ -159,14 +163,6 @@ CREATE TABLE `cache` (
   `value` mediumtext NOT NULL,
   `expiration` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Volcado de datos para la tabla `cache`
---
-
-INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
-('laravel-cache-santiago.jimenez@misena.edu.co|127.0.0.1', 'i:2;', 1763473740),
-('laravel-cache-santiago.jimenez@misena.edu.co|127.0.0.1:timer', 'i:1763473740;', 1763473740);
 
 -- --------------------------------------------------------
 
@@ -215,7 +211,9 @@ INSERT INTO `documentos` (`id_documento`, `id_proyecto`, `id_aprendiz`, `titulo_
 (1, 12, 90, NULL, NULL, 'ejemplo entrega', 'documentos/1763479448_90_Plantilla_cide2.docx', 'PDF', NULL, 'pdf', '', '2025-11-18 09:06:26', NULL, 107498, '2025-11-18 10:24:08', 'aprobado', '2025-11-18', 'manual'),
 (2, 12, 90, NULL, NULL, 'ejemplo entrega', 'documentos/1763475058_90_manualejemplo2.pdf', 'PDF', NULL, 'pdf', '', '2025-11-18 09:07:11', NULL, 272439, '2025-11-18 09:10:58', 'aprobado', '2025-11-29', 'manual  empresarial'),
 (3, 12, 90, NULL, NULL, 'manual', 'documentos/1763474949_90_manualejemplo2.pdf', 'PDF', NULL, NULL, NULL, '2025-11-18 09:09:09', NULL, 272439, '2025-11-18 09:09:09', 'aprobado', NULL, NULL),
-(4, 12, 90, NULL, NULL, 'ejemplo entrega 1.1.1', 'documentos/1763479325_90_manualejemplo2.pdf', 'PDF', NULL, 'pdf', '', '2025-11-18 10:10:44', NULL, 272439, '2025-11-18 10:22:05', 'aprobado', '2025-11-29', 'entrega de proyecto final');
+(4, 12, 90, NULL, NULL, 'ejemplo entrega 1.1.1', 'documentos/1763479325_90_manualejemplo2.pdf', 'PDF', NULL, 'pdf', '', '2025-11-18 10:10:44', NULL, 272439, '2025-11-18 10:22:05', 'aprobado', '2025-11-29', 'entrega de proyecto final'),
+(5, 7, 94, NULL, NULL, 'manual', 'documentos/1763664924_94_Lideres de Semilleros CIDE 2025.pdf', 'PDF', NULL, 'pdf', '', '2025-11-20 13:52:51', NULL, 602030, '2025-11-20 13:55:24', 'rechazado', '2025-11-22', 'maluma'),
+(6, 7, 94, NULL, NULL, 'manual', 'documentos/1763664916_94_constancia_complementaria.pdf', 'PDF', NULL, 'pdf', '', '2025-11-20 13:53:18', NULL, 36306, '2025-11-20 13:55:16', 'aprobado', '2025-11-23', 'mau');
 
 -- --------------------------------------------------------
 
@@ -337,6 +335,27 @@ CREATE TABLE `job_batches` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `lideres_investigacion`
+--
+
+CREATE TABLE `lideres_investigacion` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `tiene_permisos` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `lideres_investigacion`
+--
+
+INSERT INTO `lideres_investigacion` (`id`, `user_id`, `tiene_permisos`, `created_at`, `updated_at`) VALUES
+(1, 89, 0, '2025-11-21 20:14:35', '2025-11-24 15:18:55');
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `lideres_semillero`
 --
 
@@ -385,45 +404,9 @@ CREATE TABLE `migrations` (
 --
 
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
-(1, '0001_01_01_000000_create_users_table', 1),
-(2, '0001_01_01_000001_create_cache_table', 1),
-(3, '0001_01_01_000002_create_jobs_table', 1),
-(4, '2025_10_15_152741_create_administradores_table', 2),
-(5, '2025_10_15_152742_create_lideres_generales_table', 2),
-(8, '2025_10_15_160035_add_nombre_to_admins_and_lideres_generales', 3),
-(9, '2025_10_15_191526_update_id_tipo_documento_in_aprendices_and_lideres_semillero', 3),
-(10, '2025_10_20_163848_create_semilleros_table', 4),
-(11, '2025_10_21_000000_create_aprendiz_proyectos_table', 5),
-(12, '2025_10_21_151521_add_apellidos_to_users_table', 6),
-(13, '2025_10_17_163819_create_archivos_table', 7),
-(14, '2025_10_17_200240_create_proyecto_user_table', 8),
-(15, '2025_10_20_172439_add_estado_to_users_table', 9),
-(16, '2025_10_20_create_proyectos_table', 9),
-(17, 'create_proyectos_table', 9),
-(18, '2025_10_22_193932_add_nombre_completo_to_aprendices_table', 10),
-(19, '2025_10_22_202536_add_estado_to_documentos_table', 10),
-(20, '2025_10_23_083700_create_eventos_table', 9),
-(21, '2025_10_23_140834_add_ubicacion_recordatorio_to_eventos_table', 10),
-(22, '2025_10_23_145619_add_link_virtual_descripcion_to_eventos_table', 10),
-(23, '2025_10_23_154412_create_evidencias_table', 11),
-(24, '2025_10_24_133708_add_estado_to_documentos_table', 12),
-(25, '2025_10_24_150148_add_documentos_requeridos_to_proyectos_table', 12),
-(26, '2025_10_24_163144_add_codigo_reunion_to_eventos_table', 13),
-(27, '2025_10_24_170619_add_estado_to_archivos_table', 13),
-(28, '2025_10_24_191739_add_proyecto_id_to_archivos_table', 14),
-(29, '2025_10_24_194710_add_proyecto_id_to_archivos_table', 15),
-(30, '2025_10_27_200800_add_id_usuario_to_evidencias_table', 16),
-(31, '2025_10_28_000100_create_evento_participantes_table', 16),
-(32, '2025_10_28_000200_add_unique_index_eventos_datetime', 17),
-(33, '2025_10_28_150500_add_optional_fields_to_eventos_table', 17),
-(34, '2025_10_28_154300_make_linea_investigacion_nullable_in_eventos_table', 17),
-(35, '2025_10_28_154500_alter_linea_investigacion_nullable_mysql', 17),
-(36, '2025_11_05_000200_fix_evento_participantes_id_auto_increment', 17),
-(37, '2025_11_05_150509_create_recursos_table', 18),
-(38, '2025_11_05_164816_add_categoria_to_recursos_table', 19),
-(39, '2025_11_12_163607_migrate_pivot_to_fk_aprendices', 20),
-(40, '2025_11_12_192249_add_vinculado_sena_and_institucion_to_aprendices_table', 21),
-(41, '2025_11_14_130004_add_last_login_at_to_users_table', 22);
+(1, '2025_11_19_142456_add_dirigido_a_to_recursos_table', 1),
+(2, '2025_11_21_152555_add_tiene_permisos_to_lideres_investigacion_table', 2),
+(3, '2025_11_21_152649_add_tiene_permisos_to_lideres_investigacion_table', 3);
 
 -- --------------------------------------------------------
 
@@ -478,6 +461,20 @@ INSERT INTO `proyectos` (`id_proyecto`, `id_semillero`, `nombre_proyecto`, `desc
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `proyecto_user`
+--
+
+CREATE TABLE `proyecto_user` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `id_proyecto` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `recursos`
 --
 
@@ -486,11 +483,20 @@ CREATE TABLE `recursos` (
   `nombre_archivo` varchar(255) NOT NULL,
   `archivo` varchar(255) NOT NULL,
   `categoria` enum('plantillas','manuales','otros') NOT NULL DEFAULT 'otros',
+  `dirigido_a` enum('todos','aprendices','lideres') NOT NULL DEFAULT 'todos',
   `descripcion` text DEFAULT NULL,
   `user_id` bigint(20) UNSIGNED DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `recursos`
+--
+
+INSERT INTO `recursos` (`id`, `nombre_archivo`, `archivo`, `categoria`, `dirigido_a`, `descripcion`, `user_id`, `created_at`, `updated_at`) VALUES
+(1, 'Plantilla rx56', 'recursos/72fkBbEgdn1DJ08qFQqZF8DLZKWVO8xcw7fov004.pdf', 'plantillas', 'todos', 'detalles', 83, '2025-11-20 18:26:55', '2025-11-20 18:26:55'),
+(2, 'Plantilla rx56', 'recursos/fG3M8b78kOUqp6Mj4KM2PvI6yuHLINLS9g39hpre.pdf', 'plantillas', 'todos', 'detalles', 83, '2025-11-20 18:26:59', '2025-11-20 18:26:59');
 
 -- --------------------------------------------------------
 
@@ -542,9 +548,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('8O7Qiw21FXUGBwBJtPBYBKnXcNyaQJNeBRGsgXjv', 83, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiQVFtZEhwRWNObm9uRjkzY3U5aDZiQ1Jxa0gwVlYzNVF6TDNqUWtkTiI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozODoiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2FkbWluL3NlbWlsbGVyb3MiO31zOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czo0NDoiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2FkbWluL2Rhc2hib2FyZC9jaGFydHMiO3M6NToicm91dGUiO3M6MjI6ImFkbWluLmRhc2hib2FyZC5jaGFydHMiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTo4Mzt9', 1763569416),
-('9wPUgLwexJteoRa21ocNxTCT7e9JkiCOaZ33iinl', 83, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiVTNvbDRDSW9HWXhuRHJ2VllyT0x1eW12QjRDQXV3YnoxNXhLcGJwUiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9kYXNoYm9hcmQvY2hhcnRzIjtzOjU6InJvdXRlIjtzOjIyOiJhZG1pbi5kYXNoYm9hcmQuY2hhcnRzIjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6ODM7fQ==', 1763481721),
-('aiLvIB5hDcfLzo7kuw57ioFeEuBwY3roNbfpmWv7', 83, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiaGVXc0R4azViQ3JIcVAyQjQ4WEc1eFR1a0F4NDNQcVFZbDhTZ1VuQiI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozNjoiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2FkbWluL3VzdWFyaW9zIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9kYXNoYm9hcmQvY2hhcnRzIjtzOjU6InJvdXRlIjtzOjIyOiJhZG1pbi5kYXNoYm9hcmQuY2hhcnRzIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6ODM7fQ==', 1763493547);
+('9L7VXUjBdfxgeVBiCu0KlfEBoR72JEZmxkkASZyc', 89, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiM0YwYTJZRWJNMGZJNEg5NHdXZVdKQnVvYnB2S2pyc0lNc2lrZWpGMiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzY6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi91c3VhcmlvcyI7czo1OiJyb3V0ZSI7czoyMDoiYWRtaW4udXN1YXJpb3MuaW5kZXgiO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTo4OTt9', 1763996539),
+('mmObBNuqM45icBYEZcU3ogaFU51dRKNCkybK4uEm', 83, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiaFhEYzRxUTZTQVZjSnM2ejlwQkRWUDVpS3RsMGgzVWdxUThqOTVpcyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzY6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi91c3VhcmlvcyI7czo1OiJyb3V0ZSI7czoyMDoiYWRtaW4udXN1YXJpb3MuaW5kZXgiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTo4Mzt9', 1763997536);
 
 -- --------------------------------------------------------
 
@@ -581,7 +586,7 @@ INSERT INTO `users` (`id`, `name`, `apellidos`, `email`, `email_verified_at`, `p
 (28, 'Andrés Pérez', NULL, 'andres.perez@example.com', '2025-10-21 15:08:35', '$2y$10$examplehash4', 'APRENDIZ', NULL, NULL, '2025-10-21 15:08:35', '2025-10-21 15:08:35'),
 (29, 'María', 'Morita', 'maria.castro@example.com', '2025-10-21 15:08:35', '$2y$10$examplehash5', 'APRENDIZ', NULL, NULL, '2025-10-21 15:08:35', '2025-10-22 23:46:58'),
 (43, 'Sergio', 'nova', 'hola1@hola.com', NULL, '$2y$12$X6be5Oyv8GOMcJ6XeiR2E.kexPv76F04xDiid9KsY3/u9lW5AHP82', 'ADMIN', NULL, '2025-11-18 13:52:10', '2025-10-22 21:29:19', '2025-11-18 13:52:10'),
-(45, 'Andrés', 'garcia', 'hola@hola.com', NULL, '$2y$12$gDClHnaBJeyAT.p1n6mlR.r.0LBbtL/ejEhvY26v23OcnKORnEWAi', 'LIDER_SEMILLERO', NULL, NULL, '2025-10-22 21:30:06', '2025-10-22 21:30:06'),
+(45, 'Andrés', 'garcia', 'hola@hola.com', NULL, '$2y$12$gDClHnaBJeyAT.p1n6mlR.r.0LBbtL/ejEhvY26v23OcnKORnEWAi', 'LIDER_SEMILLERO', NULL, '2025-11-19 18:39:35', '2025-10-22 21:30:06', '2025-11-19 18:39:35'),
 (46, 'Sergio', 'Morita', 'asd2223@hola.com', NULL, '$2y$12$MBRwPyhaJOUhkX3g1sprD.6X3OZaVMzlM04O8PfHMfoXMuhuHnMme', 'APRENDIZ', NULL, NULL, '2025-10-22 21:48:14', '2025-10-22 23:46:41'),
 (47, 'maria', 'nova', 'danielcf97@hotmail.com', NULL, '$2y$12$gIcmOXdncQNHiCYKuHoUKufcEKdTgJjE4xjAAU4BQBp7JHGi1.gRO', 'ADMIN', NULL, NULL, '2025-10-22 23:53:38', '2025-10-22 23:53:38'),
 (48, 'Sergio', 'nova', 'daniel7@hotmail.com', NULL, '$2y$12$3j3LhORhr9ggHeZLCNDNvePrJvy.CGFEOlwM6whleyKac8XsKKqBm', 'ADMIN', NULL, NULL, '2025-10-23 02:39:02', '2025-10-23 02:39:02'),
@@ -592,7 +597,7 @@ INSERT INTO `users` (`id`, `name`, `apellidos`, `email`, `email_verified_at`, `p
 (55, 'Test User', NULL, 'test@example.com', '2025-10-27 21:52:19', '$2y$12$MWjLtw9w/Araa.FitOcv.OyfUFlBVXvQeipNfNkPQaEzKYfgzJnnu', 'APRENDIZ', 'UxHPINOx1R', NULL, '2025-10-27 21:52:20', '2025-10-27 21:52:20'),
 (56, 'Sergio', 'Morita', 'sergio@sena.com', NULL, '$2y$12$IZH2smkp0bK.KMJN1hVgxOWHruIuyfshhW8wIMELGbl1twC9klCsK', 'LIDER_SEMILLERO', NULL, NULL, '2025-10-28 01:35:08', '2025-10-28 01:35:08'),
 (57, 'Carlos Hernando', 'Niño Rivera', 'chninor@sena.edu.co', NULL, '$2y$12$2u3HSnrhTaf1Szhm/Zszt.9Rx0NxPeqD71Brg2RV8fmhz0LLDOaYC', 'LIDER_SEMILLERO', NULL, NULL, '2025-10-28 01:55:05', '2025-10-28 01:55:05'),
-(58, 'Karol Vanesa', 'Hernández', 'khernandez@sena.edu.co', NULL, '$2y$12$K0hG1LjlEGqRIPFlXihubu26Y8rGxnrwA07OcxX.xGzYDivps6WoS', 'LIDER_SEMILLERO', NULL, '2025-11-18 15:25:27', '2025-10-28 01:56:09', '2025-11-18 15:25:27'),
+(58, 'Karol Vanesa', 'Hernández', 'khernandez@sena.edu.co', NULL, '$2y$12$K0hG1LjlEGqRIPFlXihubu26Y8rGxnrwA07OcxX.xGzYDivps6WoS', 'LIDER_SEMILLERO', NULL, '2025-11-21 21:07:39', '2025-10-28 01:56:09', '2025-11-21 21:07:39'),
 (59, 'William Rolando', 'Rodríguez', 'wrodriguezr@sena.edu.co', NULL, '$2y$12$jFM7Upw4h3TD4DKZySV3d.QT2xwS1sQkQ4WchZoLVPTOhvn1MBPR6', 'LIDER_SEMILLERO', NULL, NULL, '2025-10-28 01:56:59', '2025-10-28 01:56:59'),
 (60, 'Cesar', 'Moreno', 'cmorenogu@sena.edu.co', NULL, '$2y$12$EWRQGOJoPb3S2lsIcIfpaOja9/fyNjcC8RYwZWSPS69Psv4tFS.m.', 'LIDER_SEMILLERO', NULL, NULL, '2025-10-28 02:03:45', '2025-10-28 02:03:45'),
 (61, 'Marly Julieth', 'Hernández Sánchez', 'marhermandezs@sena.edu.co', NULL, '$2y$12$3COInLSxSGW0VKA.qyyBVebMxPUOB7vUw2H4COtGodVanGqkPYByy', 'LIDER_SEMILLERO', NULL, NULL, '2025-10-28 02:04:42', '2025-10-28 02:04:42'),
@@ -602,7 +607,7 @@ INSERT INTO `users` (`id`, `name`, `apellidos`, `email`, `email_verified_at`, `p
 (66, 'Carlos Andrés', 'Sáenz', 'casaenz@sena.edu.co', NULL, '$2y$12$cMQuRFhEsAMGtz0tjcjIbOSxBNXgUvnecHFuTw1iiT4IsrgTLAOj2', 'LIDER_SEMILLERO', NULL, NULL, '2025-10-28 23:41:56', '2025-10-28 23:41:56'),
 (67, 'Harol', 'Pardos', 'sergio@admin1.com', NULL, '$2y$12$oqJyGYOnWOqd6WLDIOOaHOXybBykL2OIOGYhs77dUPf3sPo4BhpRq', 'LIDER_SEMILLERO', NULL, NULL, '2025-10-29 00:24:23', '2025-10-29 19:47:29'),
 (69, 'luis', 'garcia', 'lideradmin@hola.com', NULL, '$2y$12$xgChGVNvHOBXhGjD98dmU.k94pgDEn7akThvCIKVtwhSg7uvy3e0.', 'ADMIN', NULL, NULL, '2025-10-30 00:29:35', '2025-10-30 00:29:35'),
-(70, 'Hansbleidi', 'Cardenas', 'yurani12@gmail.com', NULL, '$2y$12$IaEEeNepnPujOXZk6c5fQeYMB.38rLT6MDZsuBa.xq6ZfBV3sx.Ka', 'LIDER_SEMILLERO', NULL, NULL, '2025-11-05 18:21:44', '2025-11-05 18:21:44'),
+(70, 'Hansbleidi', 'Cardenas', 'yurani12@gmail.com', NULL, '$2y$12$IaEEeNepnPujOXZk6c5fQeYMB.38rLT6MDZsuBa.xq6ZfBV3sx.Ka', 'LIDER_INVESTIGACION', NULL, '2025-11-20 18:55:45', '2025-11-05 18:21:44', '2025-11-20 18:55:45'),
 (71, 'jubhb', 'jhvv', 'hidalgo.16@gmail.com', NULL, '$2y$12$IL1eNma7i4KitbcXlSYfuO8IVp2Y1RZkQHa9W451RURzi/WehtJjS', 'APRENDIZ', NULL, NULL, '2025-11-11 23:37:32', '2025-11-11 23:37:32'),
 (72, 'Juan', 'Pérez López', 'juan.perez@misena.edu.co', NULL, '$2y$12$RlunXngGHsN4EyYmNHCj3OkIdTQfriQzIprFNnuNAEbTh0kLCtjje', 'APRENDIZ', NULL, NULL, '2025-11-12 18:18:57', '2025-11-12 18:18:57'),
 (73, 'Laura', 'Gómez Rincón', 'laura.gomez@misena.edu.co', NULL, '$2y$12$CDQ.mIzBy2nP7mEVHLsBYuTwW.VOMVRmEDOM9Hq1jd2KzY0WdMB4C', 'APRENDIZ', NULL, NULL, '2025-11-12 18:20:35', '2025-11-12 18:20:35'),
@@ -611,11 +616,13 @@ INSERT INTO `users` (`id`, `name`, `apellidos`, `email`, `email_verified_at`, `p
 (76, 'Kevin', 'levinin', 'kevinsan@hotmail.com', NULL, '$2y$12$Y8HQzARbw1BN4gQR.172KulRsUAwmmjwRsLDHGo5ThVxK3hwHfFZW', 'APRENDIZ', NULL, NULL, '2025-11-12 22:39:15', '2025-11-12 22:39:15'),
 (77, 'Mario', 'nova', 'aprendiz@hotmail.com', NULL, '$2y$12$n9s5zzz5aP.ELxl5KGrhn.g0UhDy6dYNNDdrTN38AEqY0SWId/qMO', 'APRENDIZ', NULL, NULL, '2025-11-13 00:45:01', '2025-11-13 00:45:01'),
 (82, 'cangiro', 'Sáenz', 'aprendizsinficha@hola.com', NULL, '$2y$12$jxN6wbzuLjed0saX7ydvDuACXwotkCMDtdqgja/vDFiam0EoiP0Ia', 'APRENDIZ', NULL, NULL, '2025-11-13 01:06:03', '2025-11-13 01:06:03'),
-(83, 'joaquin', 'cañon', 'test@gmail.com', NULL, '$2y$12$sHrfMiEsMJUZcwdjDaW9Duw6UUXlzdhji2XuTZ/HchRUVqqT.n5qe', 'ADMIN', NULL, '2025-11-19 16:23:34', '2025-11-18 13:52:56', '2025-11-19 16:23:34'),
+(83, 'joaquin', 'cañon', 'test@gmail.com', NULL, '$2y$12$sHrfMiEsMJUZcwdjDaW9Duw6UUXlzdhji2XuTZ/HchRUVqqT.n5qe', 'ADMIN', NULL, '2025-11-24 15:00:25', '2025-11-18 13:52:56', '2025-11-24 15:00:25'),
 (84, 'Sergio', 'mogoyon', 'sergius@gmail.com', NULL, '$2y$12$15JuiLt.GUmdNvJmgc8tz.bnEwowAlWrL9XEp/lqwZ.VswWlWKhuW', 'APRENDIZ', NULL, '2025-11-18 15:23:38', '2025-11-18 13:54:41', '2025-11-18 15:23:38'),
 (85, 'geral', 'fajardo', 'example@mi.sena.edu.co', NULL, '$2y$12$fNW/LwABdKI6WxTCwGa.xuQ/hcYd8CftseU/UV2kPKoOQ2J9fwTQK', 'APRENDIZ', NULL, NULL, '2025-11-19 13:12:42', '2025-11-19 13:12:42'),
 (86, 'jhon', 'cortes', 'example2@soy.sena.edu.co', NULL, '$2y$12$MKX16HShWl83SlpPnK6DQuQlX3LaxbkfIagGlKZ0BNRKRod62OP86', 'APRENDIZ', NULL, NULL, '2025-11-19 13:39:28', '2025-11-19 13:39:28'),
-(87, 'Santiago', 'Aves', 'example3@soy.sena.edu.co', NULL, '$2y$12$7xsdRlZ2I66UhOuIJLU/Q.hDKSRlnZs4j74uM1wnD4hOwA9xSbPam', 'APRENDIZ', NULL, NULL, '2025-11-19 13:40:32', '2025-11-19 13:40:32');
+(87, 'Santiago', 'Aves', 'example3@soy.sena.edu.co', NULL, '$2y$12$7xsdRlZ2I66UhOuIJLU/Q.hDKSRlnZs4j74uM1wnD4hOwA9xSbPam', 'APRENDIZ', NULL, NULL, '2025-11-19 13:40:32', '2025-11-19 13:40:32'),
+(88, 'jhonnatan', 'rico', 'kg22@gmail.com', NULL, '$2y$12$TRolyCgZ2lLB7moUXLxQ4O7M8DLpsQsf1vj3WvB9nnNPKUvaMRFdG', 'APRENDIZ', NULL, '2025-11-20 18:56:34', '2025-11-20 18:49:06', '2025-11-20 18:56:34'),
+(89, 'Jhon', 'Torres', 'liderinves@hotmail.com', NULL, '$2y$12$pA/obeF92h2XH2Ec1u6OjO8V8m5BIwjh3sUyFC/Nky9rkpw/qZEZy', 'LIDER_INVESTIGACION', NULL, '2025-11-24 15:01:07', '2025-11-21 20:14:34', '2025-11-24 15:01:07');
 
 -- --------------------------------------------------------
 
@@ -746,6 +753,13 @@ ALTER TABLE `job_batches`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indices de la tabla `lideres_investigacion`
+--
+ALTER TABLE `lideres_investigacion`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
 -- Indices de la tabla `lideres_semillero`
 --
 ALTER TABLE `lideres_semillero`
@@ -773,9 +787,17 @@ ALTER TABLE `proyectos`
 ALTER TABLE `proyectos` ADD FULLTEXT KEY `ft_proyectos` (`nombre_proyecto`,`descripcion`);
 
 --
+-- Indices de la tabla `proyecto_user`
+--
+ALTER TABLE `proyecto_user`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `proyecto_user_id_proyecto_user_id_unique` (`id_proyecto`,`user_id`);
+
+--
 -- Indices de la tabla `recursos`
 --
 ALTER TABLE `recursos`
+  ADD PRIMARY KEY (`id`),
   ADD KEY `fk_recursos_user` (`user_id`);
 
 --
@@ -817,13 +839,13 @@ ALTER TABLE `user_module_permissions`
 -- AUTO_INCREMENT de la tabla `aprendices`
 --
 ALTER TABLE `aprendices`
-  MODIFY `id_aprendiz` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=94;
+  MODIFY `id_aprendiz` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=95;
 
 --
 -- AUTO_INCREMENT de la tabla `aprendiz_proyecto`
 --
 ALTER TABLE `aprendiz_proyecto`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT de la tabla `eventos`
@@ -856,16 +878,34 @@ ALTER TABLE `jobs`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de la tabla `lideres_investigacion`
+--
+ALTER TABLE `lideres_investigacion`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT de la tabla `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `proyectos`
 --
 ALTER TABLE `proyectos`
   MODIFY `id_proyecto` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+
+--
+-- AUTO_INCREMENT de la tabla `proyecto_user`
+--
+ALTER TABLE `proyecto_user`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `recursos`
+--
+ALTER TABLE `recursos`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `semilleros`
@@ -877,7 +917,7 @@ ALTER TABLE `semilleros`
 -- AUTO_INCREMENT de la tabla `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=88;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=90;
 
 --
 -- AUTO_INCREMENT de la tabla `user_module_permissions`
@@ -940,10 +980,17 @@ ALTER TABLE `evidencias`
   ADD CONSTRAINT `fk_evidencias_user` FOREIGN KEY (`id_usuario`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
+-- Filtros para la tabla `lideres_investigacion`
+--
+ALTER TABLE `lideres_investigacion`
+  ADD CONSTRAINT `lideres_investigacion_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
 -- Filtros para la tabla `recursos`
 --
 ALTER TABLE `recursos`
-  ADD CONSTRAINT `fk_recursos_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_recursos_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `recursos_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `semilleros`

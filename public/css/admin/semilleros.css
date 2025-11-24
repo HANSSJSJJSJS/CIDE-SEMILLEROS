@@ -113,3 +113,158 @@
         align-items: flex-end;
     }
 }
+
+/* ================================
+   BOTÓN NUEVO SEMILLERO
+   ================================ */
+.btn-nuevo-semillero {
+    background-color: #2d572c;
+    color: #fff;
+    border-radius: 999px;
+    padding-inline: 18px;
+    font-weight: 600;
+    border: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+}
+.btn-nuevo-semillero:hover {
+    background-color: #244822;
+    color: #fff;
+}
+
+/* ================================
+   BARRA DE BÚSQUEDA
+   ================================ */
+.search-bar-wrapper {
+    display: flex;
+    gap: 8px;
+    max-width: 520px;
+}
+.search-bar-wrapper input.form-control {
+    border-radius: 999px 0 0 999px;
+}
+.search-bar-wrapper button {
+    border-radius: 0 999px 999px 0;
+    background-color: #0b2e4d;
+    border: none;
+    padding: 0 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ================================
+   ACCIONES DE CADA FILA
+   ================================ */
+.acciones-semilleros {
+    display: inline-flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.btn-accion-editar {
+    background-color: #0b2e4d;
+    color: #fff;
+    border-radius: 999px;
+    border: none;
+    font-size: .8rem;
+    padding-inline: 12px;
+}
+.btn-accion-editar:hover {
+    background-color: #093047;
+    color: #fff;
+}
+
+.btn-accion-eliminar {
+    background-color: #c0392b;
+    color: #fff;
+    border-radius: 999px;
+    border: none;
+    font-size: .8rem;
+    padding-inline: 12px;
+}
+.btn-accion-eliminar:hover {
+    background-color: #a93226;
+    color: #fff;
+}
+
+.btn-accion-ver {
+    background-color: #27ae60;
+    color: #fff;
+    border-radius: 999px;
+    border: none;
+    font-size: .8rem;
+    padding-inline: 12px;
+}
+.btn-accion-ver:hover {
+    background-color: #1f8f4e;
+    color: #fff;
+}
+
+/* ================================
+   ENCABEZADO DE TABLA (SEMILLEROS)
+   ================================ */
+.tabla-semilleros thead th {
+    background-color: #0b2e4d !important;
+    color: #ffffff !important;
+    font-size: .85rem;
+    font-weight: 600;
+    padding-top: .55rem;
+    padding-bottom: .55rem;
+    border-bottom: 2px solid rgba(255,255,255,0.35) !important;
+    letter-spacing: .03em;
+}
+
+/* ================================
+   CUERPO: MENOS TRANSLÚCIDO + BORDES
+   ================================ */
+.tabla-semilleros tbody tr {
+    background-color: rgba(255,255,255,0.75) !important;
+}
+.tabla-semilleros tbody td {
+    background-color: transparent !important;
+}
+
+/* Bordes entre filas */
+.tabla-semilleros > :not(caption) > * > * {
+    border-top: none !important;
+    border-bottom: 1.5px solid rgba(11,46,77,0.18) !important;
+}
+
+/* Bordes generales tabla */
+.tabla-semilleros {
+    border-collapse: collapse !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+    border: 2px solid rgba(0,0,0,0.20) !important;
+    --bs-table-bg: transparent !important;
+}
+
+/* ================================
+   HOVER NOTORIO
+   ================================ */
+.tabla-semilleros.table-hover tbody tr:hover {
+    background-color: rgba(11, 46, 77, 0.30) !important;
+    color: #ffffff !important;
+    transition: background-color .15s ease-in-out;
+}
+.tabla-semilleros.table-hover tbody tr:hover td {
+    color: #ffffff !important;
+}
+
+/* ================================
+   CONTENEDOR SIN CAJA BLANCA
+   ================================ */
+.tabla-semilleros-wrapper,
+.tabla-semilleros-wrapper .table-responsive {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    padding: 0 !important;
+}
+
+/* Evitar bordes raros de Bootstrap */
+.table {
+    --bs-table-border-color: transparent !important;
+}
