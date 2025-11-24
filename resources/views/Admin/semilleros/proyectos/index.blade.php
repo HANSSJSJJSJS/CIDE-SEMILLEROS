@@ -1,6 +1,14 @@
+{{-- resources/views/admin/semilleros/proyectos/index.blade.php --}}
 @extends('layouts.admin')
 
 @section('content')
+
+@php
+    $user      = auth()->user();
+    $canCreate = $user->canManageModule('proyectos','create');
+    $canUpdate = $user->canManageModule('proyectos','update');
+    $canDelete = $user->canManageModule('proyectos','delete');
+@endphp
 
 {{-- Bloques para errores del modal y reapertura automática --}}
 @if ($errors->crearProyecto->any())
@@ -46,17 +54,21 @@
         </div>
       </div>
     </div>
-   <a href="{{ route('admin.semilleros.index') }}" class="btn btn-accion-ver">
-    <i class="bi bi-arrow-left me-1"></i> Volver
-</a>
+
+    <a href="{{ route('admin.semilleros.index') }}" class="btn btn-accion-ver">
+      <i class="bi bi-arrow-left me-1"></i> Volver
+    </a>
   </div>
 
   {{-- Barra de acciones --}}
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h5 class="mb-0">Proyectos</h5>
-    <button class="btn btn-nuevo-semillero" data-bs-toggle="modal" data-bs-target="#modalCrearProyecto">
-      <i class="bi bi-plus-lg me-1"></i> Crear proyecto
-    </button>
+
+    @if($canCreate)
+      <button class="btn btn-nuevo-semillero" data-bs-toggle="modal" data-bs-target="#modalCrearProyecto">
+        <i class="bi bi-plus-lg me-1"></i> Crear proyecto
+      </button>
+    @endif
   </div>
 
   {{-- Tabla --}}
@@ -95,21 +107,24 @@
               <td class="text-truncate" style="max-width:360px;">{{ $p->descripcion }}</td>
               <td class="text-end pe-3">
 
-                {{-- Ver detalle --}}
+                {{-- Ver detalle (siempre permitido) --}}
                 <a href="{{ route('admin.semilleros.proyectos.detalle', [$semillero->id_semillero, $p->id_proyecto]) }}"
                    class="btn btn-sm btn-accion-ver">
                   <i class="bi bi-eye me-1"></i> Ver detalle
                 </a>
 
                 {{-- Editar --}}
+                @if($canUpdate)
                 <button type="button"
                         class="btn btn-sm btn-accion-editar btn-edit-proyecto"
                         data-semillero="{{ $semillero->id_semillero }}"
                         data-proyecto="{{ $p->id_proyecto }}">
                   <i class="bi bi-pencil-square me-1"></i> Editar
                 </button>
+                @endif
 
                 {{-- Eliminar --}}
+                @if($canDelete)
                 <form action="{{ route('admin.semilleros.proyectos.destroy', [$semillero->id_semillero, $p->id_proyecto]) }}"
                       method="POST" class="d-inline-block"
                       onsubmit="return confirm('¿Seguro que deseas eliminar este proyecto?');">
@@ -119,6 +134,7 @@
                     <i class="bi bi-trash me-1"></i> Eliminar
                   </button>
                 </form>
+                @endif
 
               </td>
             </tr>
@@ -135,6 +151,7 @@
 </div>
 
 {{-- Modal crear proyecto --}}
+@if($canCreate)
 <div class="modal fade" id="modalCrearProyecto" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <form class="modal-content" method="POST"
@@ -197,14 +214,17 @@
     </form>
   </div>
 </div>
+@endif
+
 @endsection
 
-{{-- Modal Editar Proyecto --}}
+{{-- Modal Editar Proyecto + JS solo si puede actualizar --}}
+@if($canUpdate)
 <div class="modal fade" id="modalEditarProyecto" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <form id="formEditarProyecto" class="modal-content" method="POST">
       @csrf
-      @method('PUT') {{-- spoof para PUT --}}
+      @method('PUT')
       <div class="modal-header">
         <h5 class="modal-title">Editar proyecto</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
@@ -248,18 +268,21 @@
   </div>
 </div>
 
-{{-- JS: abre modal y carga datos --}}
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const modal = new bootstrap.Modal(document.getElementById('modalEditarProyecto'));
-  const form  = document.getElementById('formEditarProyecto');
+  const modalEl = document.getElementById('modalEditarProyecto');
+  const form    = document.getElementById('formEditarProyecto');
+
+  if (!modalEl || !form) return;
+
+  const modal = new bootstrap.Modal(modalEl);
 
   document.querySelectorAll('.btn-edit-proyecto').forEach(btn => {
     btn.addEventListener('click', async () => {
       const semilleroId = btn.dataset.semillero;
       const proyectoId  = btn.dataset.proyecto;
 
-      // endpoint JSON
       const urlJson = `{{ url('admin/semilleros') }}/${semilleroId}/proyectos/${proyectoId}/json`;
       const urlPut  = `{{ url('admin/semilleros') }}/${semilleroId}/proyectos/${proyectoId}`;
 
@@ -268,14 +291,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!res.ok) throw new Error('No se pudo cargar el proyecto');
         const p = await res.json();
 
-        // llena campos
         document.getElementById('e_nombre').value = p.nombre_proyecto ?? '';
         document.getElementById('e_estado').value = p.estado ?? 'EN_FORMULACION';
         document.getElementById('e_desc').value   = p.descripcion ?? '';
         document.getElementById('e_inicio').value = p.fecha_inicio ?? '';
         document.getElementById('e_fin').value    = p.fecha_fin ?? '';
 
-        // set action PUT
         form.action = urlPut;
 
         modal.show();
@@ -286,6 +307,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
+@endpush
+@endif
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/admin/semilleros.css') }}">

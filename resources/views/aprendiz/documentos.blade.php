@@ -413,7 +413,7 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 
   // Envío AJAX para formularios de evidencias pendientes
-  const pendingForms = document.querySelectorAll('form.pending-upload-form');
+  const pendingForms = document.querySelectorAll('form.pending-upload-form'); 
   pendingForms.forEach((pf) => {
     pf.addEventListener('submit', async function(ev){
       ev.preventDefault();

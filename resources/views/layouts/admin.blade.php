@@ -1,12 +1,11 @@
 <!doctype html>
 <html lang="es">
-<head
+<head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>@yield('title','Panel del Administrador')</title>
   <link rel="icon" type="image/png" href="{{ asset('images/logo_pestaña.png') }}">
-
 
   {{-- Librerías externas --}}
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -22,6 +21,22 @@
 </head>
 
 <body class="adm-body">
+@php
+    $authUser = Auth::user();
+
+    // Rol crudo normalizado (por si algún día guardas "líder general" o "lider-general")
+    $rawRole = strtoupper(str_replace([' ', '-'], '_', $authUser->role ?? ''));
+
+    // Texto que queremos mostrar
+    $roleDisplay = match ($rawRole) {
+        'ADMIN', 'LIDER_GENERAL'       => 'Líder General',
+        'LIDER_INVESTIGACION'          => 'Líder de línea',
+        'LIDER_SEMILLERO'              => 'Líder de semillero',
+        'APRENDIZ'                     => 'Aprendiz',
+        default                        => 'Usuario',
+    };
+@endphp
+
   <div class="adm-shell">
 
     {{-- ========================= SIDEBAR ========================= --}}
@@ -76,7 +91,8 @@
           <button id="sidebarToggle" class="btn btn-outline-light d-lg-none">
             <i class="bi bi-list"></i>
           </button>
-          <h1 class="h5 m-0 title-green">Líder General</h1>
+          {{-- Título dinámico según rol --}}
+          <h1 class="h5 m-0 title-green">{{ $roleDisplay }}</h1>
         </div>
 
         <div class="profile-info">
@@ -85,10 +101,11 @@
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">3</span>
           </button>
 
-          <div class="avatar">{{ strtoupper(substr(Auth::user()->name ?? 'AD', 0, 2)) }}</div>
+          <div class="avatar">{{ strtoupper(substr($authUser->name ?? 'AD', 0, 2)) }}</div>
           <div class="me-2 text-end d-none d-sm-block">
-            <div class="fw-semibold">{{ Auth::user()->name }}</div>
-            <small class="opacity-75">Líder General</small>
+            <div class="fw-semibold">{{ $authUser->name }}</div>
+            {{-- Texto pequeño también dinámico --}}
+            <small class="opacity-75">{{ $roleDisplay }}</small>
           </div>
 
           <form method="POST" action="{{ route('logout') }}">
