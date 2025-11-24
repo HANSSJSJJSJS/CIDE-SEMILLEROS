@@ -9,7 +9,7 @@
         <h5 class="modal-title">
           <i class="bi bi-person-plus"></i>
           Agregar usuario
-        </h5>
+        </h5> 
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
@@ -112,82 +112,102 @@
           </div>
 
           {{-- APRENDIZ --}}
-          <div id="box-aprendiz" class="card-section d-none">
-            <div class="user-modal-section-title">
-              <i class="bi bi-mortarboard"></i> Datos del aprendiz
-            </div>
+       
+<div id="box-aprendiz" class="card-section d-none">
+  <div class="user-modal-section-title">
+    <i class="bi bi-mortarboard"></i> Datos del aprendiz
+  </div>
 
-            <div class="row g-3 mb-3">
-              <div class="col-md-4">
-                <label class="form-label">Tipo documento</label>
-                <input type="text" name="ap_tipo_documento" class="form-control">
-              </div>
+  <div class="row g-3 mb-3">
 
-              <div class="col-md-4">
-                <label class="form-label">Documento</label>
-                <input type="text" name="ap_documento" class="form-control">
-              </div>
+    {{-- Tipo documento --}}
+    <div class="col-md-4">
+      <label class="form-label">Tipo documento <span class="text-danger">*</span></label>
+      <select name="tipo_documento" class="form-select" required>
+        <option value="">Seleccionar…</option>
+        <option value="CC">Cédula de Ciudadanía</option>
+        <option value="TI">Tarjeta de Identidad</option>
+        <option value="CE">Cédula de Extranjería</option>
+      </select>
+      <div class="invalid-feedback">Selecciona un tipo de documento.</div>
+    </div>
 
-              <div class="col-md-4">
-                <label class="form-label">Celular</label>
-                <input type="text" name="ap_celular" class="form-control">
-              </div>
-            </div>
+    {{-- Documento --}}
+    <div class="col-md-4">
+      <label class="form-label">Número de documento <span class="text-danger">*</span></label>
+      <input type="text" name="documento" class="form-control" required>
+      <div class="invalid-feedback">Ingresa el número de documento.</div>
+    </div>
 
-            <div class="row g-3 mb-3">
-              <div class="col-md-6">
-                <label class="form-label">Semillero <span class="text-danger">*</span></label>
-                <select name="semillero_id" class="form-select">
-                  <option value="">Seleccionar…</option>
-                  @foreach($semilleros as $s)
-                    <option value="{{ $s->id_semillero }}">{{ $s->nombre }}</option>
-                  @endforeach
-                </select>
-                <div class="invalid-feedback">Selecciona un semillero.</div>
-              </div>
+    {{-- Celular --}}
+    <div class="col-md-4">
+      <label class="form-label">Celular</label>
+      <input type="text" name="celular" class="form-control">
+    </div>
 
-              <div class="col-md-6">
-                <label class="form-label">Correo institucional</label>
-                <input type="email" name="ap_correo_institucional" class="form-control">
-              </div>
-            </div>
+  </div>
 
-            <div class="mb-3">
-              <label class="form-label">¿Vinculado al SENA?</label>
-              <div class="d-flex gap-4">
-                <label class="form-check">
-                  <input class="form-check-input" type="radio"
-                         name="radio_vinculado_sena" value="1" checked>
-                  <span class="form-check-label">Sí</span>
-                </label>
+  <div class="row g-3 mb-3">
 
-                <label class="form-check">
-                  <input class="form-check-input" type="radio"
-                         name="radio_vinculado_sena" value="0">
-                  <span class="form-check-label">No</span>
-                </label>
-              </div>
-            </div>
+    {{-- Semillero --}}
+    <div class="col-md-6">
+      <label class="form-label">Semillero <span class="text-danger">*</span></label>
+      <select name="semillero_id" class="form-select" required>
+        <option value="">Seleccionar…</option>
+        @foreach($semilleros as $s)
+          <option value="{{ $s->id_semillero }}">{{ $s->nombre }}</option>
+        @endforeach
+      </select>
+      <div class="invalid-feedback">Selecciona un semillero.</div>
+    </div>
 
-            <div id="box-aprendiz-sena" class="row g-3 mb-3">
-              <div class="col-md-6">
-                <label class="form-label">Ficha</label>
-                <input type="text" name="ap_ficha" class="form-control">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Programa</label>
-                <input type="text" name="ap_programa" class="form-control">
-              </div>
-            </div>
+    {{-- Correo institucional --}}
+    <div class="col-md-6">
+      <label class="form-label">Correo institucional</label>
+      <input type="email" name="correo_institucional" class="form-control">
+    </div>
 
-            <div id="box-aprendiz-otra" class="mb-2 d-none">
-              <label class="form-label">Institución</label>
-              <input type="text" name="institucion" class="form-control">
-            </div>
+  </div>
 
-          </div>
+  {{-- Vinculado Sena --}}
+  <div class="mb-3">
+    <label class="form-label">¿Vinculado al SENA?</label>
+    <div class="d-flex gap-4">
+      <label class="form-check">
+       <input class="form-check-input" type="radio"
+       name="vinculado_sena" value="1" checked>
+        <span class="form-check-label">Sí</span>
+      </label>
 
-        </div>
+      <label class="form-check">
+       <input class="form-check-input" type="radio"
+       name="vinculado_sena" value="0">
+        <span class="form-check-label">No</span>
+      </label>
+    </div>
+  </div>
+
+  {{-- Ficha + Programa --}}
+  <div id="box-aprendiz-sena" class="row g-3 mb-3">
+    <div class="col-md-6">
+      <label class="form-label">Ficha</label>
+      <input type="text" name="ficha" class="form-control">
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Programa</label>
+      <input type="text" name="programa" class="form-control">
+    </div>
+  </div>
+
+  {{-- Otra institución --}}
+  <div id="box-aprendiz-otra" class="mb-2 d-none">
+    <label class="form-label">Institución</label>
+    <input type="text" name="institucion" class="form-control">
+  </div>
+
+</div>
+
 
         <div class="modal-footer">
           <button type="button" class="btn btn-user-secondary" data-bs-dismiss="modal">

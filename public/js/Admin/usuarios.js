@@ -94,7 +94,7 @@
     const boxOtra      = modal.querySelector('#box-aprendiz-otra');
 
     function setRequiredForRole(role) {
-      // Limpia requeridos de todo
+      // Limpia requeridos de bloques específicos
       $$('#box-lider-semillero [name], #box-aprendiz [name]', modal)
         .forEach(i => i.removeAttribute('required'));
 
@@ -119,7 +119,7 @@
           if (input) input.setAttribute('required', 'required');
         });
 
-        const vinc = modal.querySelector('input[name="radio_vinculado_sena"]:checked')?.value;
+        const vinc = modal.querySelector('input[name="vinculado_sena"]:checked')?.value;
         if (vinc === '1') {
           ['ap_ficha', 'ap_programa'].forEach(n => {
             const input = modal.querySelector(`[name="${n}"]`);
@@ -153,7 +153,7 @@
     function actualizarAprendizVinculo() {
       if (!boxSena || !boxOtra) return;
 
-      const vinc = modal.querySelector('input[name="radio_vinculado_sena"]:checked')?.value;
+      const vinc = modal.querySelector('input[name="vinculado_sena"]:checked')?.value;
 
       if (vinc === '1') {
         showBlock(boxSena);
@@ -171,7 +171,7 @@
       roleSelect.addEventListener('change', actualizarBloquesRol);
     }
 
-    modal.querySelectorAll('input[name="radio_vinculado_sena"]').forEach(radio => {
+    modal.querySelectorAll('input[name="vinculado_sena"]').forEach(radio => {
       radio.addEventListener('change', actualizarAprendizVinculo);
     });
 
@@ -181,9 +181,10 @@
         form.reset();
         form.classList.remove('was-validated');
       }
-      actualizarBloquesRol();     // vuelve a esconder todo
-      // por defecto SENA
-      const radioSi = modal.querySelector('input[name="radio_vinculado_sena"][value="1"]');
+      // Rol y bloques
+      actualizarBloquesRol();
+      // por defecto SENA = "sí"
+      const radioSi = modal.querySelector('input[name="vinculado_sena"][value="1"]');
       if (radioSi) radioSi.checked = true;
       actualizarAprendizVinculo();
     });
