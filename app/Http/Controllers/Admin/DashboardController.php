@@ -37,6 +37,7 @@ class DashboardController extends Controller
     public function charts()
     {
         try {
+
             // ============================================================
             // 1) TABLA — Aprendices por semillero
             // ============================================================
@@ -75,9 +76,6 @@ class DashboardController extends Controller
 
             // ============================================================
             // 3) TABLA — Actividad de líderes
-            //    - nombre del líder (users)
-            //    - línea asignada (semilleros.linea_investigacion)
-            //    - último ingreso (users.last_login_at)
             // ============================================================
             $lideresRaw = DB::table('users as u')
                 ->where('u.role', 'LIDER_SEMILLERO')
@@ -93,9 +91,7 @@ class DashboardController extends Controller
                 ->get();
 
             $actividadLideres = $lideresRaw->map(function ($l) {
-                $last = $l->last_login_at
-                    ? Carbon::parse($l->last_login_at)
-                    : null;
+                $last = $l->last_login_at ? Carbon::parse($l->last_login_at) : null;
 
                 return [
                     'lider'             => trim($l->name . ' ' . ($l->apellidos ?? '')),
@@ -105,11 +101,32 @@ class DashboardController extends Controller
                 ];
             })->values();
 
-      
+            // ============================================================
+            // 🔥 4) ESTADO DE PROYECTOS (para gráfica DONA)
+            // ============================================================
+            $proyectosEstado = DB::table('proyectos')
+                ->select('estado', DB::raw('COUNT(*) as total'))
+                ->groupBy('estado')
+                ->get();
+
+            // ============================================================
+            // 🔥 5) TOP 5 SEMILLEROS CON MÁS PROYECTOS
+            // ============================================================
+            $topSemilleros = DB::table('semilleros as s')
+                ->leftJoin('proyectos as p', 'p.id_semillero', '=', 's.id_semillero')
+                ->select('s.nombre', DB::raw('COUNT(p.id_proyecto) as total_proyectos'))
+                ->groupBy('s.id_semillero', 's.nombre')
+                ->orderByDesc('total_proyectos')
+                ->limit(5)
+                ->get();
+
             return response()->json([
                 'tablaAprendicesSem' => $tablaAprendicesSem,
                 'tablaProyectosSem'  => $tablaProyectosSem,
                 'actividadLideres'   => $actividadLideres,
+
+                'proyectosEstado'    => $proyectosEstado,   
+                'topSemilleros'      => $topSemilleros,     
             ]);
 
         } catch (\Throwable $e) {

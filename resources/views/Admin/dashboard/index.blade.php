@@ -10,16 +10,20 @@
   .kpi-value { font-size: 1.8rem; font-weight: 700; }
   .kpi-label { color: #6c757d; }
 
-  /* 🔵 Encabezados azul oscuro personalizados */
+  /* Encabezados azul oscuro */
   .card-header {
     background-color: var(--blue-900) !important;
     color: #fff !important;
     border-bottom: none;
   }
 
-  /* Opcional: resaltar texto dentro del header */
-  .card-header strong {
-    color: #fff !important;
+  .dashboard-chart-card {
+    min-height: 260px;
+  }
+
+  canvas {
+    /* para que no se vea enano */
+    max-height: 260px;
   }
 </style>
 @endpush
@@ -29,7 +33,7 @@
 
 @section('content')
 
-  {{-- Tarjetas KPI --}}
+  {{-- TARJETAS KPI --}}
   <div class="row g-3">
     <div class="col-md-2 col-sm-4">
       <div class="card kpi-card shadow-sm">
@@ -77,41 +81,59 @@
     </div>
   </div>
 
-  {{-- TABLA 1 — Aprendices por semillero --}}
-  <div class="card shadow-sm mt-4">
-    <div class="card-header"><strong>Aprendices por semillero</strong></div>
-    <div class="card-body p-0">
-      <table class="table table-striped mb-0">
-        <thead class="table-dark">
-          <tr>
-            <th>Semillero</th>
-            <th>Total de aprendices</th>
-          </tr>
-        </thead>
-        <tbody id="tablaAprendicesSem"></tbody>
-      </table>
+  {{-- GRÁFICA 1: Aprendices por semillero (Barras) --}}
+  <div class="card shadow-sm mt-4 dashboard-chart-card">
+    <div class="card-header">
+      <strong>Aprendices por semillero</strong>
+    </div>
+    <div class="card-body">
+      <canvas id="chartAprendicesSem"></canvas>
     </div>
   </div>
 
-  {{-- TABLA 2 — Proyectos por semillero (últimos 5) --}}
-  <div class="card shadow-sm mt-4">
-    <div class="card-header"><strong>Proyectos por semillero (últimos 5)</strong></div>
-    <div class="card-body p-0">
-      <table class="table table-striped mb-0">
-        <thead class="table-dark">
-          <tr>
-            <th>Semillero</th>
-            <th>Últimos proyectos</th>
-          </tr>
-        </thead>
-        <tbody id="tablaProyectosSem"></tbody>
-      </table>
+  {{-- GRÁFICA 2: Proyectos recientes por semillero (Donut) --}}
+  <div class="card shadow-sm mt-4 dashboard-chart-card">
+    <div class="card-header">
+      <strong>Proyectos recientes por semillero</strong>
+    </div>
+    <div class="card-body">
+      <canvas id="chartProyectosSem"></canvas>
     </div>
   </div>
 
-  {{-- TABLA 3 — Actividad de líderes --}}
+  <div class="row mt-4">
+
+    <!-- ESTADO DE PROYECTOS -->
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header"><strong>Estado de los proyectos</strong></div>
+            <div class="card-body">
+                <canvas id="chartEstadoProyectos" height="240"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOP 5 SEMILLEROS -->
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header"><strong>Top 5 semilleros con más proyectos</strong></div>
+            <div class="card-body">
+                <canvas id="chartTopSemilleros" height="240"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+
+
+
+  {{-- TABLA: Actividad de líderes (la dejamos como tabla) --}}
   <div class="card shadow-sm mt-4 mb-4">
-    <div class="card-header"><strong>Actividad de líderes</strong></div>
+    <div class="card-header">
+      <strong>Actividad de líderes</strong>
+    </div>
     <div class="card-body p-0">
       <table class="table table-striped mb-0">
         <thead class="table-dark">
@@ -129,67 +151,10 @@
 
 @endsection
 
-
 @push('scripts')
-<script>
-(() => {
-  // 1) KPIs
-  fetch("{{ route('admin.dashboard.stats') }}")
-    .then(r => r.json())
-    .then(s => {
-      document.getElementById('kpiSemilleros').textContent = s.semilleros ?? 0;
-      document.getElementById('kpiLideres').textContent    = s.lideres ?? 0;
-      document.getElementById('kpiAprendices').textContent = s.aprendices ?? 0;
-      document.getElementById('kpiProyectos').textContent  = s.proyectos ?? 0;
-      document.getElementById('kpiRecursos').textContent   = s.recursos ?? 0;
-    })
-    .catch(console.error);
+  {{-- Chart.js --}}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  // 2) Tablas
-  fetch("{{ route('admin.dashboard.charts') }}")
-    .then(r => r.json())
-    .then(d => {
-      // ---- TABLA 1: Aprendices por semillero
-      let htmlApr = "";
-      d.tablaAprendicesSem.forEach(row => {
-        htmlApr += `
-          <tr>
-            <td>${row.semillero}</td>
-            <td>${row.total_aprendices}</td>
-          </tr>`;
-      });
-      document.getElementById('tablaAprendicesSem').innerHTML = htmlApr;
-
-      // ---- TABLA 2: Proyectos por semillero
-      let htmlProj = "";
-      d.tablaProyectosSem.forEach(row => {
-        const lista = row.proyectos.length
-          ? row.proyectos.map(p => `<div>• ${p}</div>`).join('')
-          : '<em>Sin proyectos</em>';
-
-        htmlProj += `
-          <tr>
-            <td>${row.semillero}</td>
-            <td>${lista}</td>
-          </tr>`;
-      });
-      document.getElementById('tablaProyectosSem').innerHTML = htmlProj;
-
-      // ---- TABLA 3: Actividad de líderes
-      let htmlLid = "";
-      d.actividadLideres.forEach(row => {
-        htmlLid += `
-          <tr>
-            <td>${row.lider}</td>
-            <td>${row.linea ?? '-'}</td>
-            <td>${row.last_login ?? '<em>Sin registro</em>'}</td>
-            <td>${row.last_login_humano}</td>
-          </tr>`;
-      });
-      document.getElementById('tablaActividadLideres').innerHTML = htmlLid;
-    })
-    .catch(console.error);
-
-})();
-</script>
+  {{-- JS del dashboard (datos demo) --}}
+  <script src="{{ asset('js/admin/dashboard.js') }}?v={{ time() }}"></script>
 @endpush
