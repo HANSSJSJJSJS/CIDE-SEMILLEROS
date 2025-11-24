@@ -32,7 +32,7 @@ class UsuarioController extends Controller
             ->leftJoin('semilleros as sl', 'sl.id_lider_semi', '=', 'ls.id_lider_semi')
             ->leftJoin('aprendices as ap', "ap.$aprFk", '=', 'users.id')
             ->leftJoin('semilleros as sa', 'sa.id_semillero', '=', 'ap.semillero_id')
-            ->leftJoin('lideres_investigacion as li', 'li.user_id', '=', 'users.id') // permisos líder inv.
+            ->leftJoin('lideres_investigacion as li', 'li.user_id', '=', 'users.id')
             ->select([
                 'users.*',
                 DB::raw('COALESCE(sa.nombre, sl.nombre) as semillero_nombre'),
@@ -91,49 +91,47 @@ class UsuarioController extends Controller
     }
 
     // ============================================================
-    // DAR / QUITAR PERMISOS A LÍDER DE INVESTIGACIÓN
+    // DAR / QUITAR PERMISOS A LÍDER INVESTIGACIÓN
     // ============================================================
     public function togglePermisosInvestigacion(User $usuario)
-{
-    // seguridad
-    if (!auth()->user()->role === 'ADMIN') {
-        abort(403);
+    {
+        if (!auth()->user()->role === 'ADMIN') {
+            abort(403);
+        }
+
+        $registro = DB::table('lideres_investigacion')
+            ->where('user_id', $usuario->id)
+            ->first();
+
+        if (!$registro) {
+            return back()->withErrors(['msg' =>
+                'Este usuario no tiene perfil de líder de investigación'
+            ]);
+        }
+
+        DB::table('lideres_investigacion')
+            ->where('user_id', $usuario->id)
+            ->update([
+                'tiene_permisos' => $registro->tiene_permisos ? 0 : 1,
+            ]);
+
+        return back()->with('success', 'Permisos actualizados correctamente.');
     }
-
-    // obtener registro del líder
-    $registro = DB::table('lideres_investigacion')
-        ->where('user_id', $usuario->id)
-        ->first();
-
-    if (!$registro) {
-        return back()->withErrors(['msg' =>
-            'Este usuario no tiene perfil de líder de investigación'
-        ]);
-    }
-
-    // alternar 0 / 1
-    DB::table('lideres_investigacion')
-        ->where('user_id', $usuario->id)
-        ->update([
-            'tiene_permisos' => $registro->tiene_permisos ? 0 : 1,
-        ]);
-
-    return back()->with('success', 'Permisos actualizados correctamente.');
-}
 
     // ============================================================
-    // CREAR USUARIO (desde modal)
+    // CREAR USUARIO
     // ============================================================
     public function store(Request $request)
     {
         $roleMap = [
             'ADMIN'               => 'ADMIN',
-            'LIDER_GENERAL'       => 'ADMIN', // si usas ese alias
+            'LIDER_GENERAL'       => 'ADMIN',
             'LIDER_SEMILLERO'     => 'LIDER_SEMILLERO',
             'LIDER_INVESTIGACION' => 'LIDER_INVESTIGACION',
             'APRENDIZ'            => 'APRENDIZ',
         ];
 
+        // VALIDACIONES BÁSICAS
         $rules = [
             'role'     => 'required|in:ADMIN,LIDER_GENERAL,LIDER_SEMILLERO,LIDER_INVESTIGACION,APRENDIZ',
             'nombre'   => 'required|string|max:255',
@@ -145,7 +143,17 @@ class UsuarioController extends Controller
         $data = $request->validate($rules);
         $role = $roleMap[$data['role']];
 
-        DB::transaction(function () use ($data, $role) {
+        // VALIDACIÓN EXTRA PARA APRENDIZ
+        if ($role === 'APRENDIZ') {
+            $request->validate([
+                'tipo_documento'  => 'required',
+                'documento'       => 'required|max:40',
+                'semillero_id'    => 'required|integer',
+            ]);
+        }
+
+        // TRANSACCIÓN
+        DB::transaction(function () use ($data, $role, $request) {
 
             $userId = DB::table('users')->insertGetId([
                 'name'       => $data['nombre'],
@@ -158,6 +166,8 @@ class UsuarioController extends Controller
             ]);
 
             switch ($role) {
+
+                // ADMIN
                 case 'ADMIN':
                     DB::table('administradores')->insert([
                         'id_usuario'     => $userId,
@@ -168,36 +178,50 @@ class UsuarioController extends Controller
                     ]);
                     break;
 
+                // LÍDER SEMILLERO
                 case 'LIDER_SEMILLERO':
                     DB::table('lideres_semillero')->insert([
                         'id_lider_semi'        => $userId,
                         'nombres'              => $data['nombre'],
                         'apellidos'            => $data['apellido'],
+                        'tipo_documento'       => $request->ls_tipo_documento,
+                        'documento'            => $request->ls_documento,
                         'correo_institucional' => $data['email'],
                         'creado_en'            => now(),
                         'actualizado_en'       => now(),
                     ]);
                     break;
 
+                // LÍDER INVESTIGACIÓN
                 case 'LIDER_INVESTIGACION':
                     DB::table('lideres_investigacion')->insert([
                         'user_id'        => $userId,
                         'tiene_permisos' => 0,
-                        'creado_en'      => now(),
-                        'actualizado_en' => now(),
+                        'created_at'     => now(),
+                        'updated_at'     => now(),
                     ]);
                     break;
 
+                // APRENDIZ
                 case 'APRENDIZ':
                     $colUserFk = Schema::hasColumn('aprendices', 'id_usuario') ? 'id_usuario' : 'user_id';
 
                     DB::table('aprendices')->insert([
-                        $colUserFk        => $userId,
-                        'nombres'         => $data['nombre'],
-                        'apellidos'       => $data['apellido'],
-                        'correo_personal' => $data['email'],
-                        'creado_en'       => now(),
-                        'actualizado_en'  => now(),
+                        $colUserFk             => $userId,
+                        'nombres'              => $data['nombre'],
+                        'apellidos'            => $data['apellido'],
+                        'correo_personal'      => $data['email'],
+                        'tipo_documento'       => $request->tipo_documento,
+                        'documento'            => $request->documento,
+                        'celular'              => $request->celular,
+                        'correo_institucional' => $request->correo_institucional,
+                        'ficha'                => $request->ficha,
+                        'programa'             => $request->programa,
+                        'vinculado_sena'       => $request->vinculado_sena ?? 1,
+                        'institucion'          => $request->institucion,
+                        'semillero_id'         => $request->semillero_id,
+                        'creado_en'            => now(),
+                        'actualizado_en'       => now(),
                     ]);
                     break;
             }
@@ -207,7 +231,7 @@ class UsuarioController extends Controller
     }
 
     // ============================================================
-    // EDITAR (AJAX)
+    // EDITAR
     // ============================================================
     public function edit($id)
     {
@@ -236,7 +260,7 @@ class UsuarioController extends Controller
     }
 
     // ============================================================
-    // ACTUALIZAR USUARIO
+    // ACTUALIZAR
     // ============================================================
     public function update(Request $request, User $usuario)
     {
@@ -250,7 +274,6 @@ class UsuarioController extends Controller
 
         DB::transaction(function () use ($usuario, $data) {
 
-            // users
             $usuario->update([
                 'name'      => $data['nombre'],
                 'apellidos' => $data['apellido'],
