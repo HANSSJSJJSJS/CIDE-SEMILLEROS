@@ -28,6 +28,8 @@ use App\Http\Controllers\Admin\RecursoController;
 
 // Líder semillero
 use App\Http\Controllers\LiderSemillero\SemilleroController as LiderSemilleroUIController;
+use App\Http\Controllers\LiderSemillero\CalendarioLiderController;
+use App\Http\Controllers\LiderSemillero\AprendicesController as LiderAprendicesController;
 use App\Http\Controllers\LiderSemillero\DashboardController_semi;
 use App\Http\Controllers\LiderSemillero\ProyectoController as LiderProyectoController;
 use App\Http\Controllers\LiderSemillero\SemilleroAprendizController;
@@ -299,7 +301,7 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_SEMILLERO,LIDER_GENERAL'])->group(f
 | LÍDER_SEMI (UI)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth','lider.semillero'])
+Route::middleware(['auth', 'role:LIDER_SEMILLERO'])
     ->prefix('lider_semi')
     ->name('lider_semi.')
     ->group(function () {
@@ -307,7 +309,7 @@ Route::middleware(['auth','lider.semillero'])
 
         // Vistas principales
         Route::get('/semilleros', [LiderSemilleroUIController::class, 'semilleros'])->name('semilleros');
-        Route::get('/aprendices', [LiderSemilleroUIController::class, 'aprendices'])->name('aprendices');
+        Route::get('/aprendices', [LiderAprendicesController::class, 'index'])->name('aprendices');
         // Recursos (solo Líder Semillero)
         Route::prefix('recursos')->name('recursos.')->group(function () {
             Route::get('/',              [RecursosController::class, 'index'])->name('index');
@@ -339,20 +341,26 @@ Route::middleware(['auth','lider.semillero'])
         // Documentos / entregas / evidencias (controlador dedicado)
         Route::get('/documentos', [DocumentosController::class, 'documentos'])->name('documentos');
         Route::get('/proyectos/list', [DocumentosController::class, 'listarProyectos'])->name('proyectos.list');
-        Route::get('/proyectos/{proyecto}/aprendices-list', [DocumentosController::class, 'obtenerAprendicesProyecto'])->name('proyectos.aprendices.list');
+        Route::get('/proyectos/{id}/aprendices-list', [DocumentosController::class, 'obtenerAprendicesProyecto'])->name('proyectos.aprendices.list');
         Route::post('/evidencias/store', [DocumentosController::class, 'guardarEvidencia'])->name('evidencias.store');
-        Route::get('/proyectos/{proyecto}/entregas', [DocumentosController::class, 'obtenerEntregas'])->name('proyectos.entregas');
-        Route::put('/entregas/{entrega}/estado', [DocumentosController::class, 'cambiarEstadoEntrega'])->name('entregas.estado');
-        Route::put('/documentos/{documento}/actualizar', [DocumentosController::class, 'actualizarDocumento'])->name('documentos.actualizar');
+        Route::get('/proyectos/{id}/entregas', [DocumentosController::class, 'obtenerEntregas'])->name('proyectos.entregas');
+        Route::put('/entregas/{id}/estado', [DocumentosController::class, 'cambiarEstadoEntrega'])->name('entregas.estado');
+        // Ruta original para actualizar documento (compatibilidad)
+        Route::put('/documentos/{id}', [DocumentosController::class, 'actualizarDocumento'])->name('documentos.actualizar');
+        // Nueva ruta con sufijo /actualizar para coincidir con el JS del modal de edición
+        Route::put('/documentos/{id}/actualizar', [DocumentosController::class, 'actualizarDocumento'])->name('documentos.actualizar.sufijo');
+        Route::get('/documentos/{id}/ver', [DocumentosController::class, 'verDocumento'])->name('documentos.ver');
+        Route::get('/documentos/{id}/descargar', [DocumentosController::class, 'descargarDocumento'])->name('documentos.descargar');
 
-        // Calendario
-        Route::get('/calendario', [LiderSemilleroUIController::class, 'calendario'])->name('calendario');
-        Route::get('/eventos', [LiderSemilleroUIController::class, 'obtenerEventos'])->name('eventos.obtener');
-        Route::post('/eventos', [LiderSemilleroUIController::class, 'crearEvento'])->name('eventos.crear');
-        Route::put('/eventos/{evento}', [LiderSemilleroUIController::class, 'actualizarEvento'])->name('eventos.actualizar');
-        Route::delete('/eventos/{evento}', [LiderSemilleroUIController::class, 'eliminarEvento'])->name('eventos.eliminar');
-        Route::post('/eventos/{evento}/generar-enlace', [LiderSemilleroUIController::class, 'generarEnlace'])->name('eventos.generar-enlace');
-        Route::get('/eventos/{evento}/info', [LiderSemilleroUIController::class, 'getInfoReunion'])->name('eventos.info');
+        // Calendario (controlador dedicado)
+        Route::get('/calendario', [CalendarioLiderController::class, 'calendario'])->name('calendario');
+        Route::get('/eventos', [CalendarioLiderController::class, 'obtenerEventos'])->name('eventos.obtener');
+        Route::post('/eventos', [CalendarioLiderController::class, 'crearEvento'])->name('eventos.crear');
+        Route::put('/eventos/{evento}', [CalendarioLiderController::class, 'actualizarEvento'])->name('eventos.actualizar');
+        Route::delete('/eventos/{evento}', [CalendarioLiderController::class, 'eliminarEvento'])->name('eventos.eliminar');
+        Route::post('/eventos/{evento}/generar-enlace', [CalendarioLiderController::class, 'generarEnlace'])->name('eventos.generar-enlace');
+        Route::get('/eventos/{evento}/info', [CalendarioLiderController::class, 'getInfoReunion'])->name('eventos.info');
+        Route::put('/eventos/{evento}/participantes/{aprendiz}/asistencia', [CalendarioLiderController::class, 'actualizarAsistencia'])->name('eventos.participantes.asistencia');
     });
 
 /*
@@ -400,7 +408,9 @@ Route::middleware(['auth', 'role:APRENDIZ'])
         Route::post('/documentos', [DocumentoController::class, 'store'])->name('documentos.store');
         Route::post('/documentos/{id}/upload-assigned', [DocumentoController::class, 'uploadAssigned'])->whereNumber('id')->name('documentos.uploadAssigned');
         Route::get('/documentos/{id}/download', [DocumentoController::class, 'download'])->whereNumber('id')->name('documentos.download');
+        Route::put('/documentos/{id}', [DocumentoController::class, 'update'])->whereNumber('id')->name('documentos.update');
         Route::delete('/documentos/{id}', [DocumentoController::class, 'destroy'])->whereNumber('id')->name('documentos.destroy');
+
 
         // Calendario
         Route::get('/calendario', [CalendarioController::class, 'index'])->name('calendario.index');

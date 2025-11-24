@@ -794,99 +794,6 @@ class SemilleroController extends Controller
         ]]);
     }
 
-    // Listar todos los aprendices del grupo
-    public function aprendices()
-    {
-        $userId = Auth::id();
-
-        // Obtener aprendices básicos usando Query Builder para evitar problemas con columnas faltantes
-        $selectCols = [
-            'id_aprendiz',
-            'tipo_documento',
-            'documento',
-            'celular',
-            'correo_institucional',
-            'correo_personal',
-            'programa',
-            'ficha',
-            'contacto_nombre',
-            'contacto_celular'
-        ];
-        if (Schema::hasColumn('aprendices', 'id_usuario')) {
-            $selectCols[] = 'id_usuario';
-        }
-        $aprendices = DB::table('aprendices')
-            ->select(array_merge($selectCols, [
-                DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo")
-            ]))
-            ->orderByRaw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))")
-            ->get();
-
-        $aprendicesIds = $aprendices->pluck('id_aprendiz')->toArray();
-
-        // Intentar obtener proyectos asignados
-        $proyectosRelaciones = [];
-        if (Schema::hasTable('proyectos') && !empty($aprendicesIds)) {
-            $pivot = $this->pivotProyectoAprendiz();
-            if (!empty($pivot)) {
-                try {
-                    $aprColJoin = Schema::hasColumn('aprendices', 'id_usuario') ? 'id_usuario' : 'id_aprendiz';
-                    $proyectosRelaciones = DB::table($pivot['table'])
-                        ->join('proyectos', 'proyectos.id_proyecto', '=', DB::raw($pivot['table'].'.'.$pivot['projCol']))
-                        ->join('aprendices', function($join) use ($pivot, $aprColJoin) {
-                            $join->on(DB::raw('aprendices.'.$aprColJoin), '=', DB::raw($pivot['table'].'.'.$pivot['aprCol']));
-                        })
-                        ->whereIn(DB::raw('aprendices.'.$aprColJoin), $aprendicesIds)
-                        ->select(
-                            DB::raw('aprendices.'.$aprColJoin.' as id_aprendiz'),
-                            DB::raw('COALESCE(proyectos.nombre_proyecto, "Proyecto") as proyecto_nombre')
-                        )
-                        ->get()
-                        ->groupBy('id_aprendiz');
-                } catch (\Exception $e) {
-                    // Si falla, continuar sin proyectos
-                }
-            }
-        }
-
-        // Intentar obtener semilleros si existe la tabla pivote
-        $semillerosRelaciones = [];
-        if (Schema::hasTable('aprendiz_semillero') && Schema::hasTable('semilleros') && !empty($aprendicesIds)) {
-            try {
-                $semillerosRelaciones = DB::table('aprendiz_semillero')
-                    ->join('semilleros', 'semilleros.id_semillero', '=', 'aprendiz_semillero.id_semillero')
-                    ->whereIn('aprendiz_semillero.id_aprendiz', $aprendicesIds)
-                    ->select('aprendiz_semillero.id_aprendiz', 'semilleros.nombre as semillero_nombre')
-                    ->get()
-                    ->groupBy('id_aprendiz');
-            } catch (\Exception $e) {
-                // Si falla, continuar sin semilleros
-            }
-        }
-
-        // Asignar proyectos y semilleros a cada aprendiz
-        $aprendices->transform(function($ap) use ($proyectosRelaciones, $semillerosRelaciones) {
-            // Asignar proyecto
-            if (isset($proyectosRelaciones[$ap->id_aprendiz]) && $proyectosRelaciones[$ap->id_aprendiz]->isNotEmpty()) {
-                $ap->proyecto_nombre = $proyectosRelaciones[$ap->id_aprendiz]->first()->proyecto_nombre;
-            } else {
-                $ap->proyecto_nombre = 'Sin asignar';
-            }
-
-            // Asignar semillero
-            if (isset($semillerosRelaciones[$ap->id_aprendiz]) && $semillerosRelaciones[$ap->id_aprendiz]->isNotEmpty()) {
-                $ap->semillero_nombre = $semillerosRelaciones[$ap->id_aprendiz]->first()->semillero_nombre;
-            } else {
-                $ap->semillero_nombre = 'Sin asignar';
-            }
-
-            $ap->estado = 'Activo';
-            return $ap;
-        });
-
-        return view('lider_semi.aprendices', compact('aprendices'));
-    }
-
     // Gestión de Documentación - Listar proyectos
     public function documentos()
     {
@@ -919,31 +826,40 @@ class SemilleroController extends Controller
                 ->get();
         }
 
-        // Contadores por proyecto desde documentos
+        // Contadores por proyecto desde documentos (solo evidencias reales, sin PLACEHOLDER_)
         $proyectos->transform(function($proyecto){
-            if (Schema::hasTable('documentos')) {
-                $proyecto->entregas = DB::table('documentos')
-                    ->where('id_proyecto', $proyecto->id_proyecto)
-                    ->count();
-
-                if (Schema::hasColumn('documentos', 'estado')) {
-                    $proyecto->pendientes = DB::table('documentos')
-                        ->where('id_proyecto', $proyecto->id_proyecto)
-                        ->where('estado', 'pendiente')
-                        ->count();
-                    $proyecto->aprobadas = DB::table('documentos')
-                        ->where('id_proyecto', $proyecto->id_proyecto)
-                        ->where('estado', 'aprobado')
-                        ->count();
-                } else {
-                    $proyecto->pendientes = $proyecto->entregas;
-                    $proyecto->aprobadas = 0;
-                }
-            } else {
-                $proyecto->entregas = 0;
+            if (!Schema::hasTable('documentos')) {
+                $proyecto->entregas   = 0;
                 $proyecto->pendientes = 0;
-                $proyecto->aprobadas = 0;
+                $proyecto->aprobadas  = 0;
+                return $proyecto;
             }
+
+            // Base: documentos reales de este proyecto, ignorando registros placeholder
+            $base = DB::table('documentos')
+                ->where('id_proyecto', $proyecto->id_proyecto)
+                ->whereRaw("documento NOT LIKE 'PLACEHOLDER%'");
+
+            // Entregas: documentos reales que ya tienen archivo asociado
+            $proyecto->entregas = (clone $base)
+                ->whereNotNull('ruta_archivo')
+                ->where('ruta_archivo', '!=', '')
+                ->count();
+
+            if (Schema::hasColumn('documentos', 'estado')) {
+                // Pendientes / aprobadas según columna estado sobre documentos reales
+                $proyecto->pendientes = (clone $base)
+                    ->where('estado', 'pendiente')
+                    ->count();
+                $proyecto->aprobadas = (clone $base)
+                    ->where('estado', 'aprobado')
+                    ->count();
+            } else {
+                // Si no hay columna estado, considerar todas las evidencias reales como pendientes
+                $proyecto->pendientes = (clone $base)->count();
+                $proyecto->aprobadas  = 0;
+            }
+
             return $proyecto;
         });
 
@@ -1701,23 +1617,108 @@ class SemilleroController extends Controller
                         : Carbon::parse($evento->fecha_hora);
                     $fechaLocal = $dt->setTimezone($tz)->format('Y-m-d H:i:s');
 
-                    // Participantes desde grupo/proyecto
+                    // Participantes con estado de asistencia
                     $parts = collect();
                     try {
-                        $aprIds = [];
-                        if (!empty($evento->id_proyecto)) {
-                            $aprIds = $this->getProjectAprendizIds((int)$evento->id_proyecto);
-                        }
-                        $aprIds = array_values(array_unique(array_filter(array_map('intval', $aprIds))));
-                        if (!empty($aprIds) && Schema::hasTable('aprendices')) {
-                            $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
-                                ? 'aprendices.nombre_completo'
-                                : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
-                            $rows = DB::table('aprendices')
-                                ->whereIn('id_aprendiz', $aprIds)
-                                ->select('id_aprendiz', DB::raw($nameExpr.' as nombre'))
+                        // 1) Intentar desde tabla pivot evento_participantes (sin depender de nombres en aprendices)
+                        if (Schema::hasTable('evento_participantes')) {
+                            $hasAsistenciaCol = Schema::hasColumn('evento_participantes', 'asistencia');
+                            $rows = DB::table('evento_participantes')
+                                ->where('id_evento', $evento->id_evento)
+                                ->select(
+                                    'id_aprendiz',
+                                    DB::raw($hasAsistenciaCol
+                                        ? "COALESCE(asistencia, 'pendiente') as asistencia"
+                                        : "'pendiente' as asistencia"
+                                    )
+                                )
                                 ->get();
-                            $parts = $rows->map(fn($r)=> ['id'=>$r->id_aprendiz, 'nombre_completo'=>$r->nombre]);
+
+                            // Intentar obtener nombres reales desde aprendices en un solo query
+                            $parts = collect();
+                            if ($rows->isNotEmpty() && Schema::hasTable('aprendices')) {
+                                $aprIds = $rows->pluck('id_aprendiz')->map(fn($v)=>(int)$v)->unique()->values()->all();
+                                $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
+                                    ? "COALESCE(aprendices.nombre_completo, CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')))"
+                                    : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
+                                $aprRows = DB::table('aprendices')
+                                    ->whereIn('id_aprendiz', $aprIds)
+                                    ->select('id_aprendiz', DB::raw($nameExpr.' as nombre'))
+                                    ->get()
+                                    ->keyBy('id_aprendiz');
+
+                                $parts = $rows->map(function($r) use ($aprRows){
+                                    $id = (int) $r->id_aprendiz;
+                                    $nombre = '';
+                                    if ($aprRows->has($id)) {
+                                        $nombre = trim((string)($aprRows[$id]->nombre ?? ''));
+                                    }
+                                    if ($nombre === '') {
+                                        $nombre = 'Aprendiz #'.$id;
+                                    }
+                                    return [
+                                        'id' => $id,
+                                        'nombre_completo' => $nombre,
+                                        'asistencia' => $r->asistencia,
+                                    ];
+                                });
+                            } else {
+                                // Fallback: sin tabla aprendices, usar placeholder
+                                $parts = $rows->map(function($r){
+                                    $id = (int) $r->id_aprendiz;
+                                    return [
+                                        'id' => $id,
+                                        'nombre_completo' => 'Aprendiz #'.$id,
+                                        'asistencia' => $r->asistencia,
+                                    ];
+                                });
+                            }
+                        }
+
+                        // 2) Si no hay registros en evento_participantes, usar la relación participantes del modelo
+                        if ($parts->isEmpty() && $evento->relationLoaded('participantes')) {
+                            $parts = collect($evento->participantes)->map(function($p) {
+                                $nombre = '';
+                                if (isset($p->nombre_completo)) {
+                                    $nombre = $p->nombre_completo;
+                                } else {
+                                    $nombre = trim(($p->nombres ?? '').' '.($p->apellidos ?? ''));
+                                }
+                                if ($nombre === '') {
+                                    $nombre = 'Aprendiz #'.$p->id_aprendiz;
+                                }
+                                return [
+                                    'id' => $p->id_aprendiz,
+                                    'nombre_completo' => $nombre,
+                                    'asistencia' => 'pendiente',
+                                ];
+                            });
+                        }
+
+                        // 3) Último respaldo: si sigue vacío y el evento está ligado a un proyecto, usar getProjectAprendizIds
+                        if ($parts->isEmpty() && !empty($evento->id_proyecto)) {
+                            $aprIds = $this->getProjectAprendizIds((int)$evento->id_proyecto);
+                            $aprIds = array_values(array_unique(array_filter(array_map('intval', $aprIds))));
+                            if (!empty($aprIds) && Schema::hasTable('aprendices')) {
+                                $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
+                                    ? "COALESCE(aprendices.nombre_completo, CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')))"
+                                    : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
+                                $rows = DB::table('aprendices')
+                                    ->whereIn('id_aprendiz', $aprIds)
+                                    ->select('id_aprendiz', DB::raw($nameExpr.' as nombre'))
+                                    ->get();
+                                $parts = $rows->map(function($r){
+                                    $nombre = trim((string)($r->nombre ?? ''));
+                                    if ($nombre === '') {
+                                        $nombre = 'Aprendiz #'.$r->id_aprendiz;
+                                    }
+                                    return [
+                                        'id' => $r->id_aprendiz,
+                                        'nombre_completo' => $nombre,
+                                        'asistencia' => 'pendiente',
+                                    ];
+                                });
+                            }
                         }
                     } catch (\Throwable $t) {
                         // dejar $parts vacío en caso de error
@@ -1859,26 +1860,60 @@ class SemilleroController extends Controller
                 'recordatorio' => is_numeric($validated['recordatorio'] ?? null) ? (int)$validated['recordatorio'] : 0
             ]);
 
-            // Participantes del evento: si hay proyecto, sincronizar con TODOS los aprendices del proyecto
-            $aprendizIdsProyecto = [];
-            if (!empty($validated['id_proyecto'])) {
-                $aprendizIdsProyecto = $this->getProjectAprendizIds((int)$validated['id_proyecto']);
-            }
-            if (!empty($aprendizIdsProyecto)) {
-                $evento->participantes()->sync($aprendizIdsProyecto);
-            } elseif (!empty($validated['participantes'])) {
-                // Compat: si no hay proyecto, usar los enviados explícitamente
-                $evento->participantes()->sync($validated['participantes']);
+            // Participantes del evento: escribir explícitamente en evento_participantes
+            if (Schema::hasTable('evento_participantes')) {
+                // Borrar cualquier registro previo por seguridad (no debería haber, pero es idempotente)
+                DB::table('evento_participantes')->where('id_evento', $evento->id_evento)->delete();
+
+                $insert = [];
+                $now = now();
+                $hasAsistenciaCol = Schema::hasColumn('evento_participantes','asistencia');
+
+                // 1) Si hay proyecto, usar TODOS los aprendices del proyecto
+                $aprendizIdsProyecto = [];
+                if (!empty($validated['id_proyecto'])) {
+                    $aprendizIdsProyecto = $this->getProjectAprendizIds((int)$validated['id_proyecto']);
+                }
+
+                $idsBase = [];
+                if (!empty($aprendizIdsProyecto)) {
+                    $idsBase = $aprendizIdsProyecto;
+                } elseif (!empty($validated['participantes'])) {
+                    // 2) Si no hay proyecto, usar los IDs enviados explícitamente
+                    $idsBase = $validated['participantes'];
+                }
+
+                foreach ($idsBase as $aid) {
+                    $aid = (int) $aid;
+                    if ($aid <= 0) continue;
+                    $row = [
+                        'id_evento' => $evento->id_evento,
+                        'id_aprendiz' => $aid,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                    if ($hasAsistenciaCol) {
+                        $row['asistencia'] = 'pendiente';
+                    }
+                    $insert[] = $row;
+                }
+
+                if (!empty($insert)) {
+                    DB::table('evento_participantes')->insert($insert);
+                }
             }
 
             // Cargar relaciones para la respuesta (con alias seguro)
+            // Si existe nombre_completo, usarlo pero haciendo COALESCE con CONCAT(nombres, apellidos)
             $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
-                ? 'aprendices.nombre_completo'
+                ? "COALESCE(aprendices.nombre_completo, CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')))"
                 : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
             $evento->load([
                 'participantes' => function($q) use ($nameExpr){
                     $q->select(
                         DB::raw('aprendices.id_aprendiz as id_aprendiz'),
+                        'aprendices.nombres',
+                        'aprendices.apellidos',
                         DB::raw($nameExpr.' as nombre_completo')
                     );
                 },
@@ -1908,9 +1943,16 @@ class SemilleroController extends Controller
                     'codigo_reunion' => $evento->codigo_reunion,
                     'proyecto' => $evento->proyecto ? $evento->proyecto->nombre_proyecto : null,
                     'participantes' => $evento->participantes->map(function($p) {
+                        $nombre = trim((string)($p->nombre_completo ?? ''));
+                        if ($nombre === '') {
+                            $nombre = trim(trim((string)($p->nombres ?? '')) . ' ' . trim((string)($p->apellidos ?? '')));
+                        }
+                        if ($nombre === '') {
+                            $nombre = 'Aprendiz #'.$p->id_aprendiz;
+                        }
                         return [
                             'id' => $p->id_aprendiz,
-                            'nombre' => $p->nombre_completo
+                            'nombre' => $nombre
                         ];
                     })
                 ]
@@ -2047,25 +2089,61 @@ class SemilleroController extends Controller
 
             $evento->update($updateData);
 
-            // Actualizar participantes: si hay proyecto (nuevo o existente), forzar a los del proyecto
-            $pid = $updateData['id_proyecto'] ?? $evento->id_proyecto ?? null;
-            if (!empty($pid)) {
-                $aprendizIdsProyecto = $this->getProjectAprendizIds((int)$pid);
-                if (!empty($aprendizIdsProyecto)) {
-                    $evento->participantes()->sync($aprendizIdsProyecto);
+            // Actualizar participantes en evento_participantes
+            if (Schema::hasTable('evento_participantes')) {
+                // Borrar registros actuales del evento
+                DB::table('evento_participantes')->where('id_evento', $evento->id_evento)->delete();
+
+                $now = now();
+                $insert = [];
+                $hasAsistenciaCol = Schema::hasColumn('evento_participantes','asistencia');
+
+                // Si hay proyecto (nuevo o existente), tomar aprendices del proyecto
+                $pid = $updateData['id_proyecto'] ?? $evento->id_proyecto ?? null;
+                $idsBase = [];
+                if (!empty($pid)) {
+                    $aprendizIdsProyecto = $this->getProjectAprendizIds((int)$pid);
+                    if (!empty($aprendizIdsProyecto)) {
+                        $idsBase = $aprendizIdsProyecto;
+                    }
                 }
-            } elseif (isset($validated['participantes'])) {
-                $evento->participantes()->sync($validated['participantes']);
+
+                // Si no hay proyecto o no devolvió aprendices, usar los participantes enviados explícitamente
+                if (empty($idsBase) && isset($validated['participantes']) && is_array($validated['participantes'])) {
+                    $idsBase = $validated['participantes'];
+                }
+
+                foreach ($idsBase as $aid) {
+                    $aid = (int) $aid;
+                    if ($aid <= 0) continue;
+                    $row = [
+                        'id_evento' => $evento->id_evento,
+                        'id_aprendiz' => $aid,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                    if ($hasAsistenciaCol) {
+                        $row['asistencia'] = 'pendiente';
+                    }
+                    $insert[] = $row;
+                }
+
+                if (!empty($insert)) {
+                    DB::table('evento_participantes')->insert($insert);
+                }
             }
 
             // Cargar relaciones para la respuesta (con alias seguro)
+            // Si existe nombre_completo, usar COALESCE con CONCAT(nombres, apellidos)
             $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
-                ? 'aprendices.nombre_completo'
+                ? "COALESCE(aprendices.nombre_completo, CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')))"
                 : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
             $evento->load([
                 'participantes' => function($q) use ($nameExpr){
                     $q->select(
                         DB::raw('aprendices.id_aprendiz as id_aprendiz'),
+                        'aprendices.nombres',
+                        'aprendices.apellidos',
                         DB::raw($nameExpr.' as nombre_completo')
                     );
                 },
@@ -2192,6 +2270,76 @@ class SemilleroController extends Controller
         }
     }
 
+    // Actualizar estado de asistencia de un participante en un evento
+    public function actualizarAsistencia(Request $request, $eventoId, $aprendizId)
+    {
+        try {
+            if (!Schema::hasTable('evento_participantes')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tabla de participantes no disponible'
+                ], 500);
+            }
+
+            if (!Schema::hasColumn('evento_participantes', 'asistencia')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "La columna 'asistencia' no existe en evento_participantes"
+                ], 500);
+            }
+
+            $data = $request->validate([
+                'asistencia' => 'required|string|in:pendiente,asistio,no_asistio',
+            ]);
+
+            // Verificar que el evento pertenezca al líder autenticado (si existe columna de líder)
+            $leaderCol = null;
+            if (Schema::hasColumn('eventos','id_lider_semi')) {
+                $leaderCol = 'id_lider_semi';
+            } elseif (Schema::hasColumn('eventos','id_lider_usuario')) {
+                $leaderCol = 'id_lider_usuario';
+            } elseif (Schema::hasColumn('eventos','id_lider')) {
+                $leaderCol = 'id_lider';
+            }
+
+            $eventoQuery = Evento::where('id_evento', $eventoId);
+            if ($leaderCol) {
+                $eventoQuery->where($leaderCol, Auth::id());
+            }
+            $evento = $eventoQuery->first();
+
+            if (!$evento) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No autorizado para modificar este evento'
+                ], 403);
+            }
+
+            $updated = DB::table('evento_participantes')
+                ->where('id_evento', $eventoId)
+                ->where('id_aprendiz', $aprendizId)
+                ->update(['asistencia' => $data['asistencia']]);
+
+            if (!$updated) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Participante no encontrado en el evento'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Asistencia actualizada correctamente'
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error al actualizar asistencia: '.$e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar asistencia'
+            ], 500);
+        }
+    }
+
     /**
      * Obtener IDs de aprendices asignados a un proyecto, normalizando conforme a pivotes disponibles.
      * Devuelve un array de id_aprendiz.
@@ -2229,13 +2377,11 @@ class SemilleroController extends Controller
                                 if (!empty($ids)) return $ids;
                             }
                         }
-                        // Si no hay aprendices mapeables, devolver vacío para evitar incluir todos
-                        return [];
                     }
                 }
             }
-            if (Schema::hasTable('proyecto_aprendiz')) {
-                $ids = DB::table('proyecto_aprendiz')
+            if (Schema::hasTable('aprendiz_proyecto')) {
+                $ids = DB::table('aprendiz_proyecto')
                     ->where('id_proyecto', $projectId)
                     ->pluck('id_aprendiz')
                     ->map(fn($v)=> (int)$v)

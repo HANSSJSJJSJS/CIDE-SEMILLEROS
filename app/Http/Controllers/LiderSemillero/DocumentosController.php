@@ -83,6 +83,39 @@ class DocumentosController extends Controller
         return view('lider_semi.documentos', compact('proyectosActivos','proyectosCompletados'));
     }
 
+    /**
+     * Permitir al líder abrir/ver el archivo asociado a una entrega.
+     */
+    public function verDocumento($id)
+    {
+        if (!Schema::hasTable('documentos')) {
+            abort(404);
+        }
+
+        $doc = DB::table('documentos')->where('id_documento', $id)->first();
+        if (!$doc) {
+            abort(404);
+        }
+
+        // Si la ruta es una URL completa (Drive, etc.), redirigir
+        if (!empty($doc->ruta_archivo) && filter_var($doc->ruta_archivo, FILTER_VALIDATE_URL)) {
+            return redirect()->away($doc->ruta_archivo);
+        }
+
+        // Caso contrario, asumir archivo en storage/app/public
+        if (empty($doc->ruta_archivo)) {
+            abort(404);
+        }
+
+        $path = storage_path('app/public/' . ltrim($doc->ruta_archivo, '/'));
+        if (!file_exists($path)) {
+            abort(404);
+        }
+
+        // Devolver el archivo para visualizar/descargar en el navegador
+        return response()->file($path);
+    }
+
     // Listar proyectos para el select del modal
     public function listarProyectos(Request $request)
     {
@@ -210,7 +243,7 @@ class DocumentosController extends Controller
         try {
             $request->validate([
                 'proyecto_id' => 'required|integer|exists:proyectos,id_proyecto',
-                'aprendiz_id' => 'nullable|integer|exists:aprendices,id_aprendiz',
+                'aprendiz_id' => 'required|integer|exists:aprendices,id_aprendiz',
                 'titulo' => 'required|string|max:255',
                 'descripcion' => 'required|string',
                 'tipo_evidencia' => 'required|string',
@@ -227,72 +260,78 @@ class DocumentosController extends Controller
             }
 
             $columns = DB::select("SHOW COLUMNS FROM documentos WHERE Field = 'id_aprendiz'");
-            $allowsNull = !empty($columns) && $columns[0]->Null === 'YES';
+
+            // Mapear tipo_evidencia (front) a enum tipo_archivo (BD)
+            $tipoEvidencia = strtolower($request->tipo_evidencia);
+            switch ($tipoEvidencia) {
+                case 'pdf':
+                    $tipoArchivoEnum = 'PDF';
+                    break;
+                case 'documento': // Documento Word en el formulario
+                    $tipoArchivoEnum = 'WORD';
+                    break;
+                case 'presentacion':
+                    $tipoArchivoEnum = 'PRESENTACION';
+                    break;
+                case 'video':
+                    $tipoArchivoEnum = 'VIDEO';
+                    break;
+                case 'imagen':
+                    $tipoArchivoEnum = 'IMAGEN';
+                    break;
+                case 'enlace':
+                    $tipoArchivoEnum = 'ENLACE';
+                    break;
+                case 'otro':
+                default:
+                    $tipoArchivoEnum = 'OTRO';
+                    break;
+            }
 
             $dataToInsert = [
                 'id_proyecto' => $request->proyecto_id,
                 'documento' => $request->titulo,
-                'ruta_archivo' => '',
-                'tipo_archivo' => $request->tipo_evidencia,
-                'tamanio' => 0,
-                'mime_type' => '',
-                'fecha_subida' => now(),
-                'fecha_limite' => $request->fecha,
-                'estado' => 'pendiente',
-                'tipo_documento' => $request->tipo_evidencia,
-                'descripcion' => $request->descripcion
             ];
 
-            if ($request->has('aprendiz_id') && $request->aprendiz_id) {
-                $dataToInsert['id_aprendiz'] = $request->aprendiz_id;
-                if (Schema::hasColumn('documentos', 'id_usuario')) {
-                    $usrId = null;
-                    if (Schema::hasColumn('aprendices', 'id_usuario')) {
-                        $usrId = DB::table('aprendices')->where('id_aprendiz', $request->aprendiz_id)->value('id_usuario');
-                    } elseif (Schema::hasColumn('aprendices', 'user_id')) {
-                        $usrId = DB::table('aprendices')->where('id_aprendiz', $request->aprendiz_id)->value('user_id');
-                    }
-                    if (!is_null($usrId)) {
-                        $dataToInsert['id_usuario'] = (int)$usrId;
-                    }
-                }
-            } elseif ($allowsNull) {
-                $dataToInsert['id_aprendiz'] = null;
-            } else {
-                $aprendizSinAsignar = DB::table('aprendices')
-                    ->where('documento', '=', 'SIN_ASIGNAR')
-                    ->first();
+            if (Schema::hasColumn('documentos', 'ruta_archivo')) {
+                $dataToInsert['ruta_archivo'] = '';
+            }
+            if (Schema::hasColumn('documentos', 'tipo_archivo')) {
+                $dataToInsert['tipo_archivo'] = $tipoArchivoEnum;
+            }
+            if (Schema::hasColumn('documentos', 'tamanio')) {
+                $dataToInsert['tamanio'] = 0;
+            }
+            if (Schema::hasColumn('documentos', 'mime_type')) {
+                $dataToInsert['mime_type'] = '';
+            }
+            if (Schema::hasColumn('documentos', 'fecha_subida')) {
+                $dataToInsert['fecha_subida'] = now();
+            }
+            if (Schema::hasColumn('documentos', 'fecha_limite')) {
+                $dataToInsert['fecha_limite'] = $request->fecha;
+            }
+            if (Schema::hasColumn('documentos', 'estado')) {
+                $dataToInsert['estado'] = 'pendiente';
+            }
+            if (Schema::hasColumn('documentos', 'tipo_documento')) {
+                $dataToInsert['tipo_documento'] = $request->tipo_evidencia;
+            }
+            if (Schema::hasColumn('documentos', 'descripcion')) {
+                $dataToInsert['descripcion'] = $request->descripcion;
+            }
 
-                if (!$aprendizSinAsignar) {
-                    $idAprendizSinAsignar = DB::table('aprendices')->insertGetId([
-                        'nombres' => 'Sin',
-                        'apellidos' => 'Asignar',
-                        'nombre_completo' => 'Sin Asignar',
-                        'tipo_documento' => 'CC',
-                        'documento' => 'SIN_ASIGNAR',
-                        'celular' => '0000000000',
-                        'correo_institucional' => 'sin.asignar@sena.edu.co',
-                        'correo_personal' => 'sin.asignar@sena.edu.co',
-                        'programa' => 'N/A',
-                        'ficha' => '0000000',
-                        'contacto_nombre' => 'N/A',
-                        'contacto_celular' => '0000000000'
-                    ]);
-                    $dataToInsert['id_aprendiz'] = $idAprendizSinAsignar;
-                } else {
-                    $dataToInsert['id_aprendiz'] = $aprendizSinAsignar->id_aprendiz;
+            // Siempre debe venir un aprendiz asignado (opción A)
+            $dataToInsert['id_aprendiz'] = $request->aprendiz_id;
+            if (Schema::hasColumn('documentos', 'id_usuario')) {
+                $usrId = null;
+                if (Schema::hasColumn('aprendices', 'id_usuario')) {
+                    $usrId = DB::table('aprendices')->where('id_aprendiz', $request->aprendiz_id)->value('id_usuario');
+                } elseif (Schema::hasColumn('aprendices', 'user_id')) {
+                    $usrId = DB::table('aprendices')->where('id_aprendiz', $request->aprendiz_id)->value('user_id');
                 }
-
-                if (Schema::hasColumn('documentos', 'id_usuario')) {
-                    $usrId = null;
-                    if (Schema::hasColumn('aprendices', 'id_usuario')) {
-                        $usrId = DB::table('aprendices')->where('id_aprendiz', $dataToInsert['id_aprendiz'])->value('id_usuario');
-                    } elseif (Schema::hasColumn('aprendices', 'user_id')) {
-                        $usrId = DB::table('aprendices')->where('id_aprendiz', $dataToInsert['id_aprendiz'])->value('user_id');
-                    }
-                    if (!is_null($usrId)) {
-                        $dataToInsert['id_usuario'] = (int)$usrId;
-                    }
+                if (!is_null($usrId)) {
+                    $dataToInsert['id_usuario'] = (int)$usrId;
                 }
             }
 
@@ -361,18 +400,27 @@ class DocumentosController extends Controller
                 ->orderBy('d.fecha_subido', 'desc')
                 ->get();
 
-            $entregas = $entregas->map(function($entrega) {
+            $ahora = new \DateTime();
+            $entregas = $entregas->map(function($entrega) use ($ahora) {
                 if ($entrega->ruta_archivo) {
                     if (filter_var($entrega->ruta_archivo, FILTER_VALIDATE_URL)) {
+                        // URL externa (Drive, etc.)
                         $entrega->archivo_url = $entrega->ruta_archivo;
                     } else {
-                        $entrega->archivo_url = asset('storage/' . $entrega->ruta_archivo);
+                        // Ruta local: usar la ruta protegida del líder semillero
+                        $entrega->archivo_url = route('lider_semi.documentos.ver', ['id' => $entrega->id]);
                     }
                 }
+
+                $entrega->recien_actualizada = false;
                 if ($entrega->fecha) {
                     try {
                         $fecha = new \DateTime($entrega->fecha);
                         $entrega->fecha = $fecha->format('Y-m-d');
+                        $diffSegundos = $ahora->getTimestamp() - $fecha->getTimestamp();
+                        if ($diffSegundos >= 0 && $diffSegundos <= 86400) {
+                            $entrega->recien_actualizada = true;
+                        }
                     } catch (\Exception $e) { }
                 }
                 return $entrega;
@@ -393,7 +441,8 @@ class DocumentosController extends Controller
     {
         try {
             $request->validate([
-                'estado' => 'required|in:pendiente,aprobado,rechazado'
+                'estado' => 'required|in:pendiente,aprobado,rechazado',
+                'motivo' => 'nullable|string'
             ]);
 
             if (!Schema::hasTable('documentos')) {
@@ -420,11 +469,25 @@ class DocumentosController extends Controller
                 });
             }
 
+            // Asegurar columna descripcion si vamos a guardar motivos de rechazo
+            if (!Schema::hasColumn('documentos', 'descripcion')) {
+                Schema::table('documentos', function($table) {
+                    $table->text('descripcion')->nullable()->after('estado');
+                });
+            }
+
+            $updateData = [
+                'estado' => $request->estado
+            ];
+
+            // Si el líder envía un motivo y el estado es rechazado, guardarlo en descripcion
+            if ($request->estado === 'rechazado' && $request->filled('motivo')) {
+                $updateData['descripcion'] = $request->motivo;
+            }
+
             DB::table('documentos')
                 ->where('id_documento', $entregaId)
-                ->update([
-                    'estado' => $request->estado
-                ]);
+                ->update($updateData);
 
             return response()->json([
                 'success' => true,

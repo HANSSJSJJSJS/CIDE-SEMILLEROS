@@ -356,9 +356,11 @@
                 </div>
             </div>
         </section>
-        <section class="drawer-section">
+        <section class="drawer-section" id="detail-asistencia-section" style="display:none;">
             <h4 class="drawer-section-title">Participantes</h4>
-            <div id="detail-participantes" class="participants-chips">--</div>
+            <p class="text-muted" style="font-size:12px;">Marca si el participante asistió o no a la reunión virtual.</p>
+            <div id="detail-asistencia-list" class="attendance-list"></div>
+            <div id="detail-asistencia-summary" class="attendance-summary" style="margin-top:16px; display:none;"></div>
         </section>
         <section class="drawer-section">
             <h4 class="drawer-section-title">Descripción</h4>
@@ -396,7 +398,8 @@ if (typeof formatDateLongLocalFromYMD !== 'function') {
 // Rutas backend
 const ROUTES = {
   obtener: "{{ route('lider_semi.eventos.obtener', [], false) }}",
-  baseEventos: "{{ route('lider_semi.eventos.crear', [], false) }}"
+  baseEventos: "{{ route('lider_semi.eventos.crear', [], false) }}",
+  asistenciaTemplate: "{{ route('lider_semi.eventos.participantes.asistencia', ['evento' => '__EID__', 'aprendiz' => '__AID__'], false) }}"
 };
 const CSRF = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 const CURRENT_USER_ID = {{ Auth::id() }};
@@ -584,9 +587,10 @@ async function loadEventsForCurrentPeriod(){
         datePart = formatDateLocal(d);
         timePart = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
       }
-      // Participantes: aceptar varios formatos desde backend
+      // Participantes: aceptar varios formatos desde backend (incluyendo asistencia)
       let participantsIds = [];
       let participantsNames = [];
+      let participantsDetails = [];
       try{
         const p = ev.participantes ?? ev.aprendices ?? ev.aprendices_asignados ?? [];
         if (Array.isArray(p)){
@@ -597,6 +601,11 @@ async function loadEventsForCurrentPeriod(){
           } else if (p.length && typeof p[0] === 'object') {
             participantsIds = p.map(o=> parseInt(o.id_aprendiz ?? o.id ?? o.aprendiz_id ?? o.user_id)).filter(n=>!Number.isNaN(n));
             participantsNames = p.map(o=> String(o.nombre_completo ?? o.nombre ?? o.name ?? '').trim()).filter(Boolean);
+            participantsDetails = p.map(o=> ({
+              id: parseInt(o.id_aprendiz ?? o.id ?? o.aprendiz_id ?? o.user_id),
+              nombre: String(o.nombre_completo ?? o.nombre ?? o.name ?? '').trim() || `Aprendiz #${o.id_aprendiz ?? o.id ?? ''}`,
+              asistencia: String(o.asistencia ?? 'pendiente')
+            })).filter(x=>!Number.isNaN(x.id));
           }
         } else if (typeof p === 'string' && p.length){
           try{ const arr = JSON.parse(p); if(Array.isArray(arr)) participantsIds = arr.map(x=>parseInt(x)).filter(n=>!Number.isNaN(n)); }
@@ -609,7 +618,23 @@ async function loadEventsForCurrentPeriod(){
       // incluir identificador de creador y estado para manejar permisos/estilos
       const creatorId = ev.leader_id ?? ev.id_lider ?? ev.id_usuario ?? null;
       const estado = ev.estado ?? 'programada';
-      return { id: ev.id, date: datePart, time: timePart||'09:00', title: ev.titulo, duration: ev.duracion||60, type: ev.tipo||'general', location: ev.ubicacion||'', description: ev.descripcion||'', researchLine: ev.linea_investigacion || '', link: ev.link_virtual || '', participantsIds, participantsNames, creatorId, estado };
+      return {
+        id: ev.id,
+        date: datePart,
+        time: timePart||'09:00',
+        title: ev.titulo,
+        duration: ev.duracion||60,
+        type: ev.tipo||'general',
+        location: ev.ubicacion||'',
+        description: ev.descripcion||'',
+        researchLine: ev.linea_investigacion || '',
+        link: ev.link_virtual || '',
+        participantsIds,
+        participantsNames,
+        participantsDetails,
+        creatorId,
+        estado
+      };
     });
   }catch(e){ console.error('Error cargando eventos', e); events = []; }
 }
@@ -930,6 +955,81 @@ function showEventDetails(event){
       ? names.map(n=>`<span class="chip">${n}</span>`).join(' ')
       : '--';
   }
+  // Checklist de asistencia (solo reuniones virtuales)
+  const asistenciaSection = document.getElementById('detail-asistencia-section');
+  const asistenciaList = document.getElementById('detail-asistencia-list');
+  const asistenciaSummary = document.getElementById('detail-asistencia-summary');
+  if (asistenciaSection && asistenciaList && asistenciaSummary) {
+    if (isVirtualMeeting && Array.isArray(event.participantsDetails) && event.participantsDetails.length) {
+      asistenciaSection.style.display = 'block';
+      asistenciaList.innerHTML = '';
+      event.participantsDetails.forEach(p => {
+        const row = document.createElement('div');
+        row.className = 'attendance-item-card';
+        row.innerHTML = `
+          <div class="attendance-card-header">
+            <div class="attendance-name">${p.nombre}</div>
+          </div>
+          <div class="attendance-card-body">
+            <div class="attendance-label">Asistencia</div>
+            <p class="attendance-help">Marca si el participante asistió o no a la reunión virtual.</p>
+            <div class="attendance-options">
+              <label class="attendance-option">
+                <input type="radio" name="asistencia-${event.id}-${p.id}" value="pendiente"> Pendiente
+              </label>
+              <label class="attendance-option">
+                <input type="radio" name="asistencia-${event.id}-${p.id}" value="asistio"> Asistió
+              </label>
+              <label class="attendance-option">
+                <input type="radio" name="asistencia-${event.id}-${p.id}" value="no_asistio"> No asistió
+              </label>
+            </div>
+          </div>`;
+        const radios = row.querySelectorAll('input[type="radio"]');
+        radios.forEach(r => {
+          if (r.value === (p.asistencia || 'pendiente')) {
+            r.checked = true;
+          }
+          r.addEventListener('change', async () => {
+            try {
+              const url = ROUTES.asistenciaTemplate
+                .replace('__EID__', String(event.id))
+                .replace('__AID__', String(p.id));
+              const res = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRF-TOKEN': CSRF,
+                  'Accept': 'application/json',
+                  'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ asistencia: r.value })
+              });
+              if (!res.ok) {
+                console.error('Error al actualizar asistencia', res.status, await res.text());
+                showToast('No se pudo actualizar la asistencia','error');
+              } else {
+                showToast('Asistencia actualizada','success');
+                p.asistencia = r.value;
+                updateAttendanceSummary(event, asistenciaSummary);
+              }
+            } catch (err) {
+              console.error('Error al actualizar asistencia', err);
+              showToast('Error de red al actualizar asistencia','error');
+            }
+          });
+        });
+        asistenciaList.appendChild(row);
+      });
+      updateAttendanceSummary(event, asistenciaSummary);
+      asistenciaSummary.style.display = 'block';
+    } else {
+      asistenciaSection.style.display = 'none';
+      asistenciaList.innerHTML = '';
+      asistenciaSummary.innerHTML = '';
+      asistenciaSummary.style.display = 'none';
+    }
+  }
   if (genBtn) genBtn.onclick = async () => {
     try {
       const res = await fetch(`${ROUTES.baseEventos}/${event.id}/generar-enlace`, { method:'POST', headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json','X-Requested-With':'XMLHttpRequest','Content-Type':'application/json'}, body: JSON.stringify({ plataforma: 'teams' }) });
@@ -963,6 +1063,39 @@ function showEventDetails(event){
     }catch(err){ console.error(err); alert('Error eliminando enlace'); }
   };
   openDetailDrawer();
+}
+
+function updateAttendanceSummary(event, summaryEl){
+  if (!summaryEl) return;
+  let pendientes = 0, asistieron = 0, noAsistieron = 0;
+  if (Array.isArray(event.participantsDetails)){
+    event.participantsDetails.forEach(p => {
+      const st = String(p.asistencia || 'pendiente');
+      if (st === 'asistio') asistieron++;
+      else if (st === 'no_asistio') noAsistieron++;
+      else pendientes++;
+    });
+  }
+  summaryEl.innerHTML = `
+    <div class="attendance-summary-card">
+      <div class="attendance-summary-header">Resumen de Asistencia</div>
+      <div class="attendance-summary-subtitle">Estado actual de los participantes de la reunión</div>
+      <div class="attendance-summary-grid">
+        <div class="attendance-summary-item">
+          <div class="attendance-summary-count">${asistieron}</div>
+          <div class="attendance-summary-label">Asistieron</div>
+        </div>
+        <div class="attendance-summary-item">
+          <div class="attendance-summary-count">${noAsistieron}</div>
+          <div class="attendance-summary-label">No asistieron</div>
+        </div>
+        <div class="attendance-summary-item">
+          <div class="attendance-summary-count">${pendientes}</div>
+          <div class="attendance-summary-label">Pendientes</div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function openDetailDrawer(){ detailOverlay.style.display='block'; detailDrawer.style.display='block'; }

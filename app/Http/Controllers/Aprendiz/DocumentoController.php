@@ -51,12 +51,24 @@ class DocumentoController extends Controller
                 ->where('id_aprendiz', $aprendiz->id_aprendiz)
                 ->pluck('id_proyecto')->map(fn($v)=>(int)$v)->all();
         }
-        // 3) Si no hay pivote, intentar deducir por documentos (como antes)
+        // 3) Si no hay pivote, intentar deducir por documentos (como antes),
+        //    pero siendo tolerantes con id_aprendiz / id_usuario
         if (empty($proyectoIds) && \Illuminate\Support\Facades\Schema::hasTable('documentos')) {
-            $docAprCol = $this->getDocumentoAprendizColumn();
             $aprId = $this->getAprendizId($aprendiz);
+            $userIdLocal = $userId;
+
             $proyectoIds = DB::table('documentos')
-                ->where($docAprCol, $aprId)
+                ->when(\Illuminate\Support\Facades\Schema::hasColumn('documentos','id_aprendiz') || \Illuminate\Support\Facades\Schema::hasColumn('documentos','id_usuario'),
+                    function($q) use ($aprId, $userIdLocal) {
+                        $q->where(function($sub) use ($aprId, $userIdLocal) {
+                            if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','id_aprendiz')) {
+                                $sub->orWhere('id_aprendiz', $aprId);
+                            }
+                            if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','id_usuario')) {
+                                $sub->orWhere('id_usuario', $userIdLocal);
+                            }
+                        });
+                    })
                 ->pluck('id_proyecto')->map(fn($v)=>(int)$v)->all();
         }
         $proyectos = empty($proyectoIds)
@@ -80,12 +92,33 @@ class DocumentoController extends Controller
         // Obtener documentos del aprendiz (excluir placeholders)
         $docAprCol = $this->getDocumentoAprendizColumn();
         $aprId = $this->getAprendizId($aprendiz);
+        $limiteAprobadas = now()->subDays(2);
+
+        $userIdLocal = $userId;
+
         $documentos = DB::table('documentos')
             ->join('proyectos', 'proyectos.id_proyecto', '=', 'documentos.id_proyecto')
-            ->where('documentos.' . $docAprCol, $aprId)
+            ->where(function($q) use ($docAprCol, $aprId, $userIdLocal) {
+                // Condición principal por columna detectada
+                $q->where('documentos.' . $docAprCol, $aprId);
+                // Tolerancia: si existe id_usuario, también aceptar coincidencia con el user_id
+                if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','id_usuario')) {
+                    $q->orWhere('documentos.id_usuario', $userIdLocal);
+                }
+            })
             ->whereRaw("documentos.documento NOT LIKE 'PLACEHOLDER%'")
             ->whereNotNull('documentos.ruta_archivo')
             ->where('documentos.ruta_archivo', '!=', '')
+            // Si existe columna estado, ocultar evidencias aprobadas con más de 2 días
+            ->when(\Illuminate\Support\Facades\Schema::hasColumn('documentos','estado'), function($q) use ($limiteAprobadas) {
+                $q->where(function($inner) use ($limiteAprobadas) {
+                    $inner->whereIn('documentos.estado', ['pendiente','rechazado'])
+                          ->orWhere(function($sub) use ($limiteAprobadas) {
+                              $sub->where('documentos.estado', 'aprobado')
+                                  ->where('documentos.fecha_subida', '>=', $limiteAprobadas);
+                          });
+                });
+            })
             ->select(
                 'documentos.*',
                 'proyectos.nombre_proyecto'
@@ -93,13 +126,32 @@ class DocumentoController extends Controller
             ->orderBy('documentos.fecha_subida', 'desc')
             ->get();
 
-        $pendientesAsignadas = DB::table('documentos')
+        // Evidencias pendientes: cualquier documento creado para este aprendiz (o su usuario)
+        // que aún no tenga archivo y esté en estado pendiente (o sin estado definido).
+        $pendientesQuery = DB::table('documentos')
             ->join('proyectos', 'proyectos.id_proyecto', '=', 'documentos.id_proyecto')
-            ->where('documentos.' . $docAprCol, $aprId)
+            ->where(function($q) use ($docAprCol, $aprId, $userIdLocal) {
+                $q->where('documentos.' . $docAprCol, $aprId);
+                if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','id_usuario')) {
+                    $q->orWhere('documentos.id_usuario', $userIdLocal);
+                }
+            })
+            // Solo evidencias reales, ignorar registros placeholder
+            ->whereRaw("documentos.documento NOT LIKE 'PLACEHOLDER%'")
+            // Pendiente = sin archivo
             ->where(function($q){
                 $q->whereNull('documentos.ruta_archivo')
                   ->orWhere('documentos.ruta_archivo', '=', '');
             })
+            // Estado pendiente o nulo (para ser tolerantes con esquemas sin estado)
+            ->when(\Illuminate\Support\Facades\Schema::hasColumn('documentos','estado'), function($q){
+                $q->where(function($inner){
+                    $inner->whereNull('documentos.estado')
+                          ->orWhere('documentos.estado', 'pendiente');
+                });
+            });
+
+        $pendientesAsignadas = $pendientesQuery
             ->select('documentos.*','proyectos.nombre_proyecto')
             ->orderBy('documentos.fecha_subida','desc')
             ->get();
@@ -112,17 +164,20 @@ class DocumentoController extends Controller
      */
     public function store(Request $request)
     {
-        $userId = Auth::id();
+        $userId   = Auth::id();
         $aprendiz = $this->getAprendizByUserId($userId);
-        if (!$aprendiz) { return back()->with('error', 'No se encontró el perfil de aprendiz'); }
+        if (!$aprendiz) {
+            return back()->with('error', 'No se encontró el perfil de aprendiz');
+        }
 
+        // Validación básica del formulario principal
         $request->validate([
             'id_proyecto' => 'required|exists:proyectos,id_proyecto',
-            'archivo' => 'required|file|max:10240', // Máximo 10MB
+            'archivo'     => 'required|file|max:10240',
             'descripcion' => 'nullable|string|max:255',
         ]);
 
-        // Verificar que el usuario (aprendiz) está asignado al proyecto mediante pivote
+        // Verificar que el aprendiz está asignado al proyecto (igual que antes)
         $asignado = false;
         if (\Illuminate\Support\Facades\Schema::hasTable('proyecto_user')) {
             $asignado = DB::table('proyecto_user')
@@ -138,73 +193,138 @@ class DocumentoController extends Controller
         }
 
         if (!$asignado) {
-            // Permitir si ya existe relación implícita por documentos previos (incluye placeholders)
-            $docAprCol = $this->getDocumentoAprendizColumn();
-            $aprId = $this->getAprendizId($aprendiz);
-            $relPorDocs = \Illuminate\Support\Facades\Schema::hasTable('documentos')
-                ? DB::table('documentos')
-                    ->where('id_proyecto', $request->id_proyecto)
-                    ->where($docAprCol, $aprId)
-                    ->exists()
-                : false;
-
-            // O si no existen tablas de pivote, no podemos comprobar asignación
-            $noHayPivotes = !\Illuminate\Support\Facades\Schema::hasTable('proyecto_user')
-                         && !\Illuminate\Support\Facades\Schema::hasTable('aprendiz_proyecto');
-
-            if (!($relPorDocs || $noHayPivotes)) {
-                if ($request->ajax() || $request->wantsJson()) {
-                    return response()->json(['ok' => false, 'message' => 'No estás asignado a este proyecto'], 403);
-                }
-                return back()->with('error', 'No estás asignado a este proyecto');
-            }
+            return back()->with('error', 'No estás asignado a este proyecto');
         }
 
-        $archivo = $request->file('archivo');
-        $nombreOriginal = $archivo->getClientOriginalName();
-        $extension = $archivo->getClientOriginalExtension();
-        $tamanio = $archivo->getSize();
-        // Usar la extensión (p.ej. pdf, docx) en vez del MIME para evitar truncamiento en columnas cortas o enums
-        $tipoArchivo = strtolower($extension ?? '');
-
-        // Generar nombre único para el archivo
-        $nombreArchivo = time() . '_' . $aprendiz->id_aprendiz . '_' . $nombreOriginal;
-
-        // Guardar el archivo en storage/app/public/documentos
-        $ruta = $archivo->storeAs('documentos', $nombreArchivo, 'public');
-
-        // Insertar en la base de datos (si id_documento no es autoincremental, generarlo)
+        // Nueva regla: solo permitir subir si existe al menos UNA evidencia asignada pendiente
         $docAprCol = $this->getDocumentoAprendizColumn();
-        $aprId = $this->getAprendizId($aprendiz);
+        $aprId     = $this->getAprendizId($aprendiz);
+
+        $hayPendientes = false;
+        if (\Illuminate\Support\Facades\Schema::hasTable('documentos')) {
+            $qPend = DB::table('documentos')
+                ->where('id_proyecto', $request->id_proyecto)
+                ->where($docAprCol, $aprId)
+                ->whereRaw("documento NOT LIKE 'PLACEHOLDER%'")
+                ->where(function($q){
+                    $q->whereNull('ruta_archivo')
+                      ->orWhere('ruta_archivo', '');
+                });
+
+            if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','estado')) {
+                $qPend->where('estado', 'pendiente');
+            }
+
+            $hayPendientes = $qPend->exists();
+        }
+
+        if (!$hayPendientes) {
+            return back()->with('error', 'En este momento no tienes evidencias asignadas pendientes para este proyecto.');
+        }
+
+        // ===============================
+        // Datos comunes del archivo
+        // ===============================
+        $archivo        = $request->file('archivo');
+        $nombreOriginal = $archivo->getClientOriginalName();
+        $extension      = $archivo->getClientOriginalExtension();
+        $tamanio        = $archivo->getSize();
+        $tipoArchivo    = strtolower($extension ?? '');
+
+        $nombreArchivo = time() . '_' . $aprendiz->id_aprendiz . '_' . $nombreOriginal;
+        $ruta          = $archivo->storeAs('documentos', $nombreArchivo, 'public');
+
+        $docAprCol = $this->getDocumentoAprendizColumn();
+        $aprId     = $this->getAprendizId($aprendiz);
+
+        // ===============================
+        // 1) Intentar completar evidencia pendiente de este proyecto
+        // ===============================
+        $evidenciaPendiente = null;
+        if (\Illuminate\Support\Facades\Schema::hasTable('documentos')) {
+            $qPend = DB::table('documentos')
+                ->where('id_proyecto', $request->id_proyecto)
+                ->where($docAprCol, $aprId)
+                ->where(function($q){
+                    $q->whereNull('ruta_archivo')
+                      ->orWhere('ruta_archivo', '');
+                });
+
+            if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','fecha_limite')) {
+                $qPend->orderBy('fecha_limite', 'asc');
+            } else {
+                $qPend->orderBy('id_documento', 'asc');
+            }
+
+            $evidenciaPendiente = $qPend->first();
+        }
+
+        // Si hay evidencia pendiente, ACTUALIZAMOS ese registro
+        if ($evidenciaPendiente) {
+            $update = [
+                'ruta_archivo' => $ruta,
+                'tamanio'      => $tamanio,
+                'fecha_subida' => now(),
+            ];
+
+            $tipoSeguro = $this->getTipoArchivoSafe($tipoArchivo);
+            if (!is_null($tipoSeguro) && \Illuminate\Support\Facades\Schema::hasColumn('documentos','tipo_archivo')) {
+                $update['tipo_archivo'] = $tipoSeguro;
+            }
+
+            if ($request->filled('descripcion')) {
+                $update['documento'] = $request->descripcion;
+            }
+
+            DB::table('documentos')
+                ->where('id_documento', $evidenciaPendiente->id_documento)
+                ->update($update);
+
+            if ($request->ajax() || $request->wantsJson()) {
+                // Indicamos al frontend que debe recargar para refrescar alertas y listas de pendientes
+                return response()->json(['ok' => true, 'reload' => true]);
+            }
+
+            return back()->with('success', 'Evidencia asignada actualizada correctamente.');
+        }
+
+        // ===============================
+        // 2) Si no hay pendientes, crear un nuevo documento (lógica original)
+        // ===============================
         $nextId = null;
         if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','id_documento')) {
-            // Obtener el siguiente ID manualmente si no es autoincremental
-            // Intentar detectar AI no es trivial; en su lugar, preasignamos y usamos insertGetId si es posible
-            $max = DB::table('documentos')->max('id_documento');
+            $max    = DB::table('documentos')->max('id_documento');
             $nextId = (int)($max ?? 0) + 1;
         }
+
         $dataInsert = [
-            'id_proyecto' => $request->id_proyecto,
-            $docAprCol => $aprId,
-            'documento' => $request->descripcion ?: $nombreOriginal,
+            'id_proyecto'  => $request->id_proyecto,
+            $docAprCol     => $aprId,
+            'documento'    => $request->descripcion ?: $nombreOriginal,
             'ruta_archivo' => $ruta,
-            'tamanio' => $tamanio,
+            'tamanio'      => $tamanio,
             'fecha_subida' => now(),
         ];
-        // Ajustar tipo_archivo según el esquema de la DB (ENUM/VARCHAR) para evitar truncamiento
+
+        // Toda nueva evidencia subida por el aprendiz debe comenzar como "pendiente"
+        if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','estado')) {
+            $dataInsert['estado'] = 'pendiente';
+        }
+
         $tipoSeguro = $this->getTipoArchivoSafe($tipoArchivo);
-        if (!is_null($tipoSeguro)) { $dataInsert['tipo_archivo'] = $tipoSeguro; }
+        if (!is_null($tipoSeguro)) {
+            $dataInsert['tipo_archivo'] = $tipoSeguro;
+        }
+
         if (!is_null($nextId)) {
             $dataInsert['id_documento'] = $nextId;
             DB::table('documentos')->insert($dataInsert);
             $idDocumento = $nextId;
         } else {
-            // Intentar recuperar el ID insertado (para motores que soportan clave AI)
             try {
                 $idDocumento = DB::table('documentos')->insertGetId($dataInsert, 'id_documento');
             } catch (\Throwable $e) {
                 DB::table('documentos')->insert($dataInsert);
-                // Fallback: buscar por ruta y aprendiz
                 $idDocumento = (int) (DB::table('documentos')
                     ->where('ruta_archivo', $ruta)
                     ->where($docAprCol, $aprId)
@@ -212,7 +332,6 @@ class DocumentoController extends Controller
             }
         }
 
-        // Si es AJAX, devolver JSON con el nuevo registro
         if ($request->ajax() || $request->wantsJson()) {
             $doc = DB::table('documentos')
                 ->join('proyectos', 'proyectos.id_proyecto', '=', 'documentos.id_proyecto')
@@ -220,7 +339,6 @@ class DocumentoController extends Controller
                 ->select('documentos.*', 'proyectos.nombre_proyecto')
                 ->first();
 
-            // Formatear fecha de forma segura
             $fecha = '';
             if (!empty($doc->fecha_subida)) {
                 try {
@@ -229,44 +347,132 @@ class DocumentoController extends Controller
                     $fecha = (string)$doc->fecha_subida;
                 }
             }
+
             return response()->json([
                 'ok' => true,
                 'documento' => [
-                    'id' => $doc->id_documento,
-                    'proyecto' => $doc->nombre_proyecto,
-                    'documento' => $doc->documento,
-                    'tipo' => pathinfo($doc->ruta_archivo, PATHINFO_EXTENSION),
-                    'tamanio_kb' => round(($doc->tamanio ?? 0) / 1024, 2),
-                    'fecha' => $fecha,
+                    'id'           => $doc->id_documento,
+                    'proyecto'     => $doc->nombre_proyecto,
+                    'documento'    => $doc->documento,
+                    'tipo'         => pathinfo($doc->ruta_archivo, PATHINFO_EXTENSION),
+                    'tamanio_kb'   => round(($doc->tamanio ?? 0) / 1024, 2),
+                    'fecha'        => $fecha,
                     'download_url' => route('aprendiz.documentos.download', $doc->id_documento),
-                    'delete_url' => route('aprendiz.documentos.destroy', $doc->id_documento),
-                ]
+                    'delete_url'   => route('aprendiz.documentos.destroy', $doc->id_documento),
+                ],
             ]);
         }
 
-        if ($request->ajax() || $request->wantsJson()) {
-            return response()->json(['ok' => true]);
-        }
         return back()->with('success', 'Documento subido correctamente');
     }
+
+    /**
+     * Editar /reemplazar un documento existente de un aprendiz
+     */
+
+    public function update(Request $request, $id)
+    {
+        $userId = Auth::id();
+        $aprendiz = $this->getAprendizByUserId($userId);
+        if (!$aprendiz){
+            return back()->with('error','No se encontro el perfil de aprendiz');
+        }
+
+        // 1) Buscar el documento que pertenece a este aprendiz
+        $docAprCol = $this->getDocumentoAprendizColumn(); // ya existe en este controlador
+        $aprId = $this->getAprendizId($aprendiz); // ya existe en este controlador
+
+        $documento = DB::table('documentos')
+            ->where('id_documento', $id)
+            ->where($docAprCol, $aprId)
+            ->first();
+
+        if (!$documento) {
+            return back()->with('error', 'Documento no encontrado o no te pertenece');
+        }
+
+        // Si la evidencia ya fue aprobada por el líder, no permitir que el aprendiz la modifique
+        if (property_exists($documento, 'estado')) {
+            $estadoActual = strtolower((string)($documento->estado ?? ''));
+            if ($estadoActual === 'aprobado') {
+                return back()->with('error', 'Esta evidencia ya fue aprobada y no puede ser modificada.');
+            }
+        }
+
+        // Si por algún motivo este registro aún no tiene archivo, no permitir actualizarlo aquí
+        if (empty($documento->ruta_archivo)) {
+            return back()->with('error', 'Este documento aún no tiene un archivo cargado para actualizar.');
+        }
+
+        // 2) Validar campos de edición
+        $request->validate([
+            'archivo'     => 'nullable|file|max:10240',
+            'descripcion' => 'nullable|string|max:255',
+        ]);
+
+        $dataUpdate = [];
+
+        // Actualizar descripción/título solo si cambia
+        if ($request->has('descripcion')) {
+            $nuevaDescripcion = (string)$request->input('descripcion');
+            $descripcionActual = (string)($documento->documento ?? '');
+            if ($nuevaDescripcion !== $descripcionActual) {
+                $dataUpdate['documento'] = $nuevaDescripcion;
+            }
+        }
+
+        // 3) Si se sube un nuevo archivo, reemplazarlo
+        if ($request->hasFile('archivo')) {
+
+            // Borrar archivo anterior (si existe en disco)
+            if (!empty($documento->ruta_archivo)) {
+                try {
+                    Storage::disk('public')->delete($documento->ruta_archivo);
+                } catch (\Throwable $e) {
+                    // en caso de error al borrar, lo ignoramos para no romper la edición
+                }
+            }
+
+            $archivo        = $request->file('archivo');
+            $nombreOriginal = $archivo->getClientOriginalName();
+            $extension      = $archivo->getClientOriginalExtension();
+            $tamanio        = $archivo->getSize();
+            $tipoArchivo    = strtolower($extension ?? '');
+
+            // Generar nombre único
+            $nombreArchivo = time() . '_' . $aprendiz->id_aprendiz . '_' . $nombreOriginal;
+
+            // Guardar nuevo archivo
+            $ruta = $archivo->storeAs('documentos', $nombreArchivo, 'public');
+
+            $dataUpdate['ruta_archivo'] = $ruta;
+            $dataUpdate['tipo_archivo'] = $tipoArchivo;
+            $dataUpdate['tamanio']      = $tamanio;
+            $dataUpdate['fecha_subida'] = now();
+
+            // Si no se envió la descripción nueva, usar el nombre del archivo
+            if (empty($dataUpdate['documento'])) {
+                $dataUpdate['documento'] = $nombreOriginal;
+            }
+        }
+
+        if (empty($dataUpdate)) {
+            return back()->with('error', 'Debes seleccionar un nuevo archivo o cambiar la descripción para actualizar la evidencia.');
+        }
+
+        DB::table('documentos')
+            ->where('id_documento', $id)
+            ->update($dataUpdate);
+
+        return back()->with('success', 'Entrega actualizada correctamente.');
+    }
+
 
     public function uploadAssigned(Request $request, $id)
     {
         $userId = Auth::id();
         $aprendiz = $this->getAprendizByUserId($userId);
         if (!$aprendiz) { return back()->with('error', 'No se encontró el perfil de aprendiz'); }
-
-        // Validar: permitir archivo o link_url
-        if ($request->hasFile('archivo')) {
-            $request->validate([
-                'archivo' => 'required|file|max:10240',
-            ]);
-        } else {
-            $request->validate([
-                'link_url' => 'required|url',
-            ]);
-        }
-
         $docAprCol = $this->getDocumentoAprendizColumn();
         $aprId = $this->getAprendizId($aprendiz);
 
@@ -276,8 +482,74 @@ class DocumentoController extends Controller
             ->first();
         if (!$documento) { return back()->with('error', 'Documento no encontrado'); }
 
+        // Determinar el tipo definido por el líder (base textual)
+        $tipoBase = strtolower(trim((string)($documento->tipo_documento ?? $documento->tipo_archivo ?? '')));
+
+        // Normalizar algunos alias
+        if (in_array($tipoBase, ['doc', 'docx', 'word', 'documento'], true)) {
+            $tipoBase = 'word';
+        } elseif (in_array($tipoBase, ['ppt', 'pptx', 'presentacion', 'presentación'], true)) {
+            $tipoBase = 'presentacion';
+        } elseif (in_array($tipoBase, ['img', 'imagen', 'image'], true)) {
+            $tipoBase = 'imagen';
+        } elseif (in_array($tipoBase, ['link', 'enlace', 'url'], true)) {
+            $tipoBase = 'enlace';
+        }
+
+        // Reglas de validación según el tipo asignado por el líder
+        if ($tipoBase === 'enlace') {
+            // Debe ser un link, no se acepta archivo físico
+            if ($request->hasFile('archivo')) {
+                return back()->with('error', 'Para esta evidencia solo se permite enviar un enlace, no un archivo.');
+            }
+            $request->validate([
+                'link_url' => 'required|url',
+            ]);
+        } else {
+            // Debe ser un archivo; no permitimos solo link_url
+            if (!$request->hasFile('archivo')) {
+                return back()->with('error', 'Debes seleccionar un archivo del tipo asignado para esta evidencia.');
+            }
+
+            // Validar tamaño máximo
+            $request->validate([
+                'archivo' => 'required|file|max:10240',
+            ]);
+
+            // Verificar extensión explícitamente según el tipo definido por el líder
+            $archivo = $request->file('archivo');
+            $extension = strtolower((string)$archivo->getClientOriginalExtension());
+
+            $extPermitidas = [];
+            switch ($tipoBase) {
+                case 'pdf':
+                    $extPermitidas = ['pdf'];
+                    break;
+                case 'word':
+                    $extPermitidas = ['doc', 'docx'];
+                    break;
+                case 'presentacion':
+                    $extPermitidas = ['ppt', 'pptx'];
+                    break;
+                case 'imagen':
+                    $extPermitidas = ['jpg', 'jpeg', 'png', 'gif'];
+                    break;
+                case 'video':
+                    $extPermitidas = ['mp4', 'avi', 'mov', 'mkv'];
+                    break;
+                default:
+                    // Tipo genérico u "otro": permitir cualquier archivo (solo se controla tamaño)
+                    $extPermitidas = [];
+                    break;
+            }
+
+            if (!empty($extPermitidas) && !in_array($extension, $extPermitidas, true)) {
+                return back()->with('error', 'El tipo de archivo seleccionado no coincide con el tipo asignado para esta evidencia.');
+            }
+        }
+
         // Construir datos a actualizar según tipo
-        if ($request->hasFile('archivo')) {
+        if ($tipoBase !== 'enlace' && $request->hasFile('archivo')) {
             $archivo = $request->file('archivo');
             $nombreOriginal = $archivo->getClientOriginalName();
             $extension = $archivo->getClientOriginalExtension();
