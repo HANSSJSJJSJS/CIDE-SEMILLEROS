@@ -21,8 +21,7 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $fillable = ['name','apellidos','email','password','role','telefono'];
-
-    protected $hidden = ['password','remember_token'];
+    protected $hidden   = ['password','remember_token'];
 
     protected function casts(): array
     {
@@ -32,25 +31,13 @@ class User extends Authenticatable
         ];
     }
 
-    // =========================
-    //   RELACIONES Y ROLES
-    // =========================
+    // ============================================================
+    // RELACIONES
+    // ============================================================
 
     public function proyectos(): BelongsToMany
     {
         return $this->belongsToMany(Proyecto::class, 'proyecto_user', 'user_id', 'id_proyecto');
-    }
-
-    public function redirectPath()
-    {
-        return match ($this->role) {
-            'ADMIN'               => '/admin/dashboard',
-            'LIDER_SEMILLERO'     => '/lider_semi/dashboard',
-            'APRENDIZ'            => '/aprendiz/dashboard',
-            'LIDER GENERAL'       => '/lider/dashboard',
-            'LIDER_INVESTIGACION' => '/lider_investigacion/dashboard',
-            default               => '/',
-        };
     }
 
     public function liderSemillero()
@@ -88,39 +75,64 @@ class User extends Authenticatable
         return $this->role === 'LIDER_INVESTIGACION';
     }
 
-    // ==============================
-    //   PERMISOS POR MÓDULO
-    // ==============================
+    // ============================================================
+    // PERMISOS POR MÓDULO
+    // ============================================================
 
- public function canManageModule(string $module, string $action): bool
-{
-    // ADMIN siempre puede todo
-    if ($this->role === 'ADMIN') {
-        return true;
+    public function modulePermissions()
+    {
+        return $this->hasMany(UserModulePermission::class, 'user_id');
     }
 
-    // LÍDER DE INVESTIGACIÓN también puede TODO siempre
-    if ($this->role === 'LIDER_INVESTIGACION') {
-        return true;
+    public function canManageModule(string $module, string $action): bool
+    {
+        // 1) ADMIN siempre puede todo
+        if ($this->role === 'ADMIN') {
+            return true;
+        }
+
+        // 2) LÍDER DE INVESTIGACIÓN → depende de tiene_permisos
+        if ($this->role === 'LIDER_INVESTIGACION') {
+            return (bool) $this->li_tiene_permisos;
+        }
+
+        // 3) Otros roles → módulos personalizados
+        $perm = $this->modulePermissions()->where('module', $module)->first();
+
+        if (! $perm) {
+            return false;
+        }
+
+        if ($action === 'view') {
+            return (bool) ($perm->can_create || $perm->can_update || $perm->can_delete);
+        }
+
+        return match ($action) {
+            'create' => (bool) $perm->can_create,
+            'update' => (bool) $perm->can_update,
+            'delete' => (bool) $perm->can_delete,
+            default  => false,
+        };
     }
 
-    // Para los demás roles (líder semillero, aprendiz)
-    $perm = $this->modulePermissions()->where('module', $module)->first();
+    // ============================================================
+    // ACCESSOR DEFINITIVO
+    // ============================================================
 
-    if (! $perm) {
-        return false;
+    public function getLiTienePermisosAttribute()
+    {
+        if ($this->role !== 'LIDER_INVESTIGACION') {
+            return false;
+        }
+
+        // Si viene desde el SELECT del index
+        if (array_key_exists('li_tiene_permisos', $this->attributes)) {
+            return (bool) $this->attributes['li_tiene_permisos'];
+        }
+
+        // Si es el usuario logueado
+        return $this->liderInvestigacion
+            ? (bool) $this->liderInvestigacion->tiene_permisos
+            : false;
     }
-
-    if ($action === 'view') {
-        return (bool) ($perm->can_create || $perm->can_update || $perm->can_delete);
-    }
-
-    return match ($action) {
-        'create' => (bool) $perm->can_create,
-        'update' => (bool) $perm->can_update,
-        'delete' => (bool) $perm->can_delete,
-        default => false,
-    };
 }
-
-} 

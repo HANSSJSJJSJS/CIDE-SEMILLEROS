@@ -153,8 +153,9 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
         Route::post('/usuarios/ajax/store', [AdminUsuarioController::class, 'storeAjax'])
             ->name('usuarios.store.ajax');
 
-          Route::post('usuarios/{usuario}/toggle-permisos-investigacion', [UsuarioController::class, 'togglePermisosInvestigacion'])
-        ->name('usuarios.togglePermisosInvestigacion');
+          Route::post('usuarios/{usuario}/toggle-permisos-investigacion', 
+            [AdminUsuarioController::class, 'togglePermisosInvestigacion'])
+                ->name('usuarios.togglePermisosInvestigacion');
 
         // FUNCIONES ADMIN
         Route::get('/funciones', [AdminController::class, 'index'])->name('functions');

@@ -99,122 +99,123 @@
           </tr>
         </thead>
 
-        <tbody>
-          @forelse($usuarios as $u)
-            @php
-              $nombreCompleto = trim(($u->name ?? '').' '.($u->apellidos ?? ''))
-                ?: ($u->nombre_completo ?? 'Usuario');
+       <tbody>
+  @forelse($usuarios as $u)
+    @php
+      $nombreCompleto = trim(($u->name ?? '').' '.($u->apellidos ?? ''))
+        ?: ($u->nombre_completo ?? 'Usuario');
 
-              $activo = $u->estado === 'Activo' || ($u->is_active ?? false);
+      $activo = $u->estado === 'Activo' || ($u->is_active ?? false);
 
-              $roleLabel = $u->role_label
-                ?? match($u->role ?? null) {
-                    'ADMIN'               => 'Líder general',
-                    'LIDER_SEMILLERO'     => 'Líder de semillero',
-                    'LIDER_INVESTIGACION' => 'Líder de investigación',
-                    'APRENDIZ'            => 'Aprendiz',
-                    default               => ($u->role ?? '—'),
-                };
+      $roleLabel = $u->role_label
+        ?? match($u->role ?? null) {
+            'ADMIN'               => 'Líder general',
+            'LIDER_SEMILLERO'     => 'Líder de semillero',
+            'LIDER_INVESTIGACION' => 'Líder de investigación',
+            'APRENDIZ'            => 'Aprendiz',
+            default               => ($u->role ?? '—'),
+        };
 
-              $roleColor = match($u->role ?? '') {
-                  'ADMIN'               => 'bg-danger',
-                  'LIDER_SEMILLERO'     => 'bg-success',
-                  'LIDER_INVESTIGACION' => 'bg-warning text-dark',
-                  'APRENDIZ'            => 'bg-primary',
-                  default               => 'bg-secondary',
-              };
+      $roleColor = match($u->role ?? '') {
+          'ADMIN'               => 'bg-danger',
+          'LIDER_SEMILLERO'     => 'bg-success',
+          'LIDER_INVESTIGACION' => 'bg-warning text-dark',
+          'APRENDIZ'            => 'bg-primary',
+          default               => 'bg-secondary',
+      };
 
-              $last = $u->last_login_at ?? $u->updated_at ?? null;
-            @endphp
+      $last = $u->last_login_at ?? $u->updated_at ?? null;
+    @endphp
 
-            <tr>
-              <td class="py-3 px-4">
-                <div class="fw-semibold">{{ $nombreCompleto }}</div>
-                <small class="text-muted">{{ $u->email ?? 'Sin correo' }}</small>
-              </td>
+    <tr>
+      <td class="py-3 px-4">
+        <div class="fw-semibold">{{ $nombreCompleto }}</div>
+        <small class="text-muted">{{ $u->email ?? 'Sin correo' }}</small>
+      </td>
 
-              <td class="py-3">
-                <span class="badge {{ $roleColor }}">{{ $roleLabel }}</span>
-              </td>
+      <td class="py-3">
+        <span class="badge {{ $roleColor }}">{{ $roleLabel }}</span>
+      </td>
 
-              <td class="py-3">{{ $u->semillero_nombre ?? '—' }}</td>
+      <td class="py-3">{{ $u->semillero_nombre ?? '—' }}</td>
 
-              <td class="py-3">
-                <span class="badge {{ $activo ? 'bg-success' : 'bg-secondary' }}">
-                  {{ $activo ? 'Activo' : 'Inactivo' }}
-                </span>
-              </td>
+      <td class="py-3">
+        <span class="badge {{ $activo ? 'bg-success' : 'bg-secondary' }}">
+          {{ $activo ? 'Activo' : 'Inactivo' }}
+        </span>
+      </td>
 
-              <td class="py-3">
-                {{ $last ? \Carbon\Carbon::parse($last)->locale('es')->diffForHumans() : '—' }}
-              </td>
+      <td class="py-3">
+        {{ $last ? \Carbon\Carbon::parse($last)->locale('es')->diffForHumans() : '—' }}
+      </td>
 
-              <td class="py-3 text-end pe-4">
-                <div class="acciones-semilleros">
+      <td class="py-3 text-end pe-4">
+        <div class="acciones-semilleros">
 
-                  {{-- EDITAR --}}
-                  @if($canUpdate)
-                    <button type="button"
-                            class="btn btn-accion-editar"
-                            data-bs-toggle="modal"
-                            data-bs-target="#modalEditarUsuario"
-                            data-id="{{ $u->id }}"
-                            data-nombre="{{ $u->name }}"
-                            data-apellido="{{ $u->apellidos }}"
-                            data-email="{{ $u->email }}"
-                            data-role="{{ $u->role }}"
-                            data-semillero-id="{{ $u->semillero_id ?? '' }}"
-                            data-update-url="{{ route('admin.usuarios.update', $u->id) }}">
-                      <i class="bi bi-pencil me-1"></i> Editar
-                    </button>
-                  @endif
+          {{-- EDITAR --}}
+          @if($canUpdate)
+            <button type="button"
+                    class="btn btn-accion-editar"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalEditarUsuario"
+                    data-id="{{ $u->id }}"
+                    data-nombre="{{ $u->name }}"
+                    data-apellido="{{ $u->apellidos }}"
+                    data-email="{{ $u->email }}"
+                    data-role="{{ $u->role }}"
+                    data-semillero-id="{{ $u->semillero_id ?? '' }}"
+                    data-update-url="{{ route('admin.usuarios.update', $u->id) }}">
+              <i class="bi bi-pencil me-1"></i> Editar
+            </button>
+          @endif
 
-                  {{-- DAR / QUITAR PERMISOS SOLO LÍDER INVESTIGACIÓN --}}
-                  @if($u->role === 'LIDER_INVESTIGACION')
-                    <form method="POST"
-                          action="{{ route('admin.usuarios.togglePermisosInvestigacion', $u->id) }}"
-                          onsubmit="return confirm('¿Seguro que quieres cambiar los permisos de este líder de investigación?');">
-                      @csrf
+          {{-- DAR / QUITAR PERMISOS — SOLO ADMIN, SOLO LÍDER INVESTIGACIÓN, NO SOBRE SÍ MISMO --}}
+          @if(auth()->user()->role === 'ADMIN'
+              && $u->role === 'LIDER_INVESTIGACION'
+              && auth()->id() !== $u->id)
+            <form method="POST"
+                  action="{{ route('admin.usuarios.togglePermisosInvestigacion', $u->id) }}"
+                  onsubmit="return confirm('¿Seguro que quieres cambiar los permisos de este líder de investigación?');">
+              @csrf
 
-                      @if($u->li_tiene_permisos)
-                        <button type="submit" class="btn btn-accion-ver">
-                          <i class="bi bi-shield-x me-1"></i> Quitar permisos
-                        </button>
-                      @else
-                        <button type="submit" class="btn btn-accion-ver">
-                          <i class="bi bi-shield-check me-1"></i> Dar permisos
-                        </button>
-                      @endif
-                    </form>
-                  @endif
+              @if($u->li_tiene_permisos)
+                <button type="submit" class="btn btn-accion-ver">
+                  <i class="bi bi-shield-x me-1"></i> Quitar permisos
+                </button>
+              @else
+                <button type="submit" class="btn btn-accion-ver">
+                  <i class="bi bi-shield-check me-1"></i> Dar permisos
+                </button>
+              @endif
+            </form>
+          @endif
 
-                  {{-- ELIMINAR --}}
-                  @if($canDelete)
-                    <form action="{{ route('admin.usuarios.destroy', $u->id) }}"
-                          method="POST"
-                          onsubmit="return confirm('¿Deseas eliminar este usuario?');">
-                      @csrf
-                      @method('DELETE')
-                      <button class="btn btn-accion-eliminar" type="submit">
-                        <i class="bi bi-trash me-1"></i> Eliminar
-                      </button>
-                    </form>
-                  @endif
+          {{-- ELIMINAR --}}
+          @if($canDelete)
+            <form action="{{ route('admin.usuarios.destroy', $u->id) }}"
+                  method="POST"
+                  onsubmit="return confirm('¿Deseas eliminar este usuario?');">
+              @csrf
+              @method('DELETE')
+              <button class="btn btn-accion-eliminar" type="submit">
+                <i class="bi bi-trash me-1"></i> Eliminar
+              </button>
+            </form>
+          @endif
 
-                  @if(!$canUpdate && !$canDelete && $u->role !== 'LIDER_INVESTIGACION')
-                    <span class="text-muted small">Sin permisos</span>
-                  @endif
-                </div>
-              </td>
-            </tr>
-          @empty
-            <tr>
-              <td colspan="6" class="text-center py-5 text-muted">
-                No hay usuarios registrados.
-              </td>
-            </tr>
-          @endforelse
-        </tbody>
+        </div>
+      </td>
+    </tr>
+
+  @empty
+    <tr>
+      <td colspan="6" class="text-center py-5 text-muted">
+        No hay usuarios registrados.
+      </td>
+    </tr>
+  @endforelse
+</tbody>
+
       </table>
     </div>
   </div>
