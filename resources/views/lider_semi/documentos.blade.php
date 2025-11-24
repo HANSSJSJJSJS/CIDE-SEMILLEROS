@@ -1,8 +1,8 @@
 @extends('layouts.lider_semi')
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/documentos.css') }}">
-<link rel="stylesheet" href="{{ asset('css/documentos-page.css') }}">
+<link rel="stylesheet" href="{{ asset('css/lider_semi/documentos.css') }}">
+<link rel="stylesheet" href="{{ asset('css/lider_semi/documentos-page.css') }}">
 @endpush
 
 @section('content')
@@ -131,6 +131,28 @@
             @endforelse
         </div>
     </div>
+</div>
+
+<!-- Modal Motivo de Rechazo -->
+<div class="modal-overlay" id="modalMotivoRechazo" style="display:none; position:fixed; inset:0; z-index:1200;">
+    <div class="modal-evidencia" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);">
+        <button class="btn-cerrar-modal" onclick="cerrarModalMotivoRechazo()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 2rem; color: #666; cursor: pointer;">×</button>
+        <h2 style="margin-bottom: 1rem; color:#1e4620;">Rechazar evidencia</h2>
+        <p style="margin-bottom: 1rem; color:#555;">Escribe el motivo del rechazo. Este mensaje será visible para el aprendiz.</p>
+
+        <form id="formMotivoRechazo" onsubmit="enviarMotivoRechazo(event)">
+            <input type="hidden" id="rechazo_entrega_id">
+            <div class="mb-3">
+                <label for="rechazo_motivo" class="form-label-evidencia">Motivo del rechazo</label>
+                <textarea id="rechazo_motivo" class="form-control-evidencia form-textarea-evidencia" rows="4" placeholder="Describe brevemente el motivo del rechazo..." required></textarea>
+            </div>
+            <div class="modal-botones">
+                <button type="button" class="btn-cancelar-modal" onclick="cerrarModalMotivoRechazo()">Cancelar</button>
+                <button type="submit" class="btn-guardar-modal" style="background-color:#c62828;">Rechazar Evidencia</button>
+            </div>
+        </form>
+    </div>
+    
 </div>
 
 <!-- Modal Registrar Evidencia -->
@@ -422,7 +444,7 @@ function cargarEntregas(proyectoId) {
                                     <button class="btn-aprobar" onclick="cambiarEstadoEntrega(${entrega.id}, 'aprobado')">
                                         Aprobar
                                     </button>
-                                    <button class="btn-rechazar" onclick="cambiarEstadoEntrega(${entrega.id}, 'rechazado')">
+                                    <button class="btn-rechazar" onclick="abrirModalMotivoRechazo(${entrega.id})">
                                         Rechazar
                                     </button>
                                 ` : ''}
@@ -459,22 +481,52 @@ function cargarEntregas(proyectoId) {
         });
 }
 
-// Cambiar estado de entrega
-function cambiarEstadoEntrega(entregaId, nuevoEstado) {
-    if (!confirm(`¿Estás seguro de ${nuevoEstado === 'aprobado' ? 'aprobar' : 'rechazar'} esta entrega?`)) {
+// ===== Rechazo de evidencia con modal flotante =====
+let rechazoEntregaId = null;
+
+function abrirModalMotivoRechazo(entregaId) {
+    rechazoEntregaId = entregaId;
+    const overlay = document.getElementById('modalMotivoRechazo');
+    const textarea = document.getElementById('rechazo_motivo');
+    // Ocultar el modal de entregas para que parezca cambio de ventana
+    const modalEntregas = document.getElementById('modalEntregas');
+    if (modalEntregas) {
+        modalEntregas.classList.remove('active');
+    }
+    document.getElementById('rechazo_entrega_id').value = entregaId;
+    if (textarea) {
+        textarea.value = '';
+        setTimeout(() => textarea.focus(), 50);
+    }
+    overlay.style.display = 'block';
+    overlay.classList.add('active');
+}
+
+function cerrarModalMotivoRechazo() {
+    const overlay = document.getElementById('modalMotivoRechazo');
+    overlay.classList.remove('active');
+    overlay.style.display = 'none';
+    rechazoEntregaId = null;
+}
+
+function enviarMotivoRechazo(event) {
+    event.preventDefault();
+    const entregaId = rechazoEntregaId || document.getElementById('rechazo_entrega_id').value;
+    const motivo = (document.getElementById('rechazo_motivo').value || '').trim();
+
+    if (!motivo) {
+        alert('Debes escribir un motivo para rechazar la evidencia.');
         return;
     }
 
-    let motivo = null;
-    if (nuevoEstado === 'rechazado') {
-        motivo = prompt('Por favor indica el motivo del rechazo (este mensaje lo verá el aprendiz):');
-        if (motivo === null) {
-            // Canceló el cuadro de diálogo
-            return;
-        }
-        motivo = motivo.trim();
-        if (!motivo) {
-            alert('Debes escribir un motivo para rechazar la evidencia.');
+    cerrarModalMotivoRechazo();
+    cambiarEstadoEntrega(entregaId, 'rechazado', motivo);
+}
+
+// Cambiar estado de entrega (aprobar o rechazar con motivo opcional)
+function cambiarEstadoEntrega(entregaId, nuevoEstado, motivo = null) {
+    if (nuevoEstado === 'aprobado') {
+        if (!confirm('¿Estás seguro de aprobar esta entrega?')) {
             return;
         }
     }

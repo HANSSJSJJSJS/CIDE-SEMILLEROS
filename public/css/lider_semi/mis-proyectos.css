@@ -13,7 +13,17 @@
   --gray-100: #F3F4F6;
 }
 
-.page-header{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.page-header{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:.25rem;
+  margin-bottom:.5rem;
+}
+
+.projects-wallpaper > p.text-muted{
+  margin-bottom:2rem;
+}
 
 /* Cards de proyectos */
 .card-project{box-shadow:0 4px 14px rgba(0,0,0,.08);border:0;border-radius:12px;overflow:hidden}
@@ -55,12 +65,53 @@
 /* Título truncado en una línea */
 .truncate-1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* Fondo con marca de agua para la página */
-.projects-wallpaper{position:relative}
-.projects-wallpaper::after{
-  content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:
-    radial-gradient(ellipse at center, rgba(76,110,133,.08) 0%, rgba(76,110,133,0) 60%) center/75% 75% no-repeat,
-    linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 100%);
-  filter: saturate(.9);
+/* Contenedor sobre el fondo global (admin-layout ya dibuja la imagen) */
+.projects-wallpaper{
+  position: relative;
+  padding-top: 16px;
+  padding-bottom: 56px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Grilla de tarjetas: 3 columnas fijas, centradas sobre el fondo */
+.projects-wallpaper .row.g-4{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px 40px; /* row, column: más espacio entre tarjetas */
+  justify-items: stretch;
+}
+
+.projects-wallpaper .col-lg-4{
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* Tarjetas con proporciones similares al diseño */
+.projects-wallpaper .card-project{
+  min-width: 0;
+}
+
+/* --- Responsivo --- */
+@media (max-width: 991.98px){
+  /* Tablets: 2 tarjetas por fila */
+  .projects-wallpaper{
+    max-width: 100%;
+    padding-top: 24px;
+  }
+  .projects-wallpaper .row.g-4{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 575.98px){
+  /* Móvil: 1 tarjeta por fila */
+  .projects-wallpaper{
+    padding-top: 16px;
+    padding-bottom: 32px;
+  }
+  .projects-wallpaper .row.g-4{
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
 }

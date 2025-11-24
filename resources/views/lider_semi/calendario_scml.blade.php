@@ -2,16 +2,20 @@
 
 @push('styles')
 @php($v = time())
-<link rel="stylesheet" href="{{ asset('css/calendario.css') }}?v={{ $v }}">
-<link rel="stylesheet" href="{{ asset('css/calendario-views.css') }}?v={{ $v }}">
+<link rel="stylesheet" href="{{ asset('css/common/calendario.css') }}?v={{ $v }}">
+<link rel="stylesheet" href="{{ asset('css/common/calendario-views.css') }}?v={{ $v }}">
+<link rel="stylesheet" href="{{ asset('css/common/calendar-month.css') }}?v={{ $v }}">
 @endpush
 
 @section('content')
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<div class="container">
+<div class="container calendar-scml">
+    <div class="cal-hero">
+        <h2>Calendario de Actividades</h2>
+        <p>Programa y gestiona reuniones y eventos con tus semilleros</p>
+    </div>
     <div class="header">
         <div class="header-top">
-            <h1>📅 Calendario SCML</h1>
             <div class="view-switcher">
                 <button class="view-btn active" data-view="month">Mes</button>
                 <button class="view-btn" data-view="week">Semana</button>

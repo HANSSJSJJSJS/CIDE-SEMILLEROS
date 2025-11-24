@@ -1,7 +1,7 @@
 @extends('layouts.lider_semi')
 
 @section('styles')
-<link rel="stylesheet" href="{{ asset('css/mis-proyectos.css') }}">
+<link rel="stylesheet" href="{{ asset('css/lider_semi/mis-proyectos.css') }}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 @endsection
 
