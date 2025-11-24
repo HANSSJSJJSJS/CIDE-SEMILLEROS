@@ -1,117 +1,311 @@
-/* Estilos institucionales para Líder Semillero */
+/* ===================================================================
+   Estilos institucionales para Líder Semillero – Ajustados a la imagen
+   =================================================================== */
 
 :root{
   --brand-primary: #39A900; /* Verde institucional */
-  --brand-secondary: #007832; /* Verde secundario */
-  --brand-navy: #00304D; /* Azul institucional */
-  --steel-700: #4B6B84; /* Acero para headers/badges */
-  --steel-500: #6C88A0; /* Acero claro para estados */
-  --success-600:#2FB344; /* Verde éxito (finalizado) */
+  --brand-secondary: #007832;
+  --brand-navy: #00304D;
+  --steel-700: #4B6B84;
+  --steel-500: #6C88A0;
+  --success-600:#2FB344;
+
   --gray-900: #111827;
   --gray-700: #374151;
   --gray-300: #E5E7EB;
   --gray-100: #F3F4F6;
 }
 
+/* ---------------------------------------------
+   Header de la página (como en la maqueta)
+   - Título arriba
+   - Subtítulo justo debajo, alineado a la izquierda
+-------------------------------------------------- */
 .page-header{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:flex-start !important;
+  gap:.15rem;
+  margin-bottom:1.5rem !important;
+  width:100% !important;
+}
+
+.page-header h4{
+  margin-bottom:0;
+  white-space:nowrap;
+}
+
+.page-header .page-subtitle{
+  margin:0;
+  font-size:.95rem;
+  white-space:nowrap;
+}
+
+/* ===================================================================
+   TARJETAS DE PROYECTOS – Ajustadas según la imagen
+   =================================================================== */
+
+.card-project{
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
+  border-radius:8px;
+  background:#ffffff;
+  border:none;
+  overflow:hidden;
+  min-width:0;
+  transition:transform 0.2s ease, box-shadow 0.2s ease;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+}
+
+.card-project:hover{
+  transform:translateY(-2px);
+  box-shadow:0 4px 12px rgba(0,0,0,.12);
+}
+
+.card-project .card-header{
+  border:0;
+  background:#4a627a;
+  color:#fff;
+  padding:.55rem .9rem;
+  font-size:.92rem;
+  font-weight:600;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.card-project .card-body{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  padding:1rem;
+}
+
+.card-project .card-body p{
+  font-size:.9rem;
+  color:#6c757d;
+  margin-bottom:1rem;
+  line-height:1.4;
+}
+
+/* Progreso */
+.card-project .progress{
+  height:8px;
+  border-radius:4px;
+  background:#e9ecef;
+  margin:.5rem 0;
+}
+
+.card-project .progress-bar{
+  background:#28a745;
+  border-radius:4px;
+}
+
+/* Info de progreso */
+.card-project .d-flex.align-items-center.justify-content-between small{
+  font-size:.85rem;
+  color:#6c757d;
+  font-weight:500;
+}
+
+/* Botón de detalles */
+.card-project .btn-details{
+  background:#28a745;
+  color:#fff;
+  border:0;
+  width:100%;
+  padding:.6rem 0;
+  border-radius:6px;
+  font-weight:600;
+  font-size:.9rem;
+  margin-top:auto;
+}
+
+.card-project .btn-details:hover{
+  background:#218838;
+}
+
+/* Contenedor del botón */
+.card-project .btn-container{
+  margin-top:auto;
+}
+
+/* Tipografías internas */
+.card-project p{
+  font-size:.88rem;
+  margin-bottom:.3rem;
+}
+
+.card-project small{
+  font-size:.78rem;
+}
+
+/* ===================================================================
+   BADGES DE ESTADO
+   =================================================================== */
+.badge-status{
+  background:var(--brand-primary);
+  color:#fff;
+  padding:.20rem .65rem;
+  font-size:.73rem;
+  font-weight:700;
+  border-radius:50px;
+}
+
+.badge-status.status-ejecucion{ background:var(--steel-700); }
+.badge-status.status-formacion{ background:var(--steel-500); }
+.badge-status.status-finalizado{ background:var(--success-600); }
+
+/* ===================================================================
+   BOTONES DE MARCA
+   =================================================================== */
+.brand-header{
+  background:var(--brand-primary)!important;
+  color:#fff!important;
+}
+
+.btn-brand{
+  background:var(--brand-primary)!important;
+  color:#fff!important;
+  border:0;
+}
+
+.btn-brand:hover{
+  filter:brightness(.92);
+}
+
+.btn-brand-outline{
+  background:#fff;
+  color:var(--brand-primary);
+  border:1px solid var(--brand-primary);
+}
+
+.btn-brand-outline:hover{
+  background:rgba(57,169,0,.06);
+}
+
+/* ===================================================================
+   LISTAS Y AVATARES
+   =================================================================== */
+.list-group-item{ cursor:pointer; }
+.list-group-item:hover{ background:var(--gray-100); }
+
+.avatar-initials{
+  width:48px;
+  height:48px;
+  border-radius:999px;
+  background:var(--brand-primary);
+  color:#fff;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* Alerts */
+.alert{ border:0; border-radius:10px; }
+
+/* Panel de resultados en modales */
+.results-pane{
+  max-height:260px;
+  overflow:auto;
+}
+
+/* Badges genéricas */
+.badge{
+  border-radius:8px;
+  padding:.35rem .6rem;
+}
+
+/* Título truncado */
+.truncate-1{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* ===================================================================
+   FONDO DE PÁGINA - Blanco con ilustración decorativa
+   =================================================================== */
+body{
+  background:#ffffff;
+  min-height:100vh;
+  position:relative;
+}
+
+/* Ilustración de fondo decorativa */
+body::before{
+  content:'';
+  position:fixed;
+  top:50%;
+  right:10%;
+  width:400px;
+  height:400px;
+  background:url('../../images/Recurso_2.png') no-repeat center center;
+  background-size:contain;
+  opacity:0.08;
+  z-index:-1;
+  transform:translateY(-50%);
+}
+
+.projects-wallpaper{
+  position:relative;
+  padding-top:24px;
+  padding-bottom:80px;
+  max-width:1100px;
+  margin:0 auto;
+  background:transparent;
+}
+
+/* Header fuera del grid */
+.projects-wallpaper > .page-header{
   display:flex;
   flex-direction:column;
   align-items:flex-start;
-  gap:.25rem;
-  margin-bottom:.5rem;
+  margin-bottom:1.5rem;
 }
 
-.projects-wallpaper > p.text-muted{
-  margin-bottom:2rem;
-}
-
-/* Cards de proyectos */
-.card-project{box-shadow:0 4px 14px rgba(0,0,0,.08);border:0;border-radius:12px;overflow:hidden}
-.card-project .card-header{border:0;background:var(--steel-700);color:#fff}
-.card-project .progress{height:8px;background:var(--gray-300)}
-.card-project .progress-bar{background:var(--brand-primary)}
-.card-project .btn-details{background:var(--brand-primary);color:#fff;border:0}
-.card-project .btn-details:hover{filter:brightness(.92)}
-
-/* Badges de estado */
-.badge-status{background:var(--brand-primary);color:#fff;border:0;font-weight:700;border-radius:20px;padding:.25rem .6rem}
-.badge-status.status-ejecucion{background:var(--steel-700)}
-.badge-status.status-formacion{background:var(--steel-500)}
-.badge-status.status-finalizado{background:var(--success-600)}
-
-/* Modales y botones de marca */
-.brand-header{background:var(--brand-primary)!important;color:#fff!important}
-.btn-brand{background:var(--brand-primary)!important;color:#fff!important;border:0}
-.btn-brand:hover{filter:brightness(.92)}
-.btn-brand-outline{background:#fff;color:var(--brand-primary);border:1px solid var(--brand-primary)}
-.btn-brand-outline:hover{background:rgba(57,169,0,.06)}
-
-/* Lista y resultados */
-.list-group-item{cursor:pointer}
-.list-group-item:hover{background:var(--gray-100)}
-
-/* Avatar iniciales */
-.avatar-initials{width:48px;height:48px;border-radius:999px;background:var(--brand-primary);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center}
-
-/* Alerts como toasts simples */
-.alert{border:0;border-radius:10px}
-
-/* Contenedor de resultados en modales */
-.results-pane{max-height:260px;overflow:auto}
-
-/* Badges genéricas */
-.badge{border-radius:8px;padding:.35rem .6rem}
-
-/* Título truncado en una línea */
-.truncate-1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-/* Contenedor sobre el fondo global (admin-layout ya dibuja la imagen) */
-.projects-wallpaper{
-  position: relative;
-  padding-top: 16px;
-  padding-bottom: 56px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-/* Grilla de tarjetas: 3 columnas fijas, centradas sobre el fondo */
+/* Grilla central como en la imagen: 3 tarjetas por fila en escritorio */
 .projects-wallpaper .row.g-4{
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 40px 40px; /* row, column: más espacio entre tarjetas */
-  justify-items: stretch;
+  display:grid !important;
+  grid-template-columns:repeat(3, 1fr) !important;
+  gap:20px 24px;
+  padding:0;
 }
 
+.projects-wallpaper .col-12,
+.projects-wallpaper .col-md-6,
 .projects-wallpaper .col-lg-4{
-  width: 100% !important;
-  max-width: none !important;
+  width:100% !important;
+  max-width:none !important;
+  flex:none !important;
+  padding:0 !important;
 }
 
-/* Tarjetas con proporciones similares al diseño */
-.projects-wallpaper .card-project{
-  min-width: 0;
-}
+/* ===================================================================
+   RESPONSIVE
+   =================================================================== */
 
-/* --- Responsivo --- */
 @media (max-width: 991.98px){
-  /* Tablets: 2 tarjetas por fila */
+  /* Tablets: 2 por fila */
   .projects-wallpaper{
-    max-width: 100%;
-    padding-top: 24px;
+    max-width:100%;
+    padding:24px 16px;
   }
   .projects-wallpaper .row.g-4{
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns:repeat(2, 1fr) !important;
+    gap:16px 20px;
   }
 }
 
 @media (max-width: 575.98px){
-  /* Móvil: 1 tarjeta por fila */
+  /* Móvil: 1 por fila */
   .projects-wallpaper{
-    padding-top: 16px;
-    padding-bottom: 32px;
+    padding:16px 12px;
   }
   .projects-wallpaper .row.g-4{
-    grid-template-columns: 1fr;
-    gap: 20px;
+    grid-template-columns:1fr !important;
+    gap:16px;
   }
 }

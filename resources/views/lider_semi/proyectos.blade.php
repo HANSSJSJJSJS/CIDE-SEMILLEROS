@@ -9,8 +9,8 @@
 <div class="container mt-4 projects-wallpaper">
     <div class="page-header">
         <h4 class="fw-bold mb-1">Mis Proyectos</h4>
+        <p class="page-subtitle text-muted mb-0">Gestiona y supervisa todos tus semilleros activos</p>
     </div>
-    <p class="text-muted mb-4">Gestiona y supervisa todos tus semilleros activos</p>
 
     <div class="row g-4">
         @foreach($semilleros as $semillero)
@@ -49,7 +49,7 @@
                         </div>
                     </div>
 
-                    <div class="mt-3 text-center">
+                    <div class="mt-3 text-center btn-container">
                         <button type="button" class="btn btn-details w-100" data-bs-toggle="modal" data-bs-target="#detalleSemillero{{ $loop->index }}"><i class="bi bi-eye me-1"></i>Ver Detalles</button>
                     </div>
                 </div>

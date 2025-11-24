@@ -8,8 +8,8 @@
       <link rel="icon" type="image/png" href="{{ asset('images/logo_pestaña.png') }}">
     <title>SCIDES - Login</title>
 
-    <!-- Tu CSS personalizado -->
-    <link rel="stylesheet" href="{{ asset('css/Login.css') }}">
+    <!-- CSS personalizado de Login -->
+    <link rel="stylesheet" href="{{ asset('css/common/Login.css') }}">
 
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">

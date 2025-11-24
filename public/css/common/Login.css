@@ -9,7 +9,7 @@
             font-family: Arial, sans-serif;
             background-color: #ffffff;
             /* Imagen de fondo para el login */
-            background-image: url('../images/Recurso.png');
+            background-image: url('/images/Recurso.png');
             background-repeat: no-repeat;
             background-position: center center;
             background-attachment: fixed;
@@ -38,7 +38,7 @@
             align-items: center;
             justify-content: center;
             /* Ilustración grande */
-            background-image: url('../images/bg-semillero.png');
+            background-image: url('/images/bg-semillero.png');
             background-repeat: no-repeat;
             background-position: center center;
             background-size: 70%;
@@ -330,10 +330,33 @@
         @media (max-width: 480px) {
             /* Evita problemas de background fijo en móviles */
             body { background-attachment: scroll; }
-            .left-panel { min-height: 30vh; background-size: 80%; }
-            .right-panel { min-height: 70vh; }
-            .login-background { width: 95%; }
-            .login-form { width: 95%; max-width: 360px; padding: 24px 20px; }
+
+            .container {
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .left-panel {
+                min-height: 28vh;
+                background-size: 80%;
+                background-position: center top;
+            }
+
+            .right-panel {
+                min-height: 72vh;
+            }
+
+            .login-background {
+                width: 95%;
+            }
+
+            .login-form {
+                width: 94%;
+                max-width: 360px;
+                padding: 24px 20px;
+            }
+
             .form-title { font-size: 24px; }
             .form-group input { padding: 14px; }
             .btn-entrar { font-size: 18px; padding: 14px; }
