@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 
 // Auth
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -94,6 +95,13 @@ Route::middleware(['auth', 'prevent-back-history'])->group(function () {
 // Importa las rutas autogeneradas por Laravel Breeze / Jetstream
 // ⚠️ Asegúrate de que en routes/auth.php estén COMENTADAS las rutas /login y /logout
 require __DIR__ . '/auth.php';
+
+// ---------------------------------------------------------------------
+// Sobrescribir GET /login sin middleware 'guest' para evitar bucles
+// /login ↔ /dashboard en casos de estados de sesión inconsistentes.
+// ---------------------------------------------------------------------
+Route::get('/login', [AuthenticatedSessionController::class, 'create'])
+    ->name('login');
 /*
 |--------------------------------------------------------------------------
 | JSON LÍDER SEMILLERO – PROYECTOS (compatibilidad con modales existentes)
@@ -115,7 +123,9 @@ Route::middleware(['auth'])->group(function () {
         ->whereNumber('id')->name('lider_semi.proyectos.candidatos');
 
     // Compatibilidad con modal en views/lider_semi/semilleros.blade.php
-    Route::get('/lider_semillero/proyectos/{proyecto}/aprendices/search', [LiderProyectoController::class, 'searchAprendices'])
+    // Usar el método searchProyectoAprendices del controlador de UI (LiderSemilleroUIController)
+    // para aprovechar la lógica tolerante al esquema y el fallback cuando no hay pivote clara.
+    Route::get('/lider_semillero/proyectos/{proyecto}/aprendices/search', [LiderSemilleroUIController::class, 'searchProyectoAprendices'])
         ->whereNumber('proyecto')->name('lider_semi.proyectos.aprendices.search');
     Route::post('/lider_semillero/proyectos/{proyecto}/aprendices', [LiderProyectoController::class, 'assignParticipant'])
         ->whereNumber('proyecto')->name('lider_semi.proyectos.aprendices.attach');
@@ -246,22 +256,29 @@ Route::prefix('semilleros')->name('semilleros.')->group(function () {
 | RUTA /dashboard GENÉRICA → redirige por rol
 |--------------------------------------------------------------------------
 */
-Route::get('/dashboard', function () {
+Route::get('/dashboard', function (Request $request) {
     $user = Auth::user();
     if (!$user) return redirect()->route('login');
 
     $rol = strtoupper(str_replace([' ', '-'], '_', trim($user->role ?? $user->rol ?? '')));
 
     $map = [
-        'ADMIN'          => 'admin.dashboard',
-        'INSTRUCTOR'     => 'lider_semi.dashboard',
-        'APRENDIZ'       => 'aprendiz.dashboard',
-        'LIDER_SEMILLERO'=> 'lider_semi.dashboard',
-        'LIDER_GENERAL'  => 'lider_general.dashboard',
+        'ADMIN'           => 'admin.dashboard',
+        'INSTRUCTOR'      => 'lider_semi.dashboard',
+        'APRENDIZ'        => 'aprendiz.dashboard',
+        'LIDER_SEMILLERO' => 'lider_semi.dashboard',
+        'LIDER_GENERAL'   => 'lider_general.dashboard',
     ];
 
-    $route = $map[$rol] ?? 'home';
-    return redirect()->route($route);
+    if (! isset($map[$rol])) {
+        // Rol desconocido: cerrar sesión para evitar bucles login ↔ dashboard
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        return redirect()->route('login');
+    }
+
+    return redirect()->route($map[$rol]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 /*

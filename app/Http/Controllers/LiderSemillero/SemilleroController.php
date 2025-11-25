@@ -646,24 +646,45 @@ class SemilleroController extends Controller
         $tipo = trim((string)$request->get('tipo', ''));
         $num = trim((string)$request->get('num', ''));
 
+        // Intentar detectar una tabla pivote específica de aprendices
         $pivot = $this->pivotProyectoAprendiz();
-        if (empty($pivot)) return response()->json([]);
-        // Obtener IDs de aprendices ya asignados en términos de id_aprendiz
-        if ($pivot['aprCol'] === 'id_usuario' && Schema::hasColumn('aprendices', 'id_usuario')) {
-            $asignados = DB::table($pivot['table'])
-                ->join('aprendices','aprendices.id_usuario','=',DB::raw($pivot['table'].'.'.$pivot['aprCol']))
-                ->where($pivot['projCol'], $proyectoId)
-                ->pluck('aprendices.id_aprendiz')->all();
+        $asignados = [];
+
+        if (!empty($pivot)) {
+            // Obtener IDs de aprendices ya asignados en términos de id_aprendiz
+            if ($pivot['aprCol'] === 'id_usuario' && Schema::hasColumn('aprendices', 'id_usuario')) {
+                $asignados = DB::table($pivot['table'])
+                    ->join('aprendices', 'aprendices.id_usuario', '=', DB::raw($pivot['table'] . '.' . $pivot['aprCol']))
+                    ->where($pivot['projCol'], $proyectoId)
+                    ->pluck('aprendices.id_aprendiz')->all();
+            } else {
+                $asignados = DB::table($pivot['table'])
+                    ->join('aprendices', 'aprendices.' . $pivot['aprCol'], '=', DB::raw($pivot['table'] . '.' . $pivot['aprCol']))
+                    ->where($pivot['projCol'], $proyectoId)
+                    ->pluck('aprendices.id_aprendiz')->all();
+            }
         } else {
-            $asignados = DB::table($pivot['table'])
-                ->join('aprendices','aprendices.'.$pivot['aprCol'],'=',DB::raw($pivot['table'].'.'.$pivot['aprCol']))
-                ->where($pivot['projCol'], $proyectoId)
-                ->pluck('aprendices.id_aprendiz')->all();
+            // Fallback: si no se detecta pivote de aprendices, intentar con proyecto_user para al menos
+            // excluir aprendices ya asociados vía users. Si tampoco existe, se permitirá listar todos.
+            if (Schema::hasTable('proyecto_user') && Schema::hasTable('aprendices')) {
+                // Detectar FK aprendices -> users
+                $dbName = DB::getDatabaseName();
+                $cols = collect(DB::select("SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'aprendices' AND COLUMN_NAME IN ('id_usuario','id_user','user_id')", [$dbName]))->pluck('c')->all();
+                $userFkCol = in_array('id_usuario', $cols, true) ? 'id_usuario' : (in_array('id_user', $cols, true) ? 'id_user' : (in_array('user_id', $cols, true) ? 'user_id' : null));
+
+                if ($userFkCol) {
+                    $asignados = DB::table('proyecto_user')
+                        ->join('aprendices', 'aprendices.' . $userFkCol, '=', 'proyecto_user.user_id')
+                        ->where('proyecto_user.id_proyecto', $proyectoId)
+                        ->pluck('aprendices.id_aprendiz')->all();
+                }
+            }
         }
+
         $query = Aprendiz::select(
-            'id_aprendiz','nombres','apellidos',
+            'id_aprendiz', 'nombres', 'apellidos',
             DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo"),
-            'correo_institucional','tipo_documento','documento','programa','ficha'
+            'correo_institucional', 'tipo_documento', 'documento', 'programa', 'ficha'
         );
 
         // Aplicar filtros si existen
@@ -671,24 +692,46 @@ class SemilleroController extends Controller
             $query->where('tipo_documento', $tipo);
         }
         if ($num !== '') {
-            $query->where(function($w) use ($num){
-                $w->where('documento','like',"%{$num}%")
-                  ->orWhere(DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))"),'like',"%{$num}%")
-                  ->orWhere('ficha','like',"%{$num}%");
+            $query->where(function ($w) use ($num) {
+                $w->where('documento', 'like', "%{$num}%")
+                    ->orWhere(DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))"), 'like', "%{$num}%")
+                    ->orWhere('ficha', 'like', "%{$num}%");
             });
         }
         if ($q !== '' && $tipo === '' && $num === '') {
             // Fallback: búsqueda genérica solo si no hay tipo ni num
-            $query->where(function($w) use ($q){
-                $w->where('tipo_documento','like',"%{$q}%")
-                  ->orWhere('documento','like',"%{$q}%")
-                  ->orWhere(DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))"),'like',"%{$q}%")
-                  ->orWhere('ficha','like',"%{$q}%");
+            $query->where(function ($w) use ($q) {
+                $w->where('tipo_documento', 'like', "%{$q}%")
+                    ->orWhere('documento', 'like', "%{$q}%")
+                    ->orWhere(DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))"), 'like', "%{$q}%")
+                    ->orWhere('ficha', 'like', "%{$q}%");
             });
         }
 
-        if (!empty($asignados)) $query->whereNotIn('id_aprendiz', $asignados);
-        return response()->json($query->orderByRaw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))")->limit(20)->get());
+        if (!empty($asignados)) {
+            $query->whereNotIn('id_aprendiz', $asignados);
+        }
+
+        // Ejecutar consulta principal
+        $result = $query
+            ->orderByRaw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))")
+            ->limit(20)
+            ->get();
+
+        // Fallback de compatibilidad: si no hay filtros y la consulta no devuelve nada,
+        // ofrecer al menos algunos aprendices para que el modal no quede vacío y permitir pruebas.
+        if ($result->isEmpty() && $q === '' && $tipo === '' && $num === '') {
+            $result = Aprendiz::select(
+                    'id_aprendiz', 'nombres', 'apellidos',
+                    DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo"),
+                    'correo_institucional', 'tipo_documento', 'documento', 'programa', 'ficha'
+                )
+                ->orderByRaw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))")
+                ->limit(20)
+                ->get();
+        }
+
+        return response()->json($result);
     }
 
 
