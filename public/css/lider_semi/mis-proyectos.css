@@ -4,8 +4,9 @@
 
 :root{
   --brand-primary: #39A900; /* Verde institucional */
-  --brand-secondary: #007832;
+  --brand-secondary: #007832; /* Verde más oscuro */
   --brand-navy: #00304D;
+  --brand-blue: #245a7a;      /* Azul encabezados cards */
   --steel-700: #4B6B84;
   --steel-500: #6C88A0;
   --success-600:#2FB344;
@@ -14,6 +15,12 @@
   --gray-700: #374151;
   --gray-300: #E5E7EB;
   --gray-100: #F3F4F6;
+
+  --text-dark: #1b1b1b;
+  --text-light: #6b6b6b;
+  --bg-card: #ffffff;
+  --badge-bg: #e8eef4;
+  --border-light: #d9d9d9;
 }
 
 /* ---------------------------------------------
@@ -25,32 +32,38 @@
   display:flex !important;
   flex-direction:column !important;
   align-items:flex-start !important;
-  gap:.15rem;
-  margin-bottom:1.5rem !important;
+  gap:.1rem;
+  margin-bottom:.75rem !important;
   width:100% !important;
 }
 
 .page-header h4{
-  margin-bottom:0;
+  margin-bottom:.2rem;
   white-space:nowrap;
+  font-size:2.4rem;
+  font-weight:800;
 }
 
 .page-header .page-subtitle{
   margin:0;
-  font-size:.95rem;
+  font-size:1.1rem;
+  color:var(--text-light);
   white-space:nowrap;
 }
 
 /* ===================================================================
-   TARJETAS DE PROYECTOS – Ajustadas según la imagen
+   TARJETAS DE PROYECTOS – Diseño de maqueta
    =================================================================== */
 
 .card-project{
-  box-shadow:0 2px 8px rgba(0,0,0,.08);
-  border-radius:8px;
-  background:#ffffff;
-  border:none;
+  margin-top:0;
+  /* Blanco ligeramente translúcido para dejar ver el fondo */
+  background:rgba(255,255,255,0.9);
+  border-radius:14px;
+  box-shadow:0 4px 14px rgba(0,0,0,0.08);
   overflow:hidden;
+  border:1px solid rgba(0,0,0,0.06);
+  backdrop-filter:blur(4px);
   min-width:0;
   transition:transform 0.2s ease, box-shadow 0.2s ease;
   height:100%;
@@ -60,31 +73,34 @@
 
 .card-project:hover{
   transform:translateY(-2px);
-  box-shadow:0 4px 12px rgba(0,0,0,.12);
+  box-shadow:0 6px 18px rgba(0,0,0,0.12);
 }
 
 .card-project .card-header{
   border:0;
-  background:#4a627a;
+  background:#2F576E; /* Azul institucional del header */
   color:#fff;
-  padding:.55rem .9rem;
-  font-size:.92rem;
-  font-weight:600;
+  padding:1rem 1.25rem;
+  font-size:1.1rem;
+  font-weight:700;
   display:flex;
   justify-content:space-between;
   align-items:center;
+  border-top-left-radius:14px;
+  border-top-right-radius:14px;
 }
 
 .card-project .card-body{
   flex:1;
   display:flex;
   flex-direction:column;
-  padding:1rem;
+  padding:1.25rem 1.5rem 1.5rem 1.5rem;
 }
 
 .card-project .card-body p{
-  font-size:.9rem;
-  color:#6c757d;
+  font-size:.95rem;
+  color:var(--text-light);
+  margin-top:.8rem;
   margin-bottom:1rem;
   line-height:1.4;
 }
@@ -92,38 +108,41 @@
 /* Progreso */
 .card-project .progress{
   height:8px;
-  border-radius:4px;
-  background:#e9ecef;
-  margin:.5rem 0;
+  border-radius:100px;
+  background:#ededed;
+  margin:.4rem 0 1.2rem 0;
+  overflow:hidden;
 }
 
 .card-project .progress-bar{
-  background:#28a745;
-  border-radius:4px;
+  background:var(--brand-primary) !important;
+  border-radius:100px;
+  transition:width .5s ease;
 }
 
 /* Info de progreso */
 .card-project .d-flex.align-items-center.justify-content-between small{
-  font-size:.85rem;
-  color:#6c757d;
-  font-weight:500;
+  font-size:.9rem;
+  color:var(--text-dark);
+  font-weight:600;
 }
 
 /* Botón de detalles */
 .card-project .btn-details{
-  background:#28a745;
-  color:#fff;
-  border:0;
   width:100%;
-  padding:.6rem 0;
-  border-radius:6px;
-  font-weight:600;
-  font-size:.9rem;
-  margin-top:auto;
+  background:var(--brand-primary);
+  color:#fff;
+  border:none;
+  padding:.7rem 1rem;
+  font-size:.95rem;
+  font-weight:700;
+  border-radius:12px;
+  cursor:pointer;
+  transition:.2s;
 }
 
 .card-project .btn-details:hover{
-  background:#218838;
+  background:var(--brand-secondary);
 }
 
 /* Contenedor del botón */
@@ -142,20 +161,22 @@
 }
 
 /* ===================================================================
-   BADGES DE ESTADO
+   BADGES DE ESTADO – estilo propuesto
    =================================================================== */
 .badge-status{
-  background:var(--brand-primary);
-  color:#fff;
-  padding:.20rem .65rem;
-  font-size:.73rem;
+  display:inline-block;
+  padding:.32rem .75rem;
+  font-size:.75rem;
+  text-transform:uppercase;
   font-weight:700;
-  border-radius:50px;
+  border-radius:6px;
+  background:var(--badge-bg);
+  color:var(--brand-blue);
 }
 
-.badge-status.status-ejecucion{ background:var(--steel-700); }
-.badge-status.status-formacion{ background:var(--steel-500); }
-.badge-status.status-finalizado{ background:var(--success-600); }
+.badge-status.status-ejecucion{ background:var(--steel-700); color:#fff; }
+.badge-status.status-formacion{ background:var(--steel-500); color:#fff; }
+.badge-status.status-finalizado{ background:#d4edda; color:#1a7f37; }
 
 /* ===================================================================
    BOTONES DE MARCA
@@ -232,6 +253,8 @@ body{
   background:#ffffff;
   min-height:100vh;
   position:relative;
+  font-family:"Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color:var(--text-dark);
 }
 
 /* Ilustración de fondo decorativa */
@@ -239,23 +262,25 @@ body::before{
   content:'';
   position:fixed;
   top:50%;
-  right:10%;
-  width:400px;
-  height:400px;
+  left:50%;
+  width:650px;
+  height:650px;
   background:url('../../images/Recurso_2.png') no-repeat center center;
   background-size:contain;
   opacity:0.08;
   z-index:-1;
-  transform:translateY(-50%);
+  transform:translate(-50%, -50%);
 }
 
 .projects-wallpaper{
   position:relative;
-  padding-top:24px;
-  padding-bottom:80px;
+  padding-top:32px;
+  padding-bottom:64px;
   max-width:1100px;
   margin:0 auto;
   background:transparent;
+  display:flex;
+  flex-direction:column;
 }
 
 /* Header fuera del grid */
@@ -266,12 +291,17 @@ body::before{
   margin-bottom:1.5rem;
 }
 
-/* Grilla central como en la imagen: 3 tarjetas por fila en escritorio */
+/* Grilla central – exactamente 3 columnas como en la maqueta */
 .projects-wallpaper .row.g-4{
   display:grid !important;
   grid-template-columns:repeat(3, 1fr) !important;
-  gap:20px 24px;
+  /* Más espacio entre tarjetas como en la maqueta */
+  gap:32px 32px;
+  width:100%;
   padding:0;
+  margin-top:.75rem;
+  position:relative;
+  z-index:2;
 }
 
 .projects-wallpaper .col-12,
@@ -283,29 +313,4 @@ body::before{
   padding:0 !important;
 }
 
-/* ===================================================================
-   RESPONSIVE
-   =================================================================== */
-
-@media (max-width: 991.98px){
-  /* Tablets: 2 por fila */
-  .projects-wallpaper{
-    max-width:100%;
-    padding:24px 16px;
-  }
-  .projects-wallpaper .row.g-4{
-    grid-template-columns:repeat(2, 1fr) !important;
-    gap:16px 20px;
-  }
-}
-
-@media (max-width: 575.98px){
-  /* Móvil: 1 por fila */
-  .projects-wallpaper{
-    padding:16px 12px;
-  }
-  .projects-wallpaper .row.g-4{
-    grid-template-columns:1fr !important;
-    gap:16px;
-  }
-}
+/* Responsive deshabilitado para mantener siempre 3 columnas en escritorio */

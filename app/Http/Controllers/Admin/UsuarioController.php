@@ -25,14 +25,17 @@ class UsuarioController extends Controller
             $roleFilter = 'ADMIN';
         }
 
-        $aprFk = Schema::hasColumn('aprendices', 'id_usuario') ? 'id_usuario' : 'user_id';
+        $aprFk      = Schema::hasColumn('aprendices', 'id_usuario') ? 'id_usuario' : 'user_id';
+        $hasLiTable = Schema::hasTable('lideres_investigacion');
 
         $usuarios = User::query()
             ->leftJoin('lideres_semillero as ls', 'ls.id_lider_semi', '=', 'users.id')
             ->leftJoin('semilleros as sl', 'sl.id_lider_semi', '=', 'ls.id_lider_semi')
             ->leftJoin('aprendices as ap', "ap.$aprFk", '=', 'users.id')
             ->leftJoin('semilleros as sa', 'sa.id_semillero', '=', 'ap.semillero_id')
-            ->leftJoin('lideres_investigacion as li', 'li.user_id', '=', 'users.id')
+            ->when($hasLiTable, function ($q) {
+                $q->leftJoin('lideres_investigacion as li', 'li.user_id', '=', 'users.id');
+            })
             ->select([
                 'users.*',
                 DB::raw('COALESCE(sa.nombre, sl.nombre) as semillero_nombre'),
@@ -47,7 +50,7 @@ class UsuarioController extends Controller
                         ELSE users.role
                     END AS role_label
                 "),
-                DB::raw('li.tiene_permisos as li_tiene_permisos'),
+                DB::raw(($hasLiTable ? 'li.tiene_permisos' : 'NULL') . ' as li_tiene_permisos'),
             ])
             ->when($q !== '', function ($w) use ($q) {
                 $w->where(function ($s) use ($q) {

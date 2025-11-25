@@ -2,8 +2,8 @@
 
 @push('styles')
 @php($v = time())
-<link rel="stylesheet" href="{{ asset('css/calendario.css') }}?v={{ $v }}">
-<link rel="stylesheet" href="{{ asset('css/calendario-views.css') }}?v={{ $v }}">
+<link rel="stylesheet" href="{{ asset('css/common/calendario.css') }}?v={{ $v }}">
+<link rel="stylesheet" href="{{ asset('css/common/calendario-views.css') }}?v={{ $v }}">
 @endpush
 
 @section('content')

@@ -12,9 +12,9 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  {{-- Estilos del sistema --}}
-  <link href="{{ asset('css/admin-layout.css') }}?v={{ time() }}" rel="stylesheet">
-  <link href="{{ asset('css/admin-views.css') }}?v={{ time() }}" rel="stylesheet">
+  {{-- Estilos del sistema (archivos en public/css/admin) --}}
+  <link href="{{ asset('css/admin/admin-layout.css') }}?v={{ time() }}" rel="stylesheet">
+  <link href="{{ asset('css/admin/admin-views.css') }}?v={{ time() }}" rel="stylesheet">
 
   @stack('styles')
   @yield('styles')
