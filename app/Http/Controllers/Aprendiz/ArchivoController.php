@@ -155,15 +155,10 @@ class ArchivoController extends Controller
         $userId = Auth::id();
         $proyectoId = (int)$request->query('proyecto_id');
 
-        // Seguridad: confirmar que el proyecto pertenece al usuario por el pivote
-        $autorizado = false;
-        if (\Illuminate\Support\Facades\Schema::hasTable('proyecto_user')) {
-            $autorizado = DB::table('proyecto_user')
-                ->where('user_id', $userId)
-                ->where('id_proyecto', $proyectoId)
-                ->exists();
-        }
-        if (!$autorizado) {
+        // Seguridad: confirmar que el proyecto pertenece al usuario usando
+        // la misma lógica robusta que en index() (soporta proyecto_user y aprendiz_proyecto)
+        $idsUsuario = $this->proyectoIdsUsuario((int)$userId);
+        if (empty($idsUsuario) || !in_array($proyectoId, array_map('intval', $idsUsuario), true)) {
             return response()->json(['ok'=>false,'archivos'=>[]], 200);
         }
 

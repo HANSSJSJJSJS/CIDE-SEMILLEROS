@@ -810,11 +810,21 @@ async function handleDrop(e,newDate){ e.preventDefault(); e.currentTarget.classL
   await updateEventOnServer(events[idx].id,newDateStr,newTime); await loadEventsForCurrentPeriod(); renderCalendar(); }
 
 function openEventModal(date){
-  // Permitimos abrir el modal siempre (especialmente desde vista mensual, donde la hora es 00:00)
-  // La validación de horario/día se hace al guardar y en los slots/drag de semana/día.
+  // Antes de abrir, validar si el día tiene todavía horas disponibles entre 8am y 4pm (sin almuerzo)
   const dateOnly = formatDate(date);
+  if (isDayFullyBooked(dateOnly)){
+    showToast('Este día ya está completamente lleno de reuniones entre 8:00 a 4:00.','warning');
+    return;
+  }
+
   const firstHour = getFirstAvailableHour(dateOnly);
-  const chosenHour = date.getHours() ? date.getHours() : (firstHour ?? 9);
+  // Si no hay primera hora disponible, no permitir nuevos agendamientos
+  if (firstHour === null){
+    showToast('Este día no tiene más horarios disponibles para agendar.','warning');
+    return;
+  }
+
+  const chosenHour = date.getHours() ? date.getHours() : firstHour;
   const normalized = new Date(date); normalized.setHours(chosenHour,0,0,0);
   selectedDate=normalized; editingEventId=null; modalTitle.textContent='Nueva Reunión'; if (deleteBtn) deleteBtn.style.display='none';
   if (eventForm) eventForm.reset();
@@ -1192,7 +1202,19 @@ function enforceDurationOptions(){
 }
 function formatDurationMinutes(min){ const m = parseInt(min||0,10); const h = Math.floor(m/60); const rest = m % 60; if(h<=0) return `${m} min`; if(rest===0) return h===1? '1 hora' : `${h} horas`; return `${h} h ${rest} min`; }
 function isHourOccupied(dateStr, hour){
-  return events.some(ev=> ev.date===dateStr && parseInt((ev.time||'09:00').split(':')[0])===hour);
+  // Un slot de 1 hora [hour, hour+1) se considera ocupado si
+  // cualquier evento existente en ese día se cruza con ese intervalo.
+  const slotStart = new Date(`${dateStr}T${String(hour).padStart(2,'0')}:00:00`).getTime();
+  const slotEnd = slotStart + 60*60000; // 1 hora
+
+  return events.some(ev => {
+    if (ev.date !== dateStr) return false;
+    const [h,m] = (ev.time||'09:00').split(':').map(Number);
+    const evStart = new Date(`${ev.date}T${String(h).padStart(2,'0')}:${String(m||0).padStart(2,'0')}:00`).getTime();
+    const evEnd = evStart + ((ev.duration||60)*60000);
+    // Se cruza si hay intersección de intervalos
+    return (slotStart < evEnd) && (slotEnd > evStart);
+  });
 }
 function hasClientConflict(startDt, durationMinutes, ignoreId){
   const start = startDt.getTime();
@@ -1219,6 +1241,26 @@ function getFirstAvailableHour(dateStr){
     if(allowed && !isHourOccupied(dateStr,h) && !isInPast(slotDt)) return h;
   }
   return null;
+}
+
+// Determina si un día ya está completamente lleno entre 8:00 y 16:00 (excluyendo 12:00-13:55)
+function isDayFullyBooked(dateStr){
+  // Si es fin de semana o festivo, la lógica de bloqueo ya aplica por otros chequeos
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (d.getDay()===0 || d.getDay()===6 || HOLIDAYS.includes(dateStr)) return false;
+
+  for (const h of workHours){
+    const hm = h*100;
+    const isLunch = hm>=1200 && hm<=1355;
+    const allowed = hm>=800 && hm<=1650 && !isLunch;
+    if (!allowed) continue;
+    // Si hay al menos una hora permitida sin ocupar, el día no está lleno
+    if (!isHourOccupied(dateStr, h)){
+      return false;
+    }
+  }
+  // Todas las horas permitidas están ocupadas
+  return true;
 }
 
 // Toasts accesibles (definición global)

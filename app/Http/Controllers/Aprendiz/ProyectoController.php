@@ -18,13 +18,26 @@ class ProyectoController extends Controller
     {
         $user = Auth::user();
 
-        // IDs de proyectos asignados al usuario (robusto sin suponer pivote fija)
-        $ids = $this->proyectoIdsUsuario((int)$user->id);
-        $proyectos = empty($ids)
-            ? collect([])
-            : Proyecto::whereIn('id_proyecto', $ids)
-                ->with(['semillero'])
-                ->get();
+        // 1) Intentar vía modelo Aprendiz -> relación proyectos (pivote aprendiz_proyecto)
+        $proyectos = collect();
+        try {
+            $aprendiz = \App\Models\Aprendiz::where('user_id', $user->id)->first();
+            if ($aprendiz) {
+                $proyectos = $aprendiz->proyectos()->with('semillero')->get();
+            }
+        } catch (\Throwable $e) {
+            $proyectos = collect();
+        }
+
+        // 2) Respaldo: si no se obtuvo nada por la relación, usar el método genérico
+        if ($proyectos->isEmpty()) {
+            $ids = $this->proyectoIdsUsuario((int) $user->id);
+            if (!empty($ids)) {
+                $proyectos = Proyecto::whereIn('id_proyecto', $ids)
+                    ->with(['semillero'])
+                    ->get();
+            }
+        }
 
         // Conteos para tarjetas
         $countProyectos = $proyectos->count();

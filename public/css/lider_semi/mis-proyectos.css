@@ -215,17 +215,26 @@
    MODAL EDITAR APRENDICES – Estilo de maqueta
    =================================================================== */
 
+.modal {
+  z-index: 2050 !important; /* mantener el modal por encima del contenido */
+}
+
 /* Estilo base (pantallas grandes) */
 .modal-dialog.modal-lg{
   max-width: 860px;      /* ancho intermedio similar al diseño */
-  width: 160%;           /* crece hacia los lados según tu ajuste */
-  margin: 30vh auto;     /* centra horizontal y da respiro vertical */
+  width: 100%;           /* ancho normal dentro de la ventana */
+  margin: 1.75rem auto;  /* margen estándar superior/inferior */
 }
 
-.modal-content{
+/* Si mantienes modal-dialog-scrollable, el cuerpo puede hacer scroll interno */
+.modal-dialog-scrollable .modal-body {
+  overflow-y: auto;
+}
+
+.modal-content {
   border-radius: 10px;
   border: none;
-  box-shadow: 0 18px 45px rgba(15,23,42,0.25);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.25);
 }
 
 .modal-header.brand-header{
@@ -239,7 +248,7 @@
 }
 
 .modal-body{
-  padding: 6rem 1.8rem 1.4rem 1.8rem;
+  padding: 2rem 1.8rem 1.4rem 1.8rem;
 }
 
 .modal-body small.text-muted{
