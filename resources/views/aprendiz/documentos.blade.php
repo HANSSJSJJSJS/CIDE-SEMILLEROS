@@ -287,8 +287,8 @@
                                                                    class="form-control form-control-sm mb-1"
                                                                    placeholder="Nuevo título (opcional)"
                                                                    value="{{ $doc->documento }}">
-                                                            <button type="submit" class="btn btn-sm btn-secondary w-100" title="Editar entrega">
-                                                                <i class="fas fa-edit"></i>
+                                                            <button type="submit" class="btn btn-sm btn-success w-100" title="Guardar">
+                                                                <i class="fas fa-save"></i> Guardar
                                                             </button>
                                                         </form>
                                                     @elseif($estado === 'aprobado')
@@ -297,17 +297,6 @@
                                                         <span class="badge bg-warning text-dark ms-1">Aún sin archivo, no editable</span>
                                                     @endif
 
-                                                    {{-- Eliminar --}}
-                                                    <form action="{{ route('aprendiz.documentos.destroy', $doc->id_documento) }}"
-                                                          method="POST"
-                                                          class="d-inline ms-1"
-                                                          onsubmit="return confirm('¿Estás seguro de eliminar este documento?')">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    </form>
                                                 </div>
                                             </td>
                                         </tr>
@@ -413,7 +402,7 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 
   // Envío AJAX para formularios de evidencias pendientes
-  const pendingForms = document.querySelectorAll('form.pending-upload-form'); 
+  const pendingForms = document.querySelectorAll('form.pending-upload-form');
   pendingForms.forEach((pf) => {
     pf.addEventListener('submit', async function(ev){
       ev.preventDefault();

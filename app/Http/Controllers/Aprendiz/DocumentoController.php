@@ -456,6 +456,14 @@ class DocumentoController extends Controller
             }
         }
 
+        // Si estaba rechazado y el aprendiz reenvía (archivo o descripción), volver a "pendiente"
+        if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','estado') && !empty($dataUpdate)) {
+            $estadoActual = strtolower((string)($documento->estado ?? ''));
+            if ($estadoActual === 'rechazado') {
+                $dataUpdate['estado'] = 'pendiente';
+            }
+        }
+
         if (empty($dataUpdate)) {
             return back()->with('error', 'Debes seleccionar un nuevo archivo o cambiar la descripción para actualizar la evidencia.');
         }
@@ -576,7 +584,13 @@ class DocumentoController extends Controller
                 $update['mime_type'] = 'text/uri-list';
             }
         }
-        // No actualizar 'estado' para evitar truncado en esquemas con ENUM desconocido
+        // Restablecer a "pendiente" cuando el aprendiz reenvía (si no está aprobado)
+        if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','estado')) {
+            $estadoActual = strtolower((string)($documento->estado ?? ''));
+            if ($estadoActual !== 'aprobado') {
+                $update['estado'] = 'pendiente';
+            }
+        }
         DB::table('documentos')
             ->where('id_documento', $id)
             ->update($update);

@@ -27,8 +27,8 @@ class Semillero extends Model
 
     /** 1:N con Aprendices (semilleros.id_semillero -> aprendices.semillero_id) */
     public function aprendices()
-    {
-        return $this->hasMany(Aprendiz::class, 'semillero_id', 'id_semillero');
+{
+    return $this->hasMany(\App\Models\Aprendiz::class, 'semillero_id', 'id_semillero');
     }
 
     /** Líder del semillero */

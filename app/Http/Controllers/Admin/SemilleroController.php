@@ -7,11 +7,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
+use App\Models\Semillero;
+use App\Models\Aprendiz;
 
 class SemilleroController extends Controller
 {
     /**
-     * Listado con líder actual (solo lectura).
+     * Listado con líder actual (solo lectu
+     * ra).
      */
     public function index(Request $request)
     {
@@ -235,7 +238,135 @@ public function update(Request $request, $id)
     return back()->with('success', 'Semillero actualizado correctamente.');
 }
 
-    
+    /**
+     * Muestra los detalles de un semillero específico.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show($id)
+{
 
-    
+    try {
+        \Log::info('Iniciando SemilleroController@show', ['semillero_id' => $id]);
+
+        // 1. Obtener el semillero con sus relaciones
+        $semillero = \App\Models\Semillero::with(['aprendices', 'lider'])
+            ->findOrFail($id);
+
+        \Log::info('Semillero encontrado', [
+            'id' => $semillero->id_semillero,
+            'nombre' => $semillero->nombre_semillero,
+            'total_aprendices' => $semillero->aprendices->count()
+        ]);
+
+        // 2. Obtener aprendices disponibles (sin semillero asignado)
+        $aprendices = \App\Models\Aprendiz::where(function($query) {
+                $query->whereNull('semillero_id')
+                      ->orWhere('semillero_id', '');
+            })
+            ->where('estado', 'Activo')
+            ->get();
+
+        \Log::info('Aprendices disponibles', [
+            'total' => $aprendices->count(),
+            'ejemplos' => $aprendices->take(2)->pluck('nombres', 'id_aprendiz')
+        ]);
+
+        // 3. Verificar relaciones
+        \Log::info('Relaciones del semillero', [
+            'tiene_lider' => !is_null($semillero->lider),
+            'aprendices_asignados' => $semillero->aprendices->pluck('nombres', 'id_aprendiz')
+        ]);
+
+        return view('admin.semilleros.show', compact('semillero', 'aprendices'));
+
+    } catch (\Exception $e) {
+        \Log::error('Error en SemilleroController@show', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return redirect()
+            ->route('admin.semilleros.index')
+            ->with('error', 'Error al cargar el semillero: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Asigna un aprendiz al semillero
+ */
+public function asignarAprendiz(Request $request, $idSemillero)
+{
+    $request->validate([
+        'aprendiz_id' => 'required|exists:aprendices,id_usuario'
+    ]);
+
+    try {
+        DB::beginTransaction();
+
+        // Verificar que el semillero existe
+        $semillero = \App\Models\Semillero::findOrFail($idSemillero);
+
+        // Verificar que el aprendiz existe
+        $aprendiz = \App\Models\Aprendiz::findOrFail($request->aprendiz_id);
+
+        // Actualizar el semillero del aprendiz
+        $aprendiz->update([
+            'semillero_id' => $idSemillero
+        ]);
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Aprendiz asignado correctamente al semillero'
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('Error asignando aprendiz al semillero: ' . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Error al asignar el aprendiz: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Quita un aprendiz del semillero
+ */
+public function quitarAprendiz($idSemillero, $idAprendiz)
+{
+    try {
+        DB::beginTransaction();
+
+        // Verificar que el aprendiz existe y pertenece al semillero
+        $aprendiz = \App\Models\Aprendiz::where('id_usuario', $idAprendiz)
+            ->where('semillero_id', $idSemillero)
+            ->firstOrFail();
+
+        // Quitar al aprendiz del semillero
+        $aprendiz->update([
+            'semillero_id' => null
+        ]);
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Aprendiz retirado correctamente del semillero'
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('Error quitando aprendiz del semillero: ' . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Error al quitar el aprendiz: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }

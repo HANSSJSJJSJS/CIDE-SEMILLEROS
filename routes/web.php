@@ -155,7 +155,7 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
         Route::post('/usuarios/ajax/store', [AdminUsuarioController::class, 'storeAjax'])
             ->name('usuarios.store.ajax');
 
-          Route::post('usuarios/{usuario}/toggle-permisos-investigacion', 
+          Route::post('usuarios/{usuario}/toggle-permisos-investigacion',
             [AdminUsuarioController::class, 'togglePermisosInvestigacion'])
                 ->name('usuarios.togglePermisosInvestigacion');
 
@@ -284,8 +284,16 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_SEMILLERO'])->group(function () {
     Route::resource('lideres', \App\Http\Controllers\AprendizController::class)->only(['index','create','store']); // si es otro controller, cámbialo
 });
 
+// Rutas para la gestión de semilleros
 Route::middleware(['auth', 'role:ADMIN,LIDER_SEMILLERO,LIDER_GENERAL'])->group(function () {
-    Route::resource('semilleros', \App\Http\Controllers\LiderSemillero\SemilleroController::class)->only(['index','create','store','show']);
+    Route::resource('semilleros', \App\Http\Controllers\Admin\SemilleroController::class);
+
+    // Rutas adicionales para la gestión de aprendices en semilleros
+    Route::post('semilleros/{semillero}/aprendices', [\App\Http\Controllers\Admin\SemilleroController::class, 'asignarAprendiz'])
+        ->name('semilleros.aprendices.store');
+
+    Route::delete('semilleros/{semillero}/aprendices/{aprendiz}', [\App\Http\Controllers\Admin\SemilleroController::class, 'quitarAprendiz'])
+        ->name('semilleros.aprendices.destroy');
 });
 
 Route::middleware(['auth', 'role:ADMIN,LIDER_SEMILLERO'])->group(function () {

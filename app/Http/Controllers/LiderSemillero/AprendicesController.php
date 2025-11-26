@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log;
 
 class AprendicesController extends Controller
 {
@@ -13,9 +14,10 @@ class AprendicesController extends Controller
     public function index()
     {
         $userId = Auth::id();
+        Log::info('LiderSemillero/AprendicesController@index start', ['user_id' => $userId]);
 
         // Obtener aprendices asociados a los semilleros del líder autenticado
-        // usando la tabla pivote aprendiz_semillero y la columna semilleros.id_lider_semi
+        // Preferir columna directa a.semillero_id; si no existe, usar pivote aprendiz_semillero
         $selectCols = [
             'aprendices.id_aprendiz',
             'aprendices.tipo_documento',
@@ -33,28 +35,137 @@ class AprendicesController extends Controller
             $selectCols[] = 'aprendices.id_usuario';
         }
 
-        // Si no tenemos la estructura mínima, no listamos aprendices
-        if (!Schema::hasTable('aprendiz_semillero') || !Schema::hasTable('semilleros') || !$userId) {
-            $aprendices = collect([]);
-        } else {
-            // Obtener solo aprendices vinculados a semilleros del líder
-            $queryAprendices = DB::table('aprendices')
-                ->join('aprendiz_semillero', 'aprendiz_semillero.id_aprendiz', '=', 'aprendices.id_aprendiz')
-                ->join('semilleros', 'semilleros.id_semillero', '=', 'aprendiz_semillero.id_semillero')
-                ->where(function ($q) use ($userId) {
-                    if (Schema::hasColumn('semilleros', 'id_lider_semi')) {
-                        $q->orWhere('semilleros.id_lider_semi', $userId);
+        $aprendices = collect([]);
+        if ($userId && Schema::hasTable('semilleros')) {
+            // Semilleros del líder autenticado
+            $semillerosQ = DB::table('semilleros as s');
+            if (Schema::hasColumn('semilleros','id_lider_usuario')) {
+                // Usar id_lider_usuario si efectivamente hay semilleros asignados a este user
+                $hasByUser = DB::table('semilleros')->where('id_lider_usuario', $userId)->exists();
+                if ($hasByUser) {
+                    $semillerosQ->where('s.id_lider_usuario', $userId);
+                } elseif (Schema::hasColumn('semilleros','id_lider_semi')) {
+                    // Fallback: mapear mediante lideres_semillero
+                    if (Schema::hasTable('lideres_semillero')) {
+                        try {
+                            $dbName = DB::getDatabaseName();
+                            $cols = collect(DB::select(
+                                "SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'lideres_semillero'",
+                                [$dbName]
+                            ))->pluck('c')->all();
+                            $leaderUserFkCol = in_array('id_usuario', $cols, true) ? 'id_usuario'
+                                : (in_array('user_id', $cols, true) ? 'user_id'
+                                : (in_array('id_user', $cols, true) ? 'id_user' : null));
+                            if ($leaderUserFkCol) {
+                                $semillerosQ->join('lideres_semillero as ls','ls.id_lider_semi','=','s.id_lider_semi')
+                                            ->where(DB::raw('ls.'.$leaderUserFkCol), $userId);
+                            } else {
+                                Log::warning('No se encontró columna FK user en lideres_semillero (fallback)');
+                                $semillerosQ->whereRaw('1=0');
+                            }
+                        } catch (\Throwable $e) {
+                            Log::error('Error detectando columnas en lideres_semillero (fallback): '.$e->getMessage());
+                            $semillerosQ->whereRaw('1=0');
+                        }
+                    } else {
+                        $semillerosQ->whereRaw('1=0');
                     }
-                    if (Schema::hasColumn('semilleros', 'id_lider_usuario')) {
-                        $q->orWhere('semilleros.id_lider_usuario', $userId);
+                } else {
+                    $semillerosQ->whereRaw('1=0');
+                }
+            } elseif (Schema::hasColumn('semilleros','id_lider_semi')) {
+                // Caso 1: algunos esquemas usan directamente el mismo ID para users.id y semilleros.id_lider_semi
+                $directOwn = DB::table('semilleros')->where('id_lider_semi', $userId)->exists();
+                if ($directOwn) {
+                    $semillerosQ->where('s.id_lider_semi', $userId);
+                }
+                // Caso 2: mapear líder_user -> líder_semillero detectando la FK real en lideres_semillero
+                elseif (Schema::hasTable('lideres_semillero')) {
+                    try {
+                        $dbName = DB::getDatabaseName();
+                        $cols = collect(DB::select(
+                            "SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'lideres_semillero'",
+                            [$dbName]
+                        ))->pluck('c')->all();
+                        $leaderUserFkCol = in_array('id_usuario', $cols, true) ? 'id_usuario'
+                            : (in_array('user_id', $cols, true) ? 'user_id'
+                            : (in_array('id_user', $cols, true) ? 'id_user' : null));
+                        if ($leaderUserFkCol) {
+                            $semillerosQ->join('lideres_semillero as ls','ls.id_lider_semi','=','s.id_lider_semi')
+                                        ->where(DB::raw('ls.'.$leaderUserFkCol), $userId);
+                        } else {
+                            // No hay relación clara entre líderes y users: no devolvemos semilleros
+                            Log::warning('No se encontró columna FK user en lideres_semillero');
+                            $semillerosQ->whereRaw('1=0');
+                        }
+                    } catch (\Throwable $e) {
+                        Log::error('Error detectando columnas en lideres_semillero: '.$e->getMessage());
+                        $semillerosQ->whereRaw('1=0');
                     }
-                })
-                ->select(array_merge($selectCols, [
-                    DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),
-                ]))
-                ->orderByRaw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))");
+                } else {
+                    // Sin tabla líderes, no podemos verificar dueño con id_lider_semi
+                    $semillerosQ->whereRaw('1=0');
+                }
+            } else {
+                $semillerosQ->whereRaw('1=0');
+            }
 
-            $aprendices = $queryAprendices->get();
+            $semilleroIds = $semillerosQ->pluck('s.id_semillero');
+            Log::info('Semilleros del lider', ['ids' => $semilleroIds]);
+
+            // Fallback: si no encontramos semilleros por relación directa, intentar inferirlos desde proyectos del líder
+            if ($semilleroIds->isEmpty() && Schema::hasTable('proyectos') && Schema::hasColumn('proyectos','id_semillero')) {
+                try {
+                    $qb = DB::table('proyectos as p')->join('semilleros as s','s.id_semillero','=','p.id_semillero');
+                    if (Schema::hasColumn('semilleros','id_lider_usuario')) {
+                        $qb->where('s.id_lider_usuario', $userId);
+                    } elseif (Schema::hasColumn('semilleros','id_lider_semi') && Schema::hasTable('lideres_semillero')) {
+                        $dbName = DB::getDatabaseName();
+                        $cols = collect(DB::select(
+                            "SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'lideres_semillero'",
+                            [$dbName]
+                        ))->pluck('c')->all();
+                        $leaderUserFkCol = in_array('id_usuario', $cols, true) ? 'id_usuario'
+                            : (in_array('user_id', $cols, true) ? 'user_id'
+                            : (in_array('id_user', $cols, true) ? 'id_user' : null));
+                        if ($leaderUserFkCol) {
+                            $qb->join('lideres_semillero as ls','ls.id_lider_semi','=','s.id_lider_semi')
+                               ->where(DB::raw('ls.'.$leaderUserFkCol), $userId);
+                        } else {
+                            $qb->whereRaw('1=0');
+                        }
+                    }
+                    $semilleroIds = $qb->pluck('s.id_semillero')->unique();
+                    Log::info('Semilleros inferidos desde proyectos', ['ids' => $semilleroIds]);
+                } catch (\Throwable $e) {
+                    Log::error('Error infiriendo semilleros desde proyectos: '.$e->getMessage());
+                }
+            }
+
+            if ($semilleroIds->isNotEmpty() && Schema::hasTable('aprendices')) {
+                if (Schema::hasColumn('aprendices','semillero_id')) {
+                    // Camino directo por columna en aprendices
+                    $aprendices = DB::table('aprendices')
+                        ->whereIn('aprendices.semillero_id', $semilleroIds)
+                        ->select(array_merge($selectCols, [
+                            DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),
+                        ]))
+                        ->orderByRaw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))")
+                        ->get();
+                    Log::info('Aprendices por semillero_id encontrados', ['count' => $aprendices->count()]);
+                } elseif (Schema::hasTable('aprendiz_semillero')) {
+                    // Fallback a pivote
+                    $aprendices = DB::table('aprendices')
+                        ->join('aprendiz_semillero', 'aprendiz_semillero.id_aprendiz', '=', 'aprendices.id_aprendiz')
+                        ->whereIn('aprendiz_semillero.id_semillero', $semilleroIds)
+                        ->select(array_merge($selectCols, [
+                            DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),
+                        ]))
+                        ->orderByRaw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))")
+                        ->get();
+                    Log::info('Aprendices por pivote encontrados', ['count' => $aprendices->count()]);
+                }
+            }
         }
 
         $aprendicesIds = $aprendices->pluck('id_aprendiz')->toArray();
@@ -96,19 +207,25 @@ class AprendicesController extends Controller
             }
         }
 
-        // Intentar obtener semilleros si existe la tabla pivote
+        // Intentar obtener nombre de semillero
         $semillerosRelaciones = [];
-        if (Schema::hasTable('aprendiz_semillero') && Schema::hasTable('semilleros') && !empty($aprendicesIds)) {
+        if (!empty($aprendicesIds)) {
             try {
-                $semillerosRelaciones = DB::table('aprendiz_semillero')
-                    ->join('semilleros', 'semilleros.id_semillero', '=', 'aprendiz_semillero.id_semillero')
-                    ->where('semilleros.id_lider_semi', $userId)
-                    ->whereIn('aprendiz_semillero.id_aprendiz', $aprendicesIds)
-                    ->select('aprendiz_semillero.id_aprendiz', 'semilleros.nombre as semillero_nombre')
-                    ->get()
-                    ->groupBy('id_aprendiz');
+                if (Schema::hasColumn('aprendices','semillero_id') && Schema::hasTable('semilleros')) {
+                    $semillerosRelaciones = DB::table('aprendices')
+                        ->join('semilleros','semilleros.id_semillero','=','aprendices.semillero_id')
+                        ->whereIn('aprendices.id_aprendiz', $aprendicesIds)
+                        ->select('aprendices.id_aprendiz','semilleros.nombre as semillero_nombre')
+                        ->get()->groupBy('id_aprendiz');
+                } elseif (Schema::hasTable('aprendiz_semillero') && Schema::hasTable('semilleros')) {
+                    $semillerosRelaciones = DB::table('aprendiz_semillero')
+                        ->join('semilleros', 'semilleros.id_semillero', '=', 'aprendiz_semillero.id_semillero')
+                        ->whereIn('aprendiz_semillero.id_aprendiz', $aprendicesIds)
+                        ->select('aprendiz_semillero.id_aprendiz', 'semilleros.nombre as semillero_nombre')
+                        ->get()->groupBy('id_aprendiz');
+                }
             } catch (\Exception $e) {
-                // Si falla, continuar sin semilleros
+                // Continuar sin semillero
             }
         }
 
