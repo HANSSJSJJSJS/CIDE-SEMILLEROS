@@ -25,17 +25,25 @@ class UsuarioController extends Controller
             $roleFilter = 'ADMIN';
         }
 
+        // FK usada en aprendices (id_usuario o user_id)
         $aprFk      = Schema::hasColumn('aprendices', 'id_usuario') ? 'id_usuario' : 'user_id';
+        // Por si en algún entorno aún no existe la tabla lideres_investigacion
         $hasLiTable = Schema::hasTable('lideres_investigacion');
 
         $usuarios = User::query()
+            // Líder de semillero
             ->leftJoin('lideres_semillero as ls', 'ls.id_lider_semi', '=', 'users.id')
             ->leftJoin('semilleros as sl', 'sl.id_lider_semi', '=', 'ls.id_lider_semi')
+
+            // Aprendiz y su semillero
             ->leftJoin('aprendices as ap', "ap.$aprFk", '=', 'users.id')
             ->leftJoin('semilleros as sa', 'sa.id_semillero', '=', 'ap.semillero_id')
+
+            // Líder de investigación (solo si existe la tabla)
             ->when($hasLiTable, function ($q) {
                 $q->leftJoin('lideres_investigacion as li', 'li.user_id', '=', 'users.id');
             })
+
             ->select([
                 'users.*',
                 DB::raw('COALESCE(sa.nombre, sl.nombre) as semillero_nombre'),
@@ -52,6 +60,8 @@ class UsuarioController extends Controller
                 "),
                 DB::raw(($hasLiTable ? 'li.tiene_permisos' : 'NULL') . ' as li_tiene_permisos'),
             ])
+
+            // Filtro búsqueda
             ->when($q !== '', function ($w) use ($q) {
                 $w->where(function ($s) use ($q) {
                     $s->where('users.name','like',"%{$q}%")
@@ -59,13 +69,18 @@ class UsuarioController extends Controller
                       ->orWhere('users.email','like',"%{$q}%");
                 });
             })
+
+            // Filtro rol
             ->when($roleFilter !== '', fn($w) => $w->where('users.role', $roleFilter))
+
+            // Filtro semillero
             ->when($semilleroId, function ($w) use ($semilleroId) {
                 $w->where(function ($x) use ($semilleroId) {
                     $x->where('sa.id_semillero', $semilleroId)
                       ->orWhere('sl.id_semillero', $semilleroId);
                 });
             })
+
             ->distinct('users.id')
             ->orderByDesc('users.created_at')
             ->paginate(12)
@@ -98,8 +113,14 @@ class UsuarioController extends Controller
     // ============================================================
     public function togglePermisosInvestigacion(User $usuario)
     {
-        if (!auth()->user()->role === 'ADMIN') {
+        if (auth()->user()->role !== 'ADMIN') {
             abort(403);
+        }
+
+        if ($usuario->role !== 'LIDER_INVESTIGACION') {
+            return redirect()
+                ->route('admin.usuarios.index')
+                ->with('error', 'Solo se pueden gestionar permisos de líderes de investigación.');
         }
 
         $registro = DB::table('lideres_investigacion')
@@ -107,18 +128,27 @@ class UsuarioController extends Controller
             ->first();
 
         if (!$registro) {
-            return back()->withErrors(['msg' =>
-                'Este usuario no tiene perfil de líder de investigación'
-            ]);
+            return redirect()
+                ->route('admin.usuarios.index')
+                ->with('error', 'Este usuario no tiene perfil de líder de investigación.');
         }
+
+        $nuevoEstado = $registro->tiene_permisos ? 0 : 1;
 
         DB::table('lideres_investigacion')
             ->where('user_id', $usuario->id)
             ->update([
-                'tiene_permisos' => $registro->tiene_permisos ? 0 : 1,
+                'tiene_permisos' => $nuevoEstado,
+                'updated_at'     => now(),
             ]);
 
-        return back()->with('success', 'Permisos actualizados correctamente.');
+        $mensaje = $nuevoEstado
+            ? 'Se han otorgado permisos de investigación a este usuario.'
+            : 'Se han quitado los permisos de investigación a este usuario.';
+
+        return redirect()
+            ->route('admin.usuarios.index')
+            ->with('success', $mensaje);
     }
 
     // ============================================================
@@ -134,7 +164,7 @@ class UsuarioController extends Controller
             'APRENDIZ'            => 'APRENDIZ',
         ];
 
-        // VALIDACIONES BÁSICAS
+        // VALIDACIONES BÁSICAS (coinciden con modal crear)
         $rules = [
             'role'     => 'required|in:ADMIN,LIDER_GENERAL,LIDER_SEMILLERO,LIDER_INVESTIGACION,APRENDIZ',
             'nombre'   => 'required|string|max:255',
@@ -146,18 +176,25 @@ class UsuarioController extends Controller
         $data = $request->validate($rules);
         $role = $roleMap[$data['role']];
 
-        // VALIDACIÓN EXTRA PARA APRENDIZ
-        if ($role === 'APRENDIZ') {
+        // Validaciones adicionales según rol
+        if ($role === 'LIDER_SEMILLERO') {
             $request->validate([
-                'tipo_documento'  => 'required',
-                'documento'       => 'required|max:40',
-                'semillero_id'    => 'required|integer',
+                'ls_tipo_documento' => 'required|string|max:50',
+                'ls_documento'      => 'required|string|max:40',
             ]);
         }
 
-        // TRANSACCIÓN
+        if ($role === 'APRENDIZ') {
+            $request->validate([
+                'tipo_documento' => 'required|string|max:50',
+                'documento'      => 'required|string|max:40',
+                'semillero_id'   => 'required|integer',
+            ]);
+        }
+
         DB::transaction(function () use ($data, $role, $request) {
 
+            // Crear usuario base
             $userId = DB::table('users')->insertGetId([
                 'name'       => $data['nombre'],
                 'apellidos'  => $data['apellido'],
@@ -168,17 +205,27 @@ class UsuarioController extends Controller
                 'updated_at' => now(),
             ]);
 
+            // Perfiles según rol
             switch ($role) {
 
                 // ADMIN
                 case 'ADMIN':
-                    DB::table('administradores')->insert([
+                    $adminData = [
                         'id_usuario'     => $userId,
-                        'nombres'        => $data['nombre'],
                         'apellidos'      => $data['apellido'],
                         'creado_en'      => now(),
                         'actualizado_en' => now(),
-                    ]);
+                    ];
+
+                    // Cubrimos tanto 'nombre' como 'nombres'
+                    if (Schema::hasColumn('administradores', 'nombre')) {
+                        $adminData['nombre'] = $data['nombre'];
+                    }
+                    if (Schema::hasColumn('administradores', 'nombres')) {
+                        $adminData['nombres'] = $data['nombre'];
+                    }
+
+                    DB::table('administradores')->insert($adminData);
                     break;
 
                 // LÍDER SEMILLERO
@@ -207,7 +254,9 @@ class UsuarioController extends Controller
 
                 // APRENDIZ
                 case 'APRENDIZ':
-                    $colUserFk = Schema::hasColumn('aprendices', 'id_usuario') ? 'id_usuario' : 'user_id';
+                    $colUserFk = Schema::hasColumn('aprendices', 'id_usuario')
+                        ? 'id_usuario'
+                        : 'user_id';
 
                     DB::table('aprendices')->insert([
                         $colUserFk             => $userId,
@@ -230,29 +279,47 @@ class UsuarioController extends Controller
             }
         });
 
-        return back()->with('success','Usuario creado correctamente.');
+        return redirect()
+            ->route('admin.usuarios.index')
+            ->with('success','Se ha creado el usuario correctamente.');
     }
 
     // ============================================================
-    // EDITAR
+    // EDITAR (resource clásico, no se usa)
     // ============================================================
-    public function edit($id)
+    public function edit(User $usuario)
     {
-        $usuario = User::findOrFail($id);
-        $perfil  = null;
+        return abort(404);
+    }
+
+    // ============================================================
+    // EDITAR AJAX (si lo necesitas en otro lado)
+    // ============================================================
+    public function editAjax(User $usuario)
+    {
+        $perfil = null;
 
         switch ($usuario->role) {
             case 'ADMIN':
-                $perfil = DB::table('administradores')->where('id_usuario', $id)->first();
+                $perfil = DB::table('administradores')
+                    ->where('id_usuario', $usuario->id)
+                    ->first();
                 break;
+
             case 'LIDER_SEMILLERO':
-                $perfil = DB::table('lideres_semillero')->where('id_lider_semi', $id)->first();
+                $perfil = DB::table('lideres_semillero')
+                    ->where('id_lider_semi', $usuario->id)
+                    ->first();
                 break;
+
             case 'APRENDIZ':
                 $colUserFk = Schema::hasColumn('aprendices', 'id_usuario')
                     ? 'id_usuario'
                     : 'user_id';
-                $perfil = DB::table('aprendices')->where($colUserFk, $id)->first();
+
+                $perfil = DB::table('aprendices')
+                    ->where($colUserFk, $usuario->id)
+                    ->first();
                 break;
         }
 
@@ -267,39 +334,61 @@ class UsuarioController extends Controller
     // ============================================================
     public function update(Request $request, User $usuario)
     {
+        // El modal editar envía: name, apellidos, email, password (opcional)
         $rules = [
-            'nombre'   => 'required|string|max:255',
-            'apellido' => 'required|string|max:255',
-            'email'    => ['required','email','max:255', Rule::unique('users','email')->ignore($usuario->id)],
+            'name'      => 'required|string|max:255',
+            'apellidos' => 'required|string|max:255',
+            'email'     => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users','email')->ignore($usuario->id),
+            ],
+            'password'  => 'nullable|min:6',
         ];
 
         $data = $request->validate($rules);
 
         DB::transaction(function () use ($usuario, $data) {
 
-            $usuario->update([
-                'name'      => $data['nombre'],
-                'apellidos' => $data['apellido'],
-                'email'     => $data['email'],
-            ]);
+            $updateUser = [
+                'name'       => $data['name'],
+                'apellidos'  => $data['apellidos'],
+                'email'      => $data['email'],
+                'updated_at' => now(),
+            ];
 
+            if (!empty($data['password'])) {
+                $updateUser['password'] = Hash::make($data['password']);
+            }
+
+            $usuario->update($updateUser);
+
+            // Actualizar tablas relacionadas según rol
             switch ($usuario->role) {
                 case 'ADMIN':
+                    $adminUpdate = [
+                        'apellidos'      => $data['apellidos'],
+                        'actualizado_en' => now(),
+                    ];
+                    if (Schema::hasColumn('administradores','nombre')) {
+                        $adminUpdate['nombre'] = $data['name'];
+                    }
+                    if (Schema::hasColumn('administradores','nombres')) {
+                        $adminUpdate['nombres'] = $data['name'];
+                    }
+
                     DB::table('administradores')
                         ->where('id_usuario', $usuario->id)
-                        ->update([
-                            'nombres'        => $data['nombre'],
-                            'apellidos'      => $data['apellido'],
-                            'actualizado_en' => now(),
-                        ]);
+                        ->update($adminUpdate);
                     break;
 
                 case 'LIDER_SEMILLERO':
                     DB::table('lideres_semillero')
                         ->where('id_lider_semi', $usuario->id)
                         ->update([
-                            'nombres'              => $data['nombre'],
-                            'apellidos'            => $data['apellido'],
+                            'nombres'              => $data['name'],
+                            'apellidos'            => $data['apellidos'],
                             'correo_institucional' => $data['email'],
                             'actualizado_en'       => now(),
                         ]);
@@ -313,8 +402,8 @@ class UsuarioController extends Controller
                     DB::table('aprendices')
                         ->where($colUserFk, $usuario->id)
                         ->update([
-                            'nombres'         => $data['nombre'],
-                            'apellidos'       => $data['apellido'],
+                            'nombres'         => $data['name'],
+                            'apellidos'       => $data['apellidos'],
                             'correo_personal' => $data['email'],
                             'actualizado_en'  => now(),
                         ]);
@@ -324,7 +413,7 @@ class UsuarioController extends Controller
 
         return redirect()
             ->route('admin.usuarios.index')
-            ->with('success','Usuario actualizado correctamente.');
+            ->with('success','Se ha actualizado el usuario correctamente.');
     }
 
     // ============================================================
@@ -332,31 +421,60 @@ class UsuarioController extends Controller
     // ============================================================
     public function destroy(User $usuario)
     {
-        DB::transaction(function () use ($usuario) {
+        // 1) Si es aprendiz, comprobar proyectos antes de borrar
+        $colUserFk = Schema::hasColumn('aprendices', 'id_usuario')
+            ? 'id_usuario'
+            : 'user_id';
 
-            switch ($usuario->role) {
-                case 'ADMIN':
-                    DB::table('administradores')->where('id_usuario', $usuario->id)->delete();
-                    break;
-                case 'LIDER_SEMILLERO':
-                    DB::table('lideres_semillero')->where('id_lider_semi', $usuario->id)->delete();
-                    break;
-                case 'LIDER_INVESTIGACION':
-                    DB::table('lideres_investigacion')->where('user_id', $usuario->id)->delete();
-                    break;
-                case 'APRENDIZ':
-                    $colUserFk = Schema::hasColumn('aprendices', 'id_usuario')
-                        ? 'id_usuario'
-                        : 'user_id';
-                    DB::table('aprendices')->where($colUserFk, $usuario->id)->delete();
-                    break;
+        $aprendiz = DB::table('aprendices')
+            ->where($colUserFk, $usuario->id)
+            ->first();
+
+        if ($aprendiz) {
+            $tieneProyectos = DB::table('aprendiz_proyecto')
+                ->where('id_aprendiz', $aprendiz->id_aprendiz)
+                ->exists();
+
+            if ($tieneProyectos) {
+                return redirect()
+                    ->route('admin.usuarios.index')
+                    ->with('error', 'No se puede eliminar el aprendiz porque tiene proyectos asociados.');
+            }
+        }
+
+        // 2) Eliminar en cascada manual según rol
+        DB::transaction(function () use ($usuario, $aprendiz) {
+
+            if ($aprendiz) {
+                DB::table('aprendices')
+                    ->where('id_aprendiz', $aprendiz->id_aprendiz)
+                    ->delete();
             }
 
+            if ($usuario->role === 'ADMIN') {
+                DB::table('administradores')
+                    ->where('id_usuario', $usuario->id)
+                    ->delete();
+            }
+
+            if ($usuario->role === 'LIDER_SEMILLERO') {
+                DB::table('lideres_semillero')
+                    ->where('id_lider_semi', $usuario->id)
+                    ->delete();
+            }
+
+            if ($usuario->role === 'LIDER_INVESTIGACION') {
+                DB::table('lideres_investigacion')
+                    ->where('user_id', $usuario->id)
+                    ->delete();
+            }
+
+            // Finalmente, borrar el usuario
             $usuario->delete();
         });
 
         return redirect()
             ->route('admin.usuarios.index')
-            ->with('success','Usuario eliminado correctamente.');
+            ->with('success', 'Se ha eliminado el usuario correctamente.');
     }
 }
