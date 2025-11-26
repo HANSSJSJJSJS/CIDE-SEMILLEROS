@@ -1,0 +1,29 @@
+/* Perfil Líder Semillero: basado en perfil de aprendiz */
+@import url("/css/aprendiz/perfil.css");
+
+/* --- Sobrescrituras específicas para el líder --- */
+
+/* Asegurar layout horizontal y legible dentro del contenedor de perfil */
+.perfil-modern {
+  max-width: 980px;
+  margin: 0 auto;
+  display: block;
+}
+
+/* Forzar escritura horizontal en todo el módulo por si algún estilo global la cambia */
+.perfil-modern, .perfil-modern * {
+  writing-mode: horizontal-tb;
+}
+
+/* Tarjetas a todo el ancho disponible, no columnas ultra estrechas */
+.perfil-modern .card,
+.perfil-modern .card-profile,
+.perfil-modern .password-card {
+  width: 100%;
+}
+
+/* Evitar que el botón secundario se desplace demasiado a la derecha (heredado de aprendiz) */
+.perfil-modern .btn-secondary {
+  left: 0;
+  margin-top: 0;
+}

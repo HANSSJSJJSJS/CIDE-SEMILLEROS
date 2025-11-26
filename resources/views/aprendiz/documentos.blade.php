@@ -205,8 +205,103 @@
         </div>
     </div>
 
-    {{-- Sección de "Evidencias Asignadas Pendientes" ocultada a petición: solo se muestra
-         el formulario principal de subida y la tabla de "Mis Documentos Subidos". --}}
+    {{-- Sección de Evidencias Asignadas Pendientes (subida por evidencia) --}}
+    @if(isset($pendientesAsignadas) && $pendientesAsignadas->isNotEmpty())
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-tasks"></i> Evidencias Asignadas Pendientes</h5>
+                        <span class="badge bg-primary">{{ $pendientesAsignadas->count() }} pendiente(s)</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            @foreach($pendientesAsignadas->sortBy('fecha_limite') as $pendiente)
+                                @php
+                                    $tBase = strtolower(trim((string)($pendiente->tipo_documento ?? $pendiente->tipo_archivo ?? '')));
+                                    if (in_array($tBase, ['doc','docx','word','documento'], true)) {
+                                        $tBase = 'word';
+                                    } elseif (in_array($tBase, ['ppt','pptx','presentacion','presentación'], true)) {
+                                        $tBase = 'presentacion';
+                                    } elseif (in_array($tBase, ['img','imagen','image'], true)) {
+                                        $tBase = 'imagen';
+                                    } elseif (in_array($tBase, ['link','enlace','url'], true)) {
+                                        $tBase = 'enlace';
+                                    }
+
+                                    $acceptByTipo = [
+                                        'pdf'          => '.pdf,application/pdf',
+                                        'word'         => '.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                        'presentacion' => '.ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                                        'imagen'       => 'image/*',
+                                        'video'        => 'video/*',
+                                    ];
+                                    $acceptForThis = $acceptByTipo[$tBase] ?? 'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/*,text/plain,text/csv,application/zip,application/x-rar-compressed';
+                                @endphp
+                                <div class="col-md-6">
+                                    <div class="card h-100 border-start border-4 border-primary">
+                                        <div class="card-body d-flex flex-column">
+                                            <div class="mb-2">
+                                                <div class="fw-semibold">{{ $pendiente->documento ?? 'Evidencia' }}</div>
+                                                <div class="small text-muted">Proyecto: {{ $pendiente->nombre_proyecto ?? '—' }}</div>
+                                                @if(!empty($pendiente->descripcion))
+                                                    <div class="small text-muted">{{ $pendiente->descripcion }}</div>
+                                                @endif
+                                                <div class="small text-muted">
+                                                    <strong>Fecha límite:</strong>
+                                                    @if(!empty($pendiente->fecha_limite))
+                                                        {{ \Carbon\Carbon::parse($pendiente->fecha_limite)->format('Y-m-d') }}
+                                                    @else
+                                                        —
+                                                    @endif
+                                                </div>
+                                                <div class="small mt-1">
+                                                    <strong>Tipo requerido:</strong>
+                                                    @if($tBase === 'enlace')
+                                                        Enlace (URL)
+                                                    @elseif($tBase === 'pdf')
+                                                        Archivo PDF (.pdf)
+                                                    @elseif($tBase === 'word')
+                                                        Documento Word (.doc, .docx)
+                                                    @elseif($tBase === 'presentacion')
+                                                        Presentación (.ppt, .pptx)
+                                                    @elseif($tBase === 'imagen')
+                                                        Imagen (JPG, PNG, GIF)
+                                                    @elseif($tBase === 'video')
+                                                        Video (MP4, AVI, MOV, MKV)
+                                                    @else
+                                                        Otro tipo de archivo
+                                                    @endif
+                                                </div>
+                                            </div>
+
+                                            <form class="mt-2 pending-upload-form" method="POST" action="{{ route('aprendiz.documentos.uploadAssigned', $pendiente->id_documento) }}" enctype="multipart/form-data">
+                                                @csrf
+                                                @if($tBase === 'enlace')
+                                                    <div class="mb-2">
+                                                        <label class="form-label small mb-1">Enlace de la evidencia (URL)</label>
+                                                        <input type="url" name="link_url" class="form-control form-control-sm" placeholder="https://..." required>
+                                                    </div>
+                                                @else
+                                                    <div class="mb-2">
+                                                        <label class="form-label small mb-1">Archivo de evidencia</label>
+                                                        <input type="file" name="archivo" class="form-control form-control-sm" accept="{{ $acceptForThis }}" required>
+                                                    </div>
+                                                @endif
+                                                <button type="submit" class="btn btn-sm btn-primary mt-auto">
+                                                    <i class="fas fa-upload"></i> Subir a esta evidencia
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- Lista de documentos subidos --}}
     <div class="row">
@@ -287,8 +382,8 @@
                                                                    class="form-control form-control-sm mb-1"
                                                                    placeholder="Nuevo título (opcional)"
                                                                    value="{{ $doc->documento }}">
-                                                            <button type="submit" class="btn btn-sm btn-secondary w-100" title="Editar entrega">
-                                                                <i class="fas fa-edit"></i>
+                                                            <button type="submit" class="btn btn-sm btn-success w-100" title="Guardar">
+                                                                <i class="fas fa-save"></i> Guardar
                                                             </button>
                                                         </form>
                                                     @elseif($estado === 'aprobado')
@@ -297,17 +392,6 @@
                                                         <span class="badge bg-warning text-dark ms-1">Aún sin archivo, no editable</span>
                                                     @endif
 
-                                                    {{-- Eliminar --}}
-                                                    <form action="{{ route('aprendiz.documentos.destroy', $doc->id_documento) }}"
-                                                          method="POST"
-                                                          class="d-inline ms-1"
-                                                          onsubmit="return confirm('¿Estás seguro de eliminar este documento?')">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    </form>
                                                 </div>
                                             </td>
                                         </tr>
@@ -413,7 +497,7 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 
   // Envío AJAX para formularios de evidencias pendientes
-  const pendingForms = document.querySelectorAll('form.pending-upload-form'); 
+  const pendingForms = document.querySelectorAll('form.pending-upload-form');
   pendingForms.forEach((pf) => {
     pf.addEventListener('submit', async function(ev){
       ev.preventDefault();

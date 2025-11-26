@@ -99,7 +99,8 @@
   position:absolute;
   inset:0;
   z-index:-1;
-  background-image: url("../images/bg-semillero.png");
+  /* Mostrar imagen completa de forma responsiva */
+  background-image: url("/images/bg-semillero.png");
   background-repeat:no-repeat;
   background-position:center 38%;
   background-size:clamp(520px, 60vw, 1400px) auto;
@@ -175,4 +176,3 @@
 
 /* Bloquea scroll al abrir sidebar */
 .noscroll{ overflow: hidden; height: 100vh; }
-

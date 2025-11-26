@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class DocumentosController extends Controller
 {
@@ -102,18 +103,32 @@ class DocumentosController extends Controller
             return redirect()->away($doc->ruta_archivo);
         }
 
-        // Caso contrario, asumir archivo en storage/app/public
         if (empty($doc->ruta_archivo)) {
             abort(404);
         }
 
-        $path = storage_path('app/public/' . ltrim($doc->ruta_archivo, '/'));
-        if (!file_exists($path)) {
-            abort(404);
+        // Normalizar ruta (sin slash inicial ni prefijo public/)
+        $ruta = ltrim($doc->ruta_archivo, '/');
+        $rutaSinPublic = preg_replace('#^public/#', '', $ruta);
+
+        // 1) Intentar servir desde disco 'public'
+        if (Storage::disk('public')->exists($rutaSinPublic)) {
+            return Storage::disk('public')->response($rutaSinPublic);
         }
 
-        // Devolver el archivo para visualizar/descargar en el navegador
-        return response()->file($path);
+        // 2) Intentar desde storage/app/ruta_archivo directa
+        $full = storage_path('app/' . $ruta);
+        if (is_file($full)) {
+            return response()->file($full);
+        }
+
+        // 3) Intentar como storage/app/public/ruta_archivo (compat)
+        $fullPublic = storage_path('app/public/' . $rutaSinPublic);
+        if (is_file($fullPublic)) {
+            return response()->file($fullPublic);
+        }
+
+        abort(404);
     }
 
     // Listar proyectos para el select del modal
@@ -374,6 +389,60 @@ class DocumentosController extends Controller
 
             $hasDescripcion = Schema::hasColumn('documentos', 'descripcion');
 
+            // ¿Tenemos tabla de aprendices?
+            $hasAprTable = Schema::hasTable('aprendices');
+
+            // Detectar si podemos unir por id_aprendiz y cuál es la PK real en aprendices
+            $joinByAprendizId = $hasAprTable && Schema::hasColumn('documentos','id_aprendiz');
+            $aprPkCol = null;
+            if ($hasAprTable) {
+                if (Schema::hasColumn('aprendices','id_aprendiz')) {
+                    $aprPkCol = 'id_aprendiz';
+                } elseif (Schema::hasColumn('aprendices','id')) {
+                    $aprPkCol = 'id';
+                }
+            }
+
+            // Determinar si podemos mapear también por id_usuario
+            $joinByUser = $hasAprTable
+                && Schema::hasColumn('documentos','id_usuario')
+                && Schema::hasColumn('aprendices','id_usuario');
+
+            $aprHasNombreCompleto = $hasAprTable && Schema::hasColumn('aprendices','nombre_completo');
+
+            // Expresiones de nombre principales (solo si hay tabla de aprendices)
+            // Si nombre_completo existe pero está NULL, usar nombres + apellidos como fallback.
+            if ($hasAprTable) {
+                if ($aprHasNombreCompleto) {
+                    $aprNameExpr = "COALESCE(a.nombre_completo, CONCAT(COALESCE(a.nombres,''),' ',COALESCE(a.apellidos,'')))";
+                } else {
+                    $aprNameExpr = "CONCAT(COALESCE(a.nombres,''),' ',COALESCE(a.apellidos,''))";
+                }
+            } else {
+                $aprNameExpr = null;
+            }
+
+            if ($hasAprTable && $joinByUser) {
+                if ($aprHasNombreCompleto) {
+                    $aprNameExprAlt = "COALESCE(au.nombre_completo, CONCAT(COALESCE(au.nombres,''),' ',COALESCE(au.apellidos,'')))";
+                } else {
+                    $aprNameExprAlt = "CONCAT(COALESCE(au.nombres,''),' ',COALESCE(au.apellidos,''))";
+                }
+            } else {
+                $aprNameExprAlt = null;
+            }
+
+            // Select dinámico del nombre: usar lo que exista
+            if ($aprNameExpr && $aprNameExprAlt) {
+                $nombreSelectExpr = "COALESCE(($aprNameExpr), ($aprNameExprAlt), 'Sin asignar')";
+            } elseif ($aprNameExpr) {
+                $nombreSelectExpr = "COALESCE(($aprNameExpr), 'Sin asignar')";
+            } elseif ($aprNameExprAlt) {
+                $nombreSelectExpr = "COALESCE(($aprNameExprAlt), 'Sin asignar')";
+            } else {
+                $nombreSelectExpr = "'Sin asignar'";
+            }
+
             $selectFields = [
                 'd.id_documento as id',
                 'd.documento as titulo',
@@ -382,7 +451,8 @@ class DocumentosController extends Controller
                 'd.tamanio',
                 'd.fecha_subido as fecha',
                 DB::raw("COALESCE(d.estado, 'pendiente') as estado"),
-                DB::raw("COALESCE(a.nombre_completo, 'Sin asignar') as nombre_aprendiz"),
+                // Nombre del aprendiz asignado (por id_aprendiz o id_usuario)
+                DB::raw($nombreSelectExpr . ' as nombre_aprendiz'),
                 'd.ruta_archivo as archivo_url',
                 'd.documento as archivo_nombre'
             ];
@@ -393,8 +463,19 @@ class DocumentosController extends Controller
                 $selectFields[] = DB::raw("'' as descripcion");
             }
 
-            $entregas = DB::table('documentos as d')
-                ->leftJoin('aprendices as a', 'd.id_aprendiz', '=', 'a.id_aprendiz')
+            $query = DB::table('documentos as d');
+
+            // Unión principal por id_aprendiz -> PK de aprendices (si ambas columnas existen)
+            if ($joinByAprendizId && $aprPkCol) {
+                $query = $query->leftJoin('aprendices as a', 'd.id_aprendiz', '=', 'a.' . $aprPkCol);
+            }
+
+            // Unión alternativa por id_usuario si está disponible
+            if ($joinByUser) {
+                $query = $query->leftJoin('aprendices as au', 'd.id_usuario', '=', 'au.id_usuario');
+            }
+
+            $entregas = $query
                 ->where('d.id_proyecto', $proyectoId)
                 ->select($selectFields)
                 ->orderBy('d.fecha_subido', 'desc')

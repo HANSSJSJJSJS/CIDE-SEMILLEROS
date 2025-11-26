@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProyectoController extends Controller
 {
@@ -249,7 +250,7 @@ class ProyectoController extends Controller
                                     ->all();
                             if (!empty($aprendizIds)) {
                                 return DB::table($tbl)
-                                    ->whereIn($aprPkCol, $aprendizIds)
+                                    ->whereIn($ucol, $aprendizIds)
                                     ->distinct()
                                     ->pluck($pcol)
                                     ->map(fn($v)=> (int)$v)
@@ -262,12 +263,13 @@ class ProyectoController extends Controller
                     }
 
                     // Caso normal: la columna en pivote referencia directamente al user id
-                    return DB::table($tbl)
+                    $res = DB::table($tbl)
                         ->where($ucol, $userId)
                         ->distinct()
                         ->pluck($pcol)
                         ->map(fn($v)=> (int)$v)
                         ->all();
+                    if (!empty($res)) { return $res; }
                 } catch (\Exception $e) {
                     // probar siguiente
                 }
@@ -279,12 +281,14 @@ class ProyectoController extends Controller
             // Priorizar documentos.id_usuario si existe
             if (Schema::hasColumn('documentos','id_usuario') && Schema::hasColumn('documentos','id_proyecto')) {
                 try {
-                    return DB::table('documentos')
+                    Log::info('Aprendiz/ProyectoController@fallback documentos.id_usuario', ['user_id' => $userId]);
+                    $res = DB::table('documentos')
                         ->where('id_usuario', $userId)
                         ->distinct()
                         ->pluck('id_proyecto')
                         ->map(fn($v)=> (int)$v)
                         ->all();
+                    if (!empty($res)) { return $res; }
                 } catch (\Exception $e) {}
             }
             // Si no, intentar mapear via aprendices -> documentos.id_aprendiz
@@ -318,17 +322,46 @@ class ProyectoController extends Controller
                 }
                 if ($aprId) {
                     try {
-                        return DB::table('documentos')
+                        Log::info('Aprendiz/ProyectoController@fallback documentos.id_aprendiz', ['aprendiz_id' => $aprId]);
+                        $res = DB::table('documentos')
                             ->where('id_aprendiz', $aprId)
                             ->distinct()
                             ->pluck('id_proyecto')
                             ->map(fn($v)=> (int)$v)
                             ->all();
+                        if (!empty($res)) { return $res; }
                     } catch (\Exception $e) {}
                 }
             }
         }
 
+        // Fallback final: proyectos del semillero del aprendiz
+        if (Schema::hasTable('aprendices') && Schema::hasTable('proyectos') && Schema::hasColumn('proyectos','id_semillero')) {
+            try {
+                // Detectar FK user->aprendiz
+                $aprTbl = 'aprendices';
+                $userFkCol = null; foreach (['id_usuario','user_id','id_user'] as $c) { if (Schema::hasColumn($aprTbl,$c)) { $userFkCol = $c; break; } }
+                $aprPkCol  = Schema::hasColumn($aprTbl,'id_aprendiz') ? 'id_aprendiz' : (Schema::hasColumn($aprTbl,'id') ? 'id' : null);
+                if ($userFkCol) {
+                    // Resolver columna de semillero en aprendices: semillero_id o id_semillero
+                    $semCol = Schema::hasColumn($aprTbl,'semillero_id') ? 'semillero_id' : (Schema::hasColumn($aprTbl,'id_semillero') ? 'id_semillero' : null);
+                    if ($semCol) {
+                        $semilleroId = DB::table($aprTbl)->where($userFkCol, $userId)->value($semCol);
+                        if ($semilleroId) {
+                            $ids = DB::table('proyectos')->where('id_semillero', $semilleroId)->pluck('id_proyecto')->map(fn($v)=>(int)$v)->all();
+                            if (!empty($ids)) {
+                                Log::info('Aprendiz/ProyectoController@fallback semillero', ['user_id' => $userId, 'semillero_id' => $semilleroId, 'ids' => $ids, 'sem_col' => $semCol]);
+                                return $ids;
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning('Aprendiz/ProyectoController@fallback semillero error', ['user_id' => $userId, 'error' => $e->getMessage()]);
+            }
+        }
+
+        Log::info('Aprendiz/ProyectoController@sin proyectos', ['user_id' => $userId]);
         return [];
     }
 

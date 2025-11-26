@@ -115,33 +115,47 @@ class ProyectoController extends Controller
             }
 
             // Si no hay semillero asociado al proyecto, no ofrecer aprendices
-            if (!$semilleroId || !Schema::hasTable('aprendiz_semillero')) {
+            if (!$semilleroId) {
                 return response()->json([]);
             }
+
+            $hasAprSemilleroCol = Schema::hasColumn('aprendices','semillero_id');
 
             if (Schema::hasTable('proyecto_aprendiz')) {
                 $sub = DB::table('proyecto_aprendiz')->select('id_aprendiz')->where('id_proyecto', $id);
                 $rows = DB::table('aprendices as a')
                     ->join('users as u', DB::raw('u.id'), '=', DB::raw('a.'.$userFkCol))
-                    ->join('aprendiz_semillero as aps', 'aps.id_aprendiz', '=', 'a.id_aprendiz')
+                    ->when($hasAprSemilleroCol, function($w) use ($semilleroId){
+                        $w->where('a.semillero_id', $semilleroId);
+                    }, function($w) use ($semilleroId){
+                        $w->join('aprendiz_semillero as aps', 'aps.id_aprendiz', '=', 'a.id_aprendiz')
+                          ->where('aps.id_semillero', $semilleroId);
+                    })
                     ->where('u.role','APRENDIZ')
-                    ->where('aps.id_semillero', $semilleroId)
                     ->whereNotIn('a.id_aprendiz', $sub);
             } elseif (Schema::hasTable('aprendiz_proyecto')) {
                 $sub = DB::table('aprendiz_proyecto')->select('id_aprendiz')->where('id_proyecto', $id);
                 $rows = DB::table('aprendices as a')
                     ->join('users as u', DB::raw('u.id'), '=', DB::raw('a.'.$userFkCol))
-                    ->join('aprendiz_semillero as aps', 'aps.id_aprendiz', '=', 'a.id_aprendiz')
+                    ->when($hasAprSemilleroCol, function($w) use ($semilleroId){
+                        $w->where('a.semillero_id', $semilleroId);
+                    }, function($w) use ($semilleroId){
+                        $w->join('aprendiz_semillero as aps', 'aps.id_aprendiz', '=', 'a.id_aprendiz')
+                          ->where('aps.id_semillero', $semilleroId);
+                    })
                     ->where('u.role','APRENDIZ')
-                    ->where('aps.id_semillero', $semilleroId)
                     ->whereNotIn('a.id_aprendiz', $sub);
             } else {
                 $sub = DB::table('proyecto_user')->select('user_id')->where('id_proyecto', $id);
                 $rows = DB::table('users as u')
                     ->join('aprendices as a', DB::raw('a.'.$userFkCol), '=', DB::raw('u.id'))
-                    ->join('aprendiz_semillero as aps', 'aps.id_aprendiz', '=', 'a.id_aprendiz')
+                    ->when($hasAprSemilleroCol, function($w) use ($semilleroId){
+                        $w->where('a.semillero_id', $semilleroId);
+                    }, function($w) use ($semilleroId){
+                        $w->join('aprendiz_semillero as aps', 'aps.id_aprendiz', '=', 'a.id_aprendiz')
+                          ->where('aps.id_semillero', $semilleroId);
+                    })
                     ->where('u.role','APRENDIZ')
-                    ->where('aps.id_semillero', $semilleroId)
                     ->whereNotIn('u.id', $sub);
             }
             $rows = $rows
@@ -513,8 +527,14 @@ class ProyectoController extends Controller
                 $dbName = DB::getDatabaseName();
                 $cols = collect(DB::select("SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'aprendices' AND COLUMN_NAME IN ('id_usuario','id_user','user_id')", [$dbName]))->pluck('c')->all();
                 $userFkCol = in_array('id_usuario', $cols, true) ? 'id_usuario' : (in_array('id_user', $cols, true) ? 'id_user' : (in_array('user_id', $cols, true) ? 'user_id' : null));
+                $hasAprSemilleroCol = Schema::hasColumn('aprendices','semillero_id');
+                // Filtrar por semillero del proyecto si conocemos su id
                 $rows = DB::table('aprendices as a')
                     ->join('users as u', DB::raw('u.id'), '=', DB::raw('a.'.$userFkCol))
+                    ->when($hasAprSemilleroCol && Schema::hasTable('proyectos') && Schema::hasColumn('proyectos','id_semillero'), function($w) use ($id){
+                        $sid = DB::table('proyectos')->where('id_proyecto',$id)->value('id_semillero');
+                        if ($sid) { $w->where('a.semillero_id', $sid); }
+                    })
                     ->where('u.role', 'APRENDIZ')
                     ->whereNotIn('a.id_aprendiz', $sub);
             } else {
@@ -523,8 +543,13 @@ class ProyectoController extends Controller
                 $dbName = DB::getDatabaseName();
                 $cols = collect(DB::select("SELECT COLUMN_NAME as c FROM information_schema.columns WHERE table_schema = ? AND table_name = 'aprendices' AND COLUMN_NAME IN ('id_usuario','id_user','user_id')", [$dbName]))->pluck('c')->all();
                 $userFkCol = in_array('id_usuario', $cols, true) ? 'id_usuario' : (in_array('id_user', $cols, true) ? 'id_user' : (in_array('user_id', $cols, true) ? 'user_id' : null));
+                $hasAprSemilleroCol = Schema::hasColumn('aprendices','semillero_id');
                 $rows = DB::table('users as u')
                     ->join('aprendices as a', DB::raw('a.'.$userFkCol), '=', DB::raw('u.id'))
+                    ->when($hasAprSemilleroCol && Schema::hasTable('proyectos') && Schema::hasColumn('proyectos','id_semillero'), function($w) use ($id){
+                        $sid = DB::table('proyectos')->where('id_proyecto',$id)->value('id_semillero');
+                        if ($sid) { $w->where('a.semillero_id', $sid); }
+                    })
                     ->where('u.role', 'APRENDIZ')
                     ->whereNotIn('u.id', $sub);
             }

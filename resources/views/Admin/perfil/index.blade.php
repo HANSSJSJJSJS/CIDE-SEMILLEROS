@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/perfil.css') }}">
+<link rel="stylesheet" href="{{ asset('css/aprendiz/perfil.css') }}">
 <style>
   /* Espaciado entre bloques principales dentro del contenido */
   .content-stack > * + * { margin-top: 1.25rem; } /* ~20px */

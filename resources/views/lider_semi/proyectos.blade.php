@@ -1,7 +1,7 @@
 @extends('layouts.lider_semi')
 
 @section('styles')
-<link rel="stylesheet" href="{{ asset('css/mis-proyectos.css') }}">
+<link rel="stylesheet" href="{{ asset('css/lider_semi/mis-proyectos.css') }}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 @endsection
 
@@ -9,8 +9,8 @@
 <div class="container mt-4 projects-wallpaper">
     <div class="page-header">
         <h4 class="fw-bold mb-1">Mis Proyectos</h4>
+        <p class="page-subtitle text-muted mb-0">Gestiona y supervisa todos tus semilleros activos</p>
     </div>
-    <p class="text-muted mb-4">Gestiona y supervisa todos tus semilleros activos</p>
 
     <div class="row g-4">
         @foreach($semilleros as $semillero)
@@ -49,7 +49,7 @@
                         </div>
                     </div>
 
-                    <div class="mt-3 text-center">
+                    <div class="mt-3 text-center btn-container">
                         <button type="button" class="btn btn-details w-100" data-bs-toggle="modal" data-bs-target="#detalleSemillero{{ $loop->index }}"><i class="bi bi-eye me-1"></i>Ver Detalles</button>
                     </div>
                 </div>
@@ -57,7 +57,7 @@
         </div>
 
         <div class="modal fade" id="detalleSemillero{{ $loop->index }}" tabindex="-1" aria-labelledby="detalleSemilleroLabel{{ $loop->index }}" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header brand-header">
                         <h5 class="modal-title fw-bold" id="detalleSemilleroLabel{{ $loop->index }}">{{ $semillero->nombre }}</h5>

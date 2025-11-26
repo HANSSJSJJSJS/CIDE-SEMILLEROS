@@ -26,9 +26,9 @@ class UsuarioController extends Controller
         }
 
         // FK usada en aprendices (id_usuario o user_id)
-        $aprFk = Schema::hasColumn('aprendices', 'id_usuario')
-            ? 'id_usuario'
-            : 'user_id';
+        $aprFk      = Schema::hasColumn('aprendices', 'id_usuario') ? 'id_usuario' : 'user_id';
+        // Por si en algún entorno aún no existe la tabla lideres_investigacion
+        $hasLiTable = Schema::hasTable('lideres_investigacion');
 
         $usuarios = User::query()
             // Líder de semillero
@@ -39,8 +39,10 @@ class UsuarioController extends Controller
             ->leftJoin('aprendices as ap', "ap.$aprFk", '=', 'users.id')
             ->leftJoin('semilleros as sa', 'sa.id_semillero', '=', 'ap.semillero_id')
 
-            // Líder de investigación
-            ->leftJoin('lideres_investigacion as li', 'li.user_id', '=', 'users.id')
+            // Líder de investigación (solo si existe la tabla)
+            ->when($hasLiTable, function ($q) {
+                $q->leftJoin('lideres_investigacion as li', 'li.user_id', '=', 'users.id');
+            })
 
             ->select([
                 'users.*',
@@ -56,7 +58,7 @@ class UsuarioController extends Controller
                         ELSE users.role
                     END AS role_label
                 "),
-                DB::raw('li.tiene_permisos as li_tiene_permisos'),
+                DB::raw(($hasLiTable ? 'li.tiene_permisos' : 'NULL') . ' as li_tiene_permisos'),
             ])
 
             // Filtro búsqueda

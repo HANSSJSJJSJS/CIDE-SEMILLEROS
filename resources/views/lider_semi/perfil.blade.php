@@ -1,7 +1,7 @@
 @extends('layouts.lider_semi')
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/perfil.css') }}">
+<link rel="stylesheet" href="{{ asset('css/lider_semi/perfil.css') }}">
 @endpush
 
 @section('content')
