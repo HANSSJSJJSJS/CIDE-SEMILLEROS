@@ -1,4 +1,3 @@
-// public/js/admin/usuarios.js
 (function () {
   'use strict';
 
@@ -22,6 +21,45 @@
   }
 
   // ============================================
+  // CONFIRMACIÓN ANTES DE ENVIAR (Eliminar, permisos, etc.)
+  // Usa formularios con class="needs-confirmation"
+  // ============================================
+  function attachConfirmations() {
+    document.querySelectorAll('form.needs-confirmation').forEach(form => {
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault(); // detener envío inmediato
+
+        const msg         = form.dataset.message     || '¿Deseas realizar esta acción?';
+        const confirmText = form.dataset.confirmText || 'Sí, continuar';
+        const cancelText  = form.dataset.cancelText  || 'Cancelar';
+
+        Swal.fire({
+          title: 'Confirmación requerida',
+          text: msg,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: confirmText,
+          cancelButtonText: cancelText,
+          reverseButtons: true,
+          customClass: {
+            popup: 'swal-usuarios',      // <-- en minúsculas, igual que en tu CSS
+            confirmButton: 'swal-confirmar',
+            cancelButton: 'swal-cancelar'
+          },
+          buttonsStyling: false
+        }).then((result) => {
+          if (result.isConfirmed) {
+            form.submit(); // ahora sí enviamos
+          }
+        });
+
+      });
+
+    });
+  }
+
+  // ============================================
   // PASSWORD: mostrar / ocultar + generar
   // ============================================
   function randomPassword(len = 10) {
@@ -34,21 +72,25 @@
   function attachPasswordTools(root) {
     if (!root) return;
 
+    // Mostrar / ocultar contraseña
     root.querySelectorAll('[data-toggle-pass]').forEach(btn => {
       btn.addEventListener('click', () => {
         const selector = btn.getAttribute('data-toggle-pass');
         const input    = root.querySelector(selector);
         if (!input) return;
+
         input.type = input.type === 'password' ? 'text' : 'password';
         btn.classList.toggle('active');
       });
     });
 
+    // Generar contraseña
     root.querySelectorAll('[data-generate-pass]').forEach(btn => {
       btn.addEventListener('click', () => {
         const selector = btn.getAttribute('data-generate-pass');
         const input    = root.querySelector(selector);
         if (!input) return;
+
         input.value = randomPassword();
         input.type  = 'text';
         input.focus();
@@ -57,7 +99,7 @@
   }
 
   // ============================================
-  // Helpers de bloques (mostrar / ocultar + disable)
+  // Helpers mostrar / ocultar bloques
   // ============================================
   function showBlock(block) {
     if (!block) return;
@@ -83,18 +125,23 @@
     const modal = $('#modalCrearUsuario');
     if (!modal) return;
 
-    const form         = modal.querySelector('#formCrearUsuario');
-    const roleSelect   = modal.querySelector('#select-role');
+    const form       = modal.querySelector('#formCrearUsuario');
+    const roleSelect = modal.querySelector('#select-role');
 
+    // Bloques por rol
     const boxLiderSemi = modal.querySelector('#box-lider-semillero');
     const boxLiderInv  = modal.querySelector('#box-lider-investigacion');
     const boxAprendiz  = modal.querySelector('#box-aprendiz');
 
-    const boxSena      = modal.querySelector('#box-aprendiz-sena');
-    const boxOtra      = modal.querySelector('#box-aprendiz-otra');
+    // Sub-bloques aprendiz
+    const boxSena = modal.querySelector('#box-aprendiz-sena');
+    const boxOtra = modal.querySelector('#box-aprendiz-otra');
 
+    // -----------------------------------------
+    // Manejo de requeridos según rol
+    // -----------------------------------------
     function setRequiredForRole(role) {
-      // Limpia requeridos de bloques específicos
+      // Limpiar requeridos en secciones especiales
       $$('#box-lider-semillero [name], #box-aprendiz [name]', modal)
         .forEach(i => i.removeAttribute('required'));
 
@@ -114,14 +161,14 @@
       }
 
       if (role === 'APRENDIZ') {
-        ['ap_documento', 'ap_correo_institucional', 'semillero_id'].forEach(n => {
+        ['tipo_documento', 'documento', 'semillero_id'].forEach(n => {
           const input = modal.querySelector(`[name="${n}"]`);
           if (input) input.setAttribute('required', 'required');
         });
 
         const vinc = modal.querySelector('input[name="vinculado_sena"]:checked')?.value;
         if (vinc === '1') {
-          ['ap_ficha', 'ap_programa'].forEach(n => {
+          ['ficha', 'programa'].forEach(n => {
             const input = modal.querySelector(`[name="${n}"]`);
             if (input) input.setAttribute('required', 'required');
           });
@@ -132,6 +179,9 @@
       }
     }
 
+    // -----------------------------------------
+    // Mostrar / ocultar bloques por rol
+    // -----------------------------------------
     function actualizarBloquesRol() {
       const v = roleSelect.value;
 
@@ -139,20 +189,17 @@
       hideBlock(boxLiderInv);
       hideBlock(boxAprendiz);
 
-      if (v === 'LIDER_SEMILLERO') {
-        showBlock(boxLiderSemi);
-      } else if (v === 'LIDER_INVESTIGACION') {
-        showBlock(boxLiderInv);
-      } else if (v === 'APRENDIZ') {
-        showBlock(boxAprendiz);
-      }
+      if (v === 'LIDER_SEMILLERO')      showBlock(boxLiderSemi);
+      else if (v === 'LIDER_INVESTIGACION') showBlock(boxLiderInv);
+      else if (v === 'APRENDIZ')        showBlock(boxAprendiz);
 
       setRequiredForRole(v);
     }
 
+    // -----------------------------------------
+    // Mostrar / ocultar según vinculación SENA
+    // -----------------------------------------
     function actualizarAprendizVinculo() {
-      if (!boxSena || !boxOtra) return;
-
       const vinc = modal.querySelector('input[name="vinculado_sena"]:checked')?.value;
 
       if (vinc === '1') {
@@ -167,25 +214,24 @@
     }
 
     // Eventos
-    if (roleSelect) {
-      roleSelect.addEventListener('change', actualizarBloquesRol);
-    }
+    if (roleSelect) roleSelect.addEventListener('change', actualizarBloquesRol);
 
-    modal.querySelectorAll('input[name="vinculado_sena"]').forEach(radio => {
-      radio.addEventListener('change', actualizarAprendizVinculo);
+    modal.querySelectorAll('input[name="vinculado_sena"]').forEach(r => {
+      r.addEventListener('change', actualizarAprendizVinculo);
     });
 
-    // Reset al cerrar
+    // Reset al cerrar modal
     modal.addEventListener('hidden.bs.modal', () => {
       if (form) {
         form.reset();
         form.classList.remove('was-validated');
       }
-      // Rol y bloques
+
       actualizarBloquesRol();
-      // por defecto SENA = "sí"
+
       const radioSi = modal.querySelector('input[name="vinculado_sena"][value="1"]');
       if (radioSi) radioSi.checked = true;
+
       actualizarAprendizVinculo();
     });
 
@@ -193,63 +239,47 @@
     actualizarBloquesRol();
     actualizarAprendizVinculo();
 
-    // Passwords
+    // Herramientas de password
     attachPasswordTools(modal);
   }
 
   // ============================================
-  // MODAL EDITAR USUARIO
-  // ============================================
-  function initModalEditar() {
-    const modal = $('#modalEditarUsuario');
-    if (!modal) return;
-
-    const formEditar = modal.querySelector('#formEditarUsuario');
-
-    modal.addEventListener('show.bs.modal', event => {
-      const button = event.relatedTarget;
-      if (!button) return;
-
-      const nombre      = button.getAttribute('data-nombre');
-      const apellido    = button.getAttribute('data-apellido');
-      const email       = button.getAttribute('data-email');
-      const role        = button.getAttribute('data-role');
-      const semilleroId = button.getAttribute('data-semillero-id');
-      const updateUrl   = button.getAttribute('data-update-url');
-
-      if (formEditar && updateUrl) formEditar.action = updateUrl;
-
-      $('#edit_nombre',   modal).value = nombre   || '';
-      $('#edit_apellido', modal).value = apellido || '';
-      $('#edit_email',    modal).value = email    || '';
-      $('#edit_role',     modal).value = role     || '';
-
-      if (semilleroId !== null && semilleroId !== undefined) {
-        const semSelect = $('#edit_semillero', modal);
-        if (semSelect) semSelect.value = semilleroId;
-      }
-
-      const passInput = $('#edit_password', modal);
-      if (passInput) passInput.value = '';
-
-      formEditar && formEditar.classList.remove('was-validated');
-    });
-
-    modal.addEventListener('hidden.bs.modal', () => {
-      const passInput = $('#edit_password', modal);
-      if (passInput) passInput.value = '';
-    });
-
-    attachPasswordTools(modal);
-  }
-
-  // ============================================
-  // INIT GLOBAL
+  // INIT
   // ============================================
   document.addEventListener('DOMContentLoaded', () => {
     attachValidation();
+    attachConfirmations();
     initModalCrear();
-    initModalEditar();
+    // initModalEditar();  // si luego quieres añadir el modal de editar aquí
   });
 
 })();
+
+// ============================================================
+// SWEETALERT2 – NOTIFICACIONES GLOBALES (flash success / error)
+// ============================================================
+window.swalSuccess = function (msg) {
+    Swal.fire({
+        icon: 'success',
+        title: msg,
+        timer: 2500,
+        position: 'center',
+        showConfirmButton: false,
+        customClass: {
+            popup: 'swal-Usuarios'
+        }
+    });
+};
+
+window.swalError = function (msg) {
+    Swal.fire({
+        icon: 'error',
+        title: msg,
+        timer: 2000,
+        position: 'center',
+        showConfirmButton: false,
+        customClass: {
+            popup: 'swal-Usuarios'
+        }
+    });
+};

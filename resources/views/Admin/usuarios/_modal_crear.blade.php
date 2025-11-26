@@ -83,23 +83,34 @@
           </div>
 
           {{-- LÍDER SEMILLERO --}}
-          <div id="box-lider-semillero" class="card-section d-none">
-            <div class="user-modal-section-title">
-              <i class="bi bi-people"></i> Datos del líder de semillero
-            </div>
-
-            <div class="row g-3">
-              <div class="col-md-4">
-                <label class="form-label">Tipo documento</label>
-                <input type="text" name="ls_tipo_documento" class="form-control">
-              </div>
-
-              <div class="col-md-4">
-                <label class="form-label">Documento</label>
-                <input type="text" name="ls_documento" class="form-control">
-              </div>
-            </div>
+         <div id="box-lider-semillero" class="card-section d-none">
+          <div class="user-modal-section-title">
+            <i class="bi bi-people"></i> Datos del líder de semillero
           </div>
+
+          <div class="row g-3">
+            {{-- Tipo documento --}}
+            <div class="col-md-4">
+              <label class="form-label">Tipo documento <span class="text-danger">*</span></label>
+              <select name="ls_tipo_documento" class="form-select">
+                <option value="">Seleccionar…</option>
+                <option value="CC">Cédula de ciudadanía</option>
+                <option value="TI">Tarjeta de identidad</option>
+                <option value="CE">Cédula de extranjería</option>
+                <option value="PAS">Pasaporte</option>
+              </select>
+              <div class="invalid-feedback">Selecciona un tipo de documento.</div>
+            </div>
+
+    {{-- Número de documento --}}
+    <div class="col-md-4">
+      <label class="form-label">Número de documento <span class="text-danger">*</span></label>
+      <input type="text" name="ls_documento" class="form-control">
+      <div class="invalid-feedback">Ingresa el número de documento.</div>
+    </div>
+  </div>
+</div>
+
 
           {{-- LÍDER INVESTIGACIÓN --}}
           <div id="box-lider-investigacion" class="card-section d-none">

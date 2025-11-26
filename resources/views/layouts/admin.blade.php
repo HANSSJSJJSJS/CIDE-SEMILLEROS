@@ -8,13 +8,14 @@
   <link rel="icon" type="image/png" href="{{ asset('images/logo_pestaña.png') }}">
 
   {{-- Librerías externas --}}
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script><script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   {{-- Estilos del sistema --}}
   <link href="{{ asset('css/admin-layout.css') }}?v={{ time() }}" rel="stylesheet">
-  <link href="{{ asset('css/admin-views.css') }}?v={{ time() }}" rel="stylesheet">
+
 
   @stack('styles')
   @yield('styles')
@@ -201,6 +202,31 @@
   {{-- Inyección de scripts personalizados --}}
   @stack('scripts')
   @yield('scripts')
+
+
+@if(session('success'))
+<script>
+  swalSuccess("{{ session('success') }}");
+</script>
+@endif
+
+@if(session('error'))
+<script>
+  swalError("{{ session('error') }}");
+</script>
+@endif
+
+
+
+
+
+
+
+
+
+
+
+
 
 </body>
 </html>

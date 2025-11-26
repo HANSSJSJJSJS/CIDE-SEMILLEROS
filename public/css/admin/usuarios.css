@@ -1,19 +1,18 @@
 /* ==========================================================
-   GESTIÓN DE USUARIOS → MISMO ESTILO DE GESTIÓN DE SEMILLEROS
+   GESTIÓN DE USUARIOS – Look & feel
    ========================================================== */
 
-/* Wrapper principal (fondo con imagen y padding) */
-.gestion-usuarios-wrapper,
-.semilleros-wrapper {
+/* Wrapper principal (fondo con imagen) */
+.gestion-usuarios-wrapper {
     position: relative;
     padding-bottom: 2rem;
     background-position: center center;
     background-repeat: no-repeat;
     background-size: 550px auto;
-    background-image: url("/img/bg_semilleros.png");
+    background-image: url("../../images/bg-semillero.png");
 }
 
-/* Contenedor glass para filtros y tabla */
+/* Glass general (uso opcional) */
 .glass-card {
     background: rgba(255,255,255,0.45) !important;
     backdrop-filter: blur(8px) !important;
@@ -21,7 +20,9 @@
     border: 1px solid rgba(255,255,255,0.25) !important;
 }
 
-/* Barra de búsqueda (estilo semilleros) */
+/* ==========================================================
+   BARRA DE BÚSQUEDA
+   ========================================================== */
 .search-bar-wrapper {
     background-color: #004568;
     border-radius: 50px;
@@ -37,6 +38,9 @@
     color: #fff;
     box-shadow: none;
 }
+.search-bar-wrapper input::placeholder {
+    color: rgba(255,255,255,.6);
+}
 .search-bar-wrapper button {
     border-radius: 50%;
     border: none;
@@ -48,7 +52,9 @@
     background-color: #002c41;
 }
 
-/* Botón verde Nuevo */
+/* ==========================================================
+   BOTÓN NUEVO USUARIO
+   ========================================================== */
 .btn-nuevo-semillero {
     background-color: #2d572c;
     color: #fff;
@@ -62,13 +68,17 @@
     background-color: #244822;
 }
 
-/* Tabla estilo semilleros aplicada también a usuarios */
+/* ==========================================================
+   TABLA USUARIOS
+   ========================================================== */
+
 .tabla-semilleros {
     background: transparent !important;
     border-radius: 12px !important;
     overflow: hidden;
     border: 2px solid rgba(0,0,0,0.20) !important;
 }
+
 .tabla-semilleros thead th {
     background-color: #0b2e4d !important;
     color: #ffffff !important;
@@ -81,22 +91,38 @@
 .tabla-semilleros tbody tr {
     background-color: rgba(255,255,255,0.75) !important;
 }
+
 .tabla-semilleros tbody td {
     background-color: transparent !important;
+    vertical-align: middle;
 }
 
-.tabla-semilleros.table-hover tbody tr:hover {
-    background-color: rgba(11,46,77,0.30) !important;
-    color: #fff !important;
+/* ==========================================================
+   EFECTO HOVER – OPCIÓN 3 (GLASS MODERNO)
+   ========================================================== */
+.tabla-usuarios tbody tr:hover {
+    background: rgba(255,255,255,0.92) !important;  /* Cubre fondo pero se ve suave */
+    backdrop-filter: blur(6px) !important;
+    color: #000 !important;
+    transition: all 0.25s ease;
+}
+.tabla-usuarios tbody tr:hover td,
+.tabla-usuarios tbody tr:hover a,
+.tabla-usuarios tbody tr:hover span,
+.tabla-usuarios tbody tr:hover small {
+    color: #000 !important;
 }
 
-/* Botones de acciones */
+/* ==========================================================
+   BOTONES DE ACCIONES
+   ========================================================== */
 .acciones-semilleros {
     display: inline-flex;
     gap: 6px;
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: flex-end;
 }
+
 .btn-accion-editar {
     background-color: #0b2e4d;
     color: #fff;
@@ -105,6 +131,10 @@
     font-size: .8rem;
     padding-inline: 12px;
 }
+.btn-accion-editar:hover {
+    background-color: #09314e;
+}
+
 .btn-accion-eliminar {
     background-color: #c0392b;
     color: #fff;
@@ -113,9 +143,21 @@
     font-size: .8rem;
     padding-inline: 12px;
 }
+.btn-accion-eliminar:hover {
+    background-color: #a93226;
+}
+
+.btn-accion-ver {
+    background-color: #ffffff;
+    color: #0b2e4d;
+    border-radius: 999px;
+    border: 1px solid #0b2e4d;
+    font-size: .8rem;
+    padding-inline: 12px;
+}
 
 /* ==========================================================
-   MODALES – ESTILO PERSONALIZADO (mantener)
+   MODALES – Diseño visual
    ========================================================== */
 
 .user-modal {
@@ -123,12 +165,169 @@
     border: 0;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.16);
     overflow: hidden;
+    background: #ffffff;
 }
 
+/* Header con degradado */
 .user-modal .modal-header {
     background: linear-gradient(135deg, #0b2e4d, #166534);
     color: #fff;
     border-bottom: 0;
 }
+.user-modal .modal-title {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+}
+.user-modal .btn-close {
+    filter: brightness(0) invert(1);
+}
 
-/* … (todo tu CSS de modales tal cual) … */
+/* Cuerpo */
+.user-modal .modal-body {
+    padding: 1.5rem 1.5rem 1.25rem;
+    background: #f5f7fb;
+}
+
+/* Secciones internas */
+.user-modal .card-section {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 1rem 1.1rem;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(0,0,0,0.06);
+}
+.user-modal .user-modal-section-title {
+    font-size: .9rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    margin-bottom: .6rem;
+    color: #0b2e4d;
+}
+
+/* Footer */
+.user-modal .modal-footer {
+    background: #ffffff;
+    border-top: 1px solid rgba(0,0,0,0.06);
+    padding: .75rem 1.25rem;
+}
+
+/* Botones footer */
+.btn-user-secondary {
+    background: #e5e9f2;
+    color: #0b2e4d;
+    border-radius: 999px;
+    border: none;
+    font-weight: 500;
+    padding-inline: 18px;
+}
+.btn-user-secondary:hover {
+    background: #d7dceb;
+}
+
+.btn-user-primary {
+    background: #166534;
+    color: #ffffff;
+    border-radius: 999px;
+    border: none;
+    font-weight: 600;
+    padding-inline: 20px;
+}
+.btn-user-primary:hover {
+    background: #115127;
+}
+
+/* Inputs */
+.user-modal .form-label {
+    font-size: .85rem;
+    font-weight: 600;
+}
+.user-modal .form-control,
+.user-modal .form-select {
+    font-size: .85rem;
+    border-radius: .5rem;
+}
+
+/* ==========================================================
+   SWEETALERT2 ESTILOS PERSONALIZADOS
+   ========================================================== */
+
+.swal-usuarios {
+    border-radius: 14px !important;
+    padding: 20px !important;
+    font-family: "Inter", sans-serif !important;
+}
+
+/* Botón confirmar */
+.swal-confirmar {
+    background-color: #dc3545 !important;
+    color: #fff !important;
+    padding: 8px 18px !important;
+    border-radius: 6px !important;
+    font-size: 0.95rem !important;
+    border: none !important;
+    margin: 0 6px !important;
+}
+.swal-confirmar:hover {
+    background-color: #c82333 !important;
+}
+
+/* Botón cancelar */
+.swal-cancelar {
+    background-color: #6c757d !important;
+    color: #fff !important;
+    padding: 8px 18px !important;
+    border-radius: 6px !important;
+    font-size: 0.95rem !important;
+    border: none !important;
+    margin: 0 6px !important;
+}
+.swal-cancelar:hover {
+    background-color: #5a6268 !important;
+}
+/* =========================================
+   Botones de acciones (Editar / Eliminar / Permisos)
+   ========================================= */
+.acciones-semilleros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: flex-end;
+}
+
+/* Todos los botones dentro de acciones con mismo tamaño */
+.acciones-semilleros .btn {
+    min-width: 110px;             /* mismo ancho mínimo */
+    height: 36px;                 /* misma altura */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 14px;
+    font-size: 0.8rem;
+    border-radius: 999px;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+/* En pantallas pequeñas, que se acomoden uno debajo del otro */
+@media (max-width: 576px) {
+    .acciones-semilleros {
+        justify-content: flex-start;
+    }
+
+    .acciones-semilleros .btn {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+#formFiltroUsuarios .search-bar-wrapper {
+    width: 100%;
+}
+
+#formFiltroUsuarios .btn-accion-ver {
+    min-width: 110px;
+}
