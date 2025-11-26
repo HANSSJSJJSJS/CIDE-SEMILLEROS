@@ -207,6 +207,142 @@
 }
 
 /* ===================================================================
+   MODAL EDITAR APRENDICES – Estilo de maqueta
+   =================================================================== */
+
+/* Contenedor del modal un poco más ancho y con bordes suaves */
+/* ===================================================================
+   MODAL EDITAR APRENDICES – Estilo de maqueta
+   =================================================================== */
+
+.modal {
+  z-index: 2050 !important; /* mantener el modal por encima del contenido */
+}
+
+/* Estilo base (pantallas grandes) */
+.modal-dialog.modal-lg{
+  max-width: 860px;      /* ancho intermedio similar al diseño */
+  width: 100%;           /* ancho normal dentro de la ventana */
+  margin: 1.75rem auto;  /* margen estándar superior/inferior */
+}
+
+/* Si mantienes modal-dialog-scrollable, el cuerpo puede hacer scroll interno */
+.modal-dialog-scrollable .modal-body {
+  overflow-y: auto;
+}
+
+.modal-content {
+  border-radius: 10px;
+  border: none;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.25);
+}
+
+.modal-header.brand-header{
+  border-bottom: none;
+  padding: 0.9rem 1.6rem;
+}
+
+.modal-header .modal-title{
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.modal-body{
+  padding: 2rem 1.8rem 1.4rem 1.8rem;
+}
+
+.modal-body small.text-muted{
+  display: block;
+  margin-bottom: 0.9rem;
+}
+
+.modal-body h6{
+  font-size: 0.98rem;
+}
+
+.modal-footer{
+  border-top: 1px solid rgba(15,23,42,0.06);
+  padding: 0.85rem 1.8rem;
+}
+
+.modal-footer .btn-light{
+  border-radius: 999px;
+  border-color: #d1d5db;
+  font-weight: 500;
+}
+
+.modal-footer .btn-brand{
+  border-radius: 999px;
+  font-weight: 600;
+  min-width: 170px;
+}
+
+/* =========================
+   RESPONSIVE DEL MODAL
+   ========================= */
+
+/* Tablets / pantallas medianas */
+@media (max-width: 991.98px){
+  .modal-dialog.modal-lg{
+    max-width: 700px;
+    width: 95%;
+    margin: 8vh auto;      /* más cerca del centro vertical */
+  }
+
+  .modal-body{
+    padding: 3rem 1.5rem 1.4rem 1.5rem;
+  }
+}
+
+/* Móviles grandes */
+@media (max-width: 767.98px){
+  .modal-dialog.modal-lg{
+    max-width: 100%;
+    width: 100%;
+    margin: 4vh auto;
+  }
+
+  .modal-header.brand-header{
+    padding: 0.75rem 1.2rem;
+  }
+
+  .modal-body{
+    padding: 2.2rem 1.1rem 1.2rem 1.1rem;
+  }
+
+  .modal-footer{
+    padding: 0.75rem 1.1rem;
+    flex-wrap: wrap;
+    gap: .5rem;
+  }
+
+  .modal-footer .btn-brand{
+    width: 100%;
+    min-width: 0;
+  }
+
+  .modal-footer .btn-light{
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Móviles muy pequeños */
+@media (max-width: 575.98px){
+  .modal-dialog.modal-lg{
+    margin: 2vh auto;
+  }
+
+  .modal-header .modal-title{
+    font-size: 1rem;
+  }
+
+  .modal-body h6{
+    font-size: 0.95rem;
+  }
+}
+
+/* ===================================================================
    LISTAS Y AVATARES
    =================================================================== */
 .list-group-item{ cursor:pointer; }
@@ -261,7 +397,7 @@ body{
 body::before{
   content:'';
   position:fixed;
-  top:50%;
+  top:54%;
   left:50%;
   width:650px;
   height:650px;
@@ -274,9 +410,10 @@ body::before{
 
 .projects-wallpaper{
   position:relative;
-  padding-top:32px;
-  padding-bottom:64px;
-  max-width:1100px;
+  padding-top:40px;
+  padding-bottom:72px;
+  width:100%;
+  max-width:100% !important; /* anula el max-width de .container de Bootstrap */
   margin:0 auto;
   background:transparent;
   display:flex;
@@ -295,11 +432,11 @@ body::before{
 .projects-wallpaper .row.g-4{
   display:grid !important;
   grid-template-columns:repeat(3, 1fr) !important;
-  /* Más espacio entre tarjetas como en la maqueta */
-  gap:32px 32px;
+  /* Espaciado similar a la maqueta */
+  gap:28px 32px;
   width:100%;
   padding:0;
-  margin-top:.75rem;
+  margin-top:1.25rem;
   position:relative;
   z-index:2;
 }

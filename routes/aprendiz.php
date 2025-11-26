@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AprendizController;
 use App\Http\Controllers\PerfilController;
-use App\Http\Controllers\ProyectoController;
+use App\Http\Controllers\Aprendiz\ProyectoController as AprendizProyectoController;
 use App\Http\Controllers\ArchivoController;
 
 // Rutas para el módulo Aprendiz
@@ -12,8 +12,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/aprendiz/perfil', [PerfilController::class, 'show'])->name('aprendiz.perfil');
 
     Route::prefix('aprendiz/proyectos')->group(function () {
-        Route::get('/', [ProyectoController::class, 'index'])->name('aprendiz.proyectos.index');
-        Route::get('/{proyecto}', [ProyectoController::class, 'show'])->name('aprendiz.proyectos.show');
+        Route::get('/', [AprendizProyectoController::class, 'index'])->name('aprendiz.proyectos.index');
+        Route::get('/{proyecto}', [AprendizProyectoController::class, 'show'])->name('aprendiz.proyectos.show');
     });
 
     Route::prefix('aprendiz/archivos')->group(function () {

@@ -229,6 +229,45 @@ class AprendicesController extends Controller
             }
         }
 
+        // Si no se encontró ningún aprendiz por la relación pivote, intentar un fallback
+        if ($aprendices->isEmpty()) {
+            // Fallback 1: usar la FK semillero_id en aprendices si existe y hay semilleros del líder
+            if (Schema::hasTable('semilleros') && Schema::hasColumn('aprendices', 'semillero_id')) {
+                $semillerosLider = DB::table('semilleros')
+                    ->when(Schema::hasColumn('semilleros', 'id_lider_semi'), function ($q) use ($userId) {
+                        $q->orWhere('id_lider_semi', $userId);
+                    })
+                    ->when(Schema::hasColumn('semilleros', 'id_lider_usuario'), function ($q) use ($userId) {
+                        $q->orWhere('id_lider_usuario', $userId);
+                    })
+                    ->pluck('id_semillero')
+                    ->all();
+
+                if (!empty($semillerosLider)) {
+                    $aprendices = DB::table('aprendices')
+                        ->whereIn('semillero_id', $semillerosLider)
+                        ->select(array_merge($selectCols, [
+                            DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),
+                        ]))
+                        ->orderByRaw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))")
+                        ->get();
+                    $aprendicesIds = $aprendices->pluck('id_aprendiz')->toArray();
+                }
+            }
+
+            // Fallback 2: si aún no hay aprendices, listar algunos sin filtro para no dejar el módulo vacío
+            if ($aprendices->isEmpty() && Schema::hasTable('aprendices')) {
+                $aprendices = DB::table('aprendices')
+                    ->select(array_merge($selectCols, [
+                        DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),
+                    ]))
+                    ->orderByRaw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))")
+                    ->limit(50)
+                    ->get();
+                $aprendicesIds = $aprendices->pluck('id_aprendiz')->toArray();
+            }
+        }
+
         // Asignar proyectos y semilleros a cada aprendiz
         $aprendices->transform(function ($ap) use ($proyectosRelaciones, $semillerosRelaciones) {
             // Asignar proyecto

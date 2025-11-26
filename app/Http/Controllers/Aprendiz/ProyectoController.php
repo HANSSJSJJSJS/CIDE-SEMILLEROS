@@ -21,7 +21,6 @@ class ProyectoController extends Controller
 
         // IDs de proyectos asignados al usuario (robusto sin suponer pivote fija)
         $ids = $this->proyectoIdsUsuario((int)$user->id);
-        Log::info('Aprendiz/ProyectoController@index proyectos resueltos', ['user_id' => (int)$user->id, 'ids' => $ids, 'count' => is_array($ids) ? count($ids) : 0]);
         $proyectos = empty($ids)
             ? collect([])
             : Proyecto::whereIn('id_proyecto', $ids)
