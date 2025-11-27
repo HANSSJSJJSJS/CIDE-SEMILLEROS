@@ -18,7 +18,7 @@
 
     {{-- Layout administrativo heredado y vistas --}}
     <link href="{{ asset('css/admin/admin-layout.css') }}?v={{ time() }}" rel="stylesheet">
-    <link href="{{ asset('css/admin/admin-views.css') }}?v={{ time() }}" rel="stylesheet">
+    {{-- <link href="{{ asset('css/admin/admin-views.css') }}?v={{ time() }}" rel="stylesheet"> --}}
 
     {{-- Estilos específicos del panel de Líder de Semillero --}}
     <link href="{{ asset('css/lider_semi/lider.css') }}?v={{ time() }}" rel="stylesheet">

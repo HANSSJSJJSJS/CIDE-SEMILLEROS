@@ -37,11 +37,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            /* Ilustración grande */
-            background-image: url('/images/bg-semillero.png');
-            background-repeat: no-repeat;
-            background-position: center center;
-            background-size: 70%;
         }
 
         /* === PANEL DERECHO === */

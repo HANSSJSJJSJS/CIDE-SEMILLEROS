@@ -22,6 +22,7 @@
     </div>
     <div class="container">
         <div class="left-panel">
+            <img src="{{ asset('images/logo_semillero.png') }}" alt="Logo semillero" class="login-background">
         </div>
 
         <div class="right-panel">

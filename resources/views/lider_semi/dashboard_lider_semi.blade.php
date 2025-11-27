@@ -2,9 +2,11 @@
 
 @section('content')
 <style>
-  .dash-wrap{background:#f5f8fb;padding:1rem 0}
+  .dash-wrap{background:transparent;padding:1rem 0}
   .dash-title{font-weight:800;color:#0f172a}
-  .metric-card{border:1px solid #e2e8f0;border-radius:16px;padding:18px;background:#fff;box-shadow:0 6px 20px rgba(15,23,42,.06);position:relative}
+  .metric-card{border:1px solid #e2e8f0;border-radius:16px;padding:18px;background:#fff;box-shadow:0 6px 20px rgba(15,23,42,.06);position:relative;transition:transform .12s ease,box-shadow .12s ease}
+  .metric-card.metric-link{cursor:pointer}
+  .metric-card.metric-link:hover{transform:translateY(-2px);box-shadow:0 10px 25px rgba(15,23,42,.12)}
   .metric-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
   .metric-kpi{font-size:28px;font-weight:800;color:#0f172a;margin:0}
   .metric-sub{color:#64748b;margin:0}
@@ -33,36 +35,44 @@
 
   <div class="row g-3 mb-4">
     <div class="col-md-3">
-      <div class="metric-card">
+      <a href="{{ route('lider_semi.semilleros') }}" class="text-decoration-none text-reset">
+      <div class="metric-card metric-link">
         <div class="metric-icon" style="background:#e6f6ed;color:#16a34a"><i class="bi bi-people-fill"></i></div>
-        <p class="metric-kpi">{{ $semilleros->count() }}</p>
-        <p class="metric-sub">Semilleros Activos</p>
+        <p class="metric-kpi">{{ $proyectosActivos ?? 0 }}</p>
+        <p class="metric-sub">Proyectos Activos</p>
         <span class="metric-pill pill-green">+2 este mes</span>
       </div>
+      </a>
     </div>
     <div class="col-md-3">
-      <div class="metric-card">
+      <a href="{{ route('lider_semi.aprendices') }}" class="text-decoration-none text-reset">
+      <div class="metric-card metric-link">
         <div class="metric-icon" style="background:#e0f2fe;color:#2563eb"><i class="bi bi-person-badge"></i></div>
         <p class="metric-kpi">{{ $totalAprendices }}</p>
         <p class="metric-sub">Aprendices Totales</p>
         <span class="metric-pill" style="background:#e0f2fe;color:#2563eb">+8 este mes</span>
       </div>
+      </a>
     </div>
     <div class="col-md-3">
-      <div class="metric-card">
+      <a href="{{ route('lider_semi.documentos') }}" class="text-decoration-none text-reset">
+      <div class="metric-card metric-link">
         <div class="metric-icon" style="background:#fff7e6;color:#f59e0b"><i class="bi bi-file-earmark-check"></i></div>
-        <p class="metric-kpi">{{ max(0, ($totalAprendices - $documentosPendientes)) }}</p>
-        <p class="metric-sub">Documentos Revisados</p>
-        <span class="metric-pill pill-yellow">{{ $documentosPendientes }} pendientes</span>
+        <p class="metric-kpi">{{ $documentosPendientes ?? 0 }}</p>
+        <p class="metric-sub">Documentos Pendientes</p>
+        <span class="metric-pill pill-yellow">{{ $documentosPendientes ?? 0 }} pendientes</span>
       </div>
+      </a>
     </div>
     <div class="col-md-3">
-      <div class="metric-card">
+      <a href="{{ route('lider_semi.documentos') }}" class="text-decoration-none text-reset">
+      <div class="metric-card metric-link">
         <div class="metric-icon" style="background:#e6f6ed;color:#22c55e"><i class="bi bi-graph-up-arrow"></i></div>
-        <p class="metric-kpi">{{ (int) $progresoPromedio }}%</p>
-        <p class="metric-sub">Progreso Promedio</p>
+        <p class="metric-kpi">{{ $documentosRevisados ?? 0 }}</p>
+        <p class="metric-sub">Documentos Revisados</p>
         <span class="metric-pill pill-green">+12%</span>
       </div>
+      </a>
     </div>
   </div>
 
