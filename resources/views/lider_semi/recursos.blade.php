@@ -106,7 +106,7 @@
 @push('styles')
 <style>
     .recursos-page {
-        background: #f5f7fb url('{{ asset('img/fondo_robot_semillero.png') }}') no-repeat center center;
+        background: #f5f7fb url('{{ asset('images/fondo_page.png') }}') no-repeat center center;
         background-size: contain;
         min-height: calc(100vh - 70px);
     }

@@ -2,7 +2,7 @@
 
 @section('content')
 <style>
-  .dash-wrap{background:#f5f8fb;padding:1rem 0}
+  .dash-wrap{background:transparent;padding:1rem 0}
   .dash-title{font-weight:800;color:#0f172a}
   .metric-card{border:1px solid #e2e8f0;border-radius:16px;padding:18px;background:#fff;box-shadow:0 6px 20px rgba(15,23,42,.06);position:relative;transition:transform .12s ease,box-shadow .12s ease}
   .metric-card.metric-link{cursor:pointer}

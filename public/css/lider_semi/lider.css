@@ -120,9 +120,23 @@
         .role-lider{ background: var(--sena-green); color:#fff; }
         .role-aprendiz{ background: #e9f7ec; color: var(--sena-green-dark); border-color: var(--sena-green); }
 
-        .card-metric {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
-            padding: 1.5rem;
-        }
+.card-metric {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+}
+
+.adm-content,
+.adm-page,
+.adm-page-body{
+    background: transparent !important;
+}
+
+.adm-page::before{
+    background-image: url("/images/fondo_page.png");
+    background-repeat: no-repeat;
+    background-position: center 38%;
+    background-size: clamp(520px, 60vw, 1400px) auto;
+    opacity: .55;
+}
