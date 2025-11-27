@@ -10,126 +10,181 @@
     $canDelete = $user->canManageModule('semilleros','delete');
 @endphp
 
-{{-- TÍTULO --}}
-<h3 class="fw-bold mb-2" style="color:#2d572c;">
-    Gestión de Semilleros
-</h3>
+<div class="semilleros-wrapper">
 
-{{-- BOTÓN NUEVO SEMILLERO --}}
-@if($canCreate)
-<button type="button"
-        class="btn btn-nuevo-semillero mb-3"
-        data-bs-toggle="modal"
-        data-bs-target="#modalNuevoSemillero">
-    <i class="fa fa-plus me-1"></i> Nuevo semillero
-</button>
-@endif
+    {{-- CABECERA + BOTÓN --}}
+    <div class="semilleros-header mb-3">
+        <div class="row g-3 align-items-center">
 
-{{-- MODAL CREAR --}}
-@if($canCreate)
-    @include('Admin.semilleros._modal_crear')
-@endif
+            {{-- Título / subtítulo --}}
+            <div class="col-12 col-lg-7">
+                <h3 class="fw-bold mb-1" style="color:#2d572c;">
+                    Gestión de Semilleros
+                </h3>
+                <p class="text-muted mb-0">
+                    Administra los semilleros, líneas de investigación y líderes.
+                </p>
+            </div>
 
-{{-- BARRA DE BÚSQUEDA --}}
-<form method="GET" action="{{ route('admin.semilleros.index') }}" class="mb-4">
-    <div class="search-bar-wrapper">
-        <input type="text"
-               name="q"
-               value="{{ $q }}"
-               class="form-control"
-               placeholder="Busca por semillero, línea o líder">
-        <button type="submit">
-            <i class="bi bi-search text-white fs-5"></i>
-        </button>
+            {{-- Botón nuevo semillero (alineado a la izquierda en desktop) --}}
+            <div class="col-12 col-lg-5 d-flex justify-content-start justify-content-lg-start">
+                @if($canCreate)
+                    <button type="button"
+                            class="btn btn-nuevo-semillero mt-2 mt-lg-0"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalNuevoSemillero">
+                        <i class="bi bi-people-fill me-1"></i> Nuevo semillero
+                    </button>
+                @endif
+            </div>
+        </div>
+
+        {{-- BARRA DE BÚSQUEDA --}}
+        <div class="mt-3">
+            <form method="GET"
+                  action="{{ route('admin.semilleros.index') }}"
+                  id="formFiltroSemilleros">
+                <label class="form-label fw-semibold mb-2">
+                    Buscar semillero, línea o líder
+                </label>
+                <div class="search-bar-wrapper">
+                    <input type="text"
+                           name="q"
+                           value="{{ $q }}"
+                           class="form-control"
+                           placeholder="Ej. GEDS, videojuegos, Juan Pérez">
+                    <button type="submit">
+                        <i class="bi bi-search text-white fs-5"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-</form>
 
-{{-- TABLA (GLASS) --}}
-<div class="tabla-semilleros-wrapper">
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0 tabla-semilleros">
-            <thead>
+    {{-- MODAL CREAR --}}
+    @if($canCreate)
+        @include('Admin.semilleros._modal_crear')
+    @endif
+
+    {{-- TABLA (mismo estilo que usuarios) --}}
+    <div class="tabla-semilleros-wrapper mt-2">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 tabla-semilleros">
+                <thead>
                 <tr>
-                    <th>Semillero</th>
-                    <th>Línea de investigación</th>
-                    <th>Líder</th>
-                    <th class="text-center">Acciones</th>
+                    <th class="py-3 px-4">Semillero</th>
+                    <th class="py-3">Línea de investigación</th>
+                    <th class="py-3">Líder</th>
+                    <th class="py-3 text-center">Acciones</th>
                 </tr>
-            </thead>
+                </thead>
 
-            <tbody>
-            @forelse($semilleros as $s)
-                <tr>
-                    <td>{{ $s->nombre }}</td>
-                    <td>{{ $s->linea_investigacion }}</td>
-                    <td>{{ $s->lider_nombre ? $s->lider_nombre.' ('.$s->lider_correo.')' : '—' }}</td>
+                <tbody>
+                @forelse($semilleros as $s)
+                    <tr>
+                        {{-- Nombre semillero --}}
+                        <td class="py-3 px-4">
+                            <div class="fw-semibold">{{ $s->nombre }}</div>
+                        </td>
 
-                    <td class="text-center">
-                        <div class="acciones-semilleros">
+                        {{-- Línea --}}
+                        <td class="py-3">
+                            {{ $s->linea_investigacion ?: '—' }}
+                        </td>
 
-                            {{-- EDITAR --}}
-                            @if($canUpdate)
-                            <button type="button"
-                                    class="btn btn-sm btn-accion-editar"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#modalEditarSemillero"
-                                    data-id="{{ $s->id_semillero }}">
-                                EDITAR
-                            </button>
+                        {{-- Líder --}}
+                        <td class="py-3">
+                            @if($s->lider_nombre)
+                                {{ $s->lider_nombre }}
+                                <small class="text-muted d-block">
+                                    {{ $s->lider_correo }}
+                                </small>
+                            @else
+                                <span class="text-muted">—</span>
                             @endif
+                        </td>
 
-                            {{-- ELIMINAR --}}
-                            @if($canDelete)
-                            <form action="{{ route('admin.semilleros.destroy',$s->id_semillero) }}"
-                                  method="POST"
-                                  onsubmit="return confirm('¿Eliminar este semillero?');">
-                                @csrf
-                                @method('DELETE')
-                                <button class="btn btn-sm btn-accion-eliminar">
-                                    ELIMINAR
-                                </button>
-                            </form>
-                            @endif
+                        {{-- Acciones --}}
+                        <td class="py-3 text-center">
+                            <div class="acciones-semilleros">
 
-                            {{-- VER PROYECTOS (siempre permitido) --}}
-                            <a class="btn btn-sm btn-accion-ver"
-                               href="{{ route('admin.semilleros.proyectos.index', $s->id_semillero) }}">
-                                VER PROYECTOS
-                            </a>
+                                {{-- EDITAR --}}
+                                @if($canUpdate)
+                                    <button type="button"
+                                            class="btn btn-accion-editar"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalEditarSemillero"
+                                            data-id="{{ $s->id_semillero }}">
+                                        <i class="bi bi-pencil me-1"></i> Editar
+                                    </button>
+                                @endif
 
-                        </div>
-                    </td>
-                </tr>
+                                {{-- ELIMINAR (SweetAlert) --}}
+                                @if($canDelete)
+                                    <button type="button"
+                                            class="btn btn-accion-eliminar btn-eliminar-semillero"
+                                            data-url="{{ route('admin.semilleros.destroy',$s->id_semillero) }}"
+                                            data-nombre="{{ $s->nombre }}">
+                                        <i class="bi bi-trash me-1"></i> Eliminar
+                                    </button>
+                                @endif
 
-            @empty
-                <tr>
-                    <td colspan="4" class="text-center py-4 text-muted">
-                        No hay registros
-                    </td>
-                </tr>
-            @endforelse
-            </tbody>
+                                {{-- VER PROYECTOS --}}
+                                <a class="btn btn-accion-ver"
+                                   href="{{ route('admin.semilleros.proyectos.index', $s->id_semillero) }}">
+                                    <i class="bi bi-folder2-open me-1"></i> Ver proyectos
+                                </a>
 
-        </table>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted">
+                            No hay registros
+                        </td>
+                    </tr>
+                @endforelse
+                </tbody>
+
+            </table>
+        </div>
     </div>
-</div>
 
-<div class="mt-3">
-    {{ $semilleros->links('pagination::bootstrap-5') }}
-</div>
+    {{-- PAGINACIÓN (12 por página en el controlador) --}}
+    <div class="mt-3">
+        {{ $semilleros->links('pagination::bootstrap-5') }}
+    </div>
 
-{{-- MODAL EDITAR --}}
-@if($canUpdate)
-    @include('Admin.semilleros._modal_editar')
-@endif
+    {{-- MODAL EDITAR --}}
+    @if($canUpdate)
+        @include('Admin.semilleros._modal_editar')
+    @endif
+
+</div> {{-- /.semilleros-wrapper --}}
 
 @endsection
 
-{{-- ARCHIVOS EXTERNOS --}}
+{{-- ESTILOS ESPECÍFICOS --}}
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/admin/semilleros.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/admin/semilleros.css') }}">
 @endpush
 
+{{-- SCRIPTS ESPECÍFICOS --}}
 @push('scripts')
-<script src="{{ asset('js/admin/semilleros.js') }}"></script>
+    {{-- JS principal de semilleros (aquí están swalSuccess / swalError y el buscador de líderes) --}}
+    <script src="{{ asset('js/admin/semilleros.js') }}"></script>
+
+    {{-- Lanzar alertas reutilizando el mismo estilo que Usuarios --}}
+    @if(session('success'))
+        <script>
+            swalSuccess(@json(session('success')));
+        </script>
+    @endif
+
+    @if(session('error'))
+        <script>
+            swalError(@json(session('error')));
+        </script>
+    @endif
 @endpush

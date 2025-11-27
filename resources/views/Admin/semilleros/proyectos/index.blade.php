@@ -1,6 +1,10 @@
 {{-- resources/views/admin/semilleros/proyectos/index.blade.php --}}
 @extends('layouts.admin')
 
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/admin/semilleros.css') }}">
+@endpush
+
 @section('content')
 
 @php
@@ -10,306 +14,289 @@
     $canDelete = $user->canManageModule('proyectos','delete');
 @endphp
 
-{{-- Bloques para errores del modal y reapertura automática --}}
+{{-- SI HAY ERROR EN EL MODAL DE CREAR --}}
 @if ($errors->crearProyecto->any())
-  <div class="alert alert-danger">
+<div class="alert alert-danger">
     <ul class="mb-0">
-      @foreach ($errors->crearProyecto->all() as $e)
-        <li>{{ $e }}</li>
-      @endforeach
+        @foreach ($errors->crearProyecto->all() as $e)
+            <li>{{ $e }}</li>
+        @endforeach
     </ul>
-  </div>
+</div>
 @endif
 
-@if (session('openModal') === 'modalCrearProyecto')
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      const el = document.getElementById('modalCrearProyecto');
-      if (el) new bootstrap.Modal(el).show();
-    });
-  </script>
-@endif
+<div class="container-fluid px-4 mt-4 semilleros-wrapper">
 
-<div class="container-fluid mt-4 px-4">
-  @if(session('ok'))
-    <div class="alert alert-success">{{ session('ok') }}</div>
-  @endif
-
-  {{-- Encabezado --}}
-  <div class="d-flex justify-content-between align-items-start mb-3">
-    <div>
-      <h2 class="fw-bold mb-1" style="color:#2d572c;">{{ $semillero->nombre }}</h2>
-      <div class="text-muted">
-        <div class="mb-1">
-          <strong>Línea de investigación:</strong> {{ $semillero->linea_investigacion ?? '—' }}
-        </div>
+    {{-- ================================
+         ENCABEZADO PRINCIPAL
+    ================================== --}}
+    <div class="semilleros-header d-flex flex-wrap justify-content-between align-items-start mb-4">
         <div>
-          <strong>Líder del semillero:</strong>
-          @if($semillero->lider)
-            {{ trim(($semillero->lider->nombres ?? '').' '.($semillero->lider->apellidos ?? '')) }}
-            <span class="text-muted"> · {{ $semillero->lider->correo_institucional ?? '' }}</span>
-          @else
-            <em>Sin asignar</em>
-          @endif
+            <h2 class="fw-bold mb-1" style="color:#2d572c;">
+                {{ $semillero->nombre }}
+            </h2>
+
+            <div class="text-muted small">
+                <div class="mb-1">
+                    <strong>Línea de investigación:</strong>
+                    {{ $semillero->linea_investigacion ?? '—' }}
+                </div>
+
+                <div>
+                    <strong>Líder del semillero:</strong>
+                    @if($semillero->lider)
+                        {{ trim(($semillero->lider->nombres ?? '').' '.($semillero->lider->apellidos ?? '')) }}
+                        <span class="text-muted"> · {{ $semillero->lider->correo_institucional }}</span>
+                    @else
+                        <em>Sin asignar</em>
+                    @endif
+                </div>
+            </div>
         </div>
-      </div>
+
+        <div class="mt-3 mt-md-0">
+            <a href="{{ route('admin.semilleros.index') }}" class="btn btn-accion-ver">
+                <i class="bi bi-arrow-left me-1"></i> Volver
+            </a>
+        </div>
     </div>
 
-    <a href="{{ route('admin.semilleros.index') }}" class="btn btn-accion-ver">
-      <i class="bi bi-arrow-left me-1"></i> Volver
-    </a>
-  </div>
+    {{-- ================================
+         TÍTULO PROYECTOS + BOTÓN
+    ================================== --}}
+    <div class="mb-3">
+        <h3 class="fw-bold fs-4" style="color:#2d572c;">Proyectos del semillero</h3>
 
-  {{-- Barra de acciones --}}
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0">Proyectos</h5>
+        @if($canCreate)
+            <button class="btn btn-nuevo-semillero mt-2"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalCrearProyecto">
+                <i class="bi bi-plus-lg me-1"></i> Crear proyecto
+            </button>
+        @endif
+    </div>
 
-    @if($canCreate)
-      <button class="btn btn-nuevo-semillero" data-bs-toggle="modal" data-bs-target="#modalCrearProyecto">
-        <i class="bi bi-plus-lg me-1"></i> Crear proyecto
-      </button>
-    @endif
-  </div>
-
-  {{-- Tabla --}}
-  <div class="card border-0 shadow-sm">
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="text-white" style="background-color:#2d572c;">
+    {{-- ================================
+         TABLA PROYECTOS
+    ================================== --}}
+    <div class="table-responsive mt-3">
+        <table class="table tabla-semilleros table-hover align-middle">
+            <thead>
             <tr>
-              <th class="px-3 py-3">Nombre</th>
-              <th>Estado</th>
-              <th>Inicio</th>
-              <th>Fin</th>
-              <th>Descripción</th>
-              <th class="text-end pe-3">Acciones</th>
+                <th class="px-3 py-3">Nombre</th>
+                <th>Estado</th>
+                <th>Inicio</th>
+                <th>Fin</th>
+                <th>Descripción</th>
+                <th class="text-end pe-3">Acciones</th>
             </tr>
-          </thead>
-          <tbody>
-          @forelse($proyectos as $p)
-            <tr>
-              <td class="px-3 py-3 fw-semibold">{{ $p->nombre_proyecto }}</td>
-              <td>
-                @php
-                  $map = [
-                    'EN_FORMULACION' => ['En formulación','bg-secondary'],
-                    'EN_EJECUCION'   => ['En ejecución','bg-primary'],
-                    'FINALIZADO'     => ['Finalizado','bg-success'],
-                    'ARCHIVADO'      => ['Archivado','bg-dark'],
-                  ];
-                  $b = $map[$p->estado] ?? [$p->estado,'bg-light text-dark'];
-                @endphp
-                <span class="badge {{ $b[1] }}">{{ $b[0] }}</span>
-              </td>
-              <td>{{ optional($p->fecha_inicio)->format('Y-m-d') ?? '—' }}</td>
-              <td>{{ optional($p->fecha_fin)->format('Y-m-d') ?? '—' }}</td>
-              <td class="text-truncate" style="max-width:360px;">{{ $p->descripcion }}</td>
-              <td class="text-end pe-3">
+            </thead>
 
-                {{-- Ver detalle (siempre permitido) --}}
-                <a href="{{ route('admin.semilleros.proyectos.detalle', [$semillero->id_semillero, $p->id_proyecto]) }}"
-                   class="btn btn-sm btn-accion-ver">
-                  <i class="bi bi-eye me-1"></i> Ver detalle
-                </a>
+            <tbody>
+            @forelse($proyectos as $p)
+                <tr>
+                    <td class="px-3 py-3 fw-semibold">{{ $p->nombre_proyecto }}</td>
 
-                {{-- Editar --}}
-                @if($canUpdate)
-                <button type="button"
-                        class="btn btn-sm btn-accion-editar btn-edit-proyecto"
-                        data-semillero="{{ $semillero->id_semillero }}"
-                        data-proyecto="{{ $p->id_proyecto }}">
-                  <i class="bi bi-pencil-square me-1"></i> Editar
-                </button>
-                @endif
+                    <td>
+                        @php
+                            $map = [
+                                'EN_FORMULACION' => ['En formulación','bg-secondary'],
+                                'EN_EJECUCION'   => ['En ejecución','bg-primary'],
+                                'FINALIZADO'     => ['Finalizado','bg-success'],
+                                'ARCHIVADO'      => ['Archivado','bg-dark'],
+                            ];
+                            $b = $map[$p->estado] ?? [$p->estado,'bg-light text-dark'];
+                        @endphp
+                        <span class="badge {{ $b[1] }}">{{ $b[0] }}</span>
+                    </td>
 
-                {{-- Eliminar --}}
-                @if($canDelete)
-                <form action="{{ route('admin.semilleros.proyectos.destroy', [$semillero->id_semillero, $p->id_proyecto]) }}"
-                      method="POST" class="d-inline-block"
-                      onsubmit="return confirm('¿Seguro que deseas eliminar este proyecto?');">
-                  @csrf
-                  @method('DELETE')
-                  <button class="btn btn-sm btn-accion-eliminar" type="submit">
-                    <i class="bi bi-trash me-1"></i> Eliminar
-                  </button>
-                </form>
-                @endif
+                    <td>{{ optional($p->fecha_inicio)->format('Y-m-d') ?? '—' }}</td>
+                    <td>{{ optional($p->fecha_fin)->format('Y-m-d') ?? '—' }}</td>
 
-              </td>
-            </tr>
-          @empty
-            <tr>
-              <td colspan="6" class="text-center py-5 text-muted">No hay proyectos registrados.</td>
-            </tr>
-          @endforelse
-          </tbody>
+                    <td class="text-truncate" style="max-width:360px;">
+                        {{ $p->descripcion }}
+                    </td>
+
+                    <td class="pe-3">
+                        <div class="acciones-proyecto">
+                            {{-- Ver detalle --}}
+                            <a href="{{ route('admin.semilleros.proyectos.detalle', [$semillero->id_semillero, $p->id_proyecto]) }}"
+                               class="btn btn-sm btn-accion-ver">
+                                <i class="bi bi-eye me-1"></i> Ver detalle
+                            </a>
+
+                            {{-- Editar --}}
+                            @if($canUpdate)
+                                <button type="button"
+                                        class="btn btn-sm btn-accion-editar btn-edit-proyecto"
+                                        data-semillero="{{ $semillero->id_semillero }}"
+                                        data-proyecto="{{ $p->id_proyecto }}">
+                                    <i class="bi bi-pencil-square me-1"></i> Editar
+                                </button>
+                            @endif
+
+                            {{-- Eliminar --}}
+                            @if($canDelete)
+                                <form action="{{ route('admin.semilleros.proyectos.destroy', [$semillero->id_semillero, $p->id_proyecto]) }}"
+                                      method="POST"
+                                      class="m-0 form-delete-proyecto"
+                                      data-nombre="{{ $p->nombre_proyecto }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="btn btn-sm btn-accion-eliminar" type="submit">
+                                        <i class="bi bi-trash me-1"></i> Eliminar
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        No hay proyectos registrados.
+                    </td>
+                </tr>
+            @endforelse
+            </tbody>
         </table>
-      </div>
     </div>
-  </div>
-</div>
 
-{{-- Modal crear proyecto --}}
+    {{-- PAGINACIÓN --}}
+    <div class="mt-3">
+        {{ $proyectos->links('pagination::bootstrap-5') }}
+    </div>
+
+</div> {{-- /.container-fluid --}}
+
+{{-- ============================================
+     MODAL CREAR PROYECTO
+=============================================== --}}
 @if($canCreate)
-<div class="modal fade" id="modalCrearProyecto" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <form class="modal-content" method="POST"
-          action="{{ route('admin.semilleros.proyectos.store', $semillero->id_semillero) }}">
-      @csrf
-      <div class="modal-header">
-        <h5 class="modal-title">Crear proyecto</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-      <div class="modal-body">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Estado</label>
-            <select name="estado" class="form-select @error('estado','crearProyecto') is-invalid @enderror" required>
-              @foreach(['EN_FORMULACION'=>'En formulación','EN_EJECUCION'=>'En ejecución','FINALIZADO'=>'Finalizado','ARCHIVADO'=>'Archivado'] as $val=>$txt)
-                <option value="{{ $val }}" @selected(old('estado')===$val)>{{ $txt }}</option>
-              @endforeach
-            </select>
-            @error('estado','crearProyecto') <div class="invalid-feedback">{{ $message }}</div> @enderror
-          </div>
+<div class="modal fade" id="modalCrearProyecto" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form class="modal-content" method="POST"
+              action="{{ route('admin.semilleros.proyectos.store', $semillero->id_semillero) }}">
+            @csrf
+            <div class="modal-header">
+                <h5 class="modal-title">Crear proyecto</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
 
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Nombre del proyecto</label>
-            <input type="text" name="nombre_proyecto"
-                   class="form-control @error('nombre_proyecto','crearProyecto') is-invalid @enderror"
-                   value="{{ old('nombre_proyecto') }}" required>
-            @error('nombre_proyecto','crearProyecto') <div class="invalid-feedback">{{ $message }}</div> @enderror
-          </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Estado</label>
+                        <select name="estado" class="form-select" required>
+                            @foreach(['EN_FORMULACION'=>'En formulación','EN_EJECUCION'=>'En ejecución','FINALIZADO'=>'Finalizado','ARCHIVADO'=>'Archivado'] as $v=>$t)
+                                <option value="{{ $v }}">{{ $t }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-          <div class="col-12">
-            <label class="form-label fw-semibold">Descripción</label>
-            <textarea name="descripcion" class="form-control @error('descripcion','crearProyecto') is-invalid @enderror"
-                      rows="3">{{ old('descripcion') }}</textarea>
-            @error('descripcion','crearProyecto') <div class="invalid-feedback">{{ $message }}</div> @enderror
-          </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Nombre del proyecto</label>
+                        <input type="text" name="nombre_proyecto" class="form-control" required>
+                    </div>
 
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Fecha de inicio</label>
-            <input type="date" name="fecha_inicio"
-                   class="form-control @error('fecha_inicio','crearProyecto') is-invalid @enderror"
-                   value="{{ old('fecha_inicio') }}">
-            @error('fecha_inicio','crearProyecto') <div class="invalid-feedback">{{ $message }}</div> @enderror
-          </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Descripción</label>
+                        <textarea name="descripcion" rows="3" class="form-control"></textarea>
+                    </div>
 
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Fecha fin</label>
-            <input type="date" name="fecha_fin"
-                   class="form-control @error('fecha_fin','crearProyecto') is-invalid @enderror"
-                   value="{{ old('fecha_fin') }}">
-            @error('fecha_fin','crearProyecto') <div class="invalid-feedback">{{ $message }}</div> @enderror
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cerrar</button>
-        <button class="btn btn-nuevo-semillero" type="submit">
-          <i class="bi bi-save me-1"></i> Guardar
-        </button>
-      </div>
-    </form>
-  </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Fecha de inicio</label>
+                        <input type="date" name="fecha_inicio" class="form-control">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Fecha fin</label>
+                        <input type="date" name="fecha_fin" class="form-control">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">
+                    Cerrar
+                </button>
+                <button class="btn btn-nuevo-semillero" type="submit">
+                    <i class="bi bi-save me-1"></i> Guardar
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 @endif
 
-@endsection
-
-{{-- Modal Editar Proyecto + JS solo si puede actualizar --}}
+{{-- ============================================
+     MODAL EDITAR PROYECTO
+=============================================== --}}
 @if($canUpdate)
-<div class="modal fade" id="modalEditarProyecto" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <form id="formEditarProyecto" class="modal-content" method="POST">
-      @csrf
-      @method('PUT')
-      <div class="modal-header">
-        <h5 class="modal-title">Editar proyecto</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-      <div class="modal-body">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Nombre</label>
-            <input type="text" name="nombre_proyecto" id="e_nombre" class="form-control" required>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Estado</label>
-            <select name="estado" id="e_estado" class="form-select" required>
-              <option value="EN_FORMULACION">En formulación</option>
-              <option value="EN_EJECUCION">En ejecución</option>
-              <option value="FINALIZADO">Finalizado</option>
-              <option value="ARCHIVADO">Archivado</option>
-            </select>
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Descripción</label>
-            <textarea name="descripcion" id="e_desc" class="form-control" rows="3"></textarea>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Fecha inicio</label>
-            <input type="date" name="fecha_inicio" id="e_inicio" class="form-control">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Fecha fin</label>
-            <input type="date" name="fecha_fin" id="e_fin" class="form-control">
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
-        <button class="btn btn-nuevo-semillero" type="submit">
-          <i class="bi bi-save me-1"></i> Guardar cambios
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
+<div class="modal fade" id="modalEditarProyecto" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form id="formEditarProyecto" class="modal-content" method="POST">
+            @csrf
+            @method('PUT')
 
+            <div class="modal-header">
+                <h5 class="modal-title">Editar proyecto</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Nombre</label>
+                        <input type="text" id="e_nombre" name="nombre_proyecto" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Estado</label>
+                        <select id="e_estado" name="estado" class="form-select" required>
+                            <option value="EN_FORMULACION">En formulación</option>
+                            <option value="EN_EJECUCION">En ejecución</option>
+                            <option value="FINALIZADO">Finalizado</option>
+                            <option value="ARCHIVADO">Archivado</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Descripción</label>
+                        <textarea id="e_desc" name="descripcion" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Fecha inicio</label>
+                        <input type="date" id="e_inicio" name="fecha_inicio" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Fecha fin</label>
+                        <input type="date" id="e_fin" name="fecha_fin" class="form-control">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-nuevo-semillero" type="submit">
+                    <i class="bi bi-save me-1"></i> Guardar cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
+
+{{-- ============================================
+     CONFIG JS (para el archivo externo)
+=============================================== --}}
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const modalEl = document.getElementById('modalEditarProyecto');
-  const form    = document.getElementById('formEditarProyecto');
-
-  if (!modalEl || !form) return;
-
-  const modal = new bootstrap.Modal(modalEl);
-
-  document.querySelectorAll('.btn-edit-proyecto').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const semilleroId = btn.dataset.semillero;
-      const proyectoId  = btn.dataset.proyecto;
-
-      const urlJson = `{{ url('admin/semilleros') }}/${semilleroId}/proyectos/${proyectoId}/json`;
-      const urlPut  = `{{ url('admin/semilleros') }}/${semilleroId}/proyectos/${proyectoId}`;
-
-      try {
-        const res = await fetch(urlJson, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-        if (!res.ok) throw new Error('No se pudo cargar el proyecto');
-        const p = await res.json();
-
-        document.getElementById('e_nombre').value = p.nombre_proyecto ?? '';
-        document.getElementById('e_estado').value = p.estado ?? 'EN_FORMULACION';
-        document.getElementById('e_desc').value   = p.descripcion ?? '';
-        document.getElementById('e_inicio').value = p.fecha_inicio ?? '';
-        document.getElementById('e_fin').value    = p.fecha_fin ?? '';
-
-        form.action = urlPut;
-
-        modal.show();
-      } catch (e) {
-        alert(e.message || 'Error cargando datos');
-      }
-    });
-  });
-});
+    window.proyectosSemillero = {
+        flashSuccess: @json(session('success') ?? session('ok')),
+        flashError:   @json(session('error')),
+        openCrear: {{ session('openModal') === 'modalCrearProyecto' ? 'true' : 'false' }},
+    };
 </script>
+<script src="{{ asset('js/admin/proyectos-semilleros.js') }}"></script>
 @endpush
-@endif
 
-@push('styles')
-<link rel="stylesheet" href="{{ asset('css/admin/semilleros.css') }}">
-@endpush
+@endsection
