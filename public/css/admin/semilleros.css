@@ -1,117 +1,81 @@
-/* Fondo general */
+/* ==========================================================
+   GESTIÓN DE SEMILLEROS – Look & feel
+   ========================================================== */
+
+/* Fondo general (mismo logo que antes) */
 .semilleros-wrapper {
     position: relative;
     padding-bottom: 2rem;
     background-position: center center;
     background-repeat: no-repeat;
     background-size: 550px auto;
-    background-image: url("/img/bg_semilleros.png");
+    background-image: url("../../images/bg-semillero.png");
 }
 
-/* Barra de búsqueda grande */
-.search-bar-wrapper {
+/* ================================
+   CABECERA
+   ================================ */
+.semilleros-header {
+    padding: 1.2rem 1.5rem;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.72);
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    margin-bottom: 1.4rem;
+}
+
+/* En móviles un poco menos padding */
+@media (max-width: 768px) {
+    .semilleros-header {
+        padding: 1rem 1rem;
+    }
+}
+
+/* Botón nuevo semillero full-width en móvil */
+@media (max-width: 575.98px) {
+    .semilleros-header .btn-nuevo-semillero {
+        width: 100%;
+    }
+}
+
+/* ================================
+   BARRA DE BÚSQUEDA (solo SEMILLEROS)
+   ================================ */
+.semilleros-wrapper .search-bar-wrapper {
+    width: 100%;
+    max-width: 700px;
     background-color: #004568;
     border-radius: 50px;
     padding: 4px 4px 4px 18px;
     display: flex;
     align-items: center;
+    gap: 8px;
     box-shadow: 0 2px 6px rgba(0,0,0,.15);
+    margin-top: 1rem;
+    margin-bottom: 1.4rem;
 }
-.search-bar-wrapper input {
+
+.semilleros-wrapper .search-bar-wrapper input {
+    flex: 1;
     border: none;
     background: transparent;
     box-shadow: none;
     color: #fff;
 }
-.search-bar-wrapper input::placeholder {
-    color: #d4e1ec;
+
+.semilleros-wrapper .search-bar-wrapper input::placeholder {
+    color: rgba(255,255,255,.6);
 }
-.search-bar-wrapper button {
+
+.semilleros-wrapper .search-bar-wrapper button {
     border-radius: 50%;
     border: none;
     width: 46px;
     height: 46px;
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     background-color: #002c41;
-}
-
-/* Botón verde */
-.btn-nuevo-semillero {
-    background-color: #28a745;
-    border: none;
-    border-radius: 10px;
-    font-weight: 600;
-    padding: .45rem 1.3rem;
-    color: #fff;
-}
-
-/* Efecto glass */
-.tabla-semilleros-wrapper {
-    background: rgba(255,255,255,0.80);
-    border-radius: 14px;
-    padding: .75rem 1rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,.15);
-}
-
-/* Tabla */
-.tabla-semilleros {
-    background-color: transparent;
-}
-.tabla-semilleros thead {
-    background-color: #004568;
-    color: #fff;
-}
-.tabla-semilleros th {
-    border: none;
-    font-weight: 600;
-}
-.tabla-semilleros tbody tr:nth-child(even) {
-    background-color: rgba(255,255,255,0.55);
-}
-.tabla-semilleros td {
-    border-top: 1px solid rgba(222,226,230,.6);
-    font-size: .9rem;
-}
-
-/* Botones de acciones */
-.acciones-semilleros {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: .35rem;
-}
-.acciones-semilleros .btn {
-    border-radius: 999px;
-    font-size: .75rem;
-    font-weight: 600;
-    padding: .25rem .9rem;
-    flex: 0 0 auto;
-    white-space: nowrap;
-}
-.btn-accion-editar {
-    background-color: #28a745;
-    border: none;
-    color: #fff;
-}
-.btn-accion-eliminar {
-    background-color: #dc3545;
-    border: none;
-    color: #fff;
-}
-.btn-accion-ver {
-    background-color: #0d6efd;
-    border: none;
-    color: #fff;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .acciones-semilleros {
-        flex-direction: column;
-        align-items: flex-end;
-    }
 }
 
 /* ================================
@@ -126,84 +90,24 @@
     border: none;
     box-shadow: 0 4px 10px rgba(0,0,0,0.12);
 }
+
 .btn-nuevo-semillero:hover {
     background-color: #244822;
-    color: #fff;
 }
 
 /* ================================
-   BARRA DE BÚSQUEDA
+   TABLA SEMILLEROS (glass + hover)
    ================================ */
-.search-bar-wrapper {
-    display: flex;
-    gap: 8px;
-    max-width: 520px;
-}
-.search-bar-wrapper input.form-control {
-    border-radius: 999px 0 0 999px;
-}
-.search-bar-wrapper button {
-    border-radius: 0 999px 999px 0;
-    background-color: #0b2e4d;
-    border: none;
-    padding: 0 16px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+
+.tabla-semilleros {
+    width: 100%;
+    background: transparent !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+    border: 2px solid rgba(0,0,0,0.20) !important;
 }
 
-/* ================================
-   ACCIONES DE CADA FILA
-   ================================ */
-.acciones-semilleros {
-    display: inline-flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-.btn-accion-editar {
-    background-color: #0b2e4d;
-    color: #fff;
-    border-radius: 999px;
-    border: none;
-    font-size: .8rem;
-    padding-inline: 12px;
-}
-.btn-accion-editar:hover {
-    background-color: #093047;
-    color: #fff;
-}
-
-.btn-accion-eliminar {
-    background-color: #c0392b;
-    color: #fff;
-    border-radius: 999px;
-    border: none;
-    font-size: .8rem;
-    padding-inline: 12px;
-}
-.btn-accion-eliminar:hover {
-    background-color: #a93226;
-    color: #fff;
-}
-
-.btn-accion-ver {
-    background-color: #27ae60;
-    color: #fff;
-    border-radius: 999px;
-    border: none;
-    font-size: .8rem;
-    padding-inline: 12px;
-}
-.btn-accion-ver:hover {
-    background-color: #1f8f4e;
-    color: #fff;
-}
-
-/* ================================
-   ENCABEZADO DE TABLA (SEMILLEROS)
-   ================================ */
+/* Encabezado */
 .tabla-semilleros thead th {
     background-color: #0b2e4d !important;
     color: #ffffff !important;
@@ -215,14 +119,15 @@
     letter-spacing: .03em;
 }
 
-/* ================================
-   CUERPO: MENOS TRANSLÚCIDO + BORDES
-   ================================ */
+/* Cuerpo */
 .tabla-semilleros tbody tr {
     background-color: rgba(255,255,255,0.75) !important;
 }
+
 .tabla-semilleros tbody td {
     background-color: transparent !important;
+    font-size: .9rem;
+    vertical-align: middle;
 }
 
 /* Bordes entre filas */
@@ -231,40 +136,241 @@
     border-bottom: 1.5px solid rgba(11,46,77,0.18) !important;
 }
 
-/* Bordes generales tabla */
-.tabla-semilleros {
-    border-collapse: collapse !important;
-    border-radius: 12px !important;
-    overflow: hidden;
-    border: 2px solid rgba(0,0,0,0.20) !important;
-    --bs-table-bg: transparent !important;
-}
-
-/* ================================
-   HOVER NOTORIO
-   ================================ */
+/* Hover efecto glass (NO lo tocamos, igual que antes) */
 .tabla-semilleros.table-hover tbody tr:hover {
-    background-color: rgba(11, 46, 77, 0.30) !important;
-    color: #ffffff !important;
-    transition: background-color .15s ease-in-out;
+    background: rgba(255,255,255,0.92) !important;
+    backdrop-filter: blur(6px) !important;
+    color: #000 !important;
+    transition: all 0.25s ease;
 }
-.tabla-semilleros.table-hover tbody tr:hover td {
-    color: #ffffff !important;
+
+.tabla-semilleros.table-hover tbody tr:hover td,
+.tabla-semilleros.table-hover tbody tr:hover a,
+.tabla-semilleros.table-hover tbody tr:hover span,
+.tabla-semilleros.table-hover tbody tr:hover small {
+    color: #000 !important;
 }
 
 /* ================================
-   CONTENEDOR SIN CAJA BLANCA
+   ACCIONES DE TABLA
    ================================ */
-.tabla-semilleros-wrapper,
-.tabla-semilleros-wrapper .table-responsive {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
-    padding: 0 !important;
+.acciones-semilleros {
+    display: inline-flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
-/* Evitar bordes raros de Bootstrap */
-.table {
-    --bs-table-border-color: transparent !important;
+.acciones-semilleros .btn {
+    min-width: 110px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 14px;
+    font-size: 0.8rem;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+/* EDITAR */
+.btn-accion-editar {
+    background-color: #0b2e4d;
+    color: #fff;
+}
+.btn-accion-editar:hover {
+    background-color: #093047;
+}
+
+/* ELIMINAR */
+.btn-accion-eliminar {
+    background-color: #c0392b;
+    color: #fff;
+}
+.btn-accion-eliminar:hover {
+    background-color: #a93226;
+}
+
+/* VER PROYECTOS */
+.btn-accion-ver {
+    background-color: #27ae60;
+    color: #fff;
+}
+.btn-accion-ver:hover {
+    background-color: #1f8f4e;
+}
+
+/* Responsive acciones */
+@media (max-width: 768px) {
+    .acciones-semilleros {
+        justify-content: flex-start;
+    }
+}
+
+/* ==========================================================
+   SWEETALERT2 – ESTILO UNIFICADO CON USUARIOS
+   ========================================================== */
+
+/* Popup */
+.swal2-popup {
+    border-radius: 14px !important;
+    padding: 18px 20px !important;
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+/* Título */
+.swal2-title {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    color: #0b2e4d !important;
+}
+
+/* Texto */
+.swal2-html-container {
+    font-size: 0.92rem !important;
+    color: #495057 !important;
+}
+
+/* Botón confirmar (genérico: éxito / aceptar) */
+.swal2-confirm.custom-confirm {
+    background-color: var(--blue-900, #0b2e4d) !important;
+    color: #ffffff !important;
+    border-radius: 999px !important;
+    padding: 8px 20px !important;
+    border: none !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+}
+
+/* Botón cancelar */
+.swal2-cancel.custom-cancel {
+    background-color: #6c757d !important;
+    color: #ffffff !important;
+    border-radius: 999px !important;
+    padding: 8px 20px !important;
+    border: none !important;
+    font-weight: 500 !important;
+    font-size: 0.9rem !important;
+}
+
+/* Hover */
+.swal2-confirm.custom-confirm:hover {
+    filter: brightness(1.05);
+}
+
+.swal2-cancel.custom-cancel:hover {
+    filter: brightness(1.05);
+}
+
+/* Para confirmaciones destructivas (eliminar) */
+.swal2-confirm.custom-danger {
+    background-color: #d33 !important;
+    color: #ffffff !important;
+    border-radius: 999px !important;
+    padding: 8px 20px !important;
+    border: none !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+}
+.swal2-confirm.custom-danger:hover {
+    filter: brightness(1.05);
+}
+
+/* -----------------------------
+   BOTONES OVALADOS (ESTILO SEMILLEROS)
+------------------------------*/
+
+.btn-accion-ver,
+.btn-accion-editar,
+.btn-accion-eliminar,
+.btn-nuevo-semillero {
+    border-radius: 50px !important;
+    padding: 6px 14px !important;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+}
+
+/* VER */
+.btn-accion-ver {
+    background-color: #0d5c63;
+    color: #fff;
+    border: none;
+}
+.btn-accion-ver:hover {
+    background-color: #0b4d54;
+}
+
+/* EDITAR */
+.btn-accion-editar {
+    background-color: #0a4f8a;
+    color: #fff;
+    border: none;
+}
+.btn-accion-editar:hover {
+    background-color: #083d6a;
+}
+
+/* ELIMINAR */
+.btn-accion-eliminar {
+    background-color: #a52834;
+    color: #fff;
+    border: none;}
+.btn-accion-eliminar:hover {
+    background-color: #7d1d27;
+}
+
+/* NUEVO PROYECTO */
+.btn-nuevo-semillero {
+    background-color: #2d572c;
+    color: #fff;
+    border: none;
+}
+.btn-nuevo-semillero:hover {
+    background-color: #244622;
+}
+
+/* CONTENEDOR DE ACCIONES – distribución limpia */
+.td-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    row-gap: 20px;
+    justify-content: flex-end;
+}
+
+.table tbody tr > td {
+    padding-top: 14px !important;
+    padding-bottom: 14px !important;
+}
+
+.acciones-proyecto {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px; /* Separación real entre los botones */
+}
+
+/* =========================================
+   BOTÓN DESCARGAR DOCUMENTO – Detalle proyecto
+   ========================================= */
+.btn-descargar-doc {
+    background-color: #0b2e4d;      /* azul oscuro bien contrastante */
+    color: #fff;
+    border-radius: 999px;
+    padding: 0.35rem 1.2rem;
+    font-size: 0.8rem;
+    border: none;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.btn-descargar-doc:hover {
+    background-color: #09263d;
+    color: #fff;
 }

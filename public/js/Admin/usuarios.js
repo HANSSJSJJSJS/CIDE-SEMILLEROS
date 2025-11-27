@@ -43,7 +43,7 @@
           cancelButtonText: cancelText,
           reverseButtons: true,
           customClass: {
-            popup: 'swal-usuarios',      // <-- en minúsculas, igual que en tu CSS
+            popup: 'swal-usuarios',      // <= coincide con tu CSS (.swal-usuarios)
             confirmButton: 'swal-confirmar',
             cancelButton: 'swal-cancelar'
           },
@@ -189,9 +189,9 @@
       hideBlock(boxLiderInv);
       hideBlock(boxAprendiz);
 
-      if (v === 'LIDER_SEMILLERO')      showBlock(boxLiderSemi);
+      if (v === 'LIDER_SEMILLERO')          showBlock(boxLiderSemi);
       else if (v === 'LIDER_INVESTIGACION') showBlock(boxLiderInv);
-      else if (v === 'APRENDIZ')        showBlock(boxAprendiz);
+      else if (v === 'APRENDIZ')            showBlock(boxAprendiz);
 
       setRequiredForRole(v);
     }
@@ -257,29 +257,32 @@
 
 // ============================================================
 // SWEETALERT2 – NOTIFICACIONES GLOBALES (flash success / error)
+// MISMO ESTILO QUE SEMILLEROS
 // ============================================================
 window.swalSuccess = function (msg) {
-    Swal.fire({
-        icon: 'success',
-        title: msg,
-        timer: 2500,
-        position: 'center',
-        showConfirmButton: false,
-        customClass: {
-            popup: 'swal-Usuarios'
-        }
-    });
+  Swal.fire({
+    icon: 'success',
+    title: 'Operación exitosa',
+    text: msg,
+    confirmButtonText: 'Aceptar',
+    customClass: {
+      popup: 'swal-usuarios',     // <= coincide con tu CSS
+      confirmButton: 'swal-confirmar'
+    },
+    buttonsStyling: false
+  });
 };
 
 window.swalError = function (msg) {
-    Swal.fire({
-        icon: 'error',
-        title: msg,
-        timer: 2000,
-        position: 'center',
-        showConfirmButton: false,
-        customClass: {
-            popup: 'swal-Usuarios'
-        }
-    });
+  Swal.fire({
+    icon: 'error',
+    title: 'Error',
+    text: msg,
+    confirmButtonText: 'Aceptar',
+    customClass: {
+      popup: 'swal-usuarios',
+      confirmButton: 'swal-cancelar'
+    },
+    buttonsStyling: false
+  });
 };

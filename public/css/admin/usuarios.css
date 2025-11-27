@@ -331,3 +331,62 @@
 #formFiltroUsuarios .btn-accion-ver {
     min-width: 110px;
 }
+ /* ================================
+   COLORES DE SWEETALERT2 (Usuarios)
+   ================================ */
+
+/* Contenedor general */
+.swal-usuarios {
+    border-radius: 16px !important;
+    padding: 1.4rem 1.6rem !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,.18) !important;
+}
+
+/* Tema VERDE para mensajes de éxito */
+.swal-usuarios.swal2-popup.swal2-icon-success {
+    border-left: 8px solid #27ae60 !important;
+}
+
+.swal-usuarios .swal2-success-ring,
+.swal-usuarios .swal2-success-line-tip,
+.swal-usuarios .swal2-success-line-long {
+    border-color: #27ae60 !important;
+}
+
+.swal-usuarios .swal2-title,
+.swal-usuarios .swal2-html-container {
+    color: #1d7f47 !important;
+}
+
+/* Botón verde */
+.swal-confirmar {
+    background-color: #27ae60 !important;
+    color: #fff !important;
+    padding: 8px 22px !important;
+    border-radius: 999px !important;
+    font-weight: 600 !important;
+    border: none !important;
+}
+.swal-confirmar:hover {
+    background-color: #1f8f4e !important;
+}
+
+/* ================================
+   TEMA ROJO PARA ERROR
+   ================================ */
+.swal-usuarios.swal2-popup.swal2-icon-error {
+    border-left: 8px solid #d9534f !important;
+}
+
+.swal-cancelar {
+    background-color: #d9534f !important;
+    color: #fff !important;
+    padding: 8px 22px !important;
+    border-radius: 999px !important;
+    font-weight: 600 !important;
+    border: none !important;
+}
+
+.swal-cancelar:hover {
+    background-color: #c9302c !important;
+}

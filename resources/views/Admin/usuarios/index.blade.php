@@ -67,7 +67,7 @@
     <div class="col-12 col-md-3 d-flex align-items-end">
       <div class="d-flex gap-2 flex-wrap">
         <button type="submit" class="btn btn-accion-ver">
-          <i class="bi bi-funnel me-1"></i> Filtrar
+          <i class="bi bi-search"></i> Filtrar
         </button>
 
         <a href="{{ route('admin.usuarios.index') }}" class="btn btn-accion-ver">
@@ -76,7 +76,7 @@
       </div>
     </div>
 
-    {{-- 5) BOTÓN NUEVO USUARIO (IZQUIERDA) --}}
+    {{-- 5) BOTÓN NUEVO USUARIO --}}
     <div class="col-12 mt-2 d-flex justify-content-start">
       @if($canCreate)
         <button type="button"
