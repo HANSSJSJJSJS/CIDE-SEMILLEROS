@@ -39,42 +39,73 @@ class DashboardController_semi extends Controller
         // Evitar withCount si la relación no existe en el modelo o la tabla correspondiente
         $semilleros = $query->get();
 
-        // Totales seguros con validaciones de tablas/columnas
-        $totalAprendices = 0;
-        if (Schema::hasTable('grupo_aprendices') && Schema::hasTable('grupos') && Schema::hasTable('proyectos')) {
-            // Intento de conteo si existe el esquema de grupos/proyectos
-            $proyectoIds = [];
-            if (Schema::hasColumn('proyectos', 'id_semillero') && $semilleros->isNotEmpty()) {
-                // Resolver PK real de semilleros
-                $semPk = Schema::hasColumn('semilleros','id_semillero') ? 'id_semillero' : 'id';
-                $ids = $semilleros->pluck($semPk)->all();
-                $proyectoIds = DB::table('proyectos')
-                    ->whereIn('id_semillero', $ids)
-                    ->pluck('id_proyecto')
-                    ->all();
-            }
-            if (!empty($proyectoIds)) {
-                $q = DB::table('grupo_aprendices')
-                    ->join('grupos', 'grupo_aprendices.id_grupo', '=', 'grupos.id_grupo')
-                    ->whereIn('grupos.id_proyecto', $proyectoIds)
-                    ->where('grupo_aprendices.activo', 1);
-                // Si existe id_usuario distinto/único
-                $totalAprendices = Schema::hasColumn('grupo_aprendices', 'id_usuario')
-                    ? $q->distinct('grupo_aprendices.id_usuario')->count('grupo_aprendices.id_usuario')
-                    : $q->count();
+        // Resolver IDs de semilleros del líder (según PK real).
+        // Si no hay semilleros asignados directamente, intentar usar la tabla lideres_semillero.
+        $semilleroIds = [];
+        if ($semilleros->isNotEmpty()) {
+            $semPk = Schema::hasColumn('semilleros', 'id_semillero') ? 'id_semillero' : 'id';
+            $semilleroIds = $semilleros->pluck($semPk)->all();
+        } elseif (Schema::hasTable('lideres_semillero') && Schema::hasColumn('lideres_semillero', 'id_semillero')) {
+            $semilleroIds = DB::table('lideres_semillero')
+                ->where('id_lider_semi', $userId)
+                ->whereNotNull('id_semillero')
+                ->pluck('id_semillero')
+                ->all();
+
+            if (!empty($semilleroIds)) {
+                $semilleros = DB::table('semilleros')
+                    ->whereIn('id_semillero', $semilleroIds)
+                    ->get();
             }
         }
 
-        // Documentos pendientes si existe el esquema
-        $documentosPendientes = 0;
-        if (class_exists(Documento::class) && Schema::hasTable('documentos')) {
-            $documentosQuery = Documento::query();
-            if (Schema::hasColumn('documentos', 'estado')) {
-                $documentosQuery->where(function($q) {
-                    $q->whereNull('estado')->orWhere('estado', 'PENDIENTE');
-                });
+        // Proyectos activos del líder (por sus semilleros)
+        $proyectosActivos = 0;
+        $proyectoIds = [];
+        if (!empty($semilleroIds) && Schema::hasTable('proyectos') && Schema::hasColumn('proyectos', 'id_semillero')) {
+            $proyectosQuery = DB::table('proyectos')->whereIn('id_semillero', $semilleroIds);
+            if (Schema::hasColumn('proyectos', 'estado')) {
+                // Aceptar variantes de mayúsculas/minúsculas
+                $proyectosQuery->whereIn(DB::raw('UPPER(estado)'), ['ACTIVO']);
             }
-            $documentosPendientes = $documentosQuery->count();
+            $proyectoIds = $proyectosQuery->pluck('id_proyecto')->all();
+            $proyectosActivos = count($proyectoIds);
+        }
+
+        // Total de aprendices: usar relación directa aprendices.semillero_id
+        $totalAprendices = 0;
+        if (!empty($semilleroIds) && Schema::hasTable('aprendices') && Schema::hasColumn('aprendices', 'semillero_id')) {
+            $totalAprendices = DB::table('aprendices')
+                ->whereIn('semillero_id', $semilleroIds)
+                ->count();
+        }
+
+        // Documentos pendientes y revisados (toda la tabla 'documentos')
+        $documentosPendientes = 0;
+        $documentosRevisados = 0;
+        if (Schema::hasTable('documentos')) {
+            $docsBase = DB::table('documentos');
+
+            if (Schema::hasColumn('documentos', 'estado')) {
+                // Pendientes: estado NULL, vacío o 'pendiente' (ignorando espacios y mayúsculas)
+                $documentosPendientes = (clone $docsBase)
+                    ->where(function ($q) {
+                        $q->whereNull('estado')
+                          ->orWhere('estado', '=','')
+                          ->orWhere(DB::raw("TRIM(UPPER(estado))"), 'PENDIENTE');
+                    })
+                    ->count();
+
+                // Revisados: 'aprobado' o 'rechazado' (ignorando espacios y mayúsculas)
+                $documentosRevisados = (clone $docsBase)
+                    ->whereIn(DB::raw("TRIM(UPPER(estado))"), ['APROBADO', 'RECHAZADO'])
+                    ->count();
+            } else {
+                // Si no hay columna estado, considerar todos como "revisados" para no dejar en cero
+                $totalDocs = $docsBase->count();
+                $documentosRevisados = $totalDocs;
+                $documentosPendientes = 0;
+            }
         }
 
         // Progreso promedio: calcular desde semilleros si existe la columna
@@ -89,8 +120,10 @@ class DashboardController_semi extends Controller
         return view('lider_semi.dashboard_lider_semi', compact(
             'lider',
             'semilleros',
+            'proyectosActivos',
             'totalAprendices',
             'documentosPendientes',
+            'documentosRevisados',
             'progresoPromedio',
             'actividadReciente'
         ));
