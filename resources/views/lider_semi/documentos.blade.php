@@ -152,7 +152,7 @@
             </div>
         </form>
     </div>
-    
+
 </div>
 
 <!-- Modal Registrar Evidencia -->
@@ -394,16 +394,21 @@ function cargarEntregas(proyectoId) {
                 let hayActualizadas = false;
                 data.entregas.forEach(entrega => {
                     console.log('Entrega:', entrega); // Debug
-                    const sinArchivo = !entrega.ruta_archivo;
+                    const tieneArchivo = !!(entrega.ruta_archivo && String(entrega.ruta_archivo).trim() !== '');
+                    const sinArchivo = !tieneArchivo;
                     const estadoBadge = entrega.estado === 'pendiente' ? 'badge-pendiente' :
                                        entrega.estado === 'aprobado' ? 'badge-aprobado' : 'badge-rechazado';
                     // Si aún no hay archivo, mostrar 'SIN ENTREGAR' aunque el estado sea 'pendiente'
-                    const estadoTexto = sinArchivo && entrega.estado === 'pendiente'
+                    let estadoTexto = sinArchivo && entrega.estado === 'pendiente'
                         ? 'SIN ENTREGAR'
                         : (entrega.estado === 'pendiente' ? 'PENDIENTE'
                            : (entrega.estado === 'aprobado' ? 'APROBADO' : 'RECHAZADO'));
 
-                    const flagActualizada = entrega.recien_actualizada === true || entrega.recien_actualizada === 1 || entrega.recien_actualizada === '1';
+                    const flagActualizada = (entrega.recien_actualizada === true || entrega.recien_actualizada === 1 || entrega.recien_actualizada === '1') && tieneArchivo;
+                    // Si estaba RECHAZADO pero el aprendiz la actualizó, mostrar texto 'REENVIADO'
+                    if (flagActualizada && entrega.estado === 'rechazado') {
+                        estadoTexto = 'REENVIADO';
+                    }
                     if (flagActualizada) {
                         hayActualizadas = true;
                     }
@@ -431,7 +436,7 @@ function cargarEntregas(proyectoId) {
                             </div>
                             <p class="entrega-descripcion">${entrega.descripcion || 'Sin descripción'}</p>
                             <div class="entrega-acciones">
-                                ${(entrega.archivo_url && entrega.archivo_url !== '' && entrega.archivo_url !== 'null') ? `
+                                ${(tieneArchivo && entrega.archivo_url && entrega.archivo_url !== '' && entrega.archivo_url !== 'null') ? `
                                     <button class="btn-ver-documento" onclick="verDocumento('${entrega.archivo_url}')">
                                         <i class="fas fa-file-alt"></i> Ver Documento
                                     </button>
@@ -440,14 +445,19 @@ function cargarEntregas(proyectoId) {
                                         <i class="fas fa-file-alt"></i> Sin Archivo
                                     </button>
                                 `}
-                                ${entrega.estado === 'pendiente' ? `
+                                ${(entrega.estado !== 'aprobado' && tieneArchivo) ? `
                                     <button class="btn-aprobar" onclick="cambiarEstadoEntrega(${entrega.id}, 'aprobado')">
                                         Aprobar
                                     </button>
                                     <button class="btn-rechazar" onclick="abrirModalMotivoRechazo(${entrega.id})">
                                         Rechazar
                                     </button>
-                                ` : ''}
+                                ` : `
+                                    ${!tieneArchivo ? `
+                                        <button class="btn-aprobar" disabled style="opacity:0.5; cursor:not-allowed;">Aprobar</button>
+                                        <button class="btn-rechazar" disabled style="opacity:0.5; cursor:not-allowed;">Rechazar</button>
+                                    ` : ''}
+                                `}
                             </div>
                         </div>
                     `;

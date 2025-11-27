@@ -46,14 +46,44 @@
             <div class="card shadow-sm upload-card">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="fas fa-cloud-upload-alt"></i> Subir Nuevo Documento</h5>
-                </div>
+                                    </div>
                 <div class="card-body">
-                    <form id="formUploadDoc" action="{{ route('aprendiz.documentos.store') }}" method="POST" enctype="multipart/form-data">
+                    <form id="formUploadDoc" action="{{ route('aprendiz.documentos.store') }}" method="POST" enctype="multipart/form-data" data-uploadassigned-url-template="{{ route('aprendiz.documentos.uploadAssigned', ['id' => ':ID']) }}">
                         @csrf
+
+                        @if(isset($pendientesAsignadas) && $pendientesAsignadas->isNotEmpty())
+                        <div class="mb-3">
+                            <label for="evidencia_asignada" class="form-label">Evidencia asignada (opcional)</label>
+                            <select id="evidencia_asignada" class="form-select">
+                                <option value="">— Selecciona la evidencia a subir —</option>
+                                @foreach($pendientesAsignadas->sortBy('fecha_limite') as $pend)
+                                    @php
+                                        $t = strtolower(trim((string)($pend->tipo_documento ?? $pend->tipo_archivo ?? '')));
+                                        $acceptForThis = 'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/*,text/plain,text/csv,application/zip,application/x-rar-compressed';
+                                        $labelForThis = strtoupper($t ?: 'ARCHIVO');
+                                        if (in_array($t, ['pdf'], true)) { $acceptForThis = '.pdf,application/pdf'; $labelForThis = 'Archivo PDF (.pdf)'; }
+                                        elseif (in_array($t, ['doc','docx','word','documento'], true)) { $acceptForThis = '.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'; $labelForThis = 'Documento Word (.doc, .docx)'; }
+                                        elseif (in_array($t, ['ppt','pptx','presentacion','presentación'], true)) { $acceptForThis = '.ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation'; $labelForThis = 'Presentación PowerPoint (.ppt, .pptx)'; }
+                                        elseif (in_array($t, ['img','imagen','image'], true)) { $acceptForThis = 'image/*'; $labelForThis = 'Imagen (JPG, PNG, GIF)'; }
+                                        elseif (in_array($t, ['video','mp4','avi','mov','mkv'], true)) { $acceptForThis = 'video/*'; $labelForThis = 'Video (MP4, AVI, MOV, MKV)'; }
+                                        elseif (in_array($t, ['enlace','link','url'], true)) { $labelForThis = 'Enlace (URL)'; }
+                                    @endphp
+                                    <option value="{{ $pend->id_documento }}"
+                                            data-proyecto="{{ $pend->id_proyecto }}"
+                                            data-accept="{{ $acceptForThis }}"
+                                            data-tipo="{{ $t }}"
+                                            data-label="{{ $labelForThis }}">
+                                        {{ $pend->nombre_proyecto ?? 'Proyecto' }} — {{ $pend->documento ?? 'Evidencia' }} {{ !empty($pend->fecha_limite) ? '(' . \Carbon\Carbon::parse($pend->fecha_limite)->format('Y-m-d') . ')' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <small class="text-muted">Si eliges una evidencia, el archivo se subirá directamente a esa asignación.</small>
+                        </div>
+                        @endif
 
                         <div class="mb-3">
                             <label for="id_proyecto" class="form-label">Proyecto *</label>
-                            <select name="id_proyecto" id="id_proyecto" class="form-select @error('id_proyecto') is-invalid @enderror" required @if(empty($pendientesAsignadas) || $pendientesAsignadas->isEmpty()) disabled @endif>
+                            <select name="id_proyecto" id="id_proyecto" class="form-select @error('id_proyecto') is-invalid @enderror" required>
                                 <option value="">Selecciona un proyecto</option>
                                 @foreach($proyectos as $proyecto)
                                     <option value="{{ $proyecto->id_proyecto }}" {{ (string)request('proyecto') === (string)$proyecto->id_proyecto ? 'selected' : '' }}>{{ $proyecto->nombre_proyecto }}</option>
@@ -110,20 +140,16 @@
                                 <div class="dz-content">
                                     <i class="bi bi-file-earmark-arrow-up"></i>
                                     <div class="fw-bold">
-                                        @if($tipoAsignado && $tipoAsignado !== 'enlace')
-                                            Arrastra aquí tu {{ strtolower($labelTipoAsignado) }}
-                                        @else
-                                            Arrastra archivo aquí
-                                        @endif
+                                        <span id="dz-title-generic" @if($tipoAsignado) style="display:none" @endif>Arrastra archivo aquí</span>
+                                        <span id="dz-title-assigned" @if(!$tipoAsignado) style="display:none" @endif>
+                                            Arrastra aquí tu <span id="dz-title-assigned-label">{{ strtolower($labelTipoAsignado ?? '') }}</span>
+                                        </span>
                                     </div>
                                     <small>
-                                        @if($tipoAsignado === 'enlace')
-                                            Para la evidencia asignada se requiere un <strong>enlace (URL)</strong>. Este campo es solo para archivos físicos.
-                                        @elseif($tipoAsignado)
-                                            Tipo asignado por tu líder: <strong>{{ $labelTipoAsignado }}</strong>.
-                                        @else
-                                            O haz clic para seleccionar archivo
-                                        @endif
+                                        <span id="dz-note-generic" @if($tipoAsignado) style="display:none" @endif>O haz clic para seleccionar archivo</span>
+                                        <span id="dz-note-assigned" @if(!$tipoAsignado) style="display:none" @endif>
+                                            Tipo asignado por tu líder: <strong id="dz-assigned-label">{{ $labelTipoAsignado }}</strong>.
+                                        </span>
                                     </small>
                                 </div>
                                 <input type="file"
@@ -131,15 +157,16 @@
                                        id="archivo"
                                        accept="{{ $acceptTipos }}"
                                        class="dropzone-input @error('archivo') is-invalid @enderror"
-                                       @if(empty($pendientesAsignadas) || $pendientesAsignadas->isEmpty()) disabled @else required @endif>
+                                       required>
                             </div>
                             <small class="text-muted">
-                                @if($tipoAsignado && $tipoAsignado !== 'enlace')
-                                    Para la evidencia asignada se espera un archivo de tipo:
-                                    <strong>{{ $labelTipoAsignado }}</strong>. Tamaño máximo: 10MB.
-                                @else
+                                <span id="dz-expected-generic" @if($tipoAsignado) style="display:none" @endif>
                                     Tipos permitidos: PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, Imágenes, TXT, CSV, ZIP/RAR. Tamaño máximo: 10MB.
-                                @endif
+                                </span>
+                                <span id="dz-expected-assigned" @if(!$tipoAsignado) style="display:none" @endif>
+                                    Para la evidencia asignada se espera un archivo de tipo:
+                                    <strong id="dz-expected-label">{{ $labelTipoAsignado }}</strong>. Tamaño máximo: 10MB.
+                                </span>
                             </small>
                             @error('archivo')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
@@ -154,7 +181,7 @@
                             @enderror
                         </div>
 
-                        <button type="submit" class="btn btn-success w-100" @if(empty($pendientesAsignadas) || $pendientesAsignadas->isEmpty()) disabled @endif>
+                        <button type="submit" class="btn btn-success w-100">
                             <i class="fas fa-upload"></i> Subir Documento
                         </button>
                     </form>
@@ -163,9 +190,12 @@
         </div>
 
         <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header">
+            <div class="card shadow-sm @if(isset($pendientesAsignadas) && $pendientesAsignadas->isNotEmpty()) border border-success @endif">
+                <div class="card-header @if(isset($pendientesAsignadas) && $pendientesAsignadas->isNotEmpty()) bg-success text-white @endif d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-info-circle"></i> Información</h5>
+                    @if(isset($pendientesAsignadas) && $pendientesAsignadas->isNotEmpty())
+                        <span class="badge bg-light text-success">{{ $pendientesAsignadas->count() }} pendiente(s)</span>
+                    @endif
                 </div>
                 <div class="card-body">
                     <p><strong>Aprendiz:</strong> {{ $aprendiz->nombre_completo }}</p>
@@ -173,21 +203,29 @@
                     <p><strong>Documentos subidos:</strong> {{ $documentos->count() }}</p>
 
                     @if(isset($pendientesAsignadas) && $pendientesAsignadas->isNotEmpty())
-                        <hr>
-                        <h6>Información de las evidencias asignadas pendientes:</h6>
-                        <ul class="small mb-0">
+                        <hr class="border-success">
+                        <h6 class="mb-3 text-success"><i class="fas fa-exclamation-triangle me-1"></i> Evidencias asignadas pendientes</h6>
+                        <ul class="small mb-0 list-unstyled">
                             @foreach($pendientesAsignadas->sortBy('fecha_limite') as $pendiente)
-                                <li class="mb-2">
-                                    <div><strong>Proyecto:</strong> {{ $pendiente->nombre_proyecto ?? '—' }}</div>
-                                    <div><strong>Título:</strong> {{ $pendiente->documento ?? '—' }}</div>
-                                    <div><strong>Descripción:</strong> {{ $pendiente->descripcion ?? '—' }}</div>
-                                    <div>
-                                        <strong>Fecha límite:</strong>
-                                        @if(!empty($pendiente->fecha_limite))
-                                            {{ \Carbon\Carbon::parse($pendiente->fecha_limite)->format('Y-m-d') }}
-                                        @else
-                                            —
-                                        @endif
+                                <li class="mb-2 pend-item" data-evid="{{ $pendiente->id_documento }}" style="cursor:pointer;">
+                                    <div class="p-2 rounded border border-success bg-success bg-opacity-10 pend-card" data-card-id="{{ $pendiente->id_documento }}">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <div class="small text-muted">ID: {{ $pendiente->id_documento }}</div>
+                                            <button type="button" class="btn btn-sm btn-success seleccionar-evidencia" data-evid="{{ $pendiente->id_documento }}">
+                                                Seleccionar
+                                            </button>
+                                        </div>
+                                        <div><strong>Proyecto:</strong> {{ $pendiente->nombre_proyecto ?? '—' }}</div>
+                                        <div><strong>Título:</strong> {{ $pendiente->documento ?? '—' }}</div>
+                                        <div><strong>Descripción:</strong> {{ $pendiente->descripcion ?? '—' }}</div>
+                                        <div>
+                                            <strong>Fecha límite:</strong>
+                                            @if(!empty($pendiente->fecha_limite))
+                                                {{ \Carbon\Carbon::parse($pendiente->fecha_limite)->format('Y-m-d') }}
+                                            @else
+                                                —
+                                            @endif
+                                        </div>
                                     </div>
                                 </li>
                             @endforeach
@@ -204,104 +242,6 @@
             </div>
         </div>
     </div>
-
-    {{-- Sección de Evidencias Asignadas Pendientes (subida por evidencia) --}}
-    @if(isset($pendientesAsignadas) && $pendientesAsignadas->isNotEmpty())
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-tasks"></i> Evidencias Asignadas Pendientes</h5>
-                        <span class="badge bg-primary">{{ $pendientesAsignadas->count() }} pendiente(s)</span>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            @foreach($pendientesAsignadas->sortBy('fecha_limite') as $pendiente)
-                                @php
-                                    $tBase = strtolower(trim((string)($pendiente->tipo_documento ?? $pendiente->tipo_archivo ?? '')));
-                                    if (in_array($tBase, ['doc','docx','word','documento'], true)) {
-                                        $tBase = 'word';
-                                    } elseif (in_array($tBase, ['ppt','pptx','presentacion','presentación'], true)) {
-                                        $tBase = 'presentacion';
-                                    } elseif (in_array($tBase, ['img','imagen','image'], true)) {
-                                        $tBase = 'imagen';
-                                    } elseif (in_array($tBase, ['link','enlace','url'], true)) {
-                                        $tBase = 'enlace';
-                                    }
-
-                                    $acceptByTipo = [
-                                        'pdf'          => '.pdf,application/pdf',
-                                        'word'         => '.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                                        'presentacion' => '.ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                                        'imagen'       => 'image/*',
-                                        'video'        => 'video/*',
-                                    ];
-                                    $acceptForThis = $acceptByTipo[$tBase] ?? 'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/*,text/plain,text/csv,application/zip,application/x-rar-compressed';
-                                @endphp
-                                <div class="col-md-6">
-                                    <div class="card h-100 border-start border-4 border-primary">
-                                        <div class="card-body d-flex flex-column">
-                                            <div class="mb-2">
-                                                <div class="fw-semibold">{{ $pendiente->documento ?? 'Evidencia' }}</div>
-                                                <div class="small text-muted">Proyecto: {{ $pendiente->nombre_proyecto ?? '—' }}</div>
-                                                @if(!empty($pendiente->descripcion))
-                                                    <div class="small text-muted">{{ $pendiente->descripcion }}</div>
-                                                @endif
-                                                <div class="small text-muted">
-                                                    <strong>Fecha límite:</strong>
-                                                    @if(!empty($pendiente->fecha_limite))
-                                                        {{ \Carbon\Carbon::parse($pendiente->fecha_limite)->format('Y-m-d') }}
-                                                    @else
-                                                        —
-                                                    @endif
-                                                </div>
-                                                <div class="small mt-1">
-                                                    <strong>Tipo requerido:</strong>
-                                                    @if($tBase === 'enlace')
-                                                        Enlace (URL)
-                                                    @elseif($tBase === 'pdf')
-                                                        Archivo PDF (.pdf)
-                                                    @elseif($tBase === 'word')
-                                                        Documento Word (.doc, .docx)
-                                                    @elseif($tBase === 'presentacion')
-                                                        Presentación (.ppt, .pptx)
-                                                    @elseif($tBase === 'imagen')
-                                                        Imagen (JPG, PNG, GIF)
-                                                    @elseif($tBase === 'video')
-                                                        Video (MP4, AVI, MOV, MKV)
-                                                    @else
-                                                        Otro tipo de archivo
-                                                    @endif
-                                                </div>
-                                            </div>
-
-                                            <form class="mt-2 pending-upload-form" method="POST" action="{{ route('aprendiz.documentos.uploadAssigned', $pendiente->id_documento) }}" enctype="multipart/form-data">
-                                                @csrf
-                                                @if($tBase === 'enlace')
-                                                    <div class="mb-2">
-                                                        <label class="form-label small mb-1">Enlace de la evidencia (URL)</label>
-                                                        <input type="url" name="link_url" class="form-control form-control-sm" placeholder="https://..." required>
-                                                    </div>
-                                                @else
-                                                    <div class="mb-2">
-                                                        <label class="form-label small mb-1">Archivo de evidencia</label>
-                                                        <input type="file" name="archivo" class="form-control form-control-sm" accept="{{ $acceptForThis }}" required>
-                                                    </div>
-                                                @endif
-                                                <button type="submit" class="btn btn-sm btn-primary mt-auto">
-                                                    <i class="fas fa-upload"></i> Subir a esta evidencia
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endif
 
     {{-- Lista de documentos subidos --}}
     <div class="row">
@@ -415,6 +355,18 @@ document.addEventListener('DOMContentLoaded', function(){
   const dz = form.querySelector('.dropzone-box');
   const input = form.querySelector('#archivo');
   const dzText = form.querySelector('.dz-content .fw-bold');
+  const proyectoSelect = document.getElementById('id_proyecto');
+  const evidenciaSelect = document.getElementById('evidencia_asignada');
+  const urlTemplate = form.getAttribute('data-uploadassigned-url-template');
+  const dzTitleGeneric = document.getElementById('dz-title-generic');
+  const dzTitleAssigned = document.getElementById('dz-title-assigned');
+  const dzTitleAssignedLabel = document.getElementById('dz-title-assigned-label');
+  const dzNoteGeneric = document.getElementById('dz-note-generic');
+  const dzNoteAssigned = document.getElementById('dz-note-assigned');
+  const dzAssignedLabel = document.getElementById('dz-assigned-label');
+  const dzExpectedGeneric = document.getElementById('dz-expected-generic');
+  const dzExpectedAssigned = document.getElementById('dz-expected-assigned');
+  const dzExpectedLabel = document.getElementById('dz-expected-label');
   if (dz && input){
     dz.addEventListener('click', function(e){
       if (e.target !== input) { input.click(); }
@@ -423,7 +375,92 @@ document.addEventListener('DOMContentLoaded', function(){
       if (input.files && input.files.length > 0 && dzText){ dzText.textContent = input.files[0].name; }
     });
   }
+
+  // Permitir seleccionar haciendo clic en las tarjetas del listado de pendientes
+  document.querySelectorAll('li.pend-item').forEach(function(li){
+    li.addEventListener('click', function(){
+      const id = this.getAttribute('data-evid');
+      if (!id || !evidenciaSelect) return;
+      evidenciaSelect.value = id;
+      evidenciaSelect.dispatchEvent(new Event('change'));
+      // Desplazar al formulario de subida y enfocar input de archivo
+      form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTimeout(()=>{ if (input) input.focus(); }, 300);
+    });
+  });
+
+  // Botón explícito Seleccionar
+  document.querySelectorAll('.seleccionar-evidencia').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      const id = this.getAttribute('data-evid');
+      if (!id || !evidenciaSelect) return;
+      evidenciaSelect.value = id;
+      evidenciaSelect.dispatchEvent(new Event('change'));
+      form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTimeout(()=>{ if (input) input.focus(); }, 300);
+    });
+  });
+
+  // Cambiar modo del formulario según evidencia seleccionada
+  if (evidenciaSelect) {
+    evidenciaSelect.addEventListener('change', function(){
+      const id = this.value;
+      if (id) {
+        const opt = this.selectedOptions[0];
+        const proj = opt.getAttribute('data-proyecto');
+        const accept = opt.getAttribute('data-accept');
+        const label = opt.getAttribute('data-label') || '';
+        if (proyectoSelect && proj) {
+          proyectoSelect.value = proj;
+          proyectoSelect.disabled = true;
+        }
+        if (input && accept) {
+          input.setAttribute('accept', accept);
+        }
+        if (urlTemplate) {
+          form.setAttribute('action', urlTemplate.replace(':ID', id));
+          form.dataset.mode = 'assigned';
+        }
+        // Mostrar mensajes de tipo asignado
+        if (dzTitleGeneric) dzTitleGeneric.style.display = 'none';
+        if (dzNoteGeneric) dzNoteGeneric.style.display = 'none';
+        if (dzExpectedGeneric) dzExpectedGeneric.style.display = 'none';
+        if (dzTitleAssigned) dzTitleAssigned.style.display = '';
+        if (dzNoteAssigned) dzNoteAssigned.style.display = '';
+        if (dzExpectedAssigned) dzExpectedAssigned.style.display = '';
+        if (dzTitleAssignedLabel) dzTitleAssignedLabel.textContent = (label || '').toLowerCase();
+        if (dzAssignedLabel) dzAssignedLabel.textContent = label;
+        if (dzExpectedLabel) dzExpectedLabel.textContent = label;
+        // Marcar visualmente la tarjeta seleccionada
+        document.querySelectorAll('.pend-card').forEach(el => { el.style.boxShadow = ''; el.style.borderWidth='1px'; });
+        const card = document.querySelector(`.pend-card[data-card-id="${id}"]`);
+        if (card) { card.style.boxShadow = '0 0 0 2px #198754 inset'; card.style.borderWidth='2px'; }
+      } else {
+        // Volver a modo general
+        if (proyectoSelect) { proyectoSelect.disabled = false; }
+        if (input) {
+          input.setAttribute('accept', '{{ $acceptTipos }}');
+        }
+        form.setAttribute('action', "{{ route('aprendiz.documentos.store') }}");
+        delete form.dataset.mode;
+        // Volver a mensajes genéricos
+        if (dzTitleGeneric) dzTitleGeneric.style.display = '';
+        if (dzNoteGeneric) dzNoteGeneric.style.display = '';
+        if (dzExpectedGeneric) dzExpectedGeneric.style.display = '';
+        if (dzTitleAssigned) dzTitleAssigned.style.display = 'none';
+        if (dzNoteAssigned) dzNoteAssigned.style.display = 'none';
+        if (dzExpectedAssigned) dzExpectedAssigned.style.display = 'none';
+        if (dzTitleAssignedLabel) dzTitleAssignedLabel.textContent = '';
+        document.querySelectorAll('.pend-card').forEach(el => { el.style.boxShadow = ''; el.style.borderWidth='1px'; });
+      }
+    });
+  }
   form.addEventListener('submit', async function(e){
+    // Si es subida a evidencia asignada, dejar submit normal (no AJAX)
+    if (form.dataset.mode === 'assigned') {
+      return true;
+    }
     try{
       e.preventDefault();
       const btn = form.querySelector('button[type="submit"]');

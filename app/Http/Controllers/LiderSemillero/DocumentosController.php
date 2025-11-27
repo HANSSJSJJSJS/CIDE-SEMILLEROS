@@ -329,6 +329,10 @@ class DocumentosController extends Controller
             if (Schema::hasColumn('documentos', 'estado')) {
                 $dataToInsert['estado'] = 'pendiente';
             }
+            // Inicializar marca de rechazo si existe la columna
+            if (Schema::hasColumn('documentos', 'rechazado_en')) {
+                $dataToInsert['rechazado_en'] = null;
+            }
             if (Schema::hasColumn('documentos', 'tipo_documento')) {
                 $dataToInsert['tipo_documento'] = $request->tipo_evidencia;
             }
@@ -449,7 +453,7 @@ class DocumentosController extends Controller
                 'd.ruta_archivo',
                 'd.tipo_archivo',
                 'd.tamanio',
-                'd.fecha_subido as fecha',
+                DB::raw("COALESCE(d.fecha_subida, d.fecha_subido) as fecha"),
                 DB::raw("COALESCE(d.estado, 'pendiente') as estado"),
                 // Nombre del aprendiz asignado (por id_aprendiz o id_usuario)
                 DB::raw($nombreSelectExpr . ' as nombre_aprendiz'),
@@ -464,6 +468,12 @@ class DocumentosController extends Controller
             }
 
             $query = DB::table('documentos as d');
+            // Incluir marca de último rechazo si existe la columna
+            if (Schema::hasColumn('documentos','rechazado_en')) {
+                $selectFields[] = DB::raw('d.rechazado_en');
+            } else {
+                $selectFields[] = DB::raw('NULL as rechazado_en');
+            }
 
             // Unión principal por id_aprendiz -> PK de aprendices (si ambas columnas existen)
             if ($joinByAprendizId && $aprPkCol) {
@@ -475,15 +485,21 @@ class DocumentosController extends Controller
                 $query = $query->leftJoin('aprendices as au', 'd.id_usuario', '=', 'au.id_usuario');
             }
 
+            // Ordenar usando la columna disponible (fecha_subida o fecha_subido)
             $entregas = $query
                 ->where('d.id_proyecto', $proyectoId)
                 ->select($selectFields)
-                ->orderBy('d.fecha_subido', 'desc')
+                ->when(Schema::hasColumn('documentos','fecha_subida'), function($q){
+                    return $q->orderBy('d.fecha_subida', 'desc');
+                }, function($q){
+                    return $q->orderBy('d.fecha_subido', 'desc');
+                })
                 ->get();
 
             $ahora = new \DateTime();
             $entregas = $entregas->map(function($entrega) use ($ahora) {
-                if ($entrega->ruta_archivo) {
+                $tieneArchivo = !empty($entrega->ruta_archivo);
+                if ($tieneArchivo) {
                     if (filter_var($entrega->ruta_archivo, FILTER_VALIDATE_URL)) {
                         // URL externa (Drive, etc.)
                         $entrega->archivo_url = $entrega->ruta_archivo;
@@ -493,8 +509,11 @@ class DocumentosController extends Controller
                     }
                 }
 
+                // Solo mostrar "Actualizada por el aprendiz" para RE-ENVÍOS:
+                // Debe tener archivo, estar en pendiente, haber sido rechazado antes (rechazado_en no null)
+                // y la fecha reciente <= 24h
                 $entrega->recien_actualizada = false;
-                if ($entrega->fecha) {
+                if ($tieneArchivo && isset($entrega->estado) && $entrega->estado === 'pendiente' && !empty($entrega->rechazado_en) && $entrega->fecha) {
                     try {
                         $fecha = new \DateTime($entrega->fecha);
                         $entrega->fecha = $fecha->format('Y-m-d');
@@ -550,6 +569,13 @@ class DocumentosController extends Controller
                 });
             }
 
+            // Asegurar columna 'rechazado_en' para marcar último rechazo
+            if (!Schema::hasColumn('documentos', 'rechazado_en')) {
+                Schema::table('documentos', function($table) {
+                    $table->dateTime('rechazado_en')->nullable()->after('estado');
+                });
+            }
+
             // Asegurar columna descripcion si vamos a guardar motivos de rechazo
             if (!Schema::hasColumn('documentos', 'descripcion')) {
                 Schema::table('documentos', function($table) {
@@ -564,6 +590,15 @@ class DocumentosController extends Controller
             // Si el líder envía un motivo y el estado es rechazado, guardarlo en descripcion
             if ($request->estado === 'rechazado' && $request->filled('motivo')) {
                 $updateData['descripcion'] = $request->motivo;
+            }
+
+            // Gestionar marca de rechazo según nuevo estado
+            if (Schema::hasColumn('documentos', 'rechazado_en')) {
+                if ($request->estado === 'rechazado') {
+                    $updateData['rechazado_en'] = now();
+                } elseif ($request->estado === 'aprobado') {
+                    $updateData['rechazado_en'] = null; // limpiar al aprobar
+                }
             }
 
             DB::table('documentos')

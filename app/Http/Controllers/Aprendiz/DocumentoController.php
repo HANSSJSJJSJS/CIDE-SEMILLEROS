@@ -459,13 +459,26 @@ class DocumentoController extends Controller
         // Si estaba rechazado y el aprendiz reenvía (archivo o descripción), volver a "pendiente"
         if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','estado') && !empty($dataUpdate)) {
             $estadoActual = strtolower((string)($documento->estado ?? ''));
-            if ($estadoActual === 'rechazado') {
-                $dataUpdate['estado'] = 'pendiente';
+            if (preg_match('/^rechaz/i', $estadoActual)) {
+                $dataUpdate['estado'] = $this->getEstadoSafe('pendiente');
             }
         }
 
+        // Si no cambió archivo/descripcion pero el estado actual es rechazado, permitir cambio a pendiente
         if (empty($dataUpdate)) {
-            return back()->with('error', 'Debes seleccionar un nuevo archivo o cambiar la descripción para actualizar la evidencia.');
+            if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','estado')) {
+                $estadoActual = strtolower((string)($documento->estado ?? ''));
+                if (preg_match('/^rechaz/i', $estadoActual)) {
+                    $dataUpdate['estado'] = $this->getEstadoSafe('pendiente');
+                    // actualizar fecha_subida si existe la columna para reflejar actividad
+                    if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','fecha_subida')) {
+                        $dataUpdate['fecha_subida'] = now();
+                    }
+                }
+            }
+            if (empty($dataUpdate)) {
+                return back()->with('error', 'Debes seleccionar un nuevo archivo o cambiar la descripción para actualizar la evidencia.');
+            }
         }
 
         DB::table('documentos')
@@ -587,8 +600,8 @@ class DocumentoController extends Controller
         // Restablecer a "pendiente" cuando el aprendiz reenvía (si no está aprobado)
         if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','estado')) {
             $estadoActual = strtolower((string)($documento->estado ?? ''));
-            if ($estadoActual !== 'aprobado') {
-                $update['estado'] = 'pendiente';
+            if (!preg_match('/^aprob/i', $estadoActual)) {
+                $update['estado'] = $this->getEstadoSafe('pendiente');
             }
         }
         DB::table('documentos')
@@ -707,6 +720,45 @@ class DocumentoController extends Controller
         if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','id_aprendiz')) { return 'id_aprendiz'; }
         if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','id_usuario')) { return 'id_usuario'; }
         return 'id_aprendiz';
+    }
+
+    // Mapea un estado lógico (pendiente/aprobado/rechazado) al valor exacto soportado por la BD (ENUM o VARCHAR), respetando mayúsculas
+    private function getEstadoSafe(string $estado): string
+    {
+        $estado = strtolower(trim($estado));
+        if ($estado === '') { $estado = 'pendiente'; }
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasTable('documentos') || !\Illuminate\Support\Facades\Schema::hasColumn('documentos','estado')) {
+                return $estado; // no hay restricciones conocidas
+            }
+            $db = \DB::getDatabaseName();
+            $col = \DB::table('information_schema.columns')
+                ->where('table_schema', $db)
+                ->where('table_name', 'documentos')
+                ->where('column_name', 'estado')
+                ->select('data_type', 'column_type', 'character_maximum_length')
+                ->first();
+            if ($col && isset($col->data_type) && strtolower($col->data_type) === 'enum' && !empty($col->column_type)) {
+                $m = [];
+                if (preg_match("/enum\\((.*)\\)/i", $col->column_type, $m)) {
+                    $vals = array_map(function($v){ return trim($v, "'\" "); }, explode(',', $m[1]));
+                    // intentar coincidencia case-insensitive
+                    foreach ($vals as $v) { if (strcasecmp($v, $estado) === 0) { return $v; } }
+                    // prioridades típicas si no coincide: PENDIENTE/APROBADO/RECHAZADO
+                    $aliases = [ 'pendiente' => ['PENDIENTE','pendiente'], 'aprobado' => ['APROBADO','aprobado'], 'rechazado' => ['RECHAZADO','rechazado'] ];
+                    foreach ($aliases[$estado] ?? [] as $cand) { foreach ($vals as $v) { if (strcasecmp($v, $cand) === 0) { return $v; } } }
+                    // fallback al primer valor permitido
+                    return $vals[0] ?? 'pendiente';
+                }
+            }
+            // si es VARCHAR, respetar longitud
+            if ($col && isset($col->character_maximum_length) && $col->character_maximum_length) {
+                $len = (int)$col->character_maximum_length; if ($len > 0) { return substr($estado, 0, $len); }
+            }
+            return $estado;
+        } catch (\Throwable $e) {
+            return $estado;
+        }
     }
 
     // Normaliza el valor de tipo_archivo según el esquema real (ENUM o VARCHAR con longitud) para evitar truncamientos

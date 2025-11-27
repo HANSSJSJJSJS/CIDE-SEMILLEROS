@@ -291,3 +291,6 @@ class AprendicesController extends Controller
         return view('lider_semi.aprendices', compact('aprendices'));
     }
 }
+
+
+
