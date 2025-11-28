@@ -15,11 +15,11 @@ class ProyectoSemilleroController extends Controller
     {
         $semillero->load(['lider:id_lider_semi,nombres,apellidos,correo_institucional']);
 
+        // AHORA CON PAGINACIÓN
         $proyectos = $semillero->proyectos()
             ->orderByDesc('id_proyecto')
-            ->get();
+            ->paginate(8);
 
-        // ✅ vista movida a admin/semilleros/proyectos/index.blade.php
         return view('admin.semilleros.proyectos.index', compact('semillero','proyectos'));
     }
 
@@ -69,11 +69,32 @@ class ProyectoSemilleroController extends Controller
 
     public function destroy(Semillero $semillero, Proyecto $proyecto)
     {
+        // Aseguramos que pertenece a ese semillero
+        if ((int) $proyecto->id_semillero !== (int) $semillero->id_semillero) {
+            abort(404, 'El proyecto no pertenece a este semillero');
+        }
+
+        // 1) Verificar si tiene aprendices asociados en la tabla pivote
+        //    (según tu error: tabla "aprendiz_proyecto", FK "id_proyecto")
+        $tieneAprendices = DB::table('aprendiz_proyecto')
+            ->where('id_proyecto', $proyecto->id_proyecto)
+            ->exists();
+
+        if ($tieneAprendices) {
+            return back()->with(
+                'error',
+                'No se puede eliminar el proyecto '.$proyecto->nombre_proyecto.' porque tiene aprendices asignados.'
+            );
+        }
+
+        // 2) Si no tiene aprendices, se puede eliminar
+        $nombre = $proyecto->nombre_proyecto;
         $proyecto->delete();
-        return back()->with('ok','Proyecto eliminado correctamente.');
+
+        return back()->with('ok','Proyecto eliminado correctamente: '.$nombre);
     }
 
-    // (Mejor moverlo a SemilleroController)
+    // (Mejor moverlo a SemilleroController, pero lo dejamos igual que tú)
     public function show($id)
     {
         $exists = DB::table('semilleros')->where('id_semillero', $id)->exists();
@@ -85,19 +106,16 @@ class ProyectoSemilleroController extends Controller
     // GET /admin/semilleros/{semillero}/proyectos/{proyecto}/detalle
     public function detalle(Semillero $semillero, Proyecto $proyecto)
     {
-        // Validar pertenencia
         if ($proyecto->id_semillero !== $semillero->id_semillero) {
             abort(404, 'El proyecto no pertenece a este semillero');
         }
 
-        // Cargar aprendices (solo columnas útiles)
         $proyecto->load([
             'aprendices:id_aprendiz,nombres,apellidos,correo_institucional,correo_personal,celular'
         ]);
 
         $integrantes   = $proyecto->aprendices;
 
-        // Documentación aprobada del proyecto actual
         $documentacion = $proyecto->documentos()
             ->where('estado', 'APROBADO')
             ->orderByDesc('fecha_subida')
@@ -112,19 +130,13 @@ class ProyectoSemilleroController extends Controller
 
         $observaciones = '';
 
-        // ✅ vista movida a admin/semilleros/proyectos/detalle.blade.php
         return view('admin.semilleros.proyectos.detalle', compact(
             'semillero','proyecto','integrantes','documentacion','observaciones'
         ));
     }
 
-    /**
-     * AJAX: datos JSON de un proyecto para el modal de edición
-     * GET /admin/semilleros/{semillero}/proyectos/{proyecto}/json
-     */
     public function editAjax(Semillero $semillero, Proyecto $proyecto)
     {
-        // Aseguramos que el proyecto pertenece al semillero
         if ((int) $proyecto->id_semillero !== (int) $semillero->id_semillero) {
             abort(404, 'El proyecto no pertenece a este semillero');
         }

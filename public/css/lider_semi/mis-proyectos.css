@@ -434,7 +434,7 @@ body::before{
   padding:0;
   margin-top:1.25rem;
   position:relative;
-  z-index:2;
+  z-index:auto;
 }
 
 .projects-wallpaper .col-12,
