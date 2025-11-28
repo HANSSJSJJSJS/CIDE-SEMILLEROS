@@ -445,18 +445,19 @@ function cargarEntregas(proyectoId) {
                                         <i class="fas fa-file-alt"></i> Sin Archivo
                                     </button>
                                 `}
-                                ${(entrega.estado !== 'aprobado' && tieneArchivo) ? `
-                                    <button class="btn-aprobar" onclick="cambiarEstadoEntrega(${entrega.id}, 'aprobado')">
-                                        Aprobar
-                                    </button>
-                                    <button class="btn-rechazar" onclick="abrirModalMotivoRechazo(${entrega.id})">
-                                        Rechazar
-                                    </button>
+                                ${tieneArchivo ? `
+                                    ${(entrega.estado === 'rechazado' && !flagActualizada) ? `
+                                        <button class="btn-aprobar" disabled title="Bloqueado hasta reenvío del aprendiz" style="opacity:0.5; cursor:not-allowed;">Aprobar</button>
+                                        <button class="btn-rechazar" disabled title="Bloqueado hasta reenvío del aprendiz" style="opacity:0.5; cursor:not-allowed;">Rechazar</button>
+                                    ` : `
+                                        ${entrega.estado !== 'aprobado' ? `
+                                            <button class="btn-aprobar" onclick="cambiarEstadoEntrega(${entrega.id}, 'aprobado')">Aprobar</button>
+                                            <button class="btn-rechazar" onclick="abrirModalMotivoRechazo(${entrega.id})">Rechazar</button>
+                                        ` : ''}
+                                    `}
                                 ` : `
-                                    ${!tieneArchivo ? `
-                                        <button class="btn-aprobar" disabled style="opacity:0.5; cursor:not-allowed;">Aprobar</button>
-                                        <button class="btn-rechazar" disabled style="opacity:0.5; cursor:not-allowed;">Rechazar</button>
-                                    ` : ''}
+                                    <button class="btn-aprobar" disabled style="opacity:0.5; cursor:not-allowed;">Aprobar</button>
+                                    <button class="btn-rechazar" disabled style="opacity:0.5; cursor:not-allowed;">Rechazar</button>
                                 `}
                             </div>
                         </div>

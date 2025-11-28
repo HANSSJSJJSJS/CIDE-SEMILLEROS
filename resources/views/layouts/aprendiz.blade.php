@@ -77,9 +77,25 @@
         </div>
 
         <div class="profile-info">
-          <button class="btn btn-link text-white position-relative me-2" type="button" aria-label="Notificaciones">
-            <i class="bi bi-bell fs-5"></i>
-          </button>
+          <div class="position-relative me-2">
+            <button id="btnNotificaciones" class="btn btn-link text-white position-relative" type="button" aria-label="Notificaciones" aria-expanded="false">
+              <i class="bi bi-bell fs-5"></i>
+              <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display:none;">0</span>
+            </button>
+            <div id="notifDropdown" class="card shadow" style="position:absolute; right:0; top:110%; min-width: 260px; display:none; z-index: 1100;">
+              <div class="card-header py-2 px-3">Notificaciones</div>
+              <div class="card-body py-2 px-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span>Evidencias nuevas</span>
+                  <span id="notifEvidencias" class="badge bg-success">0</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                  <span>Reuniones próximas</span>
+                  <span id="notifReuniones" class="badge bg-primary">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div class="avatar">{{ strtoupper(substr(Auth::user()->name ?? 'AP', 0, 2)) }}</div>
           <div class="me-2 text-end d-none d-sm-block">
@@ -144,6 +160,41 @@
     window.addEventListener('resize', () => { if (!isMobile()) closeSidebar(); });
     sidebar?.addEventListener('click', (e) => {
       if (e.target.closest('a.nav-link') && isMobile()) closeSidebar();
+    });
+  })();
+  // Notificaciones (campana)
+  (function(){
+    const badge = document.getElementById('notifBadge');
+    const dd    = document.getElementById('notifDropdown');
+    const btn   = document.getElementById('btnNotificaciones');
+    const evEl  = document.getElementById('notifEvidencias');
+    const reEl  = document.getElementById('notifReuniones');
+    if (!btn) return;
+    async function fetchSummary(){
+      try{
+        const resp = await fetch('{{ route('aprendiz.notifications.summary') }}', { headers: { 'Accept':'application/json' } });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const total = Number(data?.total||0);
+        const evid  = Number(data?.evidencias_nuevas||0);
+        const reun  = Number(data?.reuniones_nuevas||0);
+        if (badge){ badge.textContent = total; badge.style.display = total>0 ? 'inline-block' : 'none'; }
+        if (evEl) evEl.textContent = evid;
+        if (reEl) reEl.textContent = reun;
+        btn.setAttribute('aria-label', `Notificaciones (${total})`);
+      } catch(_e){}
+    }
+    fetchSummary();
+    setInterval(fetchSummary, 60000); // cada 60s
+    btn.addEventListener('click', (e)=>{
+      e.preventDefault();
+      const show = dd && dd.style.display !== 'block';
+      if (dd){ dd.style.display = show ? 'block':'none'; btn.setAttribute('aria-expanded', show ? 'true':'false'); }
+    });
+    document.addEventListener('click', (e)=>{
+      if (!dd || !btn) return;
+      if (e.target === btn || btn.contains(e.target)) return;
+      if (!dd.contains(e.target)) dd.style.display='none';
     });
   })();
   </script>

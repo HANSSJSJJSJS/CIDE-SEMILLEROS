@@ -209,12 +209,7 @@
                             @foreach($pendientesAsignadas->sortBy('fecha_limite') as $pendiente)
                                 <li class="mb-2 pend-item" data-evid="{{ $pendiente->id_documento }}" style="cursor:pointer;">
                                     <div class="p-2 rounded border border-success bg-success bg-opacity-10 pend-card" data-card-id="{{ $pendiente->id_documento }}">
-                                        <div class="d-flex justify-content-between align-items-start mb-1">
-                                            <div class="small text-muted">ID: {{ $pendiente->id_documento }}</div>
-                                            <button type="button" class="btn btn-sm btn-success seleccionar-evidencia" data-evid="{{ $pendiente->id_documento }}">
-                                                Seleccionar
-                                            </button>
-                                        </div>
+                                        <div class="mb-1 small text-muted">ID: {{ $pendiente->id_documento }}</div>
                                         <div><strong>Proyecto:</strong> {{ $pendiente->nombre_proyecto ?? '—' }}</div>
                                         <div><strong>Título:</strong> {{ $pendiente->documento ?? '—' }}</div>
                                         <div><strong>Descripción:</strong> {{ $pendiente->descripcion ?? '—' }}</div>
@@ -291,8 +286,17 @@
                                                 @endphp
                                                 <span class="badge {{ $badgeClass }}">{{ $label }}</span>
                                                 @if($estado === 'rechazado' && !empty($doc->descripcion))
-                                                    <div class="small text-muted mt-1" style="max-width:240px;">
-                                                        <strong>Observación:</strong> {{ $doc->descripcion }}
+                                                    @php $obsId = 'obs_'.$doc->id_documento; @endphp
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2 align-baseline"
+                                                            title="Ver observación"
+                                                            data-bs-toggle="collapse" data-bs-target="#{{ $obsId }}"
+                                                            aria-expanded="false" aria-controls="{{ $obsId }}">
+                                                        <i class="bi bi-chat-left-text"></i>
+                                                    </button>
+                                                    <div id="{{ $obsId }}" class="collapse mt-1">
+                                                        <div class="small text-muted p-2 border rounded bg-light" style="max-width: 320px;">
+                                                            <strong>Observación:</strong> {{ $doc->descripcion }}
+                                                        </div>
                                                     </div>
                                                 @endif
                                             </td>
@@ -307,7 +311,7 @@
                                                         {{-- Editar / reemplazar archivo --}}
                                                         <form action="{{ route('aprendiz.documentos.update', $doc->id_documento) }}"
                                                               method="POST"
-                                                              enctype="multipart/form-data"
+                                                            enctype="multipart/form-data"
                                                               class="d-inline-block align-middle mt-1"
                                                               style="max-width: 230px;">
                                                             @csrf

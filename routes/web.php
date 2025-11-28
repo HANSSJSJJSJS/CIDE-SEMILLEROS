@@ -412,7 +412,6 @@ Route::middleware(['auth', 'role:APRENDIZ'])
         Route::get('/dashboard', [AprendizDashboardController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/stats', [AprendizDashboardController::class, 'stats'])->name('dashboard.stats');
         Route::get('/dashboard/proximas', [CalendarioController::class, 'proximasReuniones'])->name('dashboard.proximas');
-
         // Perfil
         Route::get('/perfil', [PerfilController::class, 'show'])->name('perfil.show');
         Route::get('/perfil/edit', [PerfilController::class, 'edit'])->name('perfil.edit');
@@ -436,6 +435,71 @@ Route::middleware(['auth', 'role:APRENDIZ'])
         Route::put('/documentos/{id}', [DocumentoController::class, 'update'])->whereNumber('id')->name('documentos.update');
         Route::delete('/documentos/{id}', [DocumentoController::class, 'destroy'])->whereNumber('id')->name('documentos.destroy');
 
+        // Notificaciones: resumen para la campana (evidencias nuevas asignadas y reuniones próximas)
+        Route::get('/notifications/summary', function () {
+            $user = Auth::user();
+            if (!$user) return response()->json(['ok'=>false,'evidencias_nuevas'=>0,'reuniones_nuevas'=>0,'total'=>0]);
+
+            $evidencias = 0; $reuniones = 0;
+
+            // Evidencias nuevas asignadas (documentos sin archivo para este aprendiz/usuario)
+            try {
+                if (\Illuminate\Support\Facades\Schema::hasTable('documentos')) {
+                    $docAprCol = \Illuminate\Support\Facades\Schema::hasColumn('documentos','id_aprendiz') ? 'id_aprendiz'
+                                : (\Illuminate\Support\Facades\Schema::hasColumn('documentos','id_usuario') ? 'id_usuario' : null);
+
+                    $aprId = null; $aprUserCol = null; $aprPkCol = null;
+                    if (\Illuminate\Support\Facades\Schema::hasTable('aprendices')) {
+                        if (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','id_usuario')) { $aprUserCol = 'id_usuario'; }
+                        elseif (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','user_id')) { $aprUserCol = 'user_id'; }
+                        if (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','id_aprendiz')) { $aprPkCol = 'id_aprendiz'; }
+                        elseif (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','id')) { $aprPkCol = 'id'; }
+                        if ($aprUserCol && $aprPkCol) {
+                            $aprId = \Illuminate\Support\Facades\DB::table('aprendices')->where($aprUserCol, $user->id)->value($aprPkCol);
+                        }
+                    }
+
+                    $q = \Illuminate\Support\Facades\DB::table('documentos')
+                        ->whereRaw("documentos.documento NOT LIKE 'PLACEHOLDER%'")
+                        ->where(function($w){ $w->whereNull('ruta_archivo')->orWhere('ruta_archivo',''); });
+
+                    if ($docAprCol === 'id_aprendiz' && $aprId) {
+                        $q->where('id_aprendiz', $aprId);
+                    } elseif ($docAprCol === 'id_usuario') {
+                        $q->where('id_usuario', (int)$user->id);
+                    } else {
+                        // Sin columna clara: intentar ambas
+                        $q->where(function($w) use ($aprId, $user){
+                            $w->orWhere('id_aprendiz', $aprId ?? -1);
+                            $w->orWhere('id_usuario', (int)$user->id);
+                        });
+                    }
+                    $evidencias = (int) $q->count();
+                }
+            } catch (\Throwable $e) { $evidencias = 0; }
+
+            // Reuniones próximas (dependiente del esquema)
+            try {
+                if (\Illuminate\Support\Facades\Schema::hasTable('eventos')) {
+                    $hoy = now()->startOfDay()->toDateString();
+                    $colFecha = \Illuminate\Support\Facades\Schema::hasColumn('eventos','fecha') ? 'fecha'
+                              : (\Illuminate\Support\Facades\Schema::hasColumn('eventos','fecha_inicio') ? 'fecha_inicio' : null);
+                    if ($colFecha) {
+                        $rq = \Illuminate\Support\Facades\DB::table('eventos')
+                            ->whereDate($colFecha, '>=', $hoy);
+                        if (\Illuminate\Support\Facades\Schema::hasColumn('eventos','id_aprendiz')) {
+                            $rq->where('id_aprendiz', $aprId ?? -1);
+                        } elseif (\Illuminate\Support\Facades\Schema::hasColumn('eventos','id_usuario')) {
+                            $rq->where('id_usuario', (int)$user->id);
+                        }
+                        $reuniones = (int) $rq->count();
+                    }
+                }
+            } catch (\Throwable $e) { $reuniones = 0; }
+
+            $total = $evidencias + $reuniones;
+            return response()->json(['ok'=>true,'evidencias_nuevas'=>$evidencias,'reuniones_nuevas'=>$reuniones,'total'=>$total]);
+        })->name('notifications.summary');
 
         // Calendario
         Route::get('/calendario', [CalendarioController::class, 'index'])->name('calendario.index');
