@@ -105,35 +105,37 @@ class ProyectoSemilleroController extends Controller
 
     // GET /admin/semilleros/{semillero}/proyectos/{proyecto}/detalle
     public function detalle(Semillero $semillero, Proyecto $proyecto)
-    {
-        if ($proyecto->id_semillero !== $semillero->id_semillero) {
-            abort(404, 'El proyecto no pertenece a este semillero');
-        }
+{
+    if ((int)$proyecto->id_semillero !== (int)$semillero->id_semillero) {
+        abort(404, 'El proyecto no pertenece a este semillero');
+    }
 
-        $proyecto->load([
-            'aprendices:id_aprendiz,nombres,apellidos,correo_institucional,correo_personal,celular'
+    // Cargar aprendices + su usuario (tabla users)
+    $proyecto->load([
+        'aprendices.user',
+    ]);
+
+    $integrantes   = $proyecto->aprendices;
+
+    $documentacion = $proyecto->documentos()
+        ->where('estado', 'APROBADO')
+        ->orderByDesc('fecha_subida')
+        ->get([
+            'id_documento',
+            DB::raw("documento as nombre"),
+            DB::raw("fecha_subida as fecha"),
+            'ruta_archivo',
+            'tipo_archivo',
+            'tamanio'
         ]);
 
-        $integrantes   = $proyecto->aprendices;
+    $observaciones = '';
 
-        $documentacion = $proyecto->documentos()
-            ->where('estado', 'APROBADO')
-            ->orderByDesc('fecha_subida')
-            ->get([
-                'id_documento',
-                DB::raw("documento as nombre"),
-                DB::raw("fecha_subida as fecha"),
-                'ruta_archivo',
-                'tipo_archivo',
-                'tamanio'
-            ]);
+    return view('admin.semilleros.proyectos.detalle', compact(
+        'semillero','proyecto','integrantes','documentacion','observaciones'
+    ));
+}
 
-        $observaciones = '';
-
-        return view('admin.semilleros.proyectos.detalle', compact(
-            'semillero','proyecto','integrantes','documentacion','observaciones'
-        ));
-    }
 
     public function editAjax(Semillero $semillero, Proyecto $proyecto)
     {

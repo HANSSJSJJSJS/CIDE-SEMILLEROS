@@ -2,25 +2,30 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 
 class Administrador extends Model
 {
-    protected $table = 'administradores';
+    use HasFactory;
 
-    // PK es id_usuario, no autoincremental
+    protected $table = 'administradores';
     protected $primaryKey = 'id_usuario';
     public $incrementing = false;
     protected $keyType = 'int';
-
-    // columnas de timestamps personalizadas
-    const CREATED_AT = 'creado_en';
-    const UPDATED_AT = 'actualizado_en';
-    public $timestamps = true;
+    public $timestamps = false;
 
     protected $fillable = [
         'id_usuario',
         'nombre',
+        'nombres',
         'apellidos',
+        'correo_institucional',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'id_usuario', 'id');
+    }
 }

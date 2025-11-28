@@ -1,67 +1,21 @@
 (function () {
   'use strict';
 
-  // Helpers cortos
-  const $  = (s, c = document) => c.querySelector(s);
-  const $$ = (s, c = document) => Array.from(c.querySelectorAll(s));
+  const $  = (s, c=document) => c.querySelector(s);
+  const $$ = (s, c=document) => Array.from(c.querySelectorAll(s));
 
-  // ============================================
-  // VALIDACIÓN BOOTSTRAP
-  // ============================================
-  function attachValidation() {
-    document.querySelectorAll('.needs-validation').forEach(form => {
-      form.addEventListener('submit', e => {
-        if (!form.checkValidity()) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        form.classList.add('was-validated');
-      }, false);
+  // ----------------------------------------------------
+  // Helpers
+  // ----------------------------------------------------
+  function setBlockEnabled(block, enabled) {
+    if (!block) return;
+    block.classList.toggle('d-none', !enabled);
+    block.querySelectorAll('input,select,textarea').forEach(el => {
+      el.disabled = !enabled;
+      if (!enabled) el.removeAttribute('required');
     });
   }
 
-  // ============================================
-  // CONFIRMACIÓN ANTES DE ENVIAR (Eliminar, permisos, etc.)
-  // Usa formularios con class="needs-confirmation"
-  // ============================================
-  function attachConfirmations() {
-    document.querySelectorAll('form.needs-confirmation').forEach(form => {
-
-      form.addEventListener('submit', function (e) {
-        e.preventDefault(); // detener envío inmediato
-
-        const msg         = form.dataset.message     || '¿Deseas realizar esta acción?';
-        const confirmText = form.dataset.confirmText || 'Sí, continuar';
-        const cancelText  = form.dataset.cancelText  || 'Cancelar';
-
-        Swal.fire({
-          title: 'Confirmación requerida',
-          text: msg,
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: confirmText,
-          cancelButtonText: cancelText,
-          reverseButtons: true,
-          customClass: {
-            popup: 'swal-usuarios',      // <= coincide con tu CSS (.swal-usuarios)
-            confirmButton: 'swal-confirmar',
-            cancelButton: 'swal-cancelar'
-          },
-          buttonsStyling: false
-        }).then((result) => {
-          if (result.isConfirmed) {
-            form.submit(); // ahora sí enviamos
-          }
-        });
-
-      });
-
-    });
-  }
-
-  // ============================================
-  // PASSWORD: mostrar / ocultar + generar
-  // ============================================
   function randomPassword(len = 10) {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
     const arr   = new Uint32Array(len);
@@ -72,25 +26,20 @@
   function attachPasswordTools(root) {
     if (!root) return;
 
-    // Mostrar / ocultar contraseña
     root.querySelectorAll('[data-toggle-pass]').forEach(btn => {
       btn.addEventListener('click', () => {
-        const selector = btn.getAttribute('data-toggle-pass');
-        const input    = root.querySelector(selector);
+        const sel   = btn.getAttribute('data-toggle-pass');
+        const input = root.querySelector(sel);
         if (!input) return;
-
         input.type = input.type === 'password' ? 'text' : 'password';
-        btn.classList.toggle('active');
       });
     });
 
-    // Generar contraseña
     root.querySelectorAll('[data-generate-pass]').forEach(btn => {
       btn.addEventListener('click', () => {
-        const selector = btn.getAttribute('data-generate-pass');
-        const input    = root.querySelector(selector);
+        const sel   = btn.getAttribute('data-generate-pass');
+        const input = root.querySelector(sel);
         if (!input) return;
-
         input.value = randomPassword();
         input.type  = 'text';
         input.focus();
@@ -98,191 +47,300 @@
     });
   }
 
-  // ============================================
-  // Helpers mostrar / ocultar bloques
-  // ============================================
-  function showBlock(block) {
-    if (!block) return;
-    block.classList.remove('d-none');
-    block.querySelectorAll('input, select, textarea').forEach(el => {
-      el.disabled = false;
+  function attachValidation() {
+    document.querySelectorAll('.needs-validation').forEach(form => {
+      form.addEventListener('submit', e => {
+        if (!form.checkValidity()) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      });
     });
   }
 
-  function hideBlock(block) {
-    if (!block) return;
-    block.classList.add('d-none');
-    block.querySelectorAll('input, select, textarea').forEach(el => {
-      el.disabled = true;
-      el.removeAttribute('required');
-    });
-  }
+  // ----------------------------------------------------
+  // WIZARD GENERAL (ADMIN / LÍDERES)
+  // ----------------------------------------------------
+  function initGeneralWizard(modal, btnSave) {
+    const nav      = $('#user-steps-nav', modal);
+    const steps    = $$('.user-step', modal);
+    const boxLider = $('#box-lider-semillero', modal);
 
-  // ============================================
-  // MODAL CREAR USUARIO
-  // ============================================
-  function initModalCrear() {
-    const modal = $('#modalCrearUsuario');
-    if (!modal) return;
+    const label   = $('#user-step-label', modal);
+    const btnPrev = $('#btn-user-prev', modal);
+    const btnNext = $('#btn-user-next', modal);
 
-    const form       = modal.querySelector('#formCrearUsuario');
-    const roleSelect = modal.querySelector('#select-role');
+    let current = 1;
+    let maxStep = 2;
 
-    // Bloques por rol
-    const boxLiderSemi = modal.querySelector('#box-lider-semillero');
-    const boxLiderInv  = modal.querySelector('#box-lider-investigacion');
-    const boxAprendiz  = modal.querySelector('#box-aprendiz');
+    function showStep(n) {
+      current = Math.min(Math.max(n, 1), maxStep);
 
-    // Sub-bloques aprendiz
-    const boxSena = modal.querySelector('#box-aprendiz-sena');
-    const boxOtra = modal.querySelector('#box-aprendiz-otra');
-
-    // -----------------------------------------
-    // Manejo de requeridos según rol
-    // -----------------------------------------
-    function setRequiredForRole(role) {
-      // Limpiar requeridos en secciones especiales
-      $$('#box-lider-semillero [name], #box-aprendiz [name]', modal)
-        .forEach(i => i.removeAttribute('required'));
-
-      if (!role) return;
-
-      // Campos base
-      ['nombre', 'apellido', 'email', 'password'].forEach(n => {
-        const input = modal.querySelector(`[name="${n}"]`);
-        if (input) input.setAttribute('required', 'required');
+      steps.forEach(s => {
+        const step = parseInt(s.dataset.step, 10);
+        s.classList.toggle('d-none', step !== current);
       });
 
-      if (role === 'LIDER_SEMILLERO') {
-        ['ls_tipo_documento', 'ls_documento'].forEach(n => {
-          const input = modal.querySelector(`[name="${n}"]`);
-          if (input) input.setAttribute('required', 'required');
+      if (label) label.textContent = `Paso ${current} de ${maxStep}`;
+      if (btnPrev) btnPrev.disabled = (current === 1);
+
+      if (btnNext) {
+        if (current === maxStep) {
+          btnNext.classList.add('d-none');
+        } else {
+          btnNext.classList.remove('d-none');
+        }
+      }
+
+      if (btnSave) btnSave.disabled = (current !== maxStep);
+    }
+
+    function configureForRole(role) {
+      // Sin rol o rol Aprendiz: solo mostramos step 1 sin nav
+      if (!role || role === 'APRENDIZ') {
+        if (nav) nav.classList.add('d-none');
+
+        steps.forEach(s => {
+          const step = parseInt(s.dataset.step, 10);
+          s.classList.toggle('d-none', step !== 1);
         });
+
+        setBlockEnabled(boxLider, false);
+        if (btnSave) btnSave.disabled = true;
+        return;
+      }
+
+      // Otros roles: activamos wizard
+      maxStep = (role === 'LIDER_SEMILLERO') ? 3 : 2;
+      setBlockEnabled(boxLider, role === 'LIDER_SEMILLERO');
+
+      if (nav) nav.classList.remove('d-none');
+      showStep(1);
+    }
+
+    btnPrev && btnPrev.addEventListener('click', () => showStep(current - 1));
+    btnNext && btnNext.addEventListener('click', () => showStep(current + 1));
+
+    return { configureForRole, showStep };
+  }
+
+  // ----------------------------------------------------
+  // WIZARD APRENDIZ (8 pasos)
+  // ----------------------------------------------------
+  function initAprendizWizard(modal, btnSave) {
+    const areaApr   = $('#area-aprendiz', modal);
+    const navApr    = $('#apr-steps-nav', modal);
+    const steps     = $$('.apr-step', modal);
+    const label     = $('#apr-step-label', modal);
+    const btnPrev   = $('#btn-apr-prev', modal);
+    const btnNext   = $('#btn-apr-next', modal);
+    const radioSena = $$('input[name="vinculado_sena"]', modal);
+    const boxSena   = $('#apr-sena', modal);
+    const boxNoSena = $('#apr-no-sena', modal);
+
+    const TOTAL = 8;
+    let current = 1;
+
+    function updateSenaBlocks() {
+      const val  = (radioSena.find(r => r.checked)?.value) || '1';
+      const sena = (val === '1');
+      setBlockEnabled(boxSena, sena);
+      setBlockEnabled(boxNoSena, !sena);
+    }
+
+    function showAprStep(n) {
+      current = Math.min(Math.max(n, 1), TOTAL);
+
+      steps.forEach(s => {
+        const step = parseInt(s.dataset.step, 10);
+        s.classList.toggle('d-none', step !== current);
+      });
+
+      if (label) label.textContent = `Paso ${current} de ${TOTAL}`;
+      if (btnPrev) btnPrev.disabled = (current === 1);
+
+      if (btnNext) {
+        if (current === TOTAL) {
+          btnNext.classList.add('d-none');
+        } else {
+          btnNext.classList.remove('d-none');
+        }
+      }
+
+      if (btnSave) btnSave.disabled = (current !== TOTAL);
+    }
+
+    btnPrev && btnPrev.addEventListener('click', () => showAprStep(current - 1));
+    btnNext && btnNext.addEventListener('click', () => showAprStep(current + 1));
+    radioSena.forEach(r => r.addEventListener('change', updateSenaBlocks));
+
+    function enableAprendiz(enabled) {
+      setBlockEnabled(areaApr, enabled);
+      setBlockEnabled(navApr, enabled);
+
+      if (!enabled) {
+        if (btnSave) btnSave.disabled = true;
+        return;
+      }
+
+      current = 1;
+      showAprStep(current);
+      updateSenaBlocks();
+    }
+
+    return { enableAprendiz, showAprStep };
+  }
+
+  // ----------------------------------------------------
+  // INPUT FILTERS
+  // ----------------------------------------------------
+  function attachInputFilters(modal) {
+    if (!modal) return;
+
+    // Solo números
+    ['documento', 'celular', 'contacto_celular', 'ficha'].forEach(name => {
+      $$(`input[name="${name}"]`, modal).forEach(inp => {
+        inp.addEventListener('input', () => {
+          inp.value = inp.value.replace(/[^0-9]/g, '');
+        });
+      });
+    });
+
+    // Nombres sin caracteres especiales
+    ['nombre', 'apellido', 'contacto_nombre'].forEach(name => {
+      $$(`input[name="${name}"]`, modal).forEach(inp => {
+        inp.addEventListener('input', () => {
+          inp.value = inp.value.replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ\\s]/g, '');
+        });
+      });
+    });
+  }
+
+  // ----------------------------------------------------
+  // MODAL CREAR USUARIO
+  // ----------------------------------------------------
+  function initModalCrear() {
+    const modal      = $('#modalCrearUsuario');
+    if (!modal) return;
+
+    const form       = $('#formCrearUsuario', modal);
+    const roleSelect = $('#select-role', modal);
+    const areaGen    = $('#area-general', modal);
+    const areaApr    = $('#area-aprendiz', modal);
+    const labelRol   = $('#rol-actual-label', modal);
+    const btnSave    = $('#btn-save-user', modal);
+
+    const wizGeneral = initGeneralWizard(modal, btnSave);
+    const wizApr     = initAprendizWizard(modal, btnSave);
+
+    attachPasswordTools(modal);
+    attachInputFilters(modal);
+
+    function resetForm() {
+      if (!form) return;
+      form.reset();
+      form.classList.remove('was-validated');
+      if (labelRol) {
+        labelRol.style.display = 'none';
+        labelRol.textContent = '';
+      }
+      if (btnSave) btnSave.disabled = true;
+    }
+
+    function configureRole(role) {
+      const fields = form.querySelectorAll('input,select,textarea');
+
+      // Siempre mostramos datos básicos (Rol, correo, nombre...)
+      setBlockEnabled(areaGen, true);
+
+      if (!role) {
+        // Sin rol: deshabilitamos todo menos rol y token
+        fields.forEach(el => {
+          if (el.name === 'role' || el.name === '_token' || el.type === 'hidden') {
+            el.disabled = false;
+          } else {
+            el.disabled = true;
+          }
+        });
+
+        wizGeneral.configureForRole(null);
+        wizApr.enableAprendiz(false);
+        setBlockEnabled(areaApr, false);
+
+        if (btnSave) btnSave.disabled = true;
+        if (labelRol) {
+          labelRol.style.display = 'none';
+          labelRol.textContent = '';
+        }
+        return;
+      }
+
+      // Hay rol → habilitamos campos
+      fields.forEach(el => {
+        if (el.type !== 'hidden') el.disabled = false;
+      });
+
+      // Badge rol
+      if (labelRol) {
+        let texto = '';
+        if      (role === 'ADMIN')               texto = 'Líder general';
+        else if (role === 'LIDER_SEMILLERO')     texto = 'Líder de semillero';
+        else if (role === 'LIDER_INVESTIGACION') texto = 'Líder de investigación';
+        else if (role === 'APRENDIZ')            texto = 'Aprendiz';
+        labelRol.textContent = texto;
+        labelRol.style.display = 'inline-block';
       }
 
       if (role === 'APRENDIZ') {
-        ['tipo_documento', 'documento', 'semillero_id'].forEach(n => {
-          const input = modal.querySelector(`[name="${n}"]`);
-          if (input) input.setAttribute('required', 'required');
-        });
+        // General sin wizard (solo step 1 visible) + wizard de aprendiz
+        wizGeneral.configureForRole(null);
+        setBlockEnabled(areaApr, true);
+        wizApr.enableAprendiz(true);
+        return;
+      }
 
-        const vinc = modal.querySelector('input[name="vinculado_sena"]:checked')?.value;
-        if (vinc === '1') {
-          ['ficha', 'programa'].forEach(n => {
-            const input = modal.querySelector(`[name="${n}"]`);
-            if (input) input.setAttribute('required', 'required');
-          });
+      // Otros roles: wizard general, sin área aprendiz
+      wizApr.enableAprendiz(false);
+      setBlockEnabled(areaApr, false);
+      wizGeneral.configureForRole(role);
+    }
+
+    // Cambio de rol
+    roleSelect && roleSelect.addEventListener('change', () => {
+      const newRole = roleSelect.value || '';
+
+      // Limpiar todo al cambiar rol (menos el propio rol y token)
+      const rolValue = roleSelect.value;
+      form.querySelectorAll('input,select,textarea').forEach(el => {
+        if (el.name === 'role' || el.name === '_token' || el.type === 'hidden') return;
+        if (el.type === 'radio' || el.type === 'checkbox') {
+          el.checked = el.defaultChecked;
         } else {
-          const inst = modal.querySelector('[name="institucion"]');
-          if (inst) inst.setAttribute('required', 'required');
+          el.value = '';
         }
-      }
-    }
+      });
+      roleSelect.value = rolValue;
 
-    // -----------------------------------------
-    // Mostrar / ocultar bloques por rol
-    // -----------------------------------------
-    function actualizarBloquesRol() {
-      const v = roleSelect.value;
-
-      hideBlock(boxLiderSemi);
-      hideBlock(boxLiderInv);
-      hideBlock(boxAprendiz);
-
-      if (v === 'LIDER_SEMILLERO')          showBlock(boxLiderSemi);
-      else if (v === 'LIDER_INVESTIGACION') showBlock(boxLiderInv);
-      else if (v === 'APRENDIZ')            showBlock(boxAprendiz);
-
-      setRequiredForRole(v);
-    }
-
-    // -----------------------------------------
-    // Mostrar / ocultar según vinculación SENA
-    // -----------------------------------------
-    function actualizarAprendizVinculo() {
-      const vinc = modal.querySelector('input[name="vinculado_sena"]:checked')?.value;
-
-      if (vinc === '1') {
-        showBlock(boxSena);
-        hideBlock(boxOtra);
-      } else {
-        showBlock(boxOtra);
-        hideBlock(boxSena);
-      }
-
-      setRequiredForRole(roleSelect.value);
-    }
-
-    // Eventos
-    if (roleSelect) roleSelect.addEventListener('change', actualizarBloquesRol);
-
-    modal.querySelectorAll('input[name="vinculado_sena"]').forEach(r => {
-      r.addEventListener('change', actualizarAprendizVinculo);
+      configureRole(newRole);
     });
 
     // Reset al cerrar modal
     modal.addEventListener('hidden.bs.modal', () => {
-      if (form) {
-        form.reset();
-        form.classList.remove('was-validated');
-      }
-
-      actualizarBloquesRol();
-
-      const radioSi = modal.querySelector('input[name="vinculado_sena"][value="1"]');
-      if (radioSi) radioSi.checked = true;
-
-      actualizarAprendizVinculo();
+      resetForm();
+      configureRole('');
     });
 
     // Estado inicial
-    actualizarBloquesRol();
-    actualizarAprendizVinculo();
-
-    // Herramientas de password
-    attachPasswordTools(modal);
+    configureRole('');
   }
 
-  // ============================================
-  // INIT
-  // ============================================
+  // ----------------------------------------------------
+  // INIT GLOBAL
+  // ----------------------------------------------------
   document.addEventListener('DOMContentLoaded', () => {
     attachValidation();
-    attachConfirmations();
     initModalCrear();
-    // initModalEditar();  // si luego quieres añadir el modal de editar aquí
   });
 
 })();
-
-// ============================================================
-// SWEETALERT2 – NOTIFICACIONES GLOBALES (flash success / error)
-// MISMO ESTILO QUE SEMILLEROS
-// ============================================================
-window.swalSuccess = function (msg) {
-  Swal.fire({
-    icon: 'success',
-    title: 'Operación exitosa',
-    text: msg,
-    confirmButtonText: 'Aceptar',
-    customClass: {
-      popup: 'swal-usuarios',     // <= coincide con tu CSS
-      confirmButton: 'swal-confirmar'
-    },
-    buttonsStyling: false
-  });
-};
-
-window.swalError = function (msg) {
-  Swal.fire({
-    icon: 'error',
-    title: 'Error',
-    text: msg,
-    confirmButtonText: 'Aceptar',
-    customClass: {
-      popup: 'swal-usuarios',
-      confirmButton: 'swal-cancelar'
-    },
-    buttonsStyling: false
-  });
-};
