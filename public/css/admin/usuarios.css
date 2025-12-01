@@ -9,7 +9,7 @@
     background-position: center center;
     background-repeat: no-repeat;
     background-size: 550px auto;
-    background-image: url("../../images/bg-semillero.png");
+    background-image: url("../../images/logo_semillero.png");
 }
 
 /* Glass general (uso opcional) */
@@ -389,4 +389,25 @@
 
 .swal-cancelar:hover {
     background-color: #c9302c !important;
+}
+
+#user-steps-nav button,
+#apr-steps-nav button {
+    font-size: 0.85rem !important;
+}
+
+#user-step-label,
+#apr-step-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.user-step,
+.apr-step {
+    margin-top: 10px;
+}
+
+#user-steps-nav,
+#apr-steps-nav {
+    margin-top: 15px;
 }

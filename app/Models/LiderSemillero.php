@@ -3,36 +3,39 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\User;
+use App\Models\Semillero;
 
 class LiderSemillero extends Model
 {
+    use HasFactory;
+
     protected $table = 'lideres_semillero';
     protected $primaryKey = 'id_lider_semi';
-    public $incrementing = false;
-    
-    const CREATED_AT = 'creado_en';
-    const UPDATED_AT = 'actualizado_en';
+
+    public $incrementing = false;   // porque usamos el id de users
+    protected $keyType   = 'int';
+
+    public $timestamps = false;     // porque usamos creado_en / actualizado_en
 
     protected $fillable = [
         'id_lider_semi',
-        'id_semillero',
         'nombres',
         'apellidos',
-        'tipo_documento',
-        'documento',
         'correo_institucional',
-        'id_tipo_documento',
+        'id_semillero',
     ];
 
-    public function user(): BelongsTo
+    // Relación con User
+    public function user()
     {
         return $this->belongsTo(User::class, 'id_lider_semi', 'id');
     }
 
-    public function semilleros(): HasMany
+    // Relación con Semillero
+    public function semillero()
     {
-        return $this->hasMany(Semillero::class, 'id_lider_semi', 'id_lider_semi');
+        return $this->belongsTo(Semillero::class, 'id_semillero', 'id_semillero');
     }
 }

@@ -2,81 +2,92 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+
+use App\Models\User;
+use App\Models\Semillero;
+use App\Models\Proyecto;
+use App\Models\Documento;
+// use App\Models\EventoParticipante; // si tienes este modelo
 
 class Aprendiz extends Model
 {
+    use HasFactory;
+
     protected $table = 'aprendices';
     protected $primaryKey = 'id_aprendiz';
-    public $incrementing = true;
-    public $timestamps = false;
+    public $timestamps = false; // porque usas creado_en / actualizado_en
 
     protected $fillable = [
-        'id_aprendiz',
         'user_id',
         'nombres',
         'apellidos',
         'ficha',
         'programa',
-        'tipo_documento',
-        'documento',
-        'celular',
+        'nivel_educativo',
+        'vinculado_sena',
+        'institucion',
         'correo_institucional',
         'correo_personal',
         'contacto_nombre',
         'contacto_celular',
-        'semillero_id',      // FK al semillero (nuevo)
-        'vinculado_sena',    // bool: 1=SENA, 0=otra institución
-        'institucion',       // nullable cuando no está en SENA
+        'semillero_id',
+        'estado',
     ];
 
-    /** Relaciones */
+    protected $casts = [
+        'vinculado_sena' => 'boolean',
+    ];
+
+    // ============================================================
+    // RELACIONES
+    // ============================================================
+
+    /**
+     * Usuario base (tabla users)
+     */
     public function user()
     {
-
-
-        return $this->belongsTo(User::class, 'user_id', 'id');
-
-        // clave foránea real en la tabla aprendices: user_id -> users.id
+        // FK en aprendices = user_id → users.id
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
-    // (Conservamos la relación de main por compatibilidad, si no la usas, puedes quitarla)
-    public function grupos()
-    {
-        // OJO: esta pivot referencia id_usuario; verifícala con tu esquema real
-        return $this->belongsToMany(Grupo::class, 'grupo_aprendices', 'id_usuario', 'id_grupo');
-
-    }
-
+    /**
+     * Semillero al que pertenece
+     */
     public function semillero()
     {
         return $this->belongsTo(Semillero::class, 'semillero_id', 'id_semillero');
     }
 
+    /**
+     * Proyectos en los que participa el aprendiz
+     * (tabla pivote: aprendiz_proyecto)
+     */
     public function proyectos()
     {
         return $this->belongsToMany(
             Proyecto::class,
             'aprendiz_proyecto',
-            'id_aprendiz',
-            'id_proyecto'
+            'id_aprendiz',   // FK a aprendices
+            'id_proyecto'    // FK a proyectos
         );
     }
 
-    /** Atributos virtuales */
-    protected $appends = ['nombre_completo', 'linea_investigacion'];
-
-    public function getNombreCompletoAttribute(): string
+    /**
+     * Documentos (evidencias/entregas) asociados al aprendiz
+     */
+    public function documentos()
     {
-        $n = trim((string)($this->attributes['nombres'] ?? ''));
-        $a = trim((string)($this->attributes['apellidos'] ?? ''));
-        return trim($n . ' ' . $a);
+        return $this->hasMany(Documento::class, 'id_aprendiz', 'id_aprendiz');
     }
 
-    // Se toma desde la relación con semillero; no se persiste en aprendices
-    public function getLineaInvestigacionAttribute(): ?string
+    /*
+    // Si tienes el modelo EventoParticipante:
+    public function eventoParticipantes()
     {
-        return optional($this->semillero)->linea_investigacion;
+        return $this->hasMany(EventoParticipante::class, 'id_aprendiz', 'id_aprendiz');
     }
+    */
 }

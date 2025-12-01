@@ -78,7 +78,7 @@
                                 <tr>
                                     <td>{{ trim(($i->nombres ?? '').' '.($i->apellidos ?? '')) }}</td>
                                     <td>{{ $i->correo_institucional ?? $i->correo_personal ?? 'Sin correo' }}</td>
-                                    <td>{{ $i->celular ?? 'N/A' }}</td>
+                                  <td>{{ optional($i->user)->celular ?? 'N/A' }}</td>
                                 </tr>
                             @empty
                                 <tr>

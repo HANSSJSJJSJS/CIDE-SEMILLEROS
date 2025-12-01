@@ -7,7 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-use App\Models\UserModulePermission; 
+use App\Models\UserModulePermission;
 use App\Models\Proyecto;
 use App\Models\Aprendiz;
 use App\Models\Administrador;
@@ -20,14 +20,28 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    protected $fillable = ['name','apellidos','email','password','role','telefono'];
-    protected $hidden   = ['password','remember_token'];
+    // Campos que se pueden llenar por mass assignment
+    protected $fillable = [
+        'name',
+        'apellidos',
+        'tipo_documento',
+        'documento',
+        'celular',
+        'genero',
+        'genero_otro',
+        'tipo_rh',
+        'email',
+        'password',
+        'role',
+    ];
+
+    protected $hidden = ['password','remember_token'];
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
         ];
     }
 
@@ -37,22 +51,30 @@ class User extends Authenticatable
 
     public function proyectos(): BelongsToMany
     {
-        return $this->belongsToMany(Proyecto::class, 'proyecto_user', 'user_id', 'id_proyecto');
+        return $this->belongsToMany(
+            Proyecto::class,
+            'proyecto_user',
+            'user_id',
+            'id_proyecto'
+        );
     }
 
     public function liderSemillero()
     {
+        // id_lider_semi == users.id
         return $this->hasOne(LiderSemillero::class, 'id_lider_semi', 'id');
     }
 
     public function aprendiz()
     {
-        return $this->hasOne(Aprendiz::class, 'id_usuario');
+        // En la BD la FK es user_id → users.id
+        return $this->hasOne(Aprendiz::class, 'user_id', 'id');
     }
 
     public function administrador()
     {
-        return $this->hasOne(Administrador::class, 'id_usuario');
+        // Tabla administradores: id_usuario → users.id
+        return $this->hasOne(Administrador::class, 'id_usuario', 'id');
     }
 
     public function evidencias()
@@ -97,7 +119,9 @@ class User extends Authenticatable
         }
 
         // 3) Otros roles → módulos personalizados
-        $perm = $this->modulePermissions()->where('module', $module)->first();
+        $perm = $this->modulePermissions()
+            ->where('module', $module)
+            ->first();
 
         if (! $perm) {
             return false;
