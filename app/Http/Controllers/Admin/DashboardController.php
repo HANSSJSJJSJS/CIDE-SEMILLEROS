@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -61,10 +62,15 @@ class DashboardController extends Controller
 
             $tablaProyectosSem = [];
 
+            // resolver diferencias de columnas de fecha: creado_en vs created_at
+            $orderColumn = Schema::hasColumn('proyectos', 'creado_en')
+                ? 'creado_en'
+                : (Schema::hasColumn('proyectos', 'created_at') ? 'created_at' : 'id_proyecto');
+
             foreach ($semilleros as $s) {
                 $proyectos = DB::table('proyectos')
                     ->where('id_semillero', $s->id_semillero)
-                    ->orderBy('creado_en', 'desc')
+                    ->orderByDesc($orderColumn)
                     ->limit(5)
                     ->get();
 
@@ -77,17 +83,21 @@ class DashboardController extends Controller
             // ============================================================
             // 3) TABLA — Actividad de líderes
             // ============================================================
+            // Resolver diferencia de nombres de columna en users: name | nombres | nombre
+            $nameCol = Schema::hasColumn('users', 'name')
+                ? 'name'
+                : (Schema::hasColumn('users', 'nombres') ? 'nombres' : (Schema::hasColumn('users', 'nombre') ? 'nombre' : null));
+
+            $userSelects = ['u.id', 'u.apellidos', 's.linea_investigacion', 'u.last_login_at'];
+            if ($nameCol) {
+                $userSelects[] = DB::raw("u.`$nameCol` as name");
+            }
+
             $lideresRaw = DB::table('users as u')
                 ->where('u.role', 'LIDER_SEMILLERO')
                 ->leftJoin('semilleros as s', 's.id_lider_semi', '=', 'u.id')
-                ->select(
-                    'u.id',
-                    'u.name',
-                    'u.apellidos',
-                    's.linea_investigacion',
-                    'u.last_login_at'
-                )
-                ->orderBy('u.name')
+                ->select($userSelects)
+                ->when($nameCol, fn($q) => $q->orderBy("u.$nameCol"))
                 ->get();
 
             $actividadLideres = $lideresRaw->map(function ($l) {

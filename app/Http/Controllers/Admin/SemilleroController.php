@@ -39,6 +39,15 @@ class SemilleroController extends Controller
                     ? 'id_lider_semi'
                     : (Schema::hasColumn($tblL,'id_usuario') ? 'id_usuario' : null);
 
+        // Columnas variables en lideres_semillero
+        $lNom   = Schema::hasColumn($tblL,'nombres') ? 'nombres' : (Schema::hasColumn($tblL,'nombre') ? 'nombre' : null);
+        $lApe   = Schema::hasColumn($tblL,'apellidos') ? 'apellidos' : (Schema::hasColumn($tblL,'apellido') ? 'apellido' : null);
+        $lEmail = Schema::hasColumn($tblL,'correo_institucional') ? 'correo_institucional' : (Schema::hasColumn($tblL,'email') ? 'email' : null);
+
+        $leaderNameExpr = $lNom && $lApe
+            ? "TRIM(CONCAT(COALESCE(l.`$lNom`,''),' ',COALESCE(l.`$lApe`,'')))"
+            : ($lNom ? "l.`$lNom`" : ($lApe ? "l.`$lApe`" : "NULL"));
+
         // Base de consulta
         $query = DB::table($tblS.' as s');
 
@@ -53,17 +62,19 @@ class SemilleroController extends Controller
             DB::raw("s.`{$sNom}` as nombre"),
             's.'.$sLinea.' as linea_investigacion',
             $sLider ? DB::raw('s.`'.$sLider.'` as id_lider_semi') : DB::raw('NULL as id_lider_semi'),
-            DB::raw("TRIM(CONCAT(COALESCE(l.nombres,''),' ',COALESCE(l.apellidos,''))) as lider_nombre"),
-            DB::raw("l.correo_institucional as lider_correo"),
+            DB::raw("$leaderNameExpr as lider_nombre"),
+            DB::raw($lEmail ? "l.`$lEmail` as lider_correo" : "NULL as lider_correo"),
         ];
 
         $semilleros = $query
             ->select($selects)
-            ->when($q !== '', function ($w) use ($q, $sNom, $sLinea) {
-                $w->where(function ($s) use ($q, $sNom, $sLinea) {
+            ->when($q !== '', function ($w) use ($q, $sNom, $sLinea, $lNom, $lApe, $lEmail) {
+                $w->where(function ($s) use ($q, $sNom, $sLinea, $lNom, $lApe, $lEmail) {
                     $s->where(DB::raw("s.`{$sNom}`"), 'like', "%{$q}%")
-                      ->orWhere(DB::raw("s.`{$sLinea}`"), 'like', "%{$q}%")
-                      ->orWhere(DB::raw("CONCAT(COALESCE(l.nombres,''),' ',COALESCE(l.apellidos,''))"), 'like', "%{$q}%");
+                      ->orWhere(DB::raw("s.`{$sLinea}`"), 'like', "%{$q}%");
+                    if ($lNom)   $s->orWhere(DB::raw("l.`{$lNom}`"), 'like', "%{$q}%");
+                    if ($lApe)   $s->orWhere(DB::raw("l.`{$lApe}`"), 'like', "%{$q}%");
+                    if ($lEmail) $s->orWhere(DB::raw("l.`{$lEmail}`"), 'like', "%{$q}%");
                 });
             })
             ->orderBy(DB::raw("s.`{$sNom}`"))
@@ -155,6 +166,15 @@ class SemilleroController extends Controller
      */
     public function edit($id)
     {
+        $tblL = 'lideres_semillero';
+        $lNom   = Schema::hasColumn($tblL,'nombres') ? 'nombres' : (Schema::hasColumn($tblL,'nombre') ? 'nombre' : null);
+        $lApe   = Schema::hasColumn($tblL,'apellidos') ? 'apellidos' : (Schema::hasColumn($tblL,'apellido') ? 'apellido' : null);
+        $lEmail = Schema::hasColumn($tblL,'correo_institucional') ? 'correo_institucional' : (Schema::hasColumn($tblL,'email') ? 'email' : null);
+
+        $leaderNameExpr = $lNom && $lApe
+            ? "TRIM(CONCAT(COALESCE(l.`$lNom`,''),' ',COALESCE(l.`$lApe`,'')))"
+            : ($lNom ? "l.`$lNom`" : ($lApe ? "l.`$lApe`" : "NULL"));
+
         $row = DB::table('semilleros as s')
             ->leftJoin('lideres_semillero as l', 'l.id_lider_semi', '=', 's.id_lider_semi')
             ->where('s.id_semillero', $id)
@@ -163,8 +183,8 @@ class SemilleroController extends Controller
                 's.nombre',
                 's.linea_investigacion',
                 's.id_lider_semi',
-                DB::raw("TRIM(CONCAT(COALESCE(l.nombres,''),' ',COALESCE(l.apellidos,''))) as lider_nombre"),
-                'l.correo_institucional as lider_correo'
+                DB::raw("$leaderNameExpr as lider_nombre"),
+                DB::raw($lEmail ? "l.`$lEmail` as lider_correo" : "NULL as lider_correo")
             )
             ->first();
 
@@ -183,6 +203,12 @@ class SemilleroController extends Controller
         $q = trim($request->get('q',''));
         $includeCurrent = $request->integer('include_current');
 
+        $tblL = 'lideres_semillero';
+        $lNom   = Schema::hasColumn($tblL,'nombres') ? 'nombres' : (Schema::hasColumn($tblL,'nombre') ? 'nombre' : null);
+        $lApe   = Schema::hasColumn($tblL,'apellidos') ? 'apellidos' : (Schema::hasColumn($tblL,'apellido') ? 'apellido' : null);
+        $lEmail = Schema::hasColumn($tblL,'correo_institucional') ? 'correo_institucional' : (Schema::hasColumn($tblL,'email') ? 'email' : null);
+        $orderCol = $lNom ?: ($lApe ?: ($lEmail ?: 'id_lider_semi'));
+
         $query = DB::table('lideres_semillero as l')
             ->leftJoin('semilleros as s', 's.id_lider_semi', '=', 'l.id_lider_semi')
             ->when($includeCurrent, function($w) use ($includeCurrent) {
@@ -193,19 +219,21 @@ class SemilleroController extends Controller
             }, function($w) {
                 $w->whereNull('s.id_lider_semi');
             })
-            ->when($q !== '', function ($w) use ($q) {
-                $w->where(function($s) use ($q){
-                    $s->where('l.nombres', 'like', "%{$q}%")
-                      ->orWhere('l.apellidos', 'like', "%{$q}%")
-                      ->orWhere('l.correo_institucional', 'like', "%{$q}%");
+            ->when($q !== '', function ($w) use ($q, $lNom, $lApe, $lEmail) {
+                $w->where(function($s) use ($q, $lNom, $lApe, $lEmail){
+                    if ($lNom)   $s->where("l.$lNom", 'like', "%{$q}%");
+                    if ($lApe)   $s->orWhere("l.$lApe", 'like', "%{$q}%");
+                    if ($lEmail) $s->orWhere("l.$lEmail", 'like', "%{$q}%");
                 });
             })
             ->select(
                 'l.id_lider_semi',
-                DB::raw("TRIM(CONCAT(COALESCE(l.nombres,''),' ',COALESCE(l.apellidos,''))) as nombre"),
-                'l.correo_institucional as correo'
+                DB::raw((($lNom && $lApe)
+                        ? "TRIM(CONCAT(COALESCE(l.`$lNom`,''),' ',COALESCE(l.`$lApe`,'')))"
+                        : ($lNom ? "l.`$lNom`" : ($lApe ? "l.`$lApe`" : "'Líder'"))) . " as nombre"),
+                DB::raw($lEmail ? "l.`$lEmail` as correo" : "NULL as correo")
             )
-            ->orderBy('l.nombres')
+            ->orderBy("l.$orderCol")
             ->limit(20)
             ->get();
 

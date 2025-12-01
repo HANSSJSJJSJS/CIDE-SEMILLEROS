@@ -812,6 +812,9 @@
 .drawer-body {
   padding: 18px 20px 24px;
   overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .drawer-section {
