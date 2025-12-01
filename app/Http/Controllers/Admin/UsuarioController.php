@@ -8,7 +8,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+
 use App\Models\User;
+use App\Models\Administrador;
+use App\Models\LiderSemillero;
+use App\Models\LiderInvestigacion;
+use App\Models\Aprendiz;
 
 class UsuarioController extends Controller
 {
@@ -152,10 +157,11 @@ class UsuarioController extends Controller
     }
 
     // ============================================================
-    // CREAR USUARIO
+    // CREAR USUARIO (NORMALIZADO)
     // ============================================================
     public function store(Request $request)
     {
+        // Mapear LIDER_GENERAL -> ADMIN para compatibilidad
         $roleMap = [
             'ADMIN'               => 'ADMIN',
             'LIDER_GENERAL'       => 'ADMIN',
@@ -164,124 +170,160 @@ class UsuarioController extends Controller
             'APRENDIZ'            => 'APRENDIZ',
         ];
 
-        // VALIDACIONES BÁSICAS (coinciden con modal crear)
-        $rules = [
-            'role'     => 'required|in:ADMIN,LIDER_GENERAL,LIDER_SEMILLERO,LIDER_INVESTIGACION,APRENDIZ',
-            'nombre'   => 'required|string|max:255',
-            'apellido' => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|min:6',
-        ];
+        // VALIDACIÓN PRINCIPAL
+        $data = $request->validate([
+            // ------- USERS -------
+            'role'            => ['required', 'in:ADMIN,LIDER_GENERAL,LIDER_SEMILLERO,LIDER_INVESTIGACION,APRENDIZ'],
+            'email'           => ['required', 'email', 'max:160', 'unique:users,email'],
+            'nombre'          => ['required', 'string', 'max:120'],
+            'apellido'        => ['required', 'string', 'max:255'],
+            'password'        => ['required', 'string', 'min:6'],
 
-        $data = $request->validate($rules);
+            'tipo_documento'  => ['required', 'string', 'max:20'],
+            'documento'       => ['required', 'string', 'max:40', 'unique:users,documento'],
+            'celular'         => ['nullable', 'string', 'max:30'],
+            'genero'          => ['nullable', 'in:HOMBRE,MUJER,NO DEFINIDO'],
+            'tipo_rh'         => ['nullable', 'in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
+
+            // ------- LÍDER SEMILLERO -------
+            'ls_correo_institucional' => ['nullable', 'email', 'max:160'],
+            'ls_semillero_id'         => ['required_if:role,LIDER_SEMILLERO', 'nullable', 'exists:semilleros,id_semillero'],
+
+            // ------- APRENDIZ -------
+            'semillero_id'        => ['required_if:role,APRENDIZ', 'nullable', 'exists:semilleros,id_semillero'],
+            'correo_institucional'=> ['nullable', 'email', 'max:160'],
+            'vinculado_sena'      => ['nullable', 'in:0,1'],
+            'ficha'               => ['nullable', 'string', 'max:30'],
+            'programa'            => ['nullable', 'string', 'max:160'],
+            'institucion'         => ['nullable', 'string', 'max:160'],
+            'nivel_educativo'     => ['required_if:role,APRENDIZ', 'nullable',
+                'in:ARTICULACION_MEDIA_10_11,TECNOACADEMIA_7_9,TECNICO,TECNOLOGO,PROFESIONAL',
+            ],
+        ], [
+            'role.required'        => 'Debes seleccionar un rol.',
+            'role.in'              => 'Rol no permitido.',
+            'email.unique'         => 'Este correo ya está registrado.',
+            'documento.unique'     => 'Este documento ya está registrado.',
+
+            'ls_semillero_id.required_if' => 'Selecciona el semillero del líder.',
+            'ls_semillero_id.exists'      => 'El semillero seleccionado no existe.',
+
+            'semillero_id.required_if'    => 'Selecciona el semillero del aprendiz.',
+            'semillero_id.exists'         => 'El semillero seleccionado no existe.',
+
+            'nivel_educativo.required_if' => 'Selecciona el nivel educativo del aprendiz.',
+        ]);
+
+        // Rol canonical (ADMIN, LIDER_SEMILLERO, etc.)
         $role = $roleMap[$data['role']];
 
-        // Validaciones adicionales según rol
-        if ($role === 'LIDER_SEMILLERO') {
-            $request->validate([
-                'ls_tipo_documento' => 'required|string|max:50',
-                'ls_documento'      => 'required|string|max:40',
-            ]);
-        }
+        // Normalizar vinculado_sena
+        $vinculadoSena = (int) ($data['vinculado_sena'] ?? 1);
 
-        if ($role === 'APRENDIZ') {
-            $request->validate([
-                'tipo_documento' => 'required|string|max:50',
-                'documento'      => 'required|string|max:40',
-                'semillero_id'   => 'required|integer',
-            ]);
-        }
+        // Si el género no es OTRO, limpiamos genero_otro
+      
 
-        DB::transaction(function () use ($data, $role, $request) {
+        DB::beginTransaction();
 
-            // Crear usuario base
-            $userId = DB::table('users')->insertGetId([
-                'name'       => $data['nombre'],
-                'apellidos'  => $data['apellido'],
-                'email'      => $data['email'],
-                'password'   => Hash::make($data['password']),
-                'role'       => $role,
-                'created_at' => now(),
-                'updated_at' => now(),
+        try {
+            // ==========================
+            // 1) CREAR USER (tabla users)
+            // ==========================
+            $user = User::create([
+                'name'           => $data['nombre'],
+                'apellidos'      => $data['apellido'],
+                'email'          => $data['email'],
+                'password'       => Hash::make($data['password']),
+                'role'           => $role,
+
+                'tipo_documento' => $data['tipo_documento'],
+                'documento'      => $data['documento'],
+                'celular'        => $data['celular'] ?? null,
+                'genero'         => $data['genero'] ?? null,
+                'tipo_rh'        => $data['tipo_rh'] ?? null,
             ]);
 
-            // Perfiles según rol
+            // ==========================
+            // 2) CREAR PERFIL SEGÚN ROL
+            // ==========================
             switch ($role) {
-
-                // ADMIN
+                // --------------------
+                // ADMIN (Líder general)
+                // --------------------
                 case 'ADMIN':
-                    $adminData = [
-                        'id_usuario'     => $userId,
-                        'apellidos'      => $data['apellido'],
-                        'creado_en'      => now(),
-                        'actualizado_en' => now(),
-                    ];
-
-                    // Cubrimos tanto 'nombre' como 'nombres'
-                    if (Schema::hasColumn('administradores', 'nombre')) {
-                        $adminData['nombre'] = $data['nombre'];
-                    }
-                    if (Schema::hasColumn('administradores', 'nombres')) {
-                        $adminData['nombres'] = $data['nombre'];
-                    }
-
-                    DB::table('administradores')->insert($adminData);
+                    Administrador::create([
+                        'id_usuario'          => $user->id,
+                        'nombre'              => $data['nombre'] . ' ' . $data['apellido'], // si usas este campo
+                        'nombres'             => $data['nombre'],
+                        'apellidos'           => $data['apellido'],
+                     
+                    ]);
                     break;
 
+                // --------------------
                 // LÍDER SEMILLERO
+                // --------------------
                 case 'LIDER_SEMILLERO':
                     DB::table('lideres_semillero')->insert([
-                        'id_lider_semi'        => $userId,
+                        'id_lider_semi'        => $user->id, // FK = users.id
                         'nombres'              => $data['nombre'],
                         'apellidos'            => $data['apellido'],
-                        'tipo_documento'       => $request->ls_tipo_documento,
-                        'documento'            => $request->ls_documento,
-                        'correo_institucional' => $data['email'],
+                        'correo_institucional' => $data['ls_correo_institucional'] ?? $data['email'],
+                        'id_semillero'         => $data['ls_semillero_id'],
                         'creado_en'            => now(),
                         'actualizado_en'       => now(),
                     ]);
                     break;
 
+                // --------------------
                 // LÍDER INVESTIGACIÓN
+                // --------------------
                 case 'LIDER_INVESTIGACION':
                     DB::table('lideres_investigacion')->insert([
-                        'user_id'        => $userId,
-                        'tiene_permisos' => 0,
-                        'created_at'     => now(),
-                        'updated_at'     => now(),
+                        'user_id'       => $user->id,
+                        'tiene_permisos'=> 0,        // inicia sin permisos
+                        'created_at'    => now(),
+                        'updated_at'    => now(),
                     ]);
                     break;
 
+                // --------------------
                 // APRENDIZ
+                // --------------------
                 case 'APRENDIZ':
-                    $colUserFk = Schema::hasColumn('aprendices', 'id_usuario')
-                        ? 'id_usuario'
-                        : 'user_id';
-
-                    DB::table('aprendices')->insert([
-                        $colUserFk             => $userId,
-                        'nombres'              => $data['nombre'],
-                        'apellidos'            => $data['apellido'],
-                        'correo_personal'      => $data['email'],
-                        'tipo_documento'       => $request->tipo_documento,
-                        'documento'            => $request->documento,
-                        'celular'              => $request->celular,
-                        'correo_institucional' => $request->correo_institucional,
-                        'ficha'                => $request->ficha,
-                        'programa'             => $request->programa,
-                        'vinculado_sena'       => $request->vinculado_sena ?? 1,
-                        'institucion'          => $request->institucion,
-                        'semillero_id'         => $request->semillero_id,
-                        'creado_en'            => now(),
-                        'actualizado_en'       => now(),
+                    Aprendiz::create([
+                        'user_id'             => $user->id,
+                        'nombres'             => $data['nombre'],
+                        'apellidos'           => $data['apellido'],
+                        'ficha'               => $data['ficha'] ?? null,
+                        'programa'            => $data['programa'] ?? null,
+                        'nivel_educativo'     => $data['nivel_educativo'] ?? null,
+                        'vinculado_sena'      => $vinculadoSena,
+                        'institucion'         => $vinculadoSena === 1 ? null : ($data['institucion'] ?? null),
+                        'correo_institucional'=> $data['correo_institucional'] ?? null,
+                        'correo_personal'     => $data['email'],
+                        'contacto_nombre'     => null,
+                        'contacto_celular'    => null,
+                        'semillero_id'        => $data['semillero_id'],
+                        'estado'              => 'Activo',
                     ]);
                     break;
             }
-        });
 
-        return redirect()
-            ->route('admin.usuarios.index')
-            ->with('success','Se ha creado el usuario correctamente.');
+            DB::commit();
+
+            return redirect()
+                ->route('admin.usuarios.index')
+                ->with('success','Se ha creado el usuario correctamente.');
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return redirect()
+                ->route('admin.usuarios.index')
+                ->withInput()
+                ->with('error', 'Ocurrió un error al crear el usuario: '.$e->getMessage());
+        }
     }
 
     // ============================================================
