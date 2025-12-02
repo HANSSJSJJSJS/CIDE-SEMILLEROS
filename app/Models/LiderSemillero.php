@@ -14,26 +14,24 @@ class LiderSemillero extends Model
     protected $table = 'lideres_semillero';
     protected $primaryKey = 'id_lider_semi';
 
-    public $incrementing = false;   // porque usamos el id de users
+    public $incrementing = false;   // porque id_lider_semi es el mismo id del usuario
     protected $keyType   = 'int';
 
-    public $timestamps = false;     // porque usamos creado_en / actualizado_en
+    public $timestamps = false;     // porque usas creado_en / actualizado_en
 
     protected $fillable = [
         'id_lider_semi',
-        'nombres',
-        'apellidos',
         'correo_institucional',
         'id_semillero',
     ];
 
-    // Relación con User
+    // Relación hacia User (importante)
     public function user()
     {
         return $this->belongsTo(User::class, 'id_lider_semi', 'id');
     }
 
-    // Relación con Semillero
+    // Relación hacia Semillero
     public function semillero()
     {
         return $this->belongsTo(Semillero::class, 'id_semillero', 'id_semillero');
