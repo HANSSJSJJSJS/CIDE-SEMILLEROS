@@ -37,7 +37,7 @@
             autocomplete="off">
         @csrf
 
-        <div class="modal-body">
+        <div class="modal-body" style="max-height: calc(100vh - 260px); overflow-y: auto;">
 
           {{-- ===========================================================
                SELECCIÓN DE ROL – SIEMPRE ARRIBA

@@ -573,7 +573,7 @@ class SemilleroController extends Controller
                     $w->orWhere('u.documento', 'like', "%{$num}%")
                       ->orWhere('ue.documento', 'like', "%{$num}%");
                     if ($digits !== '') {
-                        $w->orWhereRaw("REPLACE(REPLACE(REPLACE(u.documento,'-',''),'.',''),' ','') like ?", ["%{$digits}%"]) 
+                        $w->orWhereRaw("REPLACE(REPLACE(REPLACE(u.documento,'-',''),'.',''),' ','') like ?", ["%{$digits}%"])
                           ->orWhereRaw("REPLACE(REPLACE(REPLACE(ue.documento,'-',''),'.',''),' ','') like ?", ["%{$digits}%"]);
                     }
                 }
@@ -885,7 +885,7 @@ class SemilleroController extends Controller
                     $w->orWhere('u.documento', 'like', "%{$num}%")
                       ->orWhere('ue.documento', 'like', "%{$num}%");
                     if ($digits !== '') {
-                        $w->orWhereRaw("REPLACE(REPLACE(REPLACE(u.documento,'-',''),'.',''),' ','') like ?", ["%{$digits}%"]) 
+                        $w->orWhereRaw("REPLACE(REPLACE(REPLACE(u.documento,'-',''),'.',''),' ','') like ?", ["%{$digits}%"])
                           ->orWhereRaw("REPLACE(REPLACE(REPLACE(ue.documento,'-',''),'.',''),' ','') like ?", ["%{$digits}%"]);
                     }
                 }

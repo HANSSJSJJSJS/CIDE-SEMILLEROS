@@ -143,7 +143,7 @@
 
         {{-- Modal flotante para editar aprendices (por semillero o proyecto) --}}
         <div class="modal fade" id="editApr{{ $loop->index }}" tabindex="-1" aria-labelledby="editAprLabel{{ $loop->index }}" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header brand-header">
                         <h5 class="modal-title fw-bold" id="editAprLabel{{ $loop->index }}">{{ $semillero->nombre }}</h5>
@@ -177,6 +177,27 @@
                                 <div id="resultados-{{ $loop->index }}" class="list-group list-group-flush" style="display:none;"></div>
                                 <div id="no-result-{{ $loop->index }}" class="p-3 text-muted" style="display:none;">Sin resultados</div>
                             </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <h6 class="fw-bold mb-2">Crear Nuevo Aprendiz</h6>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">Nombres</label>
+                                    <input id="nombres-{{ $loop->index }}" type="text" class="form-control" placeholder="Nombres del aprendiz">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Apellidos</label>
+                                    <input id="apellidos-{{ $loop->index }}" type="text" class="form-control" placeholder="Apellidos del aprendiz">
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">Correo Institucional (opcional)</label>
+                                    <input id="correo-{{ $loop->index }}" type="email" class="form-control" placeholder="correo@sena.edu.co">
+                                </div>
+                            </div>
+                            <button type="button" id="btn-crear-{{ $loop->index }}" class="btn btn-success btn-sm mt-2">
+                                <i class="bi bi-plus-circle me-1"></i>Crear y Agregar
+                            </button>
                         </div>
 
                         <div class="mt-4">
@@ -291,9 +312,10 @@
             const lista = q('lista-asignados');
             const detailsList = document.getElementById('aprendicesList' + idx);
             const countEl = document.getElementById('apr-count-' + idx);
-            const btnCrearAgregar = null;
-            const inpNombre = null;
-            const inpEmail = null;
+            const btnCrearAgregar = q('btn-crear');
+            const inpNombre = q('nombres');
+            const inpApellidos = q('apellidos');
+            const inpEmail = q('correo');
             const btnGuardar = q('btn-guardar');
             const formSync = q('form-sync');
 
@@ -418,10 +440,37 @@
                     .catch(()=> notify('No se Pudo Eliminar (red/JSON)','danger'));
             }
             function crearYAdjuntar(){
-                const nombre = (inpNombre && inpNombre.value.trim()) || ''; const correo = (inpEmail && inpEmail.value.trim()) || '';
-                if(!nombre) return;
-                apiFetch(route('create'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ nombre_completo:nombre, correo_institucional: correo || null })})
-                    .then(r=>r.json()).then(data=>{ if(data && data.ok){ const ap=data.aprendiz; const div=document.createElement('div'); div.className='border rounded p-2 d-flex justify-content-between align-items-center'; div.dataset.id=ap.id_aprendiz; div.innerHTML = `<div><div class=\"fw-semibold\">${ap.nombre_completo}</div><small class=\"text-muted\">${ap.correo_institucional ?? ''}</small></div><button class=\"btn btn-sm btn-danger btn-eliminar\">Eliminar</button>`; lista.appendChild(div); if(inpNombre) inpNombre.value=''; if(inpEmail) inpEmail.value=''; }});
+                const nombres = (inpNombre && inpNombre.value.trim()) || '';
+                const apellidos = (inpApellidos && inpApellidos.value.trim()) || '';
+                const correo = (inpEmail && inpEmail.value.trim()) || '';
+
+                if(!nombres || !apellidos) {
+                    notify('Debe ingresar nombres y apellidos', 'danger');
+                    return;
+                }
+
+                const nombreCompleto = nombres + ' ' + apellidos;
+
+                apiFetch(route('create'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ nombres: nombres, apellidos: apellidos, correo_institucional: correo || null })})
+                    .then(r=>r.json()).then(data=>{
+                        if(data && data.ok){
+                            const ap=data.aprendiz;
+                            const div=document.createElement('div');
+                            div.className='border rounded p-2 d-flex justify-content-between align-items-center';
+                            div.dataset.id=ap.id_aprendiz;
+                            div.innerHTML = `<div><div class=\"fw-semibold\">${ap.nombre_completo}</div><small class=\"text-muted\">${ap.correo_institucional ?? ''}</small></div><button class=\"btn btn-sm btn-danger btn-eliminar\">Eliminar</button>`;
+                            lista.appendChild(div);
+                            if(inpNombre) inpNombre.value='';
+                            if(inpApellidos) inpApellidos.value='';
+                            if(inpEmail) inpEmail.value='';
+                            notify('Aprendiz creado y agregado correctamente', 'success');
+                        } else {
+                            notify('Error al crear aprendiz', 'danger');
+                        }
+                    }).catch(err => {
+                        console.error('Error creando aprendiz:', err);
+                        notify('Error al crear aprendiz', 'danger');
+                    });
             }
 
             function doSearch(){

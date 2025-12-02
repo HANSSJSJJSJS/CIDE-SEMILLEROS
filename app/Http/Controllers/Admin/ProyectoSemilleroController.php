@@ -13,7 +13,11 @@ class ProyectoSemilleroController extends Controller
 {
     public function index(Semillero $semillero)
     {
-        $semillero->load(['lider:id_lider_semi,nombres,apellidos,correo_institucional']);
+        // Cargar líder con datos de users (nombre y apellidos están en users)
+        $semillero->load(['lider' => function($query) {
+            $query->select('id_lider_semi', 'id_usuario', 'correo_institucional')
+                  ->with(['user:id,nombre,apellidos']);
+        }]);
 
         // AHORA CON PAGINACIÓN
         $proyectos = $semillero->proyectos()

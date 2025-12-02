@@ -391,109 +391,26 @@ class DocumentosController extends Controller
                 return response()->json(['entregas' => []]);
             }
 
-            $hasDescripcion = Schema::hasColumn('documentos', 'descripcion');
-
-            // ¿Tenemos tabla de aprendices?
-            $hasAprTable = Schema::hasTable('aprendices');
-
-            // Detectar si podemos unir por id_aprendiz y cuál es la PK real en aprendices
-            $joinByAprendizId = $hasAprTable && Schema::hasColumn('documentos','id_aprendiz');
-            $aprPkCol = null;
-            if ($hasAprTable) {
-                if (Schema::hasColumn('aprendices','id_aprendiz')) {
-                    $aprPkCol = 'id_aprendiz';
-                } elseif (Schema::hasColumn('aprendices','id')) {
-                    $aprPkCol = 'id';
-                }
-            }
-
-            // Determinar si podemos mapear también por id_usuario
-            $joinByUser = $hasAprTable
-                && Schema::hasColumn('documentos','id_usuario')
-                && Schema::hasColumn('aprendices','id_usuario');
-
-            $aprHasNombreCompleto = $hasAprTable && Schema::hasColumn('aprendices','nombre_completo');
-
-            // Expresiones de nombre principales (solo si hay tabla de aprendices)
-            // Si nombre_completo existe pero está NULL, usar nombres + apellidos como fallback.
-            if ($hasAprTable) {
-                if ($aprHasNombreCompleto) {
-                    $aprNameExpr = "COALESCE(a.nombre_completo, CONCAT(COALESCE(a.nombres,''),' ',COALESCE(a.apellidos,'')))";
-                } else {
-                    $aprNameExpr = "CONCAT(COALESCE(a.nombres,''),' ',COALESCE(a.apellidos,''))";
-                }
-            } else {
-                $aprNameExpr = null;
-            }
-
-            if ($hasAprTable && $joinByUser) {
-                if ($aprHasNombreCompleto) {
-                    $aprNameExprAlt = "COALESCE(au.nombre_completo, CONCAT(COALESCE(au.nombres,''),' ',COALESCE(au.apellidos,'')))";
-                } else {
-                    $aprNameExprAlt = "CONCAT(COALESCE(au.nombres,''),' ',COALESCE(au.apellidos,''))";
-                }
-            } else {
-                $aprNameExprAlt = null;
-            }
-
-            // Select dinámico del nombre: usar lo que exista
-            if ($aprNameExpr && $aprNameExprAlt) {
-                $nombreSelectExpr = "COALESCE(($aprNameExpr), ($aprNameExprAlt), 'Sin asignar')";
-            } elseif ($aprNameExpr) {
-                $nombreSelectExpr = "COALESCE(($aprNameExpr), 'Sin asignar')";
-            } elseif ($aprNameExprAlt) {
-                $nombreSelectExpr = "COALESCE(($aprNameExprAlt), 'Sin asignar')";
-            } else {
-                $nombreSelectExpr = "'Sin asignar'";
-            }
-
-            $selectFields = [
-                'd.id_documento as id',
-                'd.documento as titulo',
-                'd.ruta_archivo',
-                'd.tipo_archivo',
-                'd.tamanio',
-                DB::raw("COALESCE(d.fecha_subida, d.fecha_subido) as fecha"),
-                DB::raw("COALESCE(d.estado, 'pendiente') as estado"),
-                // Nombre del aprendiz asignado (por id_aprendiz o id_usuario)
-                DB::raw($nombreSelectExpr . ' as nombre_aprendiz'),
-                'd.ruta_archivo as archivo_url',
-                'd.documento as archivo_nombre'
-            ];
-
-            if ($hasDescripcion) {
-                $selectFields[] = DB::raw("COALESCE(d.descripcion, '') as descripcion");
-            } else {
-                $selectFields[] = DB::raw("'' as descripcion");
-            }
-
-            $query = DB::table('documentos as d');
-            // Incluir marca de último rechazo si existe la columna
-            if (Schema::hasColumn('documentos','rechazado_en')) {
-                $selectFields[] = DB::raw('d.rechazado_en');
-            } else {
-                $selectFields[] = DB::raw('NULL as rechazado_en');
-            }
-
-            // Unión principal por id_aprendiz -> PK de aprendices (si ambas columnas existen)
-            if ($joinByAprendizId && $aprPkCol) {
-                $query = $query->leftJoin('aprendices as a', 'd.id_aprendiz', '=', 'a.' . $aprPkCol);
-            }
-
-            // Unión alternativa por id_usuario si está disponible
-            if ($joinByUser) {
-                $query = $query->leftJoin('aprendices as au', 'd.id_usuario', '=', 'au.id_usuario');
-            }
-
-            // Ordenar usando la columna disponible (fecha_subida o fecha_subido)
-            $entregas = $query
+            // Consulta directa para obtener entregas del proyecto
+            $entregas = DB::table('documentos as d')
+                ->leftJoin('aprendices as a', 'a.id_aprendiz', '=', 'd.id_aprendiz')
+                ->leftJoin('users as u', 'u.id', '=', 'a.user_id')
                 ->where('d.id_proyecto', $proyectoId)
-                ->select($selectFields)
-                ->when(Schema::hasColumn('documentos','fecha_subida'), function($q){
-                    return $q->orderBy('d.fecha_subida', 'desc');
-                }, function($q){
-                    return $q->orderBy('d.fecha_subido', 'desc');
-                })
+                ->select(
+                    'd.id_documento as id',
+                    'd.documento as titulo',
+                    'd.ruta_archivo',
+                    'd.tipo_archivo',
+                    'd.tamanio',
+                    DB::raw("COALESCE(d.fecha_subido, d.fecha_subida) as fecha"),
+                    DB::raw("COALESCE(d.estado, 'pendiente') as estado"),
+                    DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''), ' ', COALESCE(u.apellidos,''))) as nombre_aprendiz"),
+                    'd.ruta_archivo as archivo_url',
+                    'd.documento as archivo_nombre',
+                    DB::raw("NULL as descripcion"),
+                    DB::raw("NULL as rechazado_en")
+                )
+                ->orderBy('d.fecha_subido', 'desc')
                 ->get();
 
             $ahora = new \DateTime();
@@ -720,3 +637,4 @@ class DocumentosController extends Controller
         return [];
     }
 }
+

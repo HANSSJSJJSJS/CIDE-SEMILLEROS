@@ -21,6 +21,8 @@ class Aprendiz extends Model
 
     protected $fillable = [
         'user_id',
+        'nombres',
+        'apellidos',
         'ficha',
         'programa',
         'nivel_educativo',
@@ -87,4 +89,18 @@ class Aprendiz extends Model
         return $this->hasMany(EventoParticipante::class, 'id_aprendiz', 'id_aprendiz');
     }
     */
+
+    // Accessor para nombre completo
+    public function getNombreCompletoAttribute()
+    {
+        $nombres = $this->nombres ?? '';
+        $apellidos = $this->apellidos ?? '';
+
+        // Si no tiene nombres ni apellidos, intentar obtener del usuario
+        if (empty(trim($nombres . ' ' . $apellidos)) && $this->user) {
+            return $this->user->name ?? '';
+        }
+
+        return trim($nombres . ' ' . $apellidos);
+    }
 }

@@ -21,8 +21,6 @@ class LiderSemillero extends Model
 
     protected $fillable = [
         'id_lider_semi',
-        'nombres',
-        'apellidos',
         'correo_institucional',
         'id_semillero',
     ];
