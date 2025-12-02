@@ -24,25 +24,26 @@ class AprendicesController extends Controller
         $hasUsers = Schema::hasTable('users');
         $aprHas = fn(string $c) => Schema::hasColumn('aprendices', $c);
         $usrHas = fn(string $c) => Schema::hasColumn('users', $c);
+        $joinCol = $aprHas('user_id') ? 'user_id' : ($aprHas('id_usuario') ? 'id_usuario' : null);
 
         // tipo_documento
         if ($aprHas('tipo_documento')) {
             $selectCols[] = 'aprendices.tipo_documento';
-        } elseif ($hasUsers && $usrHas('tipo_documento')) {
+        } elseif ($hasUsers && $usrHas('tipo_documento') && ($aprHas('user_id') || $aprHas('id_usuario'))) {
             $selectCols[] = 'u.tipo_documento as tipo_documento';
             $joinUser = true;
         }
         // documento
         if ($aprHas('documento')) {
             $selectCols[] = 'aprendices.documento';
-        } elseif ($hasUsers && $usrHas('documento')) {
+        } elseif ($hasUsers && $usrHas('documento') && ($aprHas('user_id') || $aprHas('id_usuario'))) {
             $selectCols[] = 'u.documento as documento';
             $joinUser = true;
         }
         // celular
         if ($aprHas('celular')) {
             $selectCols[] = 'aprendices.celular';
-        } elseif ($hasUsers && $usrHas('celular')) {
+        } elseif ($hasUsers && $usrHas('celular') && ($aprHas('user_id') || $aprHas('id_usuario'))) {
             $selectCols[] = 'u.celular as celular';
             $joinUser = true;
         }
@@ -181,7 +182,7 @@ class AprendicesController extends Controller
                 if (Schema::hasColumn('aprendices','semillero_id')) {
                     // Camino directo por columna en aprendices
                     $aprendices = DB::table('aprendices')
-                        ->when($joinUser, function($q){ $q->leftJoin('users as u','u.id','=','aprendices.user_id'); })
+                        ->when($joinUser, function($q) use ($joinCol){ if ($joinCol) { $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$joinCol)); } })
                         ->whereIn('aprendices.semillero_id', $semilleroIds)
                         ->select(array_merge($selectCols, [ DB::raw($nameExpr.' as nombre_completo') ]))
                         ->orderByRaw($nameExpr)
@@ -190,7 +191,7 @@ class AprendicesController extends Controller
                 } elseif (Schema::hasTable('aprendiz_semillero')) {
                     // Fallback a pivote
                     $aprendices = DB::table('aprendices')
-                        ->when($joinUser, function($q){ $q->leftJoin('users as u','u.id','=','aprendices.user_id'); })
+                        ->when($joinUser, function($q) use ($joinCol){ if ($joinCol) { $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$joinCol)); } })
                         ->join('aprendiz_semillero', 'aprendiz_semillero.id_aprendiz', '=', 'aprendices.id_aprendiz')
                         ->whereIn('aprendiz_semillero.id_semillero', $semilleroIds)
                         ->select(array_merge($selectCols, [ DB::raw($nameExpr.' as nombre_completo') ]))
@@ -278,11 +279,10 @@ class AprendicesController extends Controller
 
                 if (!empty($semillerosLider)) {
                     $aprendices = DB::table('aprendices')
+                        ->when($joinUser, function($q) use ($joinCol){ if ($joinCol) { $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$joinCol)); } })
                         ->whereIn('semillero_id', $semillerosLider)
-                        ->select(array_merge($selectCols, [
-                            DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),
-                        ]))
-                        ->orderByRaw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))")
+                        ->select(array_merge($selectCols, [ DB::raw($nameExpr.' as nombre_completo') ]))
+                        ->orderByRaw($nameExpr)
                         ->get();
                     $aprendicesIds = $aprendices->pluck('id_aprendiz')->toArray();
                 }
@@ -291,7 +291,7 @@ class AprendicesController extends Controller
             // Fallback 2: si aún no hay aprendices, listar algunos sin filtro para no dejar el módulo vacío
             if ($aprendices->isEmpty() && Schema::hasTable('aprendices')) {
                 $aprendices = DB::table('aprendices')
-                    ->when($joinUser, function($q){ $q->leftJoin('users as u','u.id','=','aprendices.user_id'); })
+                    ->when($joinUser, function($q) use ($joinCol){ if ($joinCol) { $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$joinCol)); } })
                     ->select(array_merge($selectCols, [ DB::raw($nameExpr.' as nombre_completo') ]))
                     ->orderByRaw($nameExpr)
                     ->limit(50)
