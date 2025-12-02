@@ -87,9 +87,22 @@ class SemilleroController extends Controller
             // FILTRO CORREGIDO: obtener semilleros del líder y filtrar proyectos por esos IDs
             Log::info("Buscando semilleros del líder ID: {$userId}");
             $semillerosDelLider = [];
+            // Algunos esquemas usan la tabla lideres_semillero con la relación users.id -> lideres_semillero.id_usuario
+            $leaderIds = [];
+            if (Schema::hasTable('lideres_semillero')) {
+                $leaderIds = DB::table('lideres_semillero')
+                    ->where('id_usuario', $userId)
+                    ->pluck('id_lider_semi')
+                    ->toArray();
+            }
             if (Schema::hasTable('semilleros') && Schema::hasColumn('proyectos', 'id_semillero')) {
                 $semillerosDelLider = DB::table('semilleros')
-                    ->where('id_lider_semi', $userId)
+                    ->when(!empty($leaderIds), function($q) use ($leaderIds){
+                        $q->whereIn('id_lider_semi', $leaderIds);
+                    }, function($q) use ($userId){
+                        // Fallback: algunos esquemas guardan directamente el id de usuario
+                        $q->where('id_lider_semi', $userId);
+                    })
                     ->pluck('id_semillero')
                     ->toArray();
             }
@@ -156,15 +169,43 @@ class SemilleroController extends Controller
                         // JOIN correcto según si la pivote usa id_aprendiz o id_usuario/user_id
                         $useUserId = in_array($pivot['aprCol'], ['id_usuario','user_id']);
                         $joinCol = ($useUserId && Schema::hasColumn('aprendices', 'id_usuario')) ? 'id_usuario' : 'id_aprendiz';
+                        // Preparar columnas dinámicas para nombre completo del aprendiz
+                        $aprHasNombres   = Schema::hasColumn('aprendices','nombres');
+                        $aprHasApellidos = Schema::hasColumn('aprendices','apellidos');
+                        $usrNameCol = Schema::hasColumn('users','name') ? 'name' : (Schema::hasColumn('users','nombre') ? 'nombre' : null);
+                        $usrLastCol = Schema::hasColumn('users','apellidos') ? 'apellidos' : (Schema::hasColumn('users','apellido') ? 'apellido' : null);
+                        $baseConcat = $aprHasNombres && $aprHasApellidos
+                            ? "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))"
+                            : ($usrNameCol && $usrLastCol
+                                ? "CONCAT(COALESCE(COALESCE(u.`$usrNameCol`, ue.`$usrNameCol`),''),' ',COALESCE(COALESCE(u.`$usrLastCol`, ue.`$usrLastCol`),''))"
+                                : ($usrNameCol
+                                    ? "COALESCE(COALESCE(u.`$usrNameCol`, ue.`$usrNameCol`),'')"
+                                    : ($usrLastCol ? "COALESCE(COALESCE(u.`$usrLastCol`, ue.`$usrLastCol`),'')" : "''")));
+                        $nameExpr = "COALESCE(NULLIF(TRIM($baseConcat),'') , COALESCE(aprendices.correo_institucional, u.email, ue.email, ''))";
+                        $willJoinUser = !($aprHasNombres && $aprHasApellidos) && Schema::hasTable('users') && Schema::hasColumn('aprendices','user_id');
+                        $joinByEmail  = Schema::hasTable('users') && Schema::hasColumn('users','email_lc') && Schema::hasColumn('aprendices','correo_institucional');
+                        $emailExpr = $willJoinUser || $joinByEmail
+                            ? 'COALESCE(aprendices.correo_institucional, u.email, ue.email, "")'
+                            : 'COALESCE(aprendices.correo_institucional, "")';
+
                         $rows = DB::table($pivot['table'])
                             ->join('aprendices', 'aprendices.'.$joinCol, '=', DB::raw($pivot['table'].'.'.$pivot['aprCol']))
+                            ->when(!($aprHasNombres && $aprHasApellidos) && Schema::hasTable('users') && Schema::hasColumn('aprendices','user_id'), function($q){
+                                $q->leftJoin('users as u','u.id','=','aprendices.user_id');
+                            })
+                            ->when(Schema::hasTable('users') && Schema::hasColumn('users','email_lc') && Schema::hasColumn('aprendices','correo_institucional'), function($q){
+                                $q->leftJoin('users as ue', DB::raw('ue.email_lc'), '=', DB::raw('LOWER(aprendices.correo_institucional)'));
+                            })
                             ->whereIn(DB::raw($pivot['table'].'.'.$pivot['projCol']), $ids)
                             ->select(
                                 DB::raw($pivot['table'].'.'.$pivot['projCol'].' as pid'),
                                 DB::raw('aprendices.id_aprendiz as id_aprendiz'),
-                                DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo"),
-                                'aprendices.correo_institucional',
-                                'aprendices.programa'
+                                DB::raw($nameExpr.' as nombre_completo'),
+                                DB::raw($emailExpr.' as correo_institucional'),
+                                DB::raw('COALESCE(aprendices.programa, "") as programa'),
+                                // Devolver también nombres/apellidos por compatibilidad con la vista
+                                DB::raw(($aprHasNombres ? 'aprendices.nombres' : ($usrNameCol ? "COALESCE(u.`$usrNameCol`, ue.`$usrNameCol`)" : "''")).' as nombres'),
+                                DB::raw(($aprHasApellidos ? 'aprendices.apellidos' : ($usrLastCol ? "COALESCE(u.`$usrLastCol`, ue.`$usrLastCol`)" : "''")).' as apellidos')
                             )->get();
 
                         $grouped = $rows->groupBy('pid');
@@ -425,37 +466,150 @@ class SemilleroController extends Controller
             ->firstOrFail();
         $excluir = $semillero->aprendices->pluck('id_aprendiz')->all();
 
-        $query = Aprendiz::select(
-            'id_aprendiz','nombres','apellidos',
-            DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo"),
-            'correo_institucional','tipo_documento','documento','programa','ficha'
-        );
+        $aprHasNombres   = Schema::hasColumn('aprendices','nombres');
+        $aprHasApellidos = Schema::hasColumn('aprendices','apellidos');
+        $usrNameCol = Schema::hasColumn('users','name') ? 'name' : (Schema::hasColumn('users','nombre') ? 'nombre' : null);
+        $usrLastCol = Schema::hasColumn('users','apellidos') ? 'apellidos' : (Schema::hasColumn('users','apellido') ? 'apellido' : null);
+        $usrDocCol  = Schema::hasColumn('users','documento');
+        $usrTipoCol = Schema::hasColumn('users','tipo_documento');
+        $roleCol = Schema::hasColumn('users','role') ? 'role' : (Schema::hasColumn('users','rol') ? 'rol' : null);
+        $joinUser = !($aprHasNombres && $aprHasApellidos) && Schema::hasTable('users') && Schema::hasColumn('aprendices','user_id');
+        $joinByEmail = Schema::hasTable('users') && Schema::hasColumn('users','email_lc') && Schema::hasColumn('aprendices','correo_institucional');
+        $baseConcat = ($usrNameCol && $usrLastCol)
+            ? "CONCAT(COALESCE(COALESCE(u.`$usrNameCol`, ue.`$usrNameCol`),''),' ',COALESCE(COALESCE(u.`$usrLastCol`, ue.`$usrLastCol`),''))"
+            : ($usrNameCol
+                ? "COALESCE(COALESCE(u.`$usrNameCol`, ue.`$usrNameCol`),'')"
+                : ($usrLastCol ? "COALESCE(COALESCE(u.`$usrLastCol`, ue.`$usrLastCol`),'')" : "''"));
+        $nameExpr = "COALESCE(NULLIF(TRIM($baseConcat),'') , COALESCE(aprendices.correo_institucional, u.email, ue.email, ''))";
 
-        // Aplicar filtros si existen
-        if ($tipo !== '') {
-            $query->where('tipo_documento', $tipo);
+        $selects = [
+            'aprendices.id_aprendiz',
+            DB::raw($nameExpr.' as nombre_completo'),
+        ];
+        if (Schema::hasColumn('aprendices','correo_institucional')) $selects[] = 'aprendices.correo_institucional';
+        if (Schema::hasColumn('aprendices','tipo_documento'))     $selects[] = 'aprendices.tipo_documento';
+        if (Schema::hasColumn('aprendices','documento'))          $selects[] = 'aprendices.documento';
+        if (Schema::hasColumn('aprendices','programa'))           $selects[] = 'aprendices.programa';
+        if (Schema::hasColumn('aprendices','ficha'))              $selects[] = 'aprendices.ficha';
+        if (Schema::hasColumn('aprendices','user_id'))            $selects[] = 'aprendices.user_id';
+
+        $query = Aprendiz::query()
+            ->when($joinUser, function($q){ $q->leftJoin('users as u','u.id','=','aprendices.user_id'); })
+            ->when($joinByEmail, function($q){ $q->leftJoin('users as ue', DB::raw('ue.email_lc'), '=', DB::raw('LOWER(aprendices.correo_institucional)')); })
+            ->select($selects);
+
+        $tipoCanon = $tipo;
+        if ($tipoCanon !== '') {
+            $tn = strtoupper(trim($tipoCanon));
+            $tn = strtr($tn, ['Á'=>'A','É'=>'E','Í'=>'I','Ó'=>'O','Ú'=>'U','Ü'=>'U','Ñ'=>'N']);
+            $tn = preg_replace('/[^A-Z0-9 ]+/', ' ', $tn);
+            $tn = preg_replace('/\s+/', ' ', $tn);
+            $map = [
+                'CC' => ['CC','CEDULA','CEDULA DE CIUDADANIA','CEDULA CIUDADANIA'],
+                'TI' => ['TI','TARJETA','TARJETA DE IDENTIDAD'],
+                'CE' => ['CE','CEDULA DE EXTRANJERIA','CEDULA EXTRANJERIA'],
+                'PAS'=> ['PAS','PASAPORTE'],
+                'PEP'=> ['PEP','PERMISO ESPECIAL','PERMISO'],
+                'RC' => ['RC','REGISTRO CIVIL','REGISTRO'],
+            ];
+            foreach ($map as $code=>$list) { if (in_array($tn,$list,true)) { $tipoCanon = $code; break; } }
+            if ($tipoCanon !== 'CC' && $tipoCanon !== 'TI' && $tipoCanon !== 'CE' && $tipoCanon !== 'PAS' && $tipoCanon !== 'PEP' && $tipoCanon !== 'RC') {
+                if (strpos($tn,'CIUDADAN') !== false) $tipoCanon = 'CC';
+                elseif (strpos($tn,'EXTRANJER') !== false) $tipoCanon = 'CE';
+                elseif (strpos($tn,'PASAPOR') !== false) $tipoCanon = 'PAS';
+                elseif (strpos($tn,'PERMISO') !== false) $tipoCanon = 'PEP';
+                elseif (strpos($tn,'REGISTRO') !== false) $tipoCanon = 'RC';
+                elseif ($tn === 'CEDULA') $tipoCanon = 'CC';
+            }
+        }
+        // Si no existe dato de tipo_documento en ninguna tabla, ignorar filtro para no devolver vacío
+        $hasTipoInApr = Schema::hasColumn('aprendices','tipo_documento') ? DB::table('aprendices')->whereNotNull('tipo_documento')->exists() : false;
+        $hasTipoInUsr = $usrTipoCol ? DB::table('users')->whereNotNull('tipo_documento')->exists() : false;
+        if ($tipoCanon !== '' && !$hasTipoInApr && !$hasTipoInUsr) {
+            $tipoCanon = '';
+        }
+        if ($tipoCanon !== '') {
+            $query->where(function ($w) use ($tipoCanon, $usrTipoCol) {
+                if ($usrTipoCol) {
+                    $w->orWhereRaw('UPPER(TRIM(u.tipo_documento)) = ?', [$tipoCanon])
+                      ->orWhereRaw('UPPER(TRIM(ue.tipo_documento)) = ?', [$tipoCanon])
+                      // Por si users guarda texto completo
+                      ->orWhere(function($wu) use ($tipoCanon) {
+                          if ($tipoCanon === 'CC') { $wu->where('u.tipo_documento','like','%ciudadan%'); }
+                          elseif ($tipoCanon === 'TI') { $wu->where('u.tipo_documento','like','%identidad%'); }
+                          elseif ($tipoCanon === 'CE') { $wu->where('u.tipo_documento','like','%extranjer%'); }
+                          elseif ($tipoCanon === 'PAS') { $wu->where('u.tipo_documento','like','%pasapor%'); }
+                          elseif ($tipoCanon === 'PEP') { $wu->where('u.tipo_documento','like','%permiso%'); }
+                          elseif ($tipoCanon === 'RC') { $wu->where('u.tipo_documento','like','%registro%'); }
+                      })
+                      ->orWhere(function($wue) use ($tipoCanon) {
+                          if ($tipoCanon === 'CC') { $wue->where('ue.tipo_documento','like','%ciudadan%'); }
+                          elseif ($tipoCanon === 'TI') { $wue->where('ue.tipo_documento','like','%identidad%'); }
+                          elseif ($tipoCanon === 'CE') { $wue->where('ue.tipo_documento','like','%extranjer%'); }
+                          elseif ($tipoCanon === 'PAS') { $wue->where('ue.tipo_documento','like','%pasapor%'); }
+                          elseif ($tipoCanon === 'PEP') { $wue->where('ue.tipo_documento','like','%permiso%'); }
+                          elseif ($tipoCanon === 'RC') { $wue->where('ue.tipo_documento','like','%registro%'); }
+                      });
+                }
+                if (Schema::hasColumn('aprendices','tipo_documento')) {
+                    $w->orWhereRaw('UPPER(TRIM(aprendices.tipo_documento)) = ?', [$tipoCanon]);
+                    // Coincidencias por etiqueta larga (por si la BD guarda texto completo)
+                    $w->orWhere(function($w2) use ($tipoCanon) {
+                        if ($tipoCanon === 'CC') { $w2->where('aprendices.tipo_documento','like','%ciudadan%'); }
+                        elseif ($tipoCanon === 'TI') { $w2->where('aprendices.tipo_documento','like','%identidad%'); }
+                        elseif ($tipoCanon === 'CE') { $w2->where('aprendices.tipo_documento','like','%extranjer%'); }
+                        elseif ($tipoCanon === 'PAS') { $w2->where('aprendices.tipo_documento','like','%pasapor%'); }
+                        elseif ($tipoCanon === 'PEP') { $w2->where('aprendices.tipo_documento','like','%permiso%'); }
+                        elseif ($tipoCanon === 'RC') { $w2->where('aprendices.tipo_documento','like','%registro%'); }
+                    });
+                }
+            });
         }
         if ($num !== '') {
-            $query->where(function($w) use ($num){
-                $w->where('documento','like',"%{$num}%")
-                  ->orWhere(DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))"),'like',"%{$num}%")
-                  ->orWhere('ficha','like',"%{$num}%");
+            $digits = preg_replace('/\D+/', '', $num);
+            $nameLike = DB::raw($nameExpr);
+            $query->where(function ($w) use ($num, $digits, $nameLike, $usrDocCol) {
+                if ($usrDocCol) {
+                    $w->orWhere('u.documento', 'like', "%{$num}%")
+                      ->orWhere('ue.documento', 'like', "%{$num}%");
+                    if ($digits !== '') {
+                        $w->orWhereRaw("REPLACE(REPLACE(REPLACE(u.documento,'-',''),'.',''),' ','') like ?", ["%{$digits}%"]) 
+                          ->orWhereRaw("REPLACE(REPLACE(REPLACE(ue.documento,'-',''),'.',''),' ','') like ?", ["%{$digits}%"]);
+                    }
+                }
+                if (Schema::hasColumn('aprendices','documento')) {
+                    $w->orWhere('aprendices.documento', 'like', "%{$num}%");
+                    if ($digits !== '') {
+                        $w->orWhereRaw("REPLACE(REPLACE(REPLACE(aprendices.documento,'-',''),'.',''),' ','') like ?", ["%{$digits}%"]);
+                    }
+                }
+                if (Schema::hasColumn('aprendices','ficha')) {
+                    $w->orWhere('aprendices.ficha', 'like', "%{$num}%");
+                }
+                $w->orWhere($nameLike, 'like', "%{$num}%");
             });
         }
         if ($q !== '' && $tipo === '' && $num === '') {
             // Fallback: búsqueda genérica solo si no hay tipo ni num
-            $query->where(function($w) use ($q){
-                $w->where('tipo_documento','like',"%{$q}%")
-                  ->orWhere('documento','like',"%{$q}%")
-                  ->orWhere(DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))"),'like',"%{$q}%")
-                  ->orWhere('ficha','like',"%{$q}%");
+            $nameLike = DB::raw($nameExpr);
+            $query->where(function($w) use ($q, $nameLike){
+                if (Schema::hasColumn('aprendices','tipo_documento')) {
+                    $w->where('aprendices.tipo_documento','like',"%{$q}%");
+                }
+                if (Schema::hasColumn('aprendices','documento')) {
+                    $w->orWhere('aprendices.documento','like',"%{$q}%");
+                }
+                $w->orWhere($nameLike,'like',"%{$q}%");
+                if (Schema::hasColumn('aprendices','ficha')) {
+                    $w->orWhere('aprendices.ficha','like',"%{$q}%");
+                }
             });
         }
 
         if (!empty($excluir)) {
             $query->whereNotIn('id_aprendiz', $excluir);
         }
-        $res = $query->orderByRaw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))")->limit(20)->get();
+        $res = $query->orderByRaw($nameExpr)->distinct()->limit(20)->get()->toBase();
         return response()->json($res);
     }
 
@@ -681,30 +835,86 @@ class SemilleroController extends Controller
             }
         }
 
-        $query = Aprendiz::select(
-            'id_aprendiz', 'nombres', 'apellidos',
-            DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo"),
-            'correo_institucional', 'tipo_documento', 'documento', 'programa', 'ficha'
-        );
+        $aprHasNombres   = Schema::hasColumn('aprendices','nombres');
+        $aprHasApellidos = Schema::hasColumn('aprendices','apellidos');
+        $usrNameCol = Schema::hasColumn('users','name') ? 'name' : (Schema::hasColumn('users','nombre') ? 'nombre' : null);
+        $usrLastCol = Schema::hasColumn('users','apellidos') ? 'apellidos' : (Schema::hasColumn('users','apellido') ? 'apellido' : null);
+        $usrDocCol  = Schema::hasColumn('users','documento');
+        $usrTipoCol = Schema::hasColumn('users','tipo_documento');
+        $joinUser = Schema::hasTable('users') && Schema::hasColumn('aprendices','user_id');
+        $joinByEmail = Schema::hasTable('users') && Schema::hasColumn('users','email_lc') && Schema::hasColumn('aprendices','correo_institucional');
+        $baseConcat = ($usrNameCol && $usrLastCol)
+            ? "CONCAT(COALESCE(COALESCE(u.`$usrNameCol`, ue.`$usrNameCol`),''),' ',COALESCE(COALESCE(u.`$usrLastCol`, ue.`$usrLastCol`),''))"
+            : ($usrNameCol
+                ? "COALESCE(COALESCE(u.`$usrNameCol`, ue.`$usrNameCol`),'')"
+                : ($usrLastCol ? "COALESCE(COALESCE(u.`$usrLastCol`, ue.`$usrLastCol`),'')" : "''"));
+        $nameExpr = "COALESCE(NULLIF(TRIM($baseConcat),'') , COALESCE(aprendices.correo_institucional, u.email, ue.email, ''))";
+
+        $selects = [
+            'aprendices.id_aprendiz',
+            DB::raw($nameExpr.' as nombre_completo'),
+        ];
+        if (Schema::hasColumn('aprendices','correo_institucional')) $selects[] = 'aprendices.correo_institucional';
+        if (Schema::hasColumn('aprendices','tipo_documento'))     $selects[] = 'aprendices.tipo_documento';
+        if (Schema::hasColumn('aprendices','documento'))          $selects[] = 'aprendices.documento';
+        if (Schema::hasColumn('aprendices','programa'))           $selects[] = 'aprendices.programa';
+        if (Schema::hasColumn('aprendices','ficha'))              $selects[] = 'aprendices.ficha';
+
+        $query = Aprendiz::query()
+            ->when($joinUser, function($q){ $q->leftJoin('users as u','u.id','=','aprendices.user_id'); })
+            ->when($joinByEmail, function($q){ $q->leftJoin('users as ue', DB::raw('ue.email_lc'), '=', DB::raw('LOWER(aprendices.correo_institucional)')); })
+            ->select($selects);
 
         // Aplicar filtros si existen
         if ($tipo !== '') {
-            $query->where('tipo_documento', $tipo);
+            $query->where(function ($w) use ($tipo, $usrTipoCol) {
+                if ($usrTipoCol) {
+                    $w->orWhere('u.tipo_documento', $tipo)
+                      ->orWhere('ue.tipo_documento', $tipo);
+                }
+                if (Schema::hasColumn('aprendices','tipo_documento')) {
+                    $w->orWhere('aprendices.tipo_documento', $tipo);
+                }
+            });
         }
         if ($num !== '') {
-            $query->where(function ($w) use ($num) {
-                $w->where('documento', 'like', "%{$num}%")
-                    ->orWhere(DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))"), 'like', "%{$num}%")
-                    ->orWhere('ficha', 'like', "%{$num}%");
+            $digits = preg_replace('/\D+/', '', $num);
+            $nameLike = DB::raw($nameExpr);
+            $query->where(function ($w) use ($num, $digits, $nameLike, $usrDocCol) {
+                if ($usrDocCol) {
+                    $w->orWhere('u.documento', 'like', "%{$num}%")
+                      ->orWhere('ue.documento', 'like', "%{$num}%");
+                    if ($digits !== '') {
+                        $w->orWhereRaw("REPLACE(REPLACE(REPLACE(u.documento,'-',''),'.',''),' ','') like ?", ["%{$digits}%"]) 
+                          ->orWhereRaw("REPLACE(REPLACE(REPLACE(ue.documento,'-',''),'.',''),' ','') like ?", ["%{$digits}%"]);
+                    }
+                }
+                if (Schema::hasColumn('aprendices','documento')) {
+                    $w->orWhere('aprendices.documento', 'like', "%{$num}%");
+                    if ($digits !== '') {
+                        $w->orWhereRaw("REPLACE(REPLACE(REPLACE(aprendices.documento,'-',''),'.',''),' ','') like ?", ["%{$digits}%"]);
+                    }
+                }
+                if (Schema::hasColumn('aprendices','ficha')) {
+                    $w->orWhere('aprendices.ficha', 'like', "%{$num}%");
+                }
+                $w->orWhere($nameLike, 'like', "%{$num}%");
             });
         }
         if ($q !== '' && $tipo === '' && $num === '') {
             // Fallback: búsqueda genérica solo si no hay tipo ni num
-            $query->where(function ($w) use ($q) {
-                $w->where('tipo_documento', 'like', "%{$q}%")
-                    ->orWhere('documento', 'like', "%{$q}%")
-                    ->orWhere(DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))"), 'like', "%{$q}%")
-                    ->orWhere('ficha', 'like', "%{$q}%");
+            $nameLike = DB::raw($nameExpr);
+            $query->where(function ($w) use ($q, $nameLike) {
+                if (Schema::hasColumn('aprendices','tipo_documento')) {
+                    $w->where('aprendices.tipo_documento', 'like', "%{$q}%");
+                }
+                if (Schema::hasColumn('aprendices','documento')) {
+                    $w->orWhere('aprendices.documento', 'like', "%{$q}%");
+                }
+                $w->orWhere($nameLike, 'like', "%{$q}%");
+                if (Schema::hasColumn('aprendices','ficha')) {
+                    $w->orWhere('aprendices.ficha', 'like', "%{$q}%");
+                }
             });
         }
 
@@ -714,22 +924,10 @@ class SemilleroController extends Controller
 
         // Ejecutar consulta principal
         $result = $query
-            ->orderByRaw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))")
+            ->orderByRaw($nameExpr)
             ->limit(20)
-            ->get();
-
-        // Fallback de compatibilidad: si no hay filtros y la consulta no devuelve nada,
-        // ofrecer al menos algunos aprendices para que el modal no quede vacío y permitir pruebas.
-        if ($result->isEmpty() && $q === '' && $tipo === '' && $num === '') {
-            $result = Aprendiz::select(
-                    'id_aprendiz', 'nombres', 'apellidos',
-                    DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo"),
-                    'correo_institucional', 'tipo_documento', 'documento', 'programa', 'ficha'
-                )
-                ->orderByRaw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,''))")
-                ->limit(20)
-                ->get();
-        }
+            ->get()
+            ->toBase();
 
         return response()->json($result);
     }
@@ -737,16 +935,55 @@ class SemilleroController extends Controller
 
     public function attachProyectoAprendiz(Request $request, $proyectoId)
     {
-        $data = $request->validate(['aprendiz_id' => ['required','integer','exists:aprendices,id_usuario']]);
+        $data = $request->validate([
+            'aprendiz_id' => ['nullable','integer'],
+            'user_id'     => ['nullable','integer','exists:users,id'],
+        ]);
         $pivot = $this->pivotProyectoAprendiz();
         if (empty($pivot)) return response()->json(['ok'=>false], 400);
 
-        // Seleccionar columnas que existen
-        $selectCols = ['id_aprendiz','nombres','apellidos','correo_institucional'];
-        if (Schema::hasColumn('aprendices', 'id_usuario')) {
-            $selectCols[] = 'id_usuario';
+        // Seleccionar columnas que existen / detectar nombres
+        $aprHasNombres   = Schema::hasColumn('aprendices','nombres');
+        $aprHasApellidos = Schema::hasColumn('aprendices','apellidos');
+        $usrNameCol = Schema::hasColumn('users','name') ? 'name' : (Schema::hasColumn('users','nombre') ? 'nombre' : null);
+        $usrLastCol = Schema::hasColumn('users','apellidos') ? 'apellidos' : (Schema::hasColumn('users','apellido') ? 'apellido' : null);
+        $joinUser = !($aprHasNombres && $aprHasApellidos) && Schema::hasTable('users') && Schema::hasColumn('aprendices','user_id');
+        $joinByEmail = Schema::hasTable('users') && Schema::hasColumn('users','email_lc') && Schema::hasColumn('aprendices','correo_institucional');
+        $baseConcat = ($usrNameCol && $usrLastCol)
+            ? "CONCAT(COALESCE(COALESCE(u.`$usrNameCol`, ue.`$usrNameCol`),''),' ',COALESCE(COALESCE(u.`$usrLastCol`, ue.`$usrLastCol`),''))"
+            : ($usrNameCol
+                ? "COALESCE(COALESCE(u.`$usrNameCol`, ue.`$usrNameCol`),'')"
+                : ($usrLastCol ? "COALESCE(COALESCE(u.`$usrLastCol`, ue.`$usrLastCol`),'')" : "''"));
+        $nameExpr = "COALESCE(NULLIF(TRIM($baseConcat),'') , COALESCE(aprendices.correo_institucional, u.email, ue.email, ''))";
+
+        $selectCols = [ 'aprendices.id_aprendiz', DB::raw($nameExpr.' as nombre_completo') ];
+        if (Schema::hasColumn('aprendices','correo_institucional')) { $selectCols[] = 'aprendices.correo_institucional'; }
+        if (Schema::hasColumn('aprendices', 'id_usuario')) { $selectCols[] = 'aprendices.id_usuario'; }
+
+        // Obtener o crear Aprendiz
+        $aprendizId = $data['aprendiz_id'] ?? null;
+        if (!$aprendizId && !empty($data['user_id'])) {
+            // Crear fila en aprendices si no existe
+            $aprendizId = DB::table('aprendices')->where('user_id', $data['user_id'])->value('id_aprendiz');
+            if (!$aprendizId) {
+                $insert = ['user_id' => $data['user_id']];
+                if (Schema::hasColumn('aprendices','correo_institucional')) {
+                    $insert['correo_institucional'] = (string) DB::table('users')->where('id',$data['user_id'])->value('email');
+                }
+                if (Schema::hasColumn('aprendices','estado')) { $insert['estado'] = 'Activo'; }
+                $aprendizId = DB::table('aprendices')->insertGetId($insert);
+            }
         }
-        $ap = Aprendiz::select($selectCols)->findOrFail($data['aprendiz_id']);
+        if (!$aprendizId) {
+            return response()->json(['ok'=>false,'message'=>'Falta aprendiz_id o user_id válido'], 422);
+        }
+
+        $ap = Aprendiz::query()
+            ->when($joinUser, function($q){ $q->leftJoin('users as u','u.id','=','aprendices.user_id'); })
+            ->when($joinByEmail, function($q){ $q->leftJoin('users as ue', DB::raw('ue.email_lc'), '=', DB::raw('LOWER(aprendices.correo_institucional)')); })
+            ->select($selectCols)
+            ->where('aprendices.id_aprendiz', $aprendizId)
+            ->firstOrFail();
 
         // Si estamos usando documentos como pivote, verificar si ya existe una relación
         if ($pivot['table'] === 'documentos') {

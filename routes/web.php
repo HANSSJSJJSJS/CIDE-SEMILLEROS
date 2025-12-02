@@ -126,23 +126,23 @@ Route::middleware(['auth'])->group(function () {
     // Usar el método searchProyectoAprendices del controlador de UI (LiderSemilleroUIController)
     // para aprovechar la lógica tolerante al esquema y el fallback cuando no hay pivote clara.
     Route::get('/lider_semillero/proyectos/{proyecto}/aprendices/search', [LiderSemilleroUIController::class, 'searchProyectoAprendices'])
-        ->whereNumber('proyecto')->name('lider_semi.proyectos.aprendices.search');
+        ->whereNumber('proyecto')->name('lider_semi.proyectos.aprendices.search.compat');
     Route::post('/lider_semillero/proyectos/{proyecto}/aprendices', [LiderProyectoController::class, 'assignParticipant'])
-        ->whereNumber('proyecto')->name('lider_semi.proyectos.aprendices.attach');
+        ->whereNumber('proyecto')->name('lider_semi.proyectos.aprendices.attach.compat');
     Route::delete('/lider_semillero/proyectos/{proyecto}/aprendices/{aprendiz}', [LiderProyectoController::class, 'removeParticipant'])
-        ->whereNumber('proyecto')->whereNumber('aprendiz')->name('lider_semi.proyectos.aprendices.detach');
+        ->whereNumber('proyecto')->whereNumber('aprendiz')->name('lider_semi.proyectos.aprendices.detach.compat');
     Route::put('/lider_semillero/proyectos/{proyecto}/aprendices', [LiderProyectoController::class, 'updateParticipants'])
-        ->whereNumber('proyecto')->name('lider_semi.proyectos.aprendices.update');
+        ->whereNumber('proyecto')->name('lider_semi.proyectos.aprendices.update.compat');
 
     // Versión por Semillero → deriva a proyecto activo
     Route::get('/lider_semillero/semilleros/{semillero}/aprendices/search', [SemilleroAprendizController::class, 'search'])
-        ->whereNumber('semillero')->name('lider_semi.semilleros.aprendices.search');
+        ->whereNumber('semillero')->name('lider_semi.semilleros.aprendices.search.compat');
     Route::post('/lider_semillero/semilleros/{semillero}/aprendices', [SemilleroAprendizController::class, 'attach'])
-        ->whereNumber('semillero')->name('lider_semi.semilleros.aprendices.attach');
+        ->whereNumber('semillero')->name('lider_semi.semilleros.aprendices.attach.compat');
     Route::delete('/lider_semillero/semilleros/{semillero}/aprendices/{aprendiz}', [SemilleroAprendizController::class, 'detach'])
-        ->whereNumber('semillero')->whereNumber('aprendiz')->name('lider_semi.semilleros.aprendices.detach');
+        ->whereNumber('semillero')->whereNumber('aprendiz')->name('lider_semi.semilleros.aprendices.detach.compat');
     Route::put('/lider_semillero/semilleros/{semillero}/aprendices', [SemilleroAprendizController::class, 'update'])
-        ->whereNumber('semillero')->name('lider_semi.semilleros.aprendices.update');
+        ->whereNumber('semillero')->name('lider_semi.semilleros.aprendices.update.compat');
 });
 
 // ======================================================
