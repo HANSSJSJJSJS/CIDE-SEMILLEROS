@@ -193,9 +193,10 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
 
 
         // ==========================
-        //    SEMILLEROS
+        //         SEMILLEROS
         // ==========================
 
+        // 🔹 PRIMERO la ruta AJAX
         Route::get('semilleros/lideres-disponibles',
             [SemilleroController::class, 'lideresDisponibles']
         )->name('semilleros.lideres-disponibles');
@@ -204,7 +205,7 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
         Route::resource('semilleros', SemilleroController::class)->except(['show']);
 
         // Editar vía AJAX (si usas un edit-ajax específico)
-        Route::get('semilleros/{id}/edit-ajax', [SemilleroController::class, 'edit'])
+       Route::get('semilleros/{id}/edit-ajax', [SemilleroController::class, 'editAjax'])
             ->whereNumber('id')
             ->name('semilleros.edit.ajax');
 
