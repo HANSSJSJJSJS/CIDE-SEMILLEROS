@@ -30,21 +30,16 @@ class UsuarioController extends Controller
             $roleFilter = 'ADMIN';
         }
 
-        // FK usada en aprendices (id_usuario o user_id)
         $aprFk      = Schema::hasColumn('aprendices', 'id_usuario') ? 'id_usuario' : 'user_id';
-        // Por si en algún entorno aún no existe la tabla lideres_investigacion
         $hasLiTable = Schema::hasTable('lideres_investigacion');
 
         $usuarios = User::query()
-            // Líder de semillero
             ->leftJoin('lideres_semillero as ls', 'ls.id_lider_semi', '=', 'users.id')
             ->leftJoin('semilleros as sl', 'sl.id_lider_semi', '=', 'ls.id_lider_semi')
 
-            // Aprendiz y su semillero
             ->leftJoin('aprendices as ap', "ap.$aprFk", '=', 'users.id')
             ->leftJoin('semilleros as sa', 'sa.id_semillero', '=', 'ap.semillero_id')
 
-            // Líder de investigación (solo si existe la tabla)
             ->when($hasLiTable, function ($q) {
                 $q->leftJoin('lideres_investigacion as li', 'li.user_id', '=', 'users.id');
             })
@@ -66,7 +61,6 @@ class UsuarioController extends Controller
                 DB::raw(($hasLiTable ? 'li.tiene_permisos' : 'NULL') . ' as li_tiene_permisos'),
             ])
 
-            // Filtro búsqueda
             ->when($q !== '', function ($w) use ($q) {
                 $w->where(function ($s) use ($q) {
                     $s->where('users.name','like',"%{$q}%")
@@ -75,10 +69,8 @@ class UsuarioController extends Controller
                 });
             })
 
-            // Filtro rol
             ->when($roleFilter !== '', fn($w) => $w->where('users.role', $roleFilter))
 
-            // Filtro semillero
             ->when($semilleroId, function ($w) use ($semilleroId) {
                 $w->where(function ($x) use ($semilleroId) {
                     $x->where('sa.id_semillero', $semilleroId)
@@ -114,7 +106,7 @@ class UsuarioController extends Controller
     }
 
     // ============================================================
-    // DAR / QUITAR PERMISOS A LÍDER INVESTIGACIÓN
+    // DAR / QUITAR PERMISOS LÍDER INVESTIGACIÓN
     // ============================================================
     public function togglePermisosInvestigacion(User $usuario)
     {
@@ -123,8 +115,7 @@ class UsuarioController extends Controller
         }
 
         if ($usuario->role !== 'LIDER_INVESTIGACION') {
-            return redirect()
-                ->route('admin.usuarios.index')
+            return redirect()->route('admin.usuarios.index')
                 ->with('error', 'Solo se pueden gestionar permisos de líderes de investigación.');
         }
 
@@ -133,35 +124,31 @@ class UsuarioController extends Controller
             ->first();
 
         if (!$registro) {
-            return redirect()
-                ->route('admin.usuarios.index')
+            return redirect()->route('admin.usuarios.index')
                 ->with('error', 'Este usuario no tiene perfil de líder de investigación.');
         }
 
-        $nuevoEstado = $registro->tiene_permisos ? 0 : 1;
+        $nuevo = $registro->tiene_permisos ? 0 : 1;
 
         DB::table('lideres_investigacion')
             ->where('user_id', $usuario->id)
             ->update([
-                'tiene_permisos' => $nuevoEstado,
+                'tiene_permisos' => $nuevo,
                 'updated_at'     => now(),
             ]);
 
-        $mensaje = $nuevoEstado
-            ? 'Se han otorgado permisos de investigación a este usuario.'
-            : 'Se han quitado los permisos de investigación a este usuario.';
-
-        return redirect()
-            ->route('admin.usuarios.index')
-            ->with('success', $mensaje);
+        return redirect()->route('admin.usuarios.index')
+            ->with('success', $nuevo
+                ? 'Se otorgaron permisos.'
+                : 'Se retiraron los permisos.'
+            );
     }
 
     // ============================================================
-    // CREAR USUARIO (NORMALIZADO)
+    // CREAR USUARIO — LÍDER SIN SEMILLERO OBLIGATORIO
     // ============================================================
     public function store(Request $request)
     {
-        // Mapear LIDER_GENERAL -> ADMIN para compatibilidad
         $roleMap = [
             'ADMIN'               => 'ADMIN',
             'LIDER_GENERAL'       => 'ADMIN',
@@ -170,72 +157,46 @@ class UsuarioController extends Controller
             'APRENDIZ'            => 'APRENDIZ',
         ];
 
-        // VALIDACIÓN PRINCIPAL
         $data = $request->validate([
-            // ------- USERS -------
-            'role'            => ['required', 'in:ADMIN,LIDER_GENERAL,LIDER_SEMILLERO,LIDER_INVESTIGACION,APRENDIZ'],
-            'email'           => ['required', 'email', 'max:160', 'unique:users,email'],
-            'nombre'          => ['required', 'string', 'max:120'],
-            'apellido'        => ['required', 'string', 'max:255'],
-            'password'        => ['required', 'string', 'min:6'],
+            'role'      => ['required','in:ADMIN,LIDER_GENERAL,LIDER_SEMILLERO,LIDER_INVESTIGACION,APRENDIZ'],
+            'email'     => ['required','email','max:160','unique:users,email'],
+            'nombre'    => ['required','string','max:120'],
+            'apellido'  => ['required','string','max:255'],
+            'password'  => ['required','string','min:6'],
 
-            'tipo_documento'  => ['required', 'string', 'max:20'],
-            'documento'       => ['required', 'string', 'max:40', 'unique:users,documento'],
-            'celular'         => ['nullable', 'string', 'max:30'],
-            'genero'          => ['nullable', 'in:HOMBRE,MUJER,NO DEFINIDO'],
-            'tipo_rh'         => ['nullable', 'in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
+            'tipo_documento' => ['required','string','max:20'],
+            'documento'      => ['required','string','max:40','unique:users,documento'],
+            'celular'        => ['nullable','string','max:30'],
+            'genero'         => ['nullable','in:HOMBRE,MUJER,NO DEFINIDO'],
+            'tipo_rh'        => ['nullable','in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
 
-            // ------- LÍDER SEMILLERO -------
-            'ls_correo_institucional' => ['nullable', 'email', 'max:160'],
-            'ls_semillero_id'         => ['required_if:role,LIDER_SEMILLERO', 'nullable', 'exists:semilleros,id_semillero'],
+            // LÍDER DE SEMILLERO → semillero ya NO es obligatorio
+            'ls_correo_institucional' => ['nullable','email','max:160'],
+            'ls_semillero_id'         => ['nullable','exists:semilleros,id_semillero'],
 
-            // ------- APRENDIZ -------
-            'semillero_id'        => ['required_if:role,APRENDIZ', 'nullable', 'exists:semilleros,id_semillero'],
-            'correo_institucional'=> ['nullable', 'email', 'max:160'],
-            'vinculado_sena'      => ['nullable', 'in:0,1'],
-            'ficha'               => ['nullable', 'string', 'max:30'],
-            'programa'            => ['nullable', 'string', 'max:160'],
-            'institucion'         => ['nullable', 'string', 'max:160'],
-            'nivel_educativo'     => ['required_if:role,APRENDIZ', 'nullable',
-                'in:ARTICULACION_MEDIA_10_11,TECNOACADEMIA_7_9,TECNICO,TECNOLOGO,PROFESIONAL',
-            ],
-        ], [
-            'role.required'        => 'Debes seleccionar un rol.',
-            'role.in'              => 'Rol no permitido.',
-            'email.unique'         => 'Este correo ya está registrado.',
-            'documento.unique'     => 'Este documento ya está registrado.',
-
-            'ls_semillero_id.required_if' => 'Selecciona el semillero del líder.',
-            'ls_semillero_id.exists'      => 'El semillero seleccionado no existe.',
-
-            'semillero_id.required_if'    => 'Selecciona el semillero del aprendiz.',
-            'semillero_id.exists'         => 'El semillero seleccionado no existe.',
-
-            'nivel_educativo.required_if' => 'Selecciona el nivel educativo del aprendiz.',
+            'semillero_id'            => ['required_if:role,APRENDIZ','nullable','exists:semilleros,id_semillero'],
+            'correo_institucional'    => ['nullable','email','max:160'],
+            'vinculado_sena'          => ['nullable','in:0,1'],
+            'ficha'                   => ['nullable','string','max:30'],
+            'programa'                => ['nullable','string','max:160'],
+            'institucion'             => ['nullable','string','max:160'],
+            'nivel_educativo'         => ['required_if:role,APRENDIZ','nullable',
+                'in:ARTICULACION_MEDIA_10_11,TECNOACADEMIA_7_9,TECNICO,TECNOLOGO,PROFESIONAL'],
         ]);
 
-        // Rol canonical (ADMIN, LIDER_SEMILLERO, etc.)
         $role = $roleMap[$data['role']];
-
-        // Normalizar vinculado_sena
-        $vinculadoSena = (int) ($data['vinculado_sena'] ?? 1);
-
-        // Si el género no es OTRO, limpiamos genero_otro
-      
+        $vinculado = (int) ($data['vinculado_sena'] ?? 1);
 
         DB::beginTransaction();
 
         try {
-            // ==========================
-            // 1) CREAR USER (tabla users)
-            // ==========================
+            // ============= USERS =============
             $user = User::create([
-                'name'           => $data['nombre'],
+                'nombre'         => $data['nombre'],
                 'apellidos'      => $data['apellido'],
                 'email'          => $data['email'],
                 'password'       => Hash::make($data['password']),
                 'role'           => $role,
-
                 'tipo_documento' => $data['tipo_documento'],
                 'documento'      => $data['documento'],
                 'celular'        => $data['celular'] ?? null,
@@ -243,53 +204,38 @@ class UsuarioController extends Controller
                 'tipo_rh'        => $data['tipo_rh'] ?? null,
             ]);
 
-            // ==========================
-            // 2) CREAR PERFIL SEGÚN ROL
-            // ==========================
+            // ============= PERFILES =============
             switch ($role) {
-                // --------------------
-                // ADMIN (Líder general)
-                // --------------------
                 case 'ADMIN':
-                    Administrador::create([
-                        'id_usuario'          => $user->id,
-                        'nombre'              => $data['nombre'] . ' ' . $data['apellido'], // si usas este campo
-                        'nombres'             => $data['nombre'],
-                        'apellidos'           => $data['apellido'],
-                     
+                    DB::table('administradores')->insert([
+                        'id_usuario'    => $user->id,
+                        'nombre'        => $data['nombre'],
+                        'apellidos'     => $data['apellido'],
+                        'creado_en'     => now(),
+                        'actualizado_en'=> now(),
                     ]);
                     break;
 
-                // --------------------
-                // LÍDER SEMILLERO
-                // --------------------
                 case 'LIDER_SEMILLERO':
                     DB::table('lideres_semillero')->insert([
-                        'id_lider_semi'        => $user->id, // FK = users.id
-                        'nombres'              => $data['nombre'],
-                        'apellidos'            => $data['apellido'],
+                        'id_lider_semi'        => $user->id,
+                        'id_usuario'           => $user->id,
                         'correo_institucional' => $data['ls_correo_institucional'] ?? $data['email'],
-                        'id_semillero'         => $data['ls_semillero_id'],
+                        'id_semillero'         => $data['ls_semillero_id'] ?? null, // ← AHORA OPCIONAL
                         'creado_en'            => now(),
                         'actualizado_en'       => now(),
                     ]);
                     break;
 
-                // --------------------
-                // LÍDER INVESTIGACIÓN
-                // --------------------
                 case 'LIDER_INVESTIGACION':
                     DB::table('lideres_investigacion')->insert([
                         'user_id'       => $user->id,
-                        'tiene_permisos'=> 0,        // inicia sin permisos
+                        'tiene_permisos'=> 0,
                         'created_at'    => now(),
                         'updated_at'    => now(),
                     ]);
                     break;
 
-                // --------------------
-                // APRENDIZ
-                // --------------------
                 case 'APRENDIZ':
                     Aprendiz::create([
                         'user_id'             => $user->id,
@@ -298,12 +244,12 @@ class UsuarioController extends Controller
                         'ficha'               => $data['ficha'] ?? null,
                         'programa'            => $data['programa'] ?? null,
                         'nivel_educativo'     => $data['nivel_educativo'] ?? null,
-                        'vinculado_sena'      => $vinculadoSena,
-                        'institucion'         => $vinculadoSena === 1 ? null : ($data['institucion'] ?? null),
+                        'vinculado_sena'      => $vinculado,
+                        'institucion'         => $vinculado === 1 ? null : ($data['institucion'] ?? null),
                         'correo_institucional'=> $data['correo_institucional'] ?? null,
                         'correo_personal'     => $data['email'],
-                        'contacto_nombre'     => null,
-                        'contacto_celular'    => null,
+                        'contacto_nombre'     => $data['contacto_nombre'] ?? null,
+                        'contacto_celular'    => $data['contacto_celular'] ?? null,
                         'semillero_id'        => $data['semillero_id'],
                         'estado'              => 'Activo',
                     ]);
@@ -317,17 +263,17 @@ class UsuarioController extends Controller
                 ->with('success','Se ha creado el usuario correctamente.');
 
         } catch (\Throwable $e) {
+
             DB::rollBack();
 
             return redirect()
                 ->route('admin.usuarios.index')
-                ->withInput()
-                ->with('error', 'Ocurrió un error al crear el usuario: '.$e->getMessage());
+                ->with('error',"Error al crear usuario: ".$e->getMessage());
         }
     }
 
     // ============================================================
-    // EDITAR (resource clásico, no se usa)
+    // EDITAR (no se usa)
     // ============================================================
     public function edit(User $usuario)
     {
@@ -335,39 +281,80 @@ class UsuarioController extends Controller
     }
 
     // ============================================================
-    // EDITAR AJAX (si lo necesitas en otro lado)
+    // EDITAR AJAX
     // ============================================================
     public function editAjax(User $usuario)
     {
         $perfil = null;
 
         switch ($usuario->role) {
+
             case 'ADMIN':
                 $perfil = DB::table('administradores')
-                    ->where('id_usuario', $usuario->id)
+                    ->where('id_usuario',$usuario->id)
                     ->first();
                 break;
 
             case 'LIDER_SEMILLERO':
                 $perfil = DB::table('lideres_semillero')
-                    ->where('id_lider_semi', $usuario->id)
+                    ->where('id_lider_semi',$usuario->id)
                     ->first();
                 break;
 
             case 'APRENDIZ':
-                $colUserFk = Schema::hasColumn('aprendices', 'id_usuario')
-                    ? 'id_usuario'
-                    : 'user_id';
+                $col = Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : 'user_id';
+                $perfil = DB::table('aprendices')->where($col,$usuario->id)->first();
+                break;
+        }
 
-                $perfil = DB::table('aprendices')
-                    ->where($colUserFk, $usuario->id)
+        return response()->json([
+            'usuario'=>$usuario,
+            'perfil'=>$perfil
+        ]);
+    }
+
+    // ============================================================
+    // VER DETALLE (AJAX)
+    // ============================================================
+    public function showAjax(User $usuario)
+    {
+        $perfil = null;
+        $colFk = Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : 'user_id';
+
+        switch ($usuario->role) {
+
+            case 'ADMIN':
+                $perfil = DB::table('administradores')
+                    ->where('id_usuario',$usuario->id)
+                    ->first();
+                break;
+
+            case 'LIDER_SEMILLERO':
+                $perfil = DB::table('lideres_semillero as ls')
+                    ->leftJoin('semilleros as s','s.id_semillero','=','ls.id_semillero')
+                    ->where('ls.id_lider_semi',$usuario->id)
+                    ->select('ls.*','s.nombre as semillero_nombre')
+                    ->first();
+                break;
+
+            case 'LIDER_INVESTIGACION':
+                $perfil = DB::table('lideres_investigacion')
+                    ->where('user_id',$usuario->id)
+                    ->first();
+                break;
+
+            case 'APRENDIZ':
+                $perfil = DB::table('aprendices as ap')
+                    ->leftJoin('semilleros as s','s.id_semillero','=','ap.semillero_id')
+                    ->where("ap.$colFk",$usuario->id)
+                    ->select('ap.*','s.nombre as semillero_nombre')
                     ->first();
                 break;
         }
 
         return response()->json([
-            'usuario' => $usuario,
-            'perfil'  => $perfil,
+            'usuario'=>$usuario,
+            'perfil'=>$perfil
         ]);
     }
 
@@ -376,22 +363,14 @@ class UsuarioController extends Controller
     // ============================================================
     public function update(Request $request, User $usuario)
     {
-        // El modal editar envía: name, apellidos, email, password (opcional)
-        $rules = [
+        $data = $request->validate([
             'name'      => 'required|string|max:255',
             'apellidos' => 'required|string|max:255',
-            'email'     => [
-                'required',
-                'email',
-                'max:255',
-                Rule::unique('users','email')->ignore($usuario->id),
-            ],
+            'email'     => ['required','email','max:255',Rule::unique('users','email')->ignore($usuario->id)],
             'password'  => 'nullable|min:6',
-        ];
+        ]);
 
-        $data = $request->validate($rules);
-
-        DB::transaction(function () use ($usuario, $data) {
+        DB::transaction(function () use ($usuario,$data) {
 
             $updateUser = [
                 'name'       => $data['name'],
@@ -406,43 +385,33 @@ class UsuarioController extends Controller
 
             $usuario->update($updateUser);
 
-            // Actualizar tablas relacionadas según rol
             switch ($usuario->role) {
-                case 'ADMIN':
-                    $adminUpdate = [
-                        'apellidos'      => $data['apellidos'],
-                        'actualizado_en' => now(),
-                    ];
-                    if (Schema::hasColumn('administradores','nombre')) {
-                        $adminUpdate['nombre'] = $data['name'];
-                    }
-                    if (Schema::hasColumn('administradores','nombres')) {
-                        $adminUpdate['nombres'] = $data['name'];
-                    }
 
+                case 'ADMIN':
                     DB::table('administradores')
-                        ->where('id_usuario', $usuario->id)
-                        ->update($adminUpdate);
+                        ->where('id_usuario',$usuario->id)
+                        ->update([
+                            'apellidos'      => $data['apellidos'],
+                            'nombre'         => $data['name'],
+                            'actualizado_en' => now(),
+                        ]);
                     break;
 
                 case 'LIDER_SEMILLERO':
+                     // id_lider_semi, id_usuario, correo_institucional, creado_en, actualizado_en, id_semillero
                     DB::table('lideres_semillero')
                         ->where('id_lider_semi', $usuario->id)
                         ->update([
-                            'nombres'              => $data['name'],
-                            'apellidos'            => $data['apellidos'],
                             'correo_institucional' => $data['email'],
                             'actualizado_en'       => now(),
                         ]);
                     break;
 
-                case 'APRENDIZ':
-                    $colUserFk = Schema::hasColumn('aprendices', 'id_usuario')
-                        ? 'id_usuario'
-                        : 'user_id';
 
+                case 'APRENDIZ':
+                    $col = Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : 'user_id';
                     DB::table('aprendices')
-                        ->where($colUserFk, $usuario->id)
+                        ->where($col,$usuario->id)
                         ->update([
                             'nombres'         => $data['name'],
                             'apellidos'       => $data['apellidos'],
@@ -453,8 +422,7 @@ class UsuarioController extends Controller
             }
         });
 
-        return redirect()
-            ->route('admin.usuarios.index')
+        return redirect()->route('admin.usuarios.index')
             ->with('success','Se ha actualizado el usuario correctamente.');
     }
 
@@ -463,60 +431,55 @@ class UsuarioController extends Controller
     // ============================================================
     public function destroy(User $usuario)
     {
-        // 1) Si es aprendiz, comprobar proyectos antes de borrar
-        $colUserFk = Schema::hasColumn('aprendices', 'id_usuario')
-            ? 'id_usuario'
-            : 'user_id';
+        $col = Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : 'user_id';
 
         $aprendiz = DB::table('aprendices')
-            ->where($colUserFk, $usuario->id)
+            ->where($col,$usuario->id)
             ->first();
 
         if ($aprendiz) {
             $tieneProyectos = DB::table('aprendiz_proyecto')
-                ->where('id_aprendiz', $aprendiz->id_aprendiz)
+                ->where('id_aprendiz',$aprendiz->id_aprendiz)
                 ->exists();
 
             if ($tieneProyectos) {
                 return redirect()
                     ->route('admin.usuarios.index')
-                    ->with('error', 'No se puede eliminar el aprendiz porque tiene proyectos asociados.');
+                    ->with('error','No se puede eliminar el aprendiz porque tiene proyectos asociados.');
             }
         }
 
-        // 2) Eliminar en cascada manual según rol
-        DB::transaction(function () use ($usuario, $aprendiz) {
+        DB::transaction(function () use ($usuario,$aprendiz,$col) {
 
             if ($aprendiz) {
                 DB::table('aprendices')
-                    ->where('id_aprendiz', $aprendiz->id_aprendiz)
+                    ->where('id_aprendiz',$aprendiz->id_aprendiz)
                     ->delete();
             }
 
             if ($usuario->role === 'ADMIN') {
                 DB::table('administradores')
-                    ->where('id_usuario', $usuario->id)
+                    ->where('id_usuario',$usuario->id)
                     ->delete();
             }
 
             if ($usuario->role === 'LIDER_SEMILLERO') {
                 DB::table('lideres_semillero')
-                    ->where('id_lider_semi', $usuario->id)
+                    ->where('id_lider_semi',$usuario->id)
                     ->delete();
             }
 
             if ($usuario->role === 'LIDER_INVESTIGACION') {
                 DB::table('lideres_investigacion')
-                    ->where('user_id', $usuario->id)
+                    ->where('user_id',$usuario->id)
                     ->delete();
             }
 
-            // Finalmente, borrar el usuario
             $usuario->delete();
         });
 
         return redirect()
             ->route('admin.usuarios.index')
-            ->with('success', 'Se ha eliminado el usuario correctamente.');
+            ->with('success','Se ha eliminado el usuario correctamente.');
     }
 }

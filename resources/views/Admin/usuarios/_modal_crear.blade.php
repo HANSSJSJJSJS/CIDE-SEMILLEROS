@@ -6,18 +6,23 @@
 
       {{-- HEADER --}}
       <div class="modal-header">
-        <div class="d-flex flex-column">
-          <h5 class="modal-title mb-1">
-            <i class="bi bi-person-plus"></i>
-            Agregar usuario
-          </h5>
-          <small class="text-muted">
-            Rol actual:
+        <div class="d-flex flex-column flex-md-row w-100 justify-content-between align-items-md-center">
+          <div>
+            <h4 class="modal-title mb-1">
+              <i class="bi bi-person-plus"></i>
+              Agregar usuario
+            </h4>
+            <small class="text-muted">
+              Complete la información del usuario paso a paso.
+            </small>
+          </div>
+
+          <div class="text-md-end">
+            <span class="small text-muted d-block">Rol actual</span>
             <span id="rol-actual-label"
-                  class="badge bg-secondary ms-1"
-                  style="display:none;">
-            </span>
-          </small>
+                  class="badge bg-primary fs-5 px-3 py-2"
+                  style="display:none;"></span>
+          </div>
         </div>
 
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -35,70 +40,129 @@
         <div class="modal-body">
 
           {{-- ===========================================================
-               ÁREA GENERAL (ADMIN, LÍDER SEMILLERO, LÍDER INVESTIGACIÓN)
+               SELECCIÓN DE ROL – SIEMPRE ARRIBA
+          ============================================================ --}}
+          <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body text-center">
+              <h6 class="fw-semibold mb-2">
+                <i class="bi bi-person-badge me-1"></i>
+                Rol del usuario
+              </h6>
+              <div class="row justify-content-center">
+                <div class="col-md-6">
+                  <select name="role" id="select-role" class="form-select" required>
+                    <option value="">Seleccionar…</option>
+                    <option value="ADMIN">Líder general</option>
+                    <option value="LIDER_SEMILLERO">Líder de semillero</option>
+                    <option value="LIDER_INVESTIGACION">Líder de investigación</option>
+                    <option value="APRENDIZ">Aprendiz</option>
+                  </select>
+                  <div class="invalid-feedback">Seleccione un rol.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {{-- ===========================================================
+               ÁREA GENERAL – PASO 1 COMÚN
           ============================================================ --}}
           <div id="area-general">
 
-            {{-- PASO 1: DATOS BÁSICOS --}}
+            {{-- PASO 1: DATOS BÁSICOS (TODOS LOS ROLES) --}}
             <div class="user-step" data-step="1">
-              <div class="mb-3">
-                <span class="text-muted small">Paso 1 de 2</span>
+              <div class="mb-2 text-center">
+                <span class="text-muted small text-uppercase fw-semibold">
+                  Paso 1 de 1
+                </span>
               </div>
 
               <div class="card border-0 shadow-sm mb-3">
                 <div class="card-body">
                   <h6 class="fw-semibold mb-3">
                     <i class="bi bi-info-circle me-1"></i>
-                    Datos básicos
+                    Datos básicos del usuario
                   </h6>
 
                   <div class="row g-3">
-                    {{-- Rol --}}
-                    <div class="col-md-3">
-                      <label class="form-label">Rol <span class="text-danger">*</span></label>
-                      <select name="role" id="select-role" class="form-select" required>
+
+                    {{-- Tipo de documento --}}
+                    <div class="col-md-4">
+                      <label class="form-label">Tipo de documento <span class="text-danger">*</span></label>
+                      <select name="tipo_documento" class="form-select" required>
                         <option value="">Seleccionar…</option>
-                        <option value="ADMIN">Líder general</option>
-                        <option value="LIDER_SEMILLERO">Líder de semillero</option>
-                        <option value="LIDER_INVESTIGACION">Líder de investigación</option>
-                        <option value="APRENDIZ">Aprendiz</option>
+                        <option value="CC">Cédula de ciudadanía</option>
+                        <option value="TI">Tarjeta de identidad</option>
+                        <option value="CE">Cédula de extranjería</option>
+                        <option value="PAS">Pasaporte</option>
                       </select>
-                      <div class="invalid-feedback">Selecciona un rol.</div>
+                      <div class="invalid-feedback">Seleccione un tipo de documento.</div>
                     </div>
 
-                    {{-- Correo --}}
-                    <div class="col-md-3">
-                      <label class="form-label">Correo <span class="text-danger">*</span></label>
-                      <input type="email"
-                             name="email"
-                             class="form-control"
-                             placeholder="nombre@correo.com"
-                             required>
-                      <div class="invalid-feedback">Ingresa un correo válido.</div>
+                    {{-- Documento --}}
+                    <div class="col-md-4">
+                      <label class="form-label">Número de documento <span class="text-danger">*</span></label>
+                      <input type="text" name="documento" class="form-control" required>
+                      <div class="invalid-feedback">Ingrese el número de documento.</div>
                     </div>
 
-                    {{-- Nombre --}}
-                    <div class="col-md-3">
-                      <label class="form-label">Nombre <span class="text-danger">*</span></label>
-                      <input type="text"
-                             name="nombre"
-                             class="form-control"
-                             required>
-                      <div class="invalid-feedback">Ingresa el nombre.</div>
+                    {{-- Celular --}}
+                    <div class="col-md-4">
+                      <label class="form-label">Celular <span class="text-danger">*</span></label>
+                      <input type="text" name="celular" class="form-control" required>
+                      <div class="invalid-feedback">Ingrese el celular.</div>
                     </div>
 
-                    {{-- Apellido --}}
-                    <div class="col-md-3">
+                    {{-- Nombres --}}
+                    <div class="col-md-4">
+                      <label class="form-label">Nombres <span class="text-danger">*</span></label>
+                      <input type="text" name="nombre" class="form-control" required>
+                      <div class="invalid-feedback">Ingrese los nombres.</div>
+                    </div>
+
+                    {{-- Apellidos --}}
+                    <div class="col-md-4">
                       <label class="form-label">Apellidos <span class="text-danger">*</span></label>
-                      <input type="text"
-                             name="apellido"
-                             class="form-control"
-                             required>
-                      <div class="invalid-feedback">Ingresa los apellidos.</div>
+                      <input type="text" name="apellido" class="form-control" required>
+                      <div class="invalid-feedback">Ingrese los apellidos.</div>
+                    </div>
+
+                    {{-- Género --}}
+                    <div class="col-md-4">
+                      <label class="form-label">Género</label>
+                      <select name="genero" class="form-select">
+                        <option value="">Seleccionar…</option>
+                        <option value="HOMBRE">Hombre</option>
+                        <option value="MUJER">Mujer</option>
+                        <option value="NO DEFINIDO">No definido</option>
+                      </select>
+                    </div>
+
+                    {{-- Tipo de RH --}}
+                    <div class="col-md-4">
+                      <label class="form-label">Tipo de RH</label>
+                      <select name="tipo_rh" class="form-select">
+                        <option value="">Seleccionar…</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                      </select>
+                    </div>
+
+                    {{-- Correo (login users.email) --}}
+                    <div class="col-md-4">
+                      <label class="form-label">Correo de acceso <span class="text-danger">*</span></label>
+                      <input type="email" name="email" class="form-control"
+                             placeholder="correo@ejemplo.com" required>
+                      <div class="invalid-feedback">Ingrese un correo válido.</div>
                     </div>
 
                     {{-- Contraseña --}}
-                    <div class="col-md-4">
+                    <div class="col-md-5">
                       <label class="form-label">Contraseña <span class="text-danger">*</span></label>
                       <div class="input-group">
                         <input type="password"
@@ -119,40 +183,20 @@
                           <i class="bi bi-magic"></i>
                         </button>
                       </div>
-                      <small class="text-muted">
-                        La contraseña se comunicará por fuera del sistema.
-                      </small>
-                      <div class="invalid-feedback">Ingresa una contraseña válida.</div>
+                      <div class="invalid-feedback">Ingrese una contraseña válida.</div>
                     </div>
+
                   </div>
                 </div>
               </div>
             </div>
 
-            {{-- PASO 2: (ADMIN / LÍDER INVESTIGACIÓN) --}}
+            {{-- PASO 2: SOLO LÍDER DE SEMILLERO --}}
             <div class="user-step d-none" data-step="2">
-              <div class="mb-3">
-                <span class="text-muted small">Paso 2 de 2</span>
-              </div>
-
-              <div class="card border-0 shadow-sm mb-3">
-                <div class="card-body">
-                  <h6 class="fw-semibold mb-2">
-                    <i class="bi bi-person-badge me-1"></i>
-                    Información adicional
-                  </h6>
-                  <p class="text-muted mb-0">
-                    Este rol no requiere información adicional por ahora.  
-                    Haz clic en <strong>Guardar usuario</strong> cuando termines.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {{-- PASO 3: SOLO LÍDER DE SEMILLERO --}}
-            <div class="user-step d-none" data-step="3">
-              <div class="mb-3">
-                <span class="text-muted small">Paso 3 de 3</span>
+              <div class="mb-2 text-center">
+                <span class="text-muted small text-uppercase fw-semibold">
+                  Paso 2 de 2
+                </span>
               </div>
 
               <div id="box-lider-semillero" class="card border-0 shadow-sm">
@@ -163,27 +207,27 @@
                   </h6>
 
                   <div class="row g-3">
-                    {{-- Correo institucional líder --}}
+                    {{-- Correo institucional (extra, NO login) --}}
                     <div class="col-md-6">
-                      <label class="form-label">Correo institucional</label>
-                      <input type="email"
-                             name="ls_correo_institucional"
-                             class="form-control"
-                             placeholder="correo@misena.edu.co">
+                      <label class="form-label">Correo institucional <span class="text-danger">*</span></label>
+                      <input type="email" name="ls_correo_institucional" class="form-control"
+                             placeholder="correo@misena.edu.co" required>
+                      <div class="invalid-feedback">Ingrese el correo institucional.</div>
                     </div>
 
                     {{-- Semillero que lidera --}}
                     <div class="col-md-6">
                       <label class="form-label">Semillero que lidera <span class="text-danger">*</span></label>
-                      <select name="ls_semillero_id" class="form-select">
+                      <select name="ls_semillero_id" class="form-select" required>
                         <option value="">Seleccionar…</option>
                         @foreach($semilleros as $s)
                           <option value="{{ $s->id_semillero }}">{{ $s->nombre }}</option>
                         @endforeach
                       </select>
-                      <div class="invalid-feedback">Selecciona el semillero que lidera.</div>
+                      <div class="invalid-feedback">Seleccione el semillero.</div>
                     </div>
                   </div>
+
                 </div>
               </div>
             </div>
@@ -191,158 +235,23 @@
           </div>{{-- /area-general --}}
 
           {{-- ===========================================================
-               ÁREA APRENDIZ – WIZARD 8 PASOS
+               WIZARD APRENDIZ – 4 PASOS
           ============================================================ --}}
           <div id="area-aprendiz" class="mt-4 d-none">
-
             <div class="card border-0 shadow-sm">
               <div class="card-body">
 
-                {{-- Paso 1: Documento --}}
+                {{-- Paso 1: Formación actual / SENA --}}
                 <div class="apr-step" data-step="1">
-                  <h6 class="fw-semibold mb-3">
-                    <i class="bi bi-file-earmark-text me-1"></i>
-                    Registro del aprendiz
-                  </h6>
-
-                  <div class="row g-3">
-                    <div class="col-md-6">
-                      <label class="form-label">Tipo de documento <span class="text-danger">*</span></label>
-                      <select name="tipo_documento" class="form-select">
-                        <option value="">Seleccionar…</option>
-                        <option value="CC">Cédula de ciudadanía</option>
-                        <option value="TI">Tarjeta de identidad</option>
-                        <option value="CE">Cédula de extranjería</option>
-                        <option value="PAS">Pasaporte</option>
-                        <option value="PEP">Permiso especial</option>
-                        <option value="RC">Registro civil</option>
-                      </select>
-                      <div class="invalid-feedback">Selecciona el tipo de documento.</div>
-                    </div>
-
-                    <div class="col-md-6">
-                      <label class="form-label">Número de documento <span class="text-danger">*</span></label>
-                      <input type="text" name="documento" class="form-control">
-                      <div class="invalid-feedback">Ingresa el número de documento.</div>
-                    </div>
-                  </div>
-                </div>
-
-                {{-- Paso 2: Contacto principal --}}
-                <div class="apr-step d-none" data-step="2">
-                  <h6 class="fw-semibold mb-3">
-                    <i class="bi bi-telephone me-1"></i>
-                    Contacto principal
-                  </h6>
-
-                  <div class="row g-3">
-                    <div class="col-md-6">
-                      <label class="form-label">Celular</label>
-                      <input type="text" name="celular" class="form-control">
-                    </div>
-
-                    <div class="col-md-6">
-                      <label class="form-label">Correo institucional</label>
-                      <input type="email"
-                             name="correo_institucional"
-                             class="form-control"
-                             placeholder="correo@misena.edu.co">
-                    </div>
-                  </div>
-                </div>
-
-                {{-- Paso 3: Datos personales --}}
-                <div class="apr-step d-none" data-step="3">
-                  <h6 class="fw-semibold mb-3">
-                    <i class="bi bi-person-vcard me-1"></i>
-                    Datos personales
-                  </h6>
-
-                  <div class="row g-3">
-                    <div class="col-md-6">
-                      <label class="form-label">Género</label>
-                      <select name="genero" class="form-select">
-                        <option value="">Seleccionar…</option>
-                        <option value="HOMBRE">Hombre</option>
-                        <option value="MUJER">Mujer</option>
-                        <option value="NO DEFINIDO">No definido</option>
-                      </select>
-                    </div>
-
-                    <div class="col-md-6">
-                      <label class="form-label">Tipo de RH</label>
-                      <select name="tipo_rh" class="form-select">
-                        <option value="">Seleccionar…</option>
-                        <option value="A+">A+</option>
-                        <option value="A-">A-</option>
-                        <option value="B+">B+</option>
-                        <option value="B-">B-</option>
-                        <option value="AB+">AB+</option>
-                        <option value="AB-">AB-</option>
-                        <option value="O+">O+</option>
-                        <option value="O-">O-</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {{-- Paso 4: Nivel educativo --}}
-                <div class="apr-step d-none" data-step="4">
-                  <h6 class="fw-semibold mb-3">
-                    <i class="bi bi-mortarboard me-1"></i>
-                    Nivel educativo
-                  </h6>
-
-                  <div class="row g-3">
-                    <div class="col-md-12">
-                      <label class="form-label">Nivel educativo <span class="text-danger">*</span></label>
-                      <select name="nivel_educativo" class="form-select">
-                        <option value="">Seleccionar…</option>
-                        <option value="ARTICULACION_MEDIA_10_11">
-                          Articulación con la media – Décimo 10 / Once 11
-                        </option>
-                        <option value="TECNOACADEMIA_7_9">
-                          Tecnoacademia – Séptimo 7 / Octavo 8 / Noveno 9
-                        </option>
-                        <option value="TECNICO">Técnico</option>
-                        <option value="TECNOLOGO">Tecnólogo</option>
-                        <option value="PROFESIONAL">Profesional</option>
-                      </select>
-                      <div class="invalid-feedback">Selecciona el nivel educativo.</div>
-                    </div>
-                  </div>
-                </div>
-
-                {{-- Paso 5: Semillero --}}
-                <div class="apr-step d-none" data-step="5">
-                  <h6 class="fw-semibold mb-3">
-                    <i class="bi bi-flower3 me-1"></i>
-                    Semillero
-                  </h6>
-
-                  <div class="row g-3">
-                    <div class="col-md-12">
-                      <label class="form-label">Semillero <span class="text-danger">*</span></label>
-                      <select name="semillero_id" class="form-select">
-                        <option value="">Seleccionar…</option>
-                        @foreach($semilleros as $s)
-                          <option value="{{ $s->id_semillero }}">{{ $s->nombre }}</option>
-                        @endforeach
-                      </select>
-                      <div class="invalid-feedback">Selecciona el semillero del aprendiz.</div>
-                    </div>
-                  </div>
-                </div>
-
-                {{-- Paso 6: Vinculación SENA --}}
-                <div class="apr-step d-none" data-step="6">
-                  <h6 class="fw-semibold mb-3">
+                  <h6 class="fw-semibold mb-2">
                     <i class="bi bi-building me-1"></i>
-                    Vinculación al SENA
+                    Formación actual
                   </h6>
+                  <p class="text-muted small mb-3">
+                    ¿Actualmente está cursando algún programa o curso en el SENA?
+                  </p>
 
                   <div class="mb-3">
-                    <label class="form-label d-block">¿Vinculado al SENA?</label>
                     <div class="d-flex gap-4">
                       <div class="form-check">
                         <input class="form-check-input"
@@ -351,9 +260,7 @@
                                id="vinculado_sena_si"
                                value="1"
                                checked>
-                        <label class="form-check-label" for="vinculado_sena_si">
-                          Sí
-                        </label>
+                        <label class="form-check-label" for="vinculado_sena_si">Sí</label>
                       </div>
                       <div class="form-check">
                         <input class="form-check-input"
@@ -361,37 +268,98 @@
                                name="vinculado_sena"
                                id="vinculado_sena_no"
                                value="0">
-                        <label class="form-check-label" for="vinculado_sena_no">
-                          No
-                        </label>
+                        <label class="form-check-label" for="vinculado_sena_no">No</label>
                       </div>
                     </div>
                   </div>
 
-                  {{-- Si está vinculado al SENA --}}
+                  {{-- SI está cursando en el SENA --}}
                   <div id="apr-sena">
                     <div class="row g-3">
-                      <div class="col-md-6">
+                      <div class="col-md-4">
+                        <label class="form-label">Nivel académico</label>
+                        <select name="nivel_educativo" class="form-select">
+                          <option value="">Seleccionar…</option>
+                          <option value="ARTICULACION_MEDIA_10_11">
+                            Articulación con la media – Décimo / Once
+                          </option>
+                          <option value="TECNOACADEMIA_7_9">
+                            Tecnoacademia – Séptimo / Octavo / Noveno
+                          </option>
+                          <option value="TECNICO">Técnico</option>
+                          <option value="TECNOLOGO">Tecnólogo</option>
+                          <option value="PROFESIONAL">Profesional</option>
+                        </select>
+                      </div>
+
+                      <div class="col-md-4">
                         <label class="form-label">Ficha</label>
                         <input type="text" name="ficha" class="form-control">
                       </div>
 
-                      <div class="col-md-6">
+                      <div class="col-md-4">
                         <label class="form-label">Programa</label>
                         <input type="text" name="programa" class="form-control">
                       </div>
                     </div>
                   </div>
 
-                  {{-- Si NO está vinculado al SENA --}}
+                  {{-- NO está cursando en el SENA --}}
                   <div id="apr-no-sena" class="d-none mt-3">
-                    <label class="form-label">Institución</label>
-                    <input type="text" name="institucion" class="form-control">
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label class="form-label">Nivel educativo</label>
+                        <select name="nivel_educativo" class="form-select">
+                          <option value="">Seleccionar…</option>
+                          <option value="TECNICO">Técnico</option>
+                          <option value="TECNOLOGO">Tecnólogo</option>
+                          <option value="PROFESIONAL">Profesional</option>
+                        </select>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">¿A qué institución pertenece?</label>
+                        <input type="text" name="institucion" class="form-control"
+                               placeholder="Nombre de la institución">
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {{-- Paso 7: Contacto de emergencia --}}
-                <div class="apr-step d-none" data-step="7">
+                {{-- Paso 2: Correo institucional + semillero --}}
+                <div class="apr-step d-none" data-step="2">
+                  <h6 class="fw-semibold mb-3">
+                    <i class="bi bi-flower3 me-1"></i>
+                    Información académica del aprendiz
+                  </h6>
+
+                  <div class="row g-3">
+                    {{-- Correo institucional (aprendices.correo_institucional) --}}
+                    <div class="col-md-6">
+                      <label class="form-label">Correo institucional <span class="text-danger">*</span></label>
+                      <input type="email"
+                             name="correo_institucional"
+                             class="form-control"
+                             placeholder="correo@misena.edu.co"
+                             required>
+                      <div class="invalid-feedback">Ingrese el correo institucional del aprendiz.</div>
+                    </div>
+
+                    {{-- Semillero --}}
+                    <div class="col-md-6">
+                      <label class="form-label">Semillero <span class="text-danger">*</span></label>
+                      <select name="semillero_id" class="form-select" required>
+                        <option value="">Seleccionar…</option>
+                        @foreach($semilleros as $s)
+                          <option value="{{ $s->id_semillero }}">{{ $s->nombre }}</option>
+                        @endforeach
+                      </select>
+                      <div class="invalid-feedback">Seleccione el semillero del aprendiz.</div>
+                    </div>
+                  </div>
+                </div>
+
+                {{-- Paso 3: Contacto de emergencia --}}
+                <div class="apr-step d-none" data-step="3">
                   <h6 class="fw-semibold mb-3">
                     <i class="bi bi-exclamation-triangle me-1"></i>
                     Contacto de emergencia
@@ -402,7 +370,6 @@
                       <label class="form-label">Nombre del contacto</label>
                       <input type="text" name="contacto_nombre" class="form-control">
                     </div>
-
                     <div class="col-md-6">
                       <label class="form-label">Celular del contacto</label>
                       <input type="text" name="contacto_celular" class="form-control">
@@ -410,18 +377,17 @@
                   </div>
                 </div>
 
-                {{-- Paso 8: Revisión --}}
-                <div class="apr-step d-none" data-step="8">
+                {{-- Paso 4: Revisión final --}}
+                <div class="apr-step d-none" data-step="4">
                   <h6 class="fw-semibold mb-3">
                     <i class="bi bi-check2-circle me-1"></i>
                     Revisión final
                   </h6>
-
                   <p class="text-muted mb-1">
-                    Verifica que los datos del aprendiz sean correctos.
+                    Verifique que los datos del aprendiz sean correctos.
                   </p>
                   <p class="mb-0">
-                    Cuando estés seguro, haz clic en <strong>Guardar usuario</strong> para finalizar el registro.
+                    Cuando esté seguro, haga clic en <strong>Guardar usuario</strong> para finalizar el registro.
                   </p>
                 </div>
 
@@ -430,31 +396,25 @@
           </div>{{-- /area-aprendiz --}}
 
           {{-- ===========================================================
-               NAVEGACIÓN DE PASOS (SIEMPRE ABAJO)
+               NAVEGACIÓN DE PASOS (SIEMPRE ABAJO, CENTRADA)
           ============================================================ --}}
-          {{-- Wizard general (Admin / Líderes) --}}
           <div id="user-steps-nav"
-               class="d-flex justify-content-between align-items-center mt-4 d-none">
+               class="d-flex justify-content-center align-items-center gap-3 mt-3 d-none">
             <button type="button" id="btn-user-prev" class="btn btn-outline-secondary">
               Anterior
             </button>
-
-            <span id="user-step-label" class="text-muted small"></span>
-
+            <span class="text-muted small" id="user-step-label"></span>
             <button type="button" id="btn-user-next" class="btn btn-success">
               Siguiente
             </button>
           </div>
 
-          {{-- Wizard Aprendiz --}}
           <div id="apr-steps-nav"
-               class="d-flex justify-content-between align-items-center mt-4 d-none">
+               class="d-flex justify-content-center align-items-center gap-3 mt-3 d-none">
             <button type="button" id="btn-apr-prev" class="btn btn-outline-secondary">
               Anterior
             </button>
-
-            <span id="apr-step-label" class="text-muted small"></span>
-
+            <span class="text-muted small" id="apr-step-label"></span>
             <button type="button" id="btn-apr-next" class="btn btn-success">
               Siguiente
             </button>
@@ -462,7 +422,8 @@
 
         </div>{{-- /modal-body --}}
 
-        <div class="modal-footer">
+        {{-- FOOTER --}}
+        <div class="modal-footer justify-content-center gap-2">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
             Cancelar
           </button>
