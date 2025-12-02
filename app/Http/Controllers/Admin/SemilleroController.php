@@ -17,6 +17,7 @@ class SemilleroController extends Controller
         $q    = $request->get('q');
         $sNom = $request->get('sNom');
 
+        // columnas permitidas para ordenar
         $allowedOrder = ['nombre', 'linea_investigacion'];
         if (! in_array($sNom, $allowedOrder)) {
             $sNom = 'nombre';
@@ -46,7 +47,11 @@ class SemilleroController extends Controller
                 $sub->where('s.nombre', 'like', "%{$q}%")
                     ->orWhere('s.linea_investigacion', 'like', "%{$q}%")
                     ->orWhere('ls.correo_institucional', 'like', "%{$q}%")
-                    ->orWhere(DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''),' ',COALESCE(u.apellidos,'')))"), 'like', "%{$q}%");
+                    ->orWhere(
+                        DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''),' ',COALESCE(u.apellidos,'')))"),
+                        'like',
+                        "%{$q}%"
+                    );
             });
         }
 
@@ -223,53 +228,52 @@ class SemilleroController extends Controller
     // ============================================================
     // LÍDERES DISPONIBLES (para ambos modales)
     // ============================================================
-   public function lideresDisponibles(Request $request)
-{
-    $q             = trim($request->get('q', ''));
-    $includeActual = $request->integer('include_current'); // para el modal editar
+    public function lideresDisponibles(Request $request)
+    {
+        $q             = trim($request->get('q', ''));
+        $includeActual = $request->integer('include_current'); // para el modal editar
 
-    $query = DB::table('lideres_semillero as ls')
-        ->leftJoin('users as u', 'u.id', '=', 'ls.id_lider_semi');
+        $query = DB::table('lideres_semillero as ls')
+            ->leftJoin('users as u', 'u.id', '=', 'ls.id_lider_semi');
 
-    // Líderes libres + opcionalmente el actual
-    $query->where(function ($w) use ($includeActual) {
-        $w->whereNull('ls.id_semillero');
-        if ($includeActual) {
-            $w->orWhere('ls.id_lider_semi', $includeActual);
-        }
-    });
-
-    if ($q !== '') {
-        $query->where(function ($w) use ($q) {
-            $w->where('u.nombre', 'like', "%{$q}%")
-              ->orWhere('u.apellidos', 'like', "%{$q}%")
-              ->orWhere('ls.correo_institucional', 'like', "%{$q}%")
-              ->orWhere('u.email', 'like', "%{$q}%");
+        // Líderes libres + opcionalmente el actual
+        $query->where(function ($w) use ($includeActual) {
+            $w->whereNull('ls.id_semillero');
+            if ($includeActual) {
+                $w->orWhere('ls.id_lider_semi', $includeActual);
+            }
         });
-    }
 
-    $rows = $query
-        ->orderBy('u.nombre')
-        ->limit(20)
-        ->get();
-
-    $items = $rows->map(function ($r) {
-        $nombre = trim(($r->nombre ?? '') . ' ' . ($r->apellidos ?? ''));
-        if ($nombre === '') {
-            $nombre = '(Sin nombre)';
+        if ($q !== '') {
+            $query->where(function ($w) use ($q) {
+                $w->where('u.nombre', 'like', "%{$q}%")
+                  ->orWhere('u.apellidos', 'like', "%{$q}%")
+                  ->orWhere('ls.correo_institucional', 'like', "%{$q}%")
+                  ->orWhere('u.email', 'like', "%{$q}%");
+            });
         }
 
-        return [
-            'id_lider_semi' => $r->id_lider_semi,
-            'nombre'        => $nombre,
-            'correo'        => $r->correo_institucional ?? $r->email,
-        ];
-    });
+        $rows = $query
+            ->orderBy('u.nombre')
+            ->limit(20)
+            ->get();
 
-    return response()->json([
-        'ok'    => true,
-        'items' => $items,
-    ]);
-}
+        $items = $rows->map(function ($r) {
+            $nombre = trim(($r->nombre ?? '') . ' ' . ($r->apellidos ?? ''));
+            if ($nombre === '') {
+                $nombre = '(Sin nombre)';
+            }
 
+            return [
+                'id_lider_semi' => $r->id_lider_semi,
+                'nombre'        => $nombre,
+                'correo'        => $r->correo_institucional ?? $r->email,
+            ];
+        });
+
+        return response()->json([
+            'ok'    => true,
+            'items' => $items,
+        ]);
+    }
 }

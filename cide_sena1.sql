@@ -2,10 +2,10 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Servidor: 127.0.0.1
--- Tiempo de generación: 28-11-2025 a las 22:09:31
--- Versión del servidor: 10.4.32-MariaDB
--- Versión de PHP: 8.2.12
+-- Servidor: localhost
+-- Tiempo de generación: 01-12-2025 a las 15:28:20
+-- Versión del servidor: 10.4.28-MariaDB
+-- Versión de PHP: 8.0.28
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Base de datos: `cide_sena`
+-- Base de datos: `cide_sena1`
 --
 
 -- --------------------------------------------------------
@@ -57,8 +57,6 @@ INSERT INTO `administradores` (`id_usuario`, `nombre`, `nombres`, `apellidos`, `
 CREATE TABLE `aprendices` (
   `id_aprendiz` bigint(20) UNSIGNED NOT NULL,
   `user_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `nombres` varchar(120) NOT NULL,
-  `apellidos` varchar(255) DEFAULT NULL,
   `ficha` varchar(30) DEFAULT NULL,
   `programa` varchar(160) DEFAULT NULL,
   `nivel_educativo` enum('ARTICULACION_MEDIA_10_11','TECNOACADEMIA_7_9','TECNICO','TECNOLOGO','PROFESIONAL') DEFAULT NULL,
@@ -78,40 +76,40 @@ CREATE TABLE `aprendices` (
 -- Volcado de datos para la tabla `aprendices`
 --
 
-INSERT INTO `aprendices` (`id_aprendiz`, `user_id`, `nombres`, `apellidos`, `ficha`, `programa`, `nivel_educativo`, `vinculado_sena`, `institucion`, `correo_institucional`, `correo_personal`, `contacto_nombre`, `contacto_celular`, `semillero_id`, `creado_en`, `actualizado_en`, `estado`) VALUES
-(62, NULL, 'Laura', 'García Pérez', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'laura.garcia@misena.edu.co', 'laura.garcia@gmail.com', 'Marta Pérez', '3101111111', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
-(63, NULL, 'Carlos', 'Hernández Ruiz', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'carlos.hernandez@misena.edu.co', 'carlos.hernandez@gmail.com', 'Juan Ruiz', '3102222222', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
-(64, NULL, 'María', 'López Díaz', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'maria.lopez@misena.edu.co', 'maria.lopez@gmail.com', 'Ana Díaz', '3103333333', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
-(65, NULL, 'Andrés', 'Torres Gómez', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'andres.torres@misena.edu.co', 'andres.torres@gmail.com', 'Laura Gómez', '3104444444', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
-(66, NULL, 'Camila', 'Martínez Rojas', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'camila.martinez@misena.edu.co', 'camila.martinez@gmail.com', 'Rosa Rojas', '3105555555', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
-(67, NULL, 'Felipe', 'Gutiérrez Ramos', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'felipe.gutierrez@misena.edu.co', 'felipe.gutierrez@gmail.com', 'Marta Ramos', '3106666666', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
-(68, NULL, 'Diana', 'Morales Castillo', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'diana.morales@misena.edu.co', 'diana.morales@gmail.com', 'Carlos Castillo', '3107777777', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
-(69, 8, 'Santiago', 'Jiménez Herrera', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'santiago.jimenez@misena.edu.co', 'santiago.jimenez@gmail.com', 'María Herrera', '3108888888', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
-(70, 9, 'Valentina', 'Ruiz Cabrera', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'valentina.ruiz@misena.edu.co', 'valentina.ruiz@gmail.com', 'Lucía Cabrera', '3109999999', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
-(71, NULL, 'Mateo', 'Castro Peña', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'mateo.castro@misena.edu.co', 'mateo.castro@gmail.com', 'José Peña', '3110000000', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
-(72, NULL, 'Paula', 'Rodríguez León', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'paula.rodriguez@misena.edu.co', 'paula.rodriguez@gmail.com', 'María León', '3111111111', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
-(73, NULL, 'Juan', 'Vargas Ortiz', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'juan.vargas@misena.edu.co', 'juan.vargas@gmail.com', 'Carmen Ortiz', '3112222222', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
-(74, NULL, 'Isabella', 'Mendoza Suárez', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'isabella.mendoza@misena.edu.co', 'isabella.mendoza@gmail.com', 'Julio Suárez', '3113333333', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
-(75, NULL, 'Sebastián', 'Gómez Vera', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'sebastian.gomez@misena.edu.co', 'sebastian.gomez@gmail.com', 'Andrés Vera', '3114444444', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
-(76, NULL, 'Sara', 'Ramírez Patiño', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'sara.ramirez@misena.edu.co', 'sara.ramirez@gmail.com', 'Claudia Patiño', '3115555555', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
-(77, NULL, 'Daniel', 'Córdoba Mejía', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'daniel.cordoba@misena.edu.co', 'daniel.cordoba@gmail.com', 'Sandra Mejía', '3116666666', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
-(78, NULL, 'Lucía', 'Pérez Torres', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'lucia.perez@misena.edu.co', 'lucia.perez@gmail.com', 'Mario Torres', '3117777777', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
-(79, NULL, 'Tomás', 'Martínez Ospina', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'tomas.martinez@misena.edu.co', 'tomas.martinez@gmail.com', 'Luisa Ospina', '3118888888', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
-(80, NULL, 'Natalia', 'Reyes Gómez', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'natalia.reyes@misena.edu.co', 'natalia.reyes@gmail.com', 'Felipe Gómez', '3119999999', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
-(81, 20, 'David', 'Moreno Silva', '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'david.moreno@misena.edu.co', 'david.moreno@gmail.com', 'Sofía Silva', '3120000000', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
-(82, 71, 'jubhb', 'jhvv', 'mi999990', 'vgvhgcfc', NULL, 1, NULL, 'khbhbkh@gmail.com', 'hidalgo.16@gmail.com', 'hgyugy', '987897987', NULL, '2025-11-11 23:37:32', '2025-11-11 23:37:32', 'Activo'),
-(83, 72, 'Juan', 'Pérez López', '2456789', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'juan.perez@misena.edu.co', 'juan.perez@misena.edu.co', 'María López', '3119876543', NULL, '2025-11-12 18:18:57', '2025-11-12 18:18:57', 'Activo'),
-(84, 73, 'Laura', 'Gómez Rincón', '2456790', 'Gestión Administrativa', NULL, 1, NULL, 'laura.gomez@misena.edu.co', 'laura.gomez@misena.edu.co', 'Jorge Gómez', '3124567891', NULL, '2025-11-12 18:20:35', '2025-11-12 18:20:35', 'Activo'),
-(85, 74, 'Carlos', 'Méndez Silva', '2456791', 'Mantenimiento Electromecánico', NULL, 1, NULL, 'carlos.mendez@misena.edu.co', 'carlos.mendez@misena.edu.co', 'Ana Silva', '3136547890', NULL, '2025-11-12 18:21:57', '2025-11-12 18:21:57', 'Activo'),
-(86, 75, 'Andrea', 'Díaz', '2456792', 'Contabilidad y Finanzas', NULL, 1, NULL, 'andrea.moreno@misena.edu.co', 'andrea.moreno@misena.edu.co', 'Luis Moreno', '3115678923', NULL, '2025-11-12 18:23:31', '2025-11-12 18:23:31', 'Activo'),
-(87, 76, 'Kevin', 'levinin', '3548751', 'ADSO', NULL, 1, NULL, 'kevin@hsena.com', 'kevinsan@hotmail.com', 'maria', '21641561', 13, '2025-11-12 22:39:15', '2025-11-12 22:39:15', 'Activo'),
-(88, 77, 'Mario', 'nova', '3548751', 'Adso', NULL, 1, NULL, 'marionova@hotmail.com', 'aprendiz@hotmail.com', 'aasd', '21641561', 13, '2025-11-13 00:45:01', '2025-11-13 00:45:01', 'Activo'),
-(89, 82, 'cangiro', 'Sáenz', NULL, NULL, NULL, 0, 'Manuela', 'cangiro@hsena.com', 'aprendizsinficha@hola.com', 'jose', '21641561', 6, '2025-11-13 01:06:03', '2025-11-13 01:06:03', 'Activo'),
-(90, 84, 'Sergio', 'mogoyon', '3548751', 'Deporte', NULL, 1, NULL, 'serm@hsena.com', 'sergius@gmail.com', 'aasd', '21641561', 7, '2025-11-18 13:54:41', '2025-11-18 13:54:41', 'Activo'),
-(91, 85, 'geral', 'fajardo', '9814728', 'Animacion 3D', NULL, 1, NULL, 'example@gmail.com', 'example@mi.sena.edu.co', 'Madre', 'SOLO HAY UNA', 9, '2025-11-19 13:12:42', '2025-11-19 13:12:42', 'Activo'),
-(92, 86, 'jhon', 'cortes', '2872387', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'example2@gmail.com', 'example2@soy.sena.edu.co', 'la mama', 'pa siempre', 9, '2025-11-19 13:39:28', '2025-11-19 13:39:28', 'Activo'),
-(93, 87, 'Santiago', 'Aves', '982734893', 'Animacion 3D', NULL, 1, NULL, 'example3@gmail.com', 'example3@soy.sena.edu.co', 'el papa', 'lo abandono', 9, '2025-11-19 13:40:32', '2025-11-19 13:40:32', 'Activo'),
-(94, 88, 'jhonnatan', 'torres', '254426554', 'adso', NULL, 1, NULL, 'asdadsj@hotmail', 'kg22@gmail.com', 'asda', 'sumakmsa', 9, '2025-11-20 18:49:06', '2025-11-28 14:31:05', 'Activo');
+INSERT INTO `aprendices` (`id_aprendiz`, `user_id`, `ficha`, `programa`, `nivel_educativo`, `vinculado_sena`, `institucion`, `correo_institucional`, `correo_personal`, `contacto_nombre`, `contacto_celular`, `semillero_id`, `creado_en`, `actualizado_en`, `estado`) VALUES
+(62, NULL, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'laura.garcia@misena.edu.co', 'laura.garcia@gmail.com', 'Marta Pérez', '3101111111', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
+(63, NULL, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'carlos.hernandez@misena.edu.co', 'carlos.hernandez@gmail.com', 'Juan Ruiz', '3102222222', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
+(64, NULL, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'maria.lopez@misena.edu.co', 'maria.lopez@gmail.com', 'Ana Díaz', '3103333333', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
+(65, NULL, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'andres.torres@misena.edu.co', 'andres.torres@gmail.com', 'Laura Gómez', '3104444444', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
+(66, NULL, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'camila.martinez@misena.edu.co', 'camila.martinez@gmail.com', 'Rosa Rojas', '3105555555', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
+(67, NULL, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'felipe.gutierrez@misena.edu.co', 'felipe.gutierrez@gmail.com', 'Marta Ramos', '3106666666', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
+(68, NULL, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'diana.morales@misena.edu.co', 'diana.morales@gmail.com', 'Carlos Castillo', '3107777777', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
+(69, 8, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'santiago.jimenez@misena.edu.co', 'santiago.jimenez@gmail.com', 'María Herrera', '3108888888', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(70, 9, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'valentina.ruiz@misena.edu.co', 'valentina.ruiz@gmail.com', 'Lucía Cabrera', '3109999999', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(71, NULL, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'mateo.castro@misena.edu.co', 'mateo.castro@gmail.com', 'José Peña', '3110000000', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
+(72, NULL, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'paula.rodriguez@misena.edu.co', 'paula.rodriguez@gmail.com', 'María León', '3111111111', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
+(73, NULL, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'juan.vargas@misena.edu.co', 'juan.vargas@gmail.com', 'Carmen Ortiz', '3112222222', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
+(74, NULL, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'isabella.mendoza@misena.edu.co', 'isabella.mendoza@gmail.com', 'Julio Suárez', '3113333333', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
+(75, NULL, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'sebastian.gomez@misena.edu.co', 'sebastian.gomez@gmail.com', 'Andrés Vera', '3114444444', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
+(76, NULL, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'sara.ramirez@misena.edu.co', 'sara.ramirez@gmail.com', 'Claudia Patiño', '3115555555', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
+(77, NULL, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'daniel.cordoba@misena.edu.co', 'daniel.cordoba@gmail.com', 'Sandra Mejía', '3116666666', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
+(78, NULL, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'lucia.perez@misena.edu.co', 'lucia.perez@gmail.com', 'Mario Torres', '3117777777', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
+(79, NULL, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'tomas.martinez@misena.edu.co', 'tomas.martinez@gmail.com', 'Luisa Ospina', '3118888888', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
+(80, NULL, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'natalia.reyes@misena.edu.co', 'natalia.reyes@gmail.com', 'Felipe Gómez', '3119999999', NULL, '2025-11-11 18:29:17', '2025-11-18 18:46:20', 'Activo'),
+(81, 20, '258963', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'david.moreno@misena.edu.co', 'david.moreno@gmail.com', 'Sofía Silva', '3120000000', NULL, '2025-11-11 18:29:17', '2025-11-11 18:29:17', 'Activo'),
+(82, 71, 'mi999990', 'vgvhgcfc', NULL, 1, NULL, 'khbhbkh@gmail.com', 'hidalgo.16@gmail.com', 'hgyugy', '987897987', NULL, '2025-11-11 23:37:32', '2025-11-11 23:37:32', 'Activo'),
+(83, 72, '2456789', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'juan.perez@misena.edu.co', 'juan.perez@misena.edu.co', 'María López', '3119876543', NULL, '2025-11-12 18:18:57', '2025-11-12 18:18:57', 'Activo'),
+(84, 73, '2456790', 'Gestión Administrativa', NULL, 1, NULL, 'laura.gomez@misena.edu.co', 'laura.gomez@misena.edu.co', 'Jorge Gómez', '3124567891', NULL, '2025-11-12 18:20:35', '2025-11-12 18:20:35', 'Activo'),
+(85, 74, '2456791', 'Mantenimiento Electromecánico', NULL, 1, NULL, 'carlos.mendez@misena.edu.co', 'carlos.mendez@misena.edu.co', 'Ana Silva', '3136547890', NULL, '2025-11-12 18:21:57', '2025-11-12 18:21:57', 'Activo'),
+(86, 75, '2456792', 'Contabilidad y Finanzas', NULL, 1, NULL, 'andrea.moreno@misena.edu.co', 'andrea.moreno@misena.edu.co', 'Luis Moreno', '3115678923', NULL, '2025-11-12 18:23:31', '2025-11-12 18:23:31', 'Activo'),
+(87, 76, '3548751', 'ADSO', NULL, 1, NULL, 'kevin@hsena.com', 'kevinsan@hotmail.com', 'maria', '21641561', 13, '2025-11-12 22:39:15', '2025-11-12 22:39:15', 'Activo'),
+(88, 77, '3548751', 'Adso', NULL, 1, NULL, 'marionova@hotmail.com', 'aprendiz@hotmail.com', 'aasd', '21641561', 13, '2025-11-13 00:45:01', '2025-11-13 00:45:01', 'Activo'),
+(89, 82, NULL, NULL, NULL, 0, 'Manuela', 'cangiro@hsena.com', 'aprendizsinficha@hola.com', 'jose', '21641561', 6, '2025-11-13 01:06:03', '2025-11-13 01:06:03', 'Activo'),
+(90, 84, '3548751', 'Deporte', NULL, 1, NULL, 'serm@hsena.com', 'sergius@gmail.com', 'aasd', '21641561', 7, '2025-11-18 13:54:41', '2025-11-18 13:54:41', 'Activo'),
+(91, 85, '9814728', 'Animacion 3D', NULL, 1, NULL, 'example@gmail.com', 'example@mi.sena.edu.co', 'Madre', 'SOLO HAY UNA', 9, '2025-11-19 13:12:42', '2025-11-19 13:12:42', 'Activo'),
+(92, 86, '2872387', 'Análisis y Desarrollo de Software', NULL, 1, NULL, 'example2@gmail.com', 'example2@soy.sena.edu.co', 'la mama', 'pa siempre', 9, '2025-11-19 13:39:28', '2025-11-19 13:39:28', 'Activo'),
+(93, 87, '982734893', 'Animacion 3D', NULL, 1, NULL, 'example3@gmail.com', 'example3@soy.sena.edu.co', 'el papa', 'lo abandono', 9, '2025-11-19 13:40:32', '2025-11-19 13:40:32', 'Activo'),
+(94, 88, '254426554', 'adso', NULL, 1, NULL, 'asdadsj@hotmail', 'kg22@gmail.com', 'asda', 'sumakmsa', 9, '2025-11-20 18:49:06', '2025-11-28 14:31:05', 'Activo');
 
 -- --------------------------------------------------------
 
@@ -360,8 +358,7 @@ INSERT INTO `lideres_investigacion` (`id`, `user_id`, `tiene_permisos`, `created
 
 CREATE TABLE `lideres_semillero` (
   `id_lider_semi` bigint(20) UNSIGNED NOT NULL,
-  `nombres` varchar(120) NOT NULL,
-  `apellidos` varchar(255) DEFAULT NULL,
+  `id_usuario` bigint(20) UNSIGNED DEFAULT NULL,
   `correo_institucional` varchar(160) DEFAULT NULL,
   `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
   `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
@@ -372,20 +369,20 @@ CREATE TABLE `lideres_semillero` (
 -- Volcado de datos para la tabla `lideres_semillero`
 --
 
-INSERT INTO `lideres_semillero` (`id_lider_semi`, `nombres`, `apellidos`, `correo_institucional`, `creado_en`, `actualizado_en`, `id_semillero`) VALUES
-(57, 'Carlos Hernando', 'Niño Rivera', 'chninor@sena.edu.co', '2025-10-28 01:55:05', '2025-10-28 01:55:05', NULL),
-(58, 'Karol Vanesa', 'Hernández', 'khernandez@sena.edu.co', '2025-10-28 01:56:09', '2025-10-28 01:56:09', NULL),
-(59, 'William Rolando', 'Rodríguez', 'wrodriguezr@sena.edu.co', '2025-10-28 01:56:59', '2025-10-28 01:56:59', NULL),
-(60, 'Cesar', 'Moreno', 'cmorenogu@sena.edu.co', '2025-10-28 02:03:45', '2025-10-28 02:03:45', NULL),
-(61, 'Marly Julieth', 'Hernández Sánchez', 'marhermandezs@sena.edu.co', '2025-10-28 02:04:42', '2025-10-28 02:04:42', NULL),
-(63, 'Lina Angélica', 'Ubaque', 'lubaqueb@sena.edu.co', '2025-10-28 02:06:03', '2025-10-28 02:06:03', NULL),
-(64, 'Diana Marcela', 'Acosta Torres', 'dacostat@sena.edu.co', '2025-10-28 02:06:41', '2025-10-28 02:06:41', NULL),
-(65, 'Arlix Carolina', 'Aragón', 'aaragonc@sena.edu.co', '2025-10-28 02:07:18', '2025-10-28 02:07:18', NULL),
-(66, 'Carlos Andrés', 'Sáenz', 'casaenz@sena.edu.co', '2025-10-28 23:41:56', '2025-10-28 23:41:56', NULL),
-(67, 'Harol', 'Pardos', 'sergio@admin1.com', '2025-10-29 00:24:23', '2025-10-29 19:47:29', NULL),
-(70, 'Hansbleidi', 'Cardenas', 'yurani12@gmail.com', '2025-11-05 18:21:44', '2025-11-05 18:21:44', NULL),
-(93, 'Sergio', 'nova', 'casata@hotmail.com', '2025-11-28 18:31:26', '2025-11-28 18:31:26', 9),
-(94, 'maria', 'Morita', 's24ffdd@hotmail.com', '2025-11-28 18:32:18', '2025-11-28 18:32:18', 8);
+INSERT INTO `lideres_semillero` (`id_lider_semi`, `id_usuario`, `correo_institucional`, `creado_en`, `actualizado_en`, `id_semillero`) VALUES
+(57, NULL, 'chninor@sena.edu.co', '2025-10-28 01:55:05', '2025-10-28 01:55:05', NULL),
+(58, NULL, 'khernandez@sena.edu.co', '2025-10-28 01:56:09', '2025-10-28 01:56:09', NULL),
+(59, NULL, 'wrodriguezr@sena.edu.co', '2025-10-28 01:56:59', '2025-10-28 01:56:59', NULL),
+(60, NULL, 'cmorenogu@sena.edu.co', '2025-10-28 02:03:45', '2025-10-28 02:03:45', NULL),
+(61, NULL, 'marhermandezs@sena.edu.co', '2025-10-28 02:04:42', '2025-10-28 02:04:42', NULL),
+(63, NULL, 'lubaqueb@sena.edu.co', '2025-10-28 02:06:03', '2025-10-28 02:06:03', NULL),
+(64, NULL, 'dacostat@sena.edu.co', '2025-10-28 02:06:41', '2025-10-28 02:06:41', NULL),
+(65, NULL, 'aaragonc@sena.edu.co', '2025-10-28 02:07:18', '2025-10-28 02:07:18', NULL),
+(66, NULL, 'casaenz@sena.edu.co', '2025-10-28 23:41:56', '2025-10-28 23:41:56', NULL),
+(67, NULL, 'sergio@admin1.com', '2025-10-29 00:24:23', '2025-10-29 19:47:29', NULL),
+(70, NULL, 'yurani12@gmail.com', '2025-11-05 18:21:44', '2025-11-05 18:21:44', NULL),
+(93, NULL, 'casata@hotmail.com', '2025-11-28 18:31:26', '2025-11-28 18:31:26', 9),
+(94, NULL, 's24ffdd@hotmail.com', '2025-11-28 18:32:18', '2025-11-28 18:32:18', 8);
 
 -- --------------------------------------------------------
 
@@ -558,7 +555,7 @@ INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, 
 
 CREATE TABLE `users` (
   `id` bigint(20) UNSIGNED NOT NULL,
-  `name` varchar(255) NOT NULL,
+  `nombre` varchar(255) NOT NULL,
   `apellidos` varchar(120) DEFAULT NULL,
   `tipo_documento` varchar(20) DEFAULT NULL,
   `documento` varchar(40) DEFAULT NULL,
@@ -580,7 +577,7 @@ CREATE TABLE `users` (
 -- Volcado de datos para la tabla `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `apellidos`, `tipo_documento`, `documento`, `celular`, `genero`, `tipo_rh`, `email`, `email_verified_at`, `password`, `role`, `remember_token`, `last_login_at`, `created_at`, `updated_at`) VALUES
+INSERT INTO `users` (`id`, `nombre`, `apellidos`, `tipo_documento`, `documento`, `celular`, `genero`, `tipo_rh`, `email`, `email_verified_at`, `password`, `role`, `remember_token`, `last_login_at`, `created_at`, `updated_at`) VALUES
 (8, 'Joaquin cañon', NULL, NULL, NULL, NULL, NULL, NULL, 'test3@gmail.com', NULL, '$2y$12$CysY7mh6WuCxIc.j4vORxuqAEPzjDJr0lxxqSo.Q.8B0Q9caCicLW', 'APRENDIZ', NULL, NULL, '2025-10-16 01:50:17', '2025-10-16 01:50:17'),
 (9, 'hansita', NULL, NULL, NULL, NULL, NULL, NULL, 'hanscard@20gmail.com', NULL, '$2y$12$BKJsJ8LlRHORZj/c4gIBqeU1u9Zt3lPlAiyOFjX23Ac084uYZpXR.', 'ADMIN', NULL, NULL, '2025-10-16 19:17:57', '2025-10-16 19:17:57'),
 (20, 'Laura Martínez', NULL, NULL, NULL, NULL, NULL, NULL, 'laura@sena.edu.co', NULL, '$2y$12$abcdefghijklmnopqrstuv', 'APRENDIZ', NULL, NULL, '2025-10-20 20:01:37', '2025-10-20 20:01:37'),
@@ -770,7 +767,8 @@ ALTER TABLE `lideres_investigacion`
 -- Indices de la tabla `lideres_semillero`
 --
 ALTER TABLE `lideres_semillero`
-  ADD PRIMARY KEY (`id_lider_semi`);
+  ADD PRIMARY KEY (`id_lider_semi`),
+  ADD KEY `fk_lider_usuario` (`id_usuario`);
 
 --
 -- Indices de la tabla `migrations`
@@ -991,6 +989,12 @@ ALTER TABLE `evidencias`
 --
 ALTER TABLE `lideres_investigacion`
   ADD CONSTRAINT `lideres_investigacion_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `lideres_semillero`
+--
+ALTER TABLE `lideres_semillero`
+  ADD CONSTRAINT `fk_lider_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `recursos`

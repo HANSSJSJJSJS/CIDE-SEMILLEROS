@@ -36,12 +36,20 @@
   // ============================================================
   function cargarGraficasReales() {
     fetch("/admin/dashboard/charts")
-      .then(r => r.json())
+      .then(async r => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok || data.error) {
+          console.error("/admin/dashboard/charts error:", data.message || r.statusText);
+          return {};
+        }
+        return data;
+      })
       .then(d => {
-        renderChartAprendices(d.tablaAprendicesSem);
-        renderChartProyectos(d.tablaProyectosSem);
-        renderChartEstadoProyectos(d.proyectosEstado);
-        renderChartTopSemilleros(d.topSemilleros);
+        if (!d) return;
+        renderChartAprendices(d.tablaAprendicesSem || []);
+        renderChartProyectos(d.tablaProyectosSem || []);
+        renderChartEstadoProyectos(d.proyectosEstado || []);
+        renderChartTopSemilleros(d.topSemilleros || []);
       })
       .catch(console.error);
   }
@@ -168,10 +176,17 @@
   // ============================================================
   function cargarActividadLideres() {
     fetch("/admin/dashboard/charts")
-      .then(r => r.json())
+      .then(async r => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok || data.error) {
+          console.error("/admin/dashboard/charts error:", data.message || r.statusText);
+          return {};
+        }
+        return data;
+      })
       .then(d => {
         const tbody = document.getElementById("tablaActividadLideres");
-        if (!tbody) return;
+        if (!tbody || !d || !Array.isArray(d.actividadLideres)) return;
 
         tbody.innerHTML = d.actividadLideres.map(l => `
           <tr>
