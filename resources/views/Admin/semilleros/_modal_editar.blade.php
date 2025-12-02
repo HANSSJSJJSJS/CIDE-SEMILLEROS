@@ -6,7 +6,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
-      <form method="POST" id="formEditarSemillero">
+      <form method="POST" id="formEditarSemillero"  autocomplete="off >
         @csrf
         @method('PUT')
         <div class="modal-body">
