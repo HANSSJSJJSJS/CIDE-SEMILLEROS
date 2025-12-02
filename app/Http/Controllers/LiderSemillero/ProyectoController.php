@@ -100,6 +100,31 @@ class ProyectoController extends Controller
             if (!$uid) return response()->json([], 401);
 
             $tipo = trim((string)$request->query('tipo', ''));
+            // Canonizar tipo (acepta texto completo o códigos)
+            $tipoCanon = $tipo;
+            if ($tipoCanon !== '') {
+                $tn = strtoupper(trim($tipoCanon));
+                $tn = strtr($tn, ['Á'=>'A','É'=>'E','Í'=>'I','Ó'=>'O','Ú'=>'U','Ü'=>'U','Ñ'=>'N']);
+                $tn = preg_replace('/[^A-Z0-9 ]+/', ' ', $tn);
+                $tn = preg_replace('/\s+/', ' ', $tn);
+                $map = [
+                    'CC' => ['CC','CEDULA','CEDULA DE CIUDADANIA','CEDULA CIUDADANIA'],
+                    'TI' => ['TI','TARJETA','TARJETA DE IDENTIDAD'],
+                    'CE' => ['CE','CEDULA DE EXTRANJERIA','CEDULA EXTRANJERIA'],
+                    'PAS'=> ['PAS','PASAPORTE'],
+                    'PEP'=> ['PEP','PERMISO ESPECIAL','PERMISO'],
+                    'RC' => ['RC','REGISTRO CIVIL','REGISTRO'],
+                ];
+                foreach ($map as $code=>$list) { if (in_array($tn,$list,true)) { $tipoCanon = $code; break; } }
+                if ($tipoCanon !== 'CC' && $tipoCanon !== 'TI' && $tipoCanon !== 'CE' && $tipoCanon !== 'PAS' && $tipoCanon !== 'PEP' && $tipoCanon !== 'RC') {
+                    if (strpos($tn,'CIUDADAN') !== false) $tipoCanon = 'CC';
+                    elseif (strpos($tn,'EXTRANJER') !== false) $tipoCanon = 'CE';
+                    elseif (strpos($tn,'PASAPOR') !== false) $tipoCanon = 'PAS';
+                    elseif (strpos($tn,'PERMISO') !== false) $tipoCanon = 'PEP';
+                    elseif (strpos($tn,'REGISTRO') !== false) $tipoCanon = 'RC';
+                    elseif ($tn === 'CEDULA') $tipoCanon = 'CC';
+                }
+            }
             $num = trim((string)$request->query('num', ''));
             $q = trim((string)$request->query('q', ''));
             // Detectar columna FK hacia users (id_usuario, id_user o user_id) usando information_schema para evitar falsos negativos
@@ -159,7 +184,7 @@ class ProyectoController extends Controller
                     ->whereNotIn('u.id', $sub);
             }
             $rows = $rows
-                ->when($tipo !== '' && Schema::hasColumn('aprendices','tipo_documento'), function($w) use ($tipo){ $w->where('a.tipo_documento', $tipo); })
+                ->when($tipoCanon !== '' && Schema::hasColumn('aprendices','tipo_documento'), function($w) use ($tipoCanon){ $w->where('a.tipo_documento', $tipoCanon); })
                 ->when($num !== '' && Schema::hasColumn('aprendices','documento'), function($w) use ($num){ $w->where('a.documento', 'like', "%$num%"); })
                 ->when($q !== '', function($w) use ($q){
                     $like = "%$q%";

@@ -160,9 +160,12 @@
                                     <label class="form-label">Tipo de Documento</label>
                                     <select id="tipo-doc-{{ $loop->index }}" class="form-select">
                                         <option value="">Todos</option>
-                                        <option value="CC">CC</option>
-                                        <option value="TI">TI</option>
-                                        <option value="CE">CE</option>
+                                        <option value="CC">Cédula de ciudadanía</option>
+                                        <option value="TI">Tarjeta de identidad</option>
+                                        <option value="CE">Cédula de extranjería</option>
+                                        <option value="PAS">Pasaporte</option>
+                                        <option value="PEP">Permiso especial</option>
+                                        <option value="RC">Registro civil</option>
                                     </select>
                                 </div>
                                 <div class="col-md-7">
@@ -200,7 +203,7 @@
                     </div>
                     <div class="modal-footer d-flex justify-content-between">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Cancelar</button>
-                        <button id="btn-guardar-{{ $loop->index }}" class="btn btn-brand"><i class="bi bi-check2-circle me-1"></i>Guardar Cambios</button>
+                        <button type="button" id="btn-guardar-{{ $loop->index }}" class="btn btn-brand"><i class="bi bi-check2-circle me-1"></i>Guardar Cambios</button>
                     </div>
                 </div>
             </div>
@@ -323,18 +326,23 @@
             function renderResultado(item){
                 const row = document.createElement('label');
                 row.className = 'list-group-item d-flex align-items-start gap-2';
-                row.dataset.id = item.id_aprendiz;
+                const aid = (item && item.id_aprendiz) ? parseInt(item.id_aprendiz,10) : null;
+                const uid = (item && item.user_id) ? parseInt(item.user_id,10) : null;
+                row.dataset.id = aid ? String(aid) : (uid ? ('U-' + uid) : '');
                 const cb = document.createElement('input');
                 cb.type = 'checkbox';
                 cb.className = 'form-check-input mt-1';
                 // Marcar si ya está asignado
                 if (lista && lista.querySelector(`[data-id="${item.id_aprendiz}"]`)) cb.checked = true;
                 cb.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); });
+                const fallbackName = `${(item.nombres||'').trim()} ${(item.apellidos||'').trim()}`.trim();
+                const fallbackEmail = (item.correo_institucional || '').trim();
+                const displayName = (item.nombre_completo && String(item.nombre_completo).trim()) || fallbackName || fallbackEmail || 'Sin nombre';
                 row.addEventListener('click', function(e){
                     e.preventDefault(); e.stopPropagation();
                     cb.checked = !cb.checked;
                     if (cb.checked) {
-                        attachAprendiz(item.id_aprendiz, item.nombre_completo, item.programa);
+                        attachAprendiz({aprendiz_id: aid, user_id: uid}, displayName, item.programa);
                     } else {
                         const nodo = lista.querySelector(`[data-id="${item.id_aprendiz}"]`);
                         if (nodo) detachAprendiz(item.id_aprendiz, nodo);
@@ -342,29 +350,27 @@
                 });
                 cb.addEventListener('change', function(e){ e.preventDefault(); e.stopPropagation();
                     if (cb.checked) {
-                        const fallbackName = `${(item.nombres||'').trim()} ${(item.apellidos||'').trim()}`.trim();
-                        const displayName = (item.nombre_completo && String(item.nombre_completo).trim()) || fallbackName || 'Aprendiz';
-                        attachAprendiz(item.id_aprendiz, displayName, item.programa);
+                        attachAprendiz({aprendiz_id: aid, user_id: uid}, displayName, item.programa);
                     } else {
                         const nodo = lista.querySelector(`[data-id="${item.id_aprendiz}"]`);
                         if (nodo) detachAprendiz(item.id_aprendiz, nodo);
                     }
                 });
                 const info = document.createElement('div');
-                const fallbackName = `${(item.nombres||'').trim()} ${(item.apellidos||'').trim()}`.trim();
-                const displayName = (item.nombre_completo && String(item.nombre_completo).trim()) || fallbackName || 'Aprendiz';
                 info.innerHTML = `<div class=\"fw-semibold\">${displayName}</div><small class=\"text-muted\">${item.programa ?? 'Sin programa'}</small>`;
                 row.appendChild(cb);
                 row.appendChild(info);
                 return row;
             }
-            function attachAprendiz(id, nombre, programa){
-                apiFetch(route('attach'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({aprendiz_id:id}) })
+            function attachAprendiz(arg, nombre, programa){
+                const payload = (arg && typeof arg === 'object') ? arg : {aprendiz_id: arg};
+                apiFetch(route('attach'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) })
                     .then(async r=>{ let data; try{ data = await r.json(); }catch(e){ throw new Error('Respuesta no JSON ('+r.status+')'); } return {ok:r.ok,status:r.status,data}; })
                     .then(({ok,status,data})=>{ if(ok && data && data.ok){
                         const div = document.createElement('div');
                         div.className = 'border rounded p-2 d-flex justify-content-between align-items-center';
-                        div.dataset.id = id;
+                        const newId = data.aprendiz && data.aprendiz.id_aprendiz ? data.aprendiz.id_aprendiz : (payload.aprendiz_id || '');
+                        div.dataset.id = newId;
                         const prog = data.aprendiz && data.aprendiz.programa ? data.aprendiz.programa : (programa ?? 'Sin programa');
                         div.innerHTML = `<div><div class=\"fw-semibold\">${nombre}</div><small class=\"text-muted\">${prog}</small></div><button class=\"btn btn-sm btn-danger btn-eliminar\">Eliminar</button>`;
                         lista.appendChild(div); resultados.style.display='none'; resultados.innerHTML='';
@@ -372,7 +378,7 @@
                         if (detailsList){
                             const col = document.createElement('div');
                             col.className = 'col-md-6';
-                            col.dataset.id = id;
+                            col.dataset.id = newId;
                             const ini1 = (nombre||'A').trim().charAt(0).toUpperCase();
                             const seg = (nombre||'').trim().split(' ');
                             const ini2 = (seg.length>1 ? seg[1].charAt(0) : 'M').toUpperCase();
@@ -475,7 +481,15 @@
             if (btnGuardar) btnGuardar.addEventListener('click', function(e){
                 e.preventDefault();
                 const ids = Array.from(lista.querySelectorAll('[data-id]')).map(n=> parseInt(n.dataset.id,10)).filter(Boolean);
-                apiFetch(route('update'), { method:'PUT', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ aprendices_ids: ids }) })
+                // Resolver URL de actualización de forma robusta
+                const tentative = route('update');
+                const REF = (window['refId'+idx] ?? refId);
+                const isSemDyn = (window['isSem'+idx] ?? isSem);
+                const fallbackUrl = isSemDyn
+                    ? `/lider_semi/semilleros/${REF}/aprendices`
+                    : `/lider_semi/proyectos/${REF}/aprendices`;
+                const updateUrl = (tentative && tentative !== '#' && !tentative.includes('__ID__')) ? tentative : fallbackUrl;
+                apiFetch(updateUrl, { method:'PUT', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ aprendices_ids: ids }) })
                     .then(async r=>{ let data; try{ data = await r.json(); }catch(_){ data=null; } return {ok:r.ok,status:r.status,data}; })
                     .then(({ok,status,data})=>{
                         if(ok && data && data.ok){

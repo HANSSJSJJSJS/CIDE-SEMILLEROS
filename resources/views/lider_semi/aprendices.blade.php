@@ -15,9 +15,12 @@
                     <label class="form-label fw-semibold">Tipo de Documento</label>
                     <select id="filtro-tipo-doc" class="form-select form-underline">
                         <option value="">Todos</option>
-                        <option value="CC">CC</option>
-                        <option value="TI">TI</option>
-                        <option value="CE">CE</option>
+                        <option value="CC">Cédula de ciudadanía</option>
+                        <option value="TI">Tarjeta de identidad</option>
+                        <option value="CE">Cédula de extranjería</option>
+                        <option value="PAS">Pasaporte</option>
+                        <option value="PEP">Permiso especial</option>
+                        <option value="RC">Registro civil</option>
                     </select>
                 </div>
                 <div class="col-md-4">

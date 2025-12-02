@@ -22,18 +22,18 @@ class User extends Authenticatable
 
     // Campos que se pueden llenar por mass assignment
     protected $fillable = [
-        'name',
-        'apellidos',
-        'tipo_documento',
-        'documento',
-        'celular',
-        'genero',
-        'genero_otro',
-        'tipo_rh',
-        'email',
-        'password',
-        'role',
-    ];
+            'nombre',
+            'apellidos',
+            'email',
+            'password',
+            'role',
+            'tipo_documento',
+            'documento',
+            'celular',
+            'genero',
+            'tipo_rh',
+            ];
+
 
     protected $hidden = ['password','remember_token'];
 
