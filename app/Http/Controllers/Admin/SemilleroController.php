@@ -127,8 +127,9 @@ class SemilleroController extends Controller
     // ============================================================
     // EDITAR AJAX (para el modal editar)
     // ============================================================
-    public function editAjax($id)
-    {
+public function editAjax($id)
+{
+    try {
         $semillero = DB::table('semilleros as s')
             ->leftJoin('lideres_semillero as ls', 'ls.id_lider_semi', '=', 's.id_lider_semi')
             ->leftJoin('users as u', 'u.id', '=', 'ls.id_lider_semi')
@@ -139,19 +140,43 @@ class SemilleroController extends Controller
                 's.linea_investigacion',
                 's.id_lider_semi',
                 'ls.correo_institucional as lider_correo',
-                DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''),' ',COALESCE(u.apellidos,''))) as lider_nombre")
+                DB::raw("
+                    TRIM(
+                        CONCAT(
+                            COALESCE(u.nombre, ''), ' ',
+                            COALESCE(u.apellidos, '')
+                        )
+                    ) as lider_nombre
+                ")
             )
             ->first();
 
-        if (!$semillero) {
-            return response()->json(['ok' => false, 'message' => 'Semillero no encontrado'], 404);
+        if (! $semillero) {
+            return response()->json([
+                'message' => 'Semillero no encontrado',
+            ], 404);
         }
 
-        return response()->json([
-            'ok'   => true,
-            'data' => $semillero,
+        // ✅ devolvemos directamente el objeto
+        return response()->json($semillero);
+
+    } catch (\Throwable $e) {
+        // Log para ver en storage/logs/laravel.log
+        \Log::error('Error en SemilleroController@editAjax', [
+            'id'        => $id,
+            'mensaje'   => $e->getMessage(),
+            'archivo'   => $e->getFile(),
+            'linea'     => $e->getLine(),
         ]);
+
+        return response()->json([
+            'message' => $e->getMessage(), // aquí viene el SQLSTATE o lo que sea
+        ], 500);
     }
+}
+
+
+
 
     // ============================================================
     // ACTUALIZAR

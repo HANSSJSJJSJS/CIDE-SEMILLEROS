@@ -42,7 +42,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (modalEdit && formEdit && buscarEditInp && listaEdit) {
 
+        // Quitar autocompletado / sugerencias en los campos de texto
+        [editNombre, editLinea].forEach(inp => {
+            if (!inp) return;
+            inp.setAttribute("autocomplete", "off");
+            inp.setAttribute("spellcheck", "false");
+        });
+
         modalEdit.addEventListener("show.bs.modal", async (e) => {
+            // Cerrar modal "nuevo semillero" si estuviera abierto
             const mNuevo    = document.getElementById("modalNuevoSemillero");
             const instNuevo = mNuevo ? bootstrap.Modal.getInstance(mNuevo) : null;
             instNuevo?.hide();
@@ -50,21 +58,38 @@ document.addEventListener("DOMContentLoaded", () => {
             const id = e.relatedTarget?.dataset.id;
             if (!id) return;
 
+            // Limpiar buscador y resultados de líder
             buscarEditInp.value = "";
             listaEdit.innerHTML = "";
 
             try {
-                const res  = await fetch(`/admin/semilleros/${id}/edit-ajax`);
-                const json = await res.json();
-                if (!json.ok) throw new Error("No se pudo cargar el semillero");
+                const res = await fetch(`/admin/semilleros/${id}/edit-ajax`);
+                let json  = null;
 
-                const data = json.data;
+                try {
+                    json = await res.json();
+                } catch (_) {
+                    // si no viene JSON, lo manejamos abajo
+                }
 
-                formEdit.action   = `/admin/semilleros/${id}`;
-                editNombre.value  = data.nombre || "";
-                editLinea.value   = data.linea_investigacion || "";
-                liderRO.value     = data.lider_nombre || "—";
-                correoRO.value    = data.lider_correo || "—";
+                if (!res.ok) {
+                    const detalle = json && json.message
+                        ? json.message
+                        : `Error HTTP ${res.status}`;
+                    swalError(
+                        `No se pudo cargar la información del semillero.<br><small>${detalle}</small>`
+                    );
+                    return;
+                }
+
+                // El backend devuelve directamente el objeto semillero
+                const data = json || {};
+
+                formEdit.action      = `/admin/semilleros/${id}`;
+                editNombre.value     = data.nombre || "";
+                editLinea.value      = data.linea_investigacion || "";
+                liderRO.value        = data.lider_nombre || "—";
+                correoRO.value       = data.lider_correo || "—";
                 idLiderEditInp.value = data.id_lider_semi || "";
 
             } catch (err) {
@@ -73,6 +98,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
+        // Buscador de líderes dentro del modal de editar
         let tEdit;
         buscarEditInp.addEventListener("input", () => {
             clearTimeout(tEdit);
