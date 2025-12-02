@@ -21,15 +21,12 @@ class Aprendiz extends Model
 
     protected $fillable = [
         'user_id',
-        'nombres',
-        'apellidos',
         'ficha',
         'programa',
         'nivel_educativo',
         'vinculado_sena',
         'institucion',
         'correo_institucional',
-        'correo_personal',
         'contacto_nombre',
         'contacto_celular',
         'semillero_id',
