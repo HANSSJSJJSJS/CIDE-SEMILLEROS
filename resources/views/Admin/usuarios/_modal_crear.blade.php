@@ -88,12 +88,14 @@
                     {{-- Tipo de documento --}}
                     <div class="col-md-4">
                       <label class="form-label">Tipo de documento <span class="text-danger">*</span></label>
-                      <select name="tipo_documento" class="form-select" required>
-                        <option value="">Seleccionar…</option>
-                        <option value="CC">Cédula de ciudadanía</option>
-                        <option value="TI">Tarjeta de identidad</option>
-                        <option value="CE">Cédula de extranjería</option>
-                        <option value="PAS">Pasaporte</option>
+                      <select name="tipo_documento" class="form-control" required>
+                      <option value="">Seleccione…</option>
+                      <option value="CC">Cédula de ciudadanía</option>
+                      <option value="TI">Tarjeta de identidad</option>
+                      <option value="CE">Cédula de extranjería</option>
+                      <option value="PASAPORTE">Pasaporte</option>
+                      <option value="PERMISO ESPECIAL">Permiso especial</option>
+                      <option value="REGISTRO CIVIL">Registro civil</option>
                       </select>
                       <div class="invalid-feedback">Seleccione un tipo de documento.</div>
                     </div>
