@@ -239,14 +239,11 @@ class UsuarioController extends Controller
                 case 'APRENDIZ':
                     Aprendiz::create([
                         'user_id'             => $user->id,
-                        'nombres'             => $data['nombre'],
-                        'apellidos'           => $data['apellido'],
                         'ficha'               => $data['ficha'] ?? null,
                         'programa'            => $data['programa'] ?? null,
                         'nivel_educativo'     => $data['nivel_educativo'] ?? null,
                         'vinculado_sena'      => $vinculado,
                         'institucion'         => $vinculado === 1 ? null : ($data['institucion'] ?? null),
-                        'correo_institucional'=> $data['correo_institucional'] ?? null,
                         'correo_personal'     => $data['email'],
                         'contacto_nombre'     => $data['contacto_nombre'] ?? null,
                         'contacto_celular'    => $data['contacto_celular'] ?? null,
