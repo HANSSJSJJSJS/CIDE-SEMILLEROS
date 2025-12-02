@@ -1,151 +1,80 @@
-{{-- MODAL EDITAR USUARIO --}}
-@php
-    // $usuario viene desde el include en index.blade.php
-@endphp
+{{-- MODAL EDITAR SEMILLERO --}}
+<div class="modal fade" id="modalEditarSemillero" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
 
-<div class="modal fade"
-     id="modalEditarUsuario{{ $usuario->id }}"
-     tabindex="-1"
-     aria-hidden="true"
-     data-bs-backdrop="static"
-     data-bs-keyboard="false">
-
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content user-modal">
-
-      {{-- HEADER --}}
-      <div class="modal-header">
-        <h5 class="modal-title">
-          <i class="bi bi-pencil-square"></i>
-          Editar usuario
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-
-      {{-- FORM --}}
-      <form method="POST"
-            action="{{ route('admin.usuarios.update', $usuario->id) }}"
-            class="needs-validation"
-            novalidate>
-
-        @csrf
-        @method('PUT')
-
-        <div class="modal-body">
-
-          {{-- DATOS BÁSICOS --}}
-          <div class="card-section">
-            <div class="user-modal-section-title">
-              <i class="bi bi-person-badge"></i> Datos básicos
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Semillero</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
 
-            <div class="row g-3">
+            <form id="formEditarSemillero"
+                  method="POST"
+                  action=""   {{-- la llenamos en JS --}}
+                  class="needs-validation"
+                  novalidate>
 
-              {{-- ROL --}}
-              <div class="col-md-4">
-                <label class="form-label">Rol <span class="text-danger">*</span></label>
-                <select name="role" class="form-select" required>
-                  @foreach(($roles ?? []) as $value => $label)
-                    <option value="{{ $value }}"
-                      @selected(old('role', $usuario->role) === $value)>
-                      {{ $label }}
-                    </option>
-                  @endforeach
-                </select>
-                <div class="invalid-feedback">Elige un rol.</div>
-              </div>
+                @csrf
+                @method('PUT')   {{-- IMPORTANTE para que la ruta update funcione --}}
 
-              {{-- CORREO --}}
-              <div class="col-md-4">
-                <label class="form-label">Correo <span class="text-danger">*</span></label>
-                <input type="email"
-                       name="email"
-                       class="form-control"
-                       value="{{ old('email', $usuario->email) }}"
-                       required>
-                <div class="invalid-feedback">Ingresa un correo válido.</div>
-              </div>
+                <div class="modal-body">
 
-              {{-- NOMBRE --}}
-              <div class="col-md-4">
-                <label class="form-label">Nombre <span class="text-danger">*</span></label>
-                <input type="text"
-                       name="name"
-                       class="form-control"
-                       value="{{ old('name', $usuario->name) }}"
-                       required>
-                <div class="invalid-feedback">Ingresa el nombre.</div>
-              </div>
+                    <div class="row g-3">
+                        {{-- Nombre --}}
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre del semillero</label>
+                            <input type="text"
+                                   id="editNombre"
+                                   name="nombre"
+                                   class="form-control"
+                                   required
+                                   autocomplete="off"
+                                   spellcheck="false">
+                        </div>
 
-              {{-- APELLIDOS --}}
-              <div class="col-md-4">
-                <label class="form-label">Apellidos <span class="text-danger">*</span></label>
-                <input type="text"
-                       name="apellidos"
-                       class="form-control"
-                       value="{{ old('apellidos', $usuario->apellidos) }}"
-                       required>
-                <div class="invalid-feedback">Ingresa los apellidos.</div>
-              </div>
+                        {{-- Línea --}}
+                        <div class="col-md-6">
+                            <label class="form-label">Línea de investigación</label>
+                            <input type="text"
+                                   id="editLinea"
+                                   name="linea_investigacion"
+                                   class="form-control"
+                                   required
+                                   autocomplete="off"
+                                   spellcheck="false">
+                        </div>
 
-              {{-- SEMILLERO --}}
-              <div class="col-md-4">
-                <label class="form-label">Semillero</label>
-                <select name="semillero_id" class="form-select">
-                  <option value="">Sin semillero</option>
-                  @foreach(($semilleros ?? collect()) as $s)
-                    <option value="{{ $s->id_semillero }}"
-                      @selected(old('semillero_id', $usuario->semillero_id) == $s->id_semillero)>
-                      {{ $s->nombre }}
-                    </option>
-                  @endforeach
-                </select>
-              </div>
+                        {{-- Líder asignado (solo lectura) --}}
+                        <div class="col-md-6">
+                            <label class="form-label">Líder asignado</label>
+                            <input type="text"
+                                   id="liderNombreRO"
+                                   class="form-control"
+                                   readonly>
+                        </div>
 
-              {{-- CONTRASEÑA OPCIONAL --}}
-              <div class="col-md-4">
-                <label class="form-label">Nueva contraseña (opcional)</label>
-                <div class="input-group">
-                  <input type="password"
-                         name="password"
-                         class="form-control"
-                         minlength="6"
-                         placeholder="Deja vacío para no cambiar">
-                  <button class="btn btn-outline-secondary btn-sm"
-                          type="button"
-                          data-toggle-pass="input[name='password']">
-                    <i class="bi bi-eye"></i>
-                  </button>
-                  <button class="btn btn-outline-success btn-sm"
-                          type="button"
-                          data-generate-pass="input[name='password']">
-                    <i class="bi bi-magic"></i>
-                  </button>
+                        <div class="col-md-6">
+                            <label class="form-label">Correo líder</label>
+                            <input type="text"
+                                   id="liderCorreoRO"
+                                   class="form-control"
+                                   readonly>
+                        </div>
+
+                        {{-- Hidden con el id del líder --}}
+                        <input type="hidden" id="editIdLider" name="id_lider_semi">
+                    </div>
+
+                    {{-- buscador de líder (esto ya lo tienes) --}}
+                    {{-- ... --}}
+
                 </div>
-                <small class="text-muted">
-                  Si lo dejas vacío, la contraseña no se modificará.
-                </small>
-              </div>
 
-            </div>
-          </div>
-
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Actualizar</button>
+                </div>
+            </form>
         </div>
-
-        {{-- FOOTER --}}
-        <div class="modal-footer">
-          <button type="button" class="btn btn-user-secondary" data-bs-dismiss="modal">
-            Cancelar
-          </button>
-
-          <button type="submit" class="btn btn-user-primary">
-            <i class="bi bi-check-circle me-1"></i> Guardar cambios
-          </button>
-        </div>
-
-      </form>
-
     </div>
-  </div>
-
 </div>
