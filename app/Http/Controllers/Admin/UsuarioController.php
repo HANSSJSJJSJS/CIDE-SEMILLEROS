@@ -564,7 +564,7 @@ class UsuarioController extends Controller
             if ($usuario->role === 'LIDER_SEMILLERO') {
                 // liberar semillero
                 DB::table('semilleros')
-                    ->where('id_lider_se mi', $usuario->id)
+                    ->where('id_lider_semi', $usuario->id)
                     ->update([
                         'id_lider_semi' => null,
                     ]);
