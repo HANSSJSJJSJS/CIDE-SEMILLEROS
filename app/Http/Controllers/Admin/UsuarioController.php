@@ -58,7 +58,6 @@ class UsuarioController extends Controller
                 DB::raw(($hasLiTable ? 'li.tiene_permisos' : 'NULL') . ' as li_tiene_permisos'),
             ])
 
-            // 🔧 AQUÍ estaba el problema: users.name -> users.nombre
             ->when($q !== '', function ($w) use ($q) {
                 $w->where(function ($s) use ($q) {
                     $s->where('users.nombre','like',"%{$q}%")
@@ -81,8 +80,16 @@ class UsuarioController extends Controller
             ->paginate(12)
             ->withQueryString();
 
+        // Todos los semilleros (para el filtro)
         $semilleros = DB::table('semilleros')
             ->select('id_semillero','nombre')
+            ->orderBy('nombre')
+            ->get();
+
+        // Solo semilleros sin líder asignado (para crear LIDER_SEMILLERO)
+        $semillerosSinLider = DB::table('semilleros')
+            ->select('id_semillero','nombre')
+            ->whereNull('id_lider_semi')
             ->orderBy('nombre')
             ->get();
 
@@ -94,12 +101,13 @@ class UsuarioController extends Controller
         ];
 
         return view('admin.usuarios.index', [
-            'usuarios'     => $usuarios,
-            'semilleros'   => $semilleros,
-            'roles'        => $roles,
-            'q'            => $q,
-            'roleFilter'   => $request->get('role',''),
-            'semilleroId'  => $semilleroId,
+            'usuarios'           => $usuarios,
+            'semilleros'         => $semilleros,
+            'semillerosSinLider' => $semillerosSinLider,
+            'roles'              => $roles,
+            'q'                  => $q,
+            'roleFilter'         => $request->get('role',''),
+            'semilleroId'        => $semilleroId,
         ]);
     }
 
@@ -155,7 +163,7 @@ class UsuarioController extends Controller
             'APRENDIZ'            => 'APRENDIZ',
         ];
 
-                $data = $request->validate([
+        $data = $request->validate([
             'role'             => ['required','in:ADMIN,LIDER_GENERAL,LIDER_SEMILLERO,LIDER_INVESTIGACION,APRENDIZ'],
             'email'            => ['required','email','max:160','unique:users,email'],
             'nombre'           => ['required','string','max:120'],
@@ -173,9 +181,16 @@ class UsuarioController extends Controller
             'genero'           => ['nullable','in:HOMBRE,MUJER,NO DEFINIDO'],
             'tipo_rh'          => ['nullable','in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
 
+            // Perfil LÍDER SEMILLERO
             'ls_correo_institucional' => ['nullable','email','max:160'],
-            'ls_semillero_id'         => ['nullable','exists:semilleros,id_semillero'],
+            'ls_semillero_id'         => [
+                'required_if:role,LIDER_SEMILLERO',
+                'integer',
+                Rule::exists('semilleros', 'id_semillero')
+                    ->whereNull('id_lider_semi'),
+            ],
 
+            // Perfil APRENDIZ
             'semillero_id'            => ['required_if:role,APRENDIZ','nullable','exists:semilleros,id_semillero'],
             'correo_institucional'    => ['nullable','email','max:160'],
             'vinculado_sena'          => ['nullable','in:0,1'],
@@ -186,6 +201,8 @@ class UsuarioController extends Controller
                 'in:ARTICULACION_MEDIA_10_11,TECNOACADEMIA_7_9,TECNICO,TECNOLOGO,PROFESIONAL'],
             'contacto_nombre'         => ['nullable','string','max:160'],
             'contacto_celular'        => ['nullable','string','max:30'],
+        ], [
+            'ls_semillero_id.required_if' => 'Debes seleccionar un semillero para el líder de semillero.',
         ]);
 
         $role      = $roleMap[$data['role']];
@@ -212,45 +229,55 @@ class UsuarioController extends Controller
             switch ($role) {
                 case 'ADMIN':
                     DB::table('administradores')->insert([
-                        'id_usuario'    => $user->id,
-                        'creado_en'     => now(),
-                        'actualizado_en'=> now(),
+                        'id_usuario'     => $user->id,
+                        'creado_en'      => now(),
+                        'actualizado_en' => now(),
                     ]);
                     break;
 
                 case 'LIDER_SEMILLERO':
+                    $idSemillero = $data['ls_semillero_id'] ?? null;
+
                     DB::table('lideres_semillero')->insert([
                         'id_lider_semi'        => $user->id,
                         'id_usuario'           => $user->id,
                         'correo_institucional' => $data['ls_correo_institucional'] ?? $data['email'],
-                        'id_semillero'         => $data['ls_semillero_id'] ?? null,
+                        'id_semillero'         => $idSemillero,
                         'creado_en'            => now(),
                         'actualizado_en'       => now(),
                     ]);
+
+                    if ($idSemillero) {
+                        DB::table('semilleros')
+                            ->where('id_semillero', $idSemillero)
+                            ->update([
+                                'id_lider_semi' => $user->id,
+                            ]);
+                    }
                     break;
 
                 case 'LIDER_INVESTIGACION':
                     DB::table('lideres_investigacion')->insert([
-                        'user_id'       => $user->id,
-                        'tiene_permisos'=> 0,
-                        'created_at'    => now(),
-                        'updated_at'    => now(),
+                        'user_id'        => $user->id,
+                        'tiene_permisos' => 0,
+                        'created_at'     => now(),
+                        'updated_at'     => now(),
                     ]);
                     break;
 
                 case 'APRENDIZ':
                     Aprendiz::create([
-                        'user_id'             => $user->id,
-                        'ficha'               => $data['ficha'] ?? null,
-                        'programa'            => $data['programa'] ?? null,
-                        'nivel_educativo'     => $data['nivel_educativo'] ?? null,
-                        'vinculado_sena'      => $vinculado,
-                        'institucion'         => $vinculado === 1 ? null : ($data['institucion'] ?? null),
-                        'correo_institucional'=> $data['correo_institucional'] ?? $data['email'],
-                        'contacto_nombre'     => $data['contacto_nombre'] ?? null,
-                        'contacto_celular'    => $data['contacto_celular'] ?? null,
-                        'semillero_id'        => $data['semillero_id'],
-                        'estado'              => 'Activo',
+                        'user_id'              => $user->id,
+                        'ficha'                => $data['ficha'] ?? null,
+                        'programa'             => $data['programa'] ?? null,
+                        'nivel_educativo'      => $data['nivel_educativo'] ?? null,
+                        'vinculado_sena'       => $vinculado,
+                        'institucion'          => $vinculado === 1 ? null : ($data['institucion'] ?? null),
+                        'correo_institucional' => $data['correo_institucional'] ?? $data['email'],
+                        'contacto_nombre'      => $data['contacto_nombre'] ?? null,
+                        'contacto_celular'     => $data['contacto_celular'] ?? null,
+                        'semillero_id'         => $data['semillero_id'],
+                        'estado'               => 'Activo',
                     ]);
                     break;
             }
@@ -352,119 +379,151 @@ class UsuarioController extends Controller
     // ============================================================
     // ACTUALIZAR
     // ============================================================
-public function update(Request $request, User $usuario)
-{
-    $data = $request->validate([
-        'nombre'          => ['required','string','max:120'],
-        'apellido'        => ['required','string','max:255'],
-        'email'           => ['required','email','max:160', Rule::unique('users','email')->ignore($usuario->id)],
-        'password'        => ['nullable','string','min:6'],
+    public function update(Request $request, User $usuario)
+    {
+        $data = $request->validate([
+            'nombre'          => ['required','string','max:120'],
+            'apellido'        => ['required','string','max:255'],
+            'email'           => ['required','email','max:160', Rule::unique('users','email')->ignore($usuario->id)],
+            'password'        => ['nullable','string','min:6'],
 
-        'tipo_documento'  => [
-            'required',
-            'string',
-            Rule::in(['CC','TI','CE','PASAPORTE','PERMISO ESPECIAL','REGISTRO CIVIL']),
-        ],
-        'documento'       => ['required','string','max:40', Rule::unique('users','documento')->ignore($usuario->id)],
-        'celular'         => ['nullable','string','max:30'],
-        'genero'          => ['nullable','in:HOMBRE,MUJER,NO DEFINIDO'],
-        'tipo_rh'         => ['nullable','in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
+            'tipo_documento'  => [
+                'required',
+                'string',
+                Rule::in(['CC','TI','CE','PASAPORTE','PERMISO ESPECIAL','REGISTRO CIVIL']),
+            ],
+            'documento'       => ['required','string','max:40', Rule::unique('users','documento')->ignore($usuario->id)],
+            'celular'         => ['nullable','string','max:30'],
+            'genero'          => ['nullable','in:HOMBRE,MUJER,NO DEFINIDO'],
+            'tipo_rh'         => ['nullable','in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
 
-        // CAMPOS PERFIL LÍDER SEMILLERO
-        'ls_correo_institucional' => ['nullable','email','max:160'],
-        'ls_semillero_id'         => ['nullable','exists:semilleros,id_semillero'],
+            // CAMPOS PERFIL LÍDER SEMILLERO
+            'ls_correo_institucional' => ['nullable','email','max:160'],
+            'ls_semillero_id'         => [
+                'nullable',
+                'integer',
+                Rule::exists('semilleros', 'id_semillero')
+                    ->where(function ($q) use ($usuario) {
+                        $q->whereNull('id_lider_semi')
+                          ->orWhere('id_lider_semi', $usuario->id);
+                    }),
+            ],
 
-        // CAMPOS PERFIL APRENDIZ
-        'semillero_id'            => ['nullable','exists:semilleros,id_semillero'],
-        'correo_institucional'    => ['nullable','email','max:160'],
-        'vinculado_sena'          => ['nullable','in:0,1'],
-        'ficha'                   => ['nullable','string','max:30'],
-        'programa'                => ['nullable','string','max:160'],
-        'institucion'             => ['nullable','string','max:160'],
-        'nivel_educativo'         => ['nullable',
-            'in:ARTICULACION_MEDIA_10_11,TECNOACADEMIA_7_9,TECNICO,TECNOLOGO,PROFESIONAL'],
-        'contacto_nombre'         => ['nullable','string','max:160'],
-        'contacto_celular'        => ['nullable','string','max:30'],
-    ]);
+            // CAMPOS PERFIL APRENDIZ
+            'semillero_id'            => ['nullable','exists:semilleros,id_semillero'],
+            'correo_institucional'    => ['nullable','email','max:160'],
+            'vinculado_sena'          => ['nullable','in:0,1'],
+            'ficha'                   => ['nullable','string','max:30'],
+            'programa'                => ['nullable','string','max:160'],
+            'institucion'             => ['nullable','string','max:160'],
+            'nivel_educativo'         => ['nullable',
+                'in:ARTICULACION_MEDIA_10_11,TECNOACADEMIA_7_9,TECNICO,TECNOLOGO,PROFESIONAL'],
+            'contacto_nombre'         => ['nullable','string','max:160'],
+            'contacto_celular'        => ['nullable','string','max:30'],
+        ]);
 
-    $vinculado = (int) ($data['vinculado_sena'] ?? 1);
+        $vinculado = (int) ($data['vinculado_sena'] ?? 1);
 
-    DB::transaction(function () use ($usuario, $data, $vinculado) {
+        DB::transaction(function () use ($usuario, $data, $vinculado) {
 
-        // ========= USERS =========
-        $updateUser = [
-            'nombre'         => $data['nombre'],
-            'apellidos'      => $data['apellido'],
-            'email'          => $data['email'],
-            'tipo_documento' => $data['tipo_documento'],
-            'documento'      => $data['documento'],
-            'celular'        => $data['celular'] ?? null,
-            'genero'         => $data['genero'] ?? null,
-            'tipo_rh'        => $data['tipo_rh'] ?? null,
-            'updated_at'     => now(),
-        ];
+            // ========= USERS =========
+            $updateUser = [
+                'nombre'         => $data['nombre'],
+                'apellidos'      => $data['apellido'],
+                'email'          => $data['email'],
+                'tipo_documento' => $data['tipo_documento'],
+                'documento'      => $data['documento'],
+                'celular'        => $data['celular'] ?? null,
+                'genero'         => $data['genero'] ?? null,
+                'tipo_rh'        => $data['tipo_rh'] ?? null,
+                'updated_at'     => now(),
+            ];
 
-        if (!empty($data['password'])) {
-            $updateUser['password'] = Hash::make($data['password']);
-        }
+            if (!empty($data['password'])) {
+                $updateUser['password'] = Hash::make($data['password']);
+            }
 
-        $usuario->update($updateUser);
+            $usuario->update($updateUser);
 
-        // ========= PERFILES =========
-        switch ($usuario->role) {
+            // ========= PERFILES =========
+            switch ($usuario->role) {
 
-            case 'ADMIN':
-                DB::table('administradores')
-                    ->where('id_usuario', $usuario->id)
-                    ->update([
-                        'actualizado_en' => now(),
-                    ]);
-                break;
+                case 'ADMIN':
+                    DB::table('administradores')
+                        ->where('id_usuario', $usuario->id)
+                        ->update([
+                            'actualizado_en' => now(),
+                        ]);
+                    break;
 
-            case 'LIDER_SEMILLERO':
-                DB::table('lideres_semillero')
-                    ->where('id_lider_semi', $usuario->id)
-                    ->update([
-                        'correo_institucional' => $data['ls_correo_institucional'] ?? $data['email'],
-                        'id_semillero'         => $data['ls_semillero_id'] ?? null,
-                        'actualizado_en'       => now(),
-                    ]);
-                break;
+                case 'LIDER_SEMILLERO':
+                    // Semillero anterior
+                    $semilleroAnteriorId = DB::table('semilleros')
+                        ->where('id_lider_semi', $usuario->id)
+                        ->value('id_semillero');
 
-            case 'APRENDIZ':
-                $col = Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : 'user_id';
-                DB::table('aprendices')
-                    ->where($col, $usuario->id)
-                    ->update([
-                        'ficha'                => $data['ficha'] ?? null,
-                        'programa'             => $data['programa'] ?? null,
-                        'nivel_educativo'      => $data['nivel_educativo'] ?? null,
-                        'vinculado_sena'       => $vinculado,
-                        'institucion'          => $vinculado === 1 ? null : ($data['institucion'] ?? null),
-                        'correo_institucional' => $data['correo_institucional'] ?? $data['email'],
-                        'contacto_nombre'      => $data['contacto_nombre'] ?? null,
-                        'contacto_celular'     => $data['contacto_celular'] ?? null,
-                        'semillero_id'         => $data['semillero_id'] ?? null,
-                        'actualizado_en'       => now(),
-                    ]);
-                break;
+                    $nuevoSemilleroId = $data['ls_semillero_id'] ?? null;
 
-            case 'LIDER_INVESTIGACION':
-                // De momento solo sincronizamos correo en su tabla si quieres:
-                DB::table('lideres_investigacion')
-                    ->where('user_id', $usuario->id)
-                    ->update([
-                        'updated_at' => now(),
-                    ]);
-                break;
-        }
-    });
+                    DB::table('lideres_semillero')
+                        ->where('id_lider_semi', $usuario->id)
+                        ->update([
+                            'correo_institucional' => $data['ls_correo_institucional'] ?? $data['email'],
+                            'id_semillero'         => $nuevoSemilleroId,
+                            'actualizado_en'       => now(),
+                        ]);
 
-    return redirect()
-        ->route('admin.usuarios.index')
-        ->with('success','Se ha actualizado el usuario correctamente.');
-}
+                    // Liberar semillero anterior si cambia
+                    if ($semilleroAnteriorId && $semilleroAnteriorId != $nuevoSemilleroId) {
+                        DB::table('semilleros')
+                            ->where('id_semillero', $semilleroAnteriorId)
+                            ->update([
+                                'id_lider_semi' => null,
+                            ]);
+                    }
 
+                    // Asignar nuevo semillero
+                    if ($nuevoSemilleroId) {
+                        DB::table('semilleros')
+                            ->where('id_semillero', $nuevoSemilleroId)
+                            ->update([
+                                'id_lider_semi' => $usuario->id,
+                            ]);
+                    }
+
+                    break;
+
+                case 'APRENDIZ':
+                    $col = Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : 'user_id';
+                    DB::table('aprendices')
+                        ->where($col, $usuario->id)
+                        ->update([
+                            'ficha'                => $data['ficha'] ?? null,
+                            'programa'             => $data['programa'] ?? null,
+                            'nivel_educativo'      => $data['nivel_educativo'] ?? null,
+                            'vinculado_sena'       => $vinculado,
+                            'institucion'          => $vinculado === 1 ? null : ($data['institucion'] ?? null),
+                            'correo_institucional' => $data['correo_institucional'] ?? $data['email'],
+                            'contacto_nombre'      => $data['contacto_nombre'] ?? null,
+                            'contacto_celular'     => $data['contacto_celular'] ?? null,
+                            'semillero_id'         => $data['semillero_id'] ?? null,
+                            'actualizado_en'       => now(),
+                        ]);
+                    break;
+
+                case 'LIDER_INVESTIGACION':
+                    DB::table('lideres_investigacion')
+                        ->where('user_id', $usuario->id)
+                        ->update([
+                            'updated_at' => now(),
+                        ]);
+                    break;
+            }
+        });
+
+        return redirect()
+            ->route('admin.usuarios.index')
+            ->with('success','Se ha actualizado el usuario correctamente.');
+    }
 
     // ============================================================
     // ELIMINAR
@@ -504,6 +563,13 @@ public function update(Request $request, User $usuario)
             }
 
             if ($usuario->role === 'LIDER_SEMILLERO') {
+                // liberar semillero
+                DB::table('semilleros')
+                    ->where('id_lider_semi', $usuario->id)
+                    ->update([
+                        'id_lider_semi' => null,
+                    ]);
+
                 DB::table('lideres_semillero')
                     ->where('id_lider_semi',$usuario->id)
                     ->delete();

@@ -217,12 +217,12 @@
                       <div class="invalid-feedback">Ingrese el correo institucional.</div>
                     </div>
 
-                    {{-- Semillero que lidera --}}
-                    <div class="col-md-6">
+                   {{-- Semillero que lidera --}}
+                  <div class="col-md-6">
                       <label class="form-label">Semillero que lidera <span class="text-danger">*</span></label>
                       <select name="ls_semillero_id" class="form-select" required>
                         <option value="">Seleccionar…</option>
-                        @foreach($semilleros as $s)
+                        @foreach($semillerosSinLider as $s)
                           <option value="{{ $s->id_semillero }}">{{ $s->nombre }}</option>
                         @endforeach
                       </select>
