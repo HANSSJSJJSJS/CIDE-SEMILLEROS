@@ -54,6 +54,30 @@
       .catch(console.error);
   }
 
+  // Helper: genera siglas del nombre del semillero
+  function acronymFromName(name) {
+    if (!name) return '';
+    const s = String(name).trim();
+    // Si viene sigla entre paréntesis, úsala (p.ej. "... (GEDS)")
+    const m = s.match(/\(([A-Za-zÁÉÍÓÚÜÑ0-9\-\.]{2,12})\)\s*$/);
+    if (m) return m[1].toUpperCase();
+    // Quitar puntuación y dividir
+    const cleaned = s.replace(/[.,;:()]/g, ' ');
+    const stop = new Set(['de','del','la','las','los','y','para','por','en','el','a','con','e','o','u','una','un','unos','unas','da','do','das','dos','the','of','and']);
+    const parts = cleaned.split(/\s+/).filter(Boolean);
+    const letters = [];
+    for (const w of parts) {
+      const low = w.toLowerCase();
+      if (stop.has(low)) continue;
+      // toma primera letra alfabética
+      const ch = (w.match(/[A-Za-zÁÉÍÓÚÜÑ]/) || [''])[0];
+      if (ch) letters.push(ch.toUpperCase());
+    }
+    const acr = letters.join('');
+    // Limitar a 6 caracteres para legibilidad
+    return acr.slice(0, 6);
+  }
+
   // -----------------------------
   // GRÁFICA 1 — Aprendices por semillero (BARRAS)
   // -----------------------------
@@ -63,10 +87,13 @@
     const canvas = document.getElementById("chartAprendicesSem");
     if (!canvas) return;
 
+    const labelsFull = data.map(r => r.semillero);
+    const labelsShort = labelsFull.map(acronymFromName);
+
     new Chart(canvas, {
       type: "bar",
       data: {
-        labels: data.map(r => r.semillero),
+        labels: labelsShort,
         datasets: [{
           label: "Aprendices",
           data: data.map(r => r.total_aprendices),
@@ -79,7 +106,14 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title(ctx) { const i = ctx[0]?.dataIndex ?? 0; return labelsFull[i] || ctx[0].label; }
+            }
+          }
+        },
         scales: { y: { beginAtZero: true } }
       }
     });
@@ -94,10 +128,13 @@
     const canvas = document.getElementById("chartProyectosSem");
     if (!canvas) return;
 
+    const labelsFull = data.map(r => r.semillero);
+    const labelsShort = labelsFull.map(acronymFromName);
+
     new Chart(canvas, {
       type: "doughnut",
       data: {
-        labels: data.map(r => r.semillero),
+        labels: labelsShort,
         datasets: [{
           data: data.map(r => r.proyectos.length),
           backgroundColor: [
@@ -111,7 +148,10 @@
         responsive: true,
         maintainAspectRatio: false,
         cutout: "60%",
-        plugins: { legend: { position: "bottom" } }
+        plugins: {
+          legend: { position: "bottom" },
+          tooltip: { callbacks: { title(ctx){ const i = ctx[0]?.dataIndex ?? 0; return labelsFull[i] || ctx[0].label; } } }
+        }
       }
     });
   }
@@ -153,10 +193,13 @@
     const canvas = document.getElementById("chartTopSemilleros");
     if (!canvas) return;
 
+    const labelsFull = data.map(x => x.nombre);
+    const labelsShort = labelsFull.map(acronymFromName);
+
     new Chart(canvas, {
       type: "bar",
       data: {
-        labels: data.map(x => x.nombre),
+        labels: labelsShort,
         datasets: [{
           label: "Total proyectos",
           data: data.map(x => x.total_proyectos),
@@ -166,7 +209,7 @@
       options: {
         indexAxis: "y",
         responsive: true,
-        plugins: { legend: { display: false } }
+        plugins: { legend: { display: false }, tooltip: { callbacks: { title(ctx){ const i = ctx[0]?.dataIndex ?? 0; return labelsFull[i] || ctx[0].label; } } } }
       }
     });
   }
