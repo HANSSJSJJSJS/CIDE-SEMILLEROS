@@ -64,7 +64,7 @@
           </div>
 
           {{-- ===========================================================
-               ÁREA GENERAL – PASO 1 COMÚN
+               ÁREA GENERAL – PASOS COMUNES / LÍDER
           ============================================================ --}}
           <div id="area-general">
 
@@ -88,14 +88,14 @@
                     {{-- Tipo de documento --}}
                     <div class="col-md-4">
                       <label class="form-label">Tipo de documento <span class="text-danger">*</span></label>
-                      <select name="tipo_documento" class="form-control" required>
-                      <option value="">Seleccione…</option>
-                      <option value="CC">Cédula de ciudadanía</option>
-                      <option value="TI">Tarjeta de identidad</option>
-                      <option value="CE">Cédula de extranjería</option>
-                      <option value="PASAPORTE">Pasaporte</option>
-                      <option value="PERMISO ESPECIAL">Permiso especial</option>
-                      <option value="REGISTRO CIVIL">Registro civil</option>
+                      <select name="tipo_documento" class="form-select" required>
+                        <option value="">Seleccione…</option>
+                        <option value="CC">Cédula de ciudadanía</option>
+                        <option value="TI">Tarjeta de identidad</option>
+                        <option value="CE">Cédula de extranjería</option>
+                        <option value="PASAPORTE">Pasaporte</option>
+                        <option value="PERMISO ESPECIAL">Permiso especial</option>
+                        <option value="REGISTRO CIVIL">Registro civil</option>
                       </select>
                       <div class="invalid-feedback">Seleccione un tipo de documento.</div>
                     </div>
@@ -209,6 +209,7 @@
                   </h6>
 
                   <div class="row g-3">
+
                     {{-- Correo institucional (extra, NO login) --}}
                     <div class="col-md-6">
                       <label class="form-label">Correo institucional <span class="text-danger">*</span></label>
@@ -219,17 +220,20 @@
 
                     {{-- Semillero que lidera --}}
                     <div class="col-md-6">
-                      <label class="form-label">Semillero que lidera <span class="text-danger">*</span></label>
-                      <select name="ls_semillero_id" class="form-select" required>
-                        <option value="">Seleccionar…</option>
-                        @foreach($semilleros as $s)
+                      <label class="form-label">Semillero que lidera</label>
+                      <select name="ls_semillero_id" class="form-select">
+                        <option value="">Ninguno (asignar después)</option>
+                        @foreach($semillerosSinLider as $s)
                           <option value="{{ $s->id_semillero }}">{{ $s->nombre }}</option>
                         @endforeach
                       </select>
-                      <div class="invalid-feedback">Seleccione el semillero.</div>
+                      <small class="text-muted">
+                        Si eliges “Ninguno”, podrás asignar el semillero luego desde
+                        <strong>Gestión de semilleros</strong>.
+                      </small>
                     </div>
-                  </div>
 
+                  </div>
                 </div>
               </div>
             </div>
@@ -424,12 +428,12 @@
 
         </div>{{-- /modal-body --}}
 
-        {{-- FOOTER --}}
+        {{-- FOOTER (DENTRO DEL FORM) --}}
         <div class="modal-footer justify-content-center gap-2">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
             Cancelar
           </button>
-          <button type="submit" class="btn btn-success" id="btn-save-user" disabled>
+          <button type="submit" class="btn btn-success" id="btn-save-user">
             <i class="bi bi-check-circle me-1"></i>
             Guardar usuario
           </button>

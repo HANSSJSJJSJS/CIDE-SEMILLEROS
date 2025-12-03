@@ -450,4 +450,302 @@
     initModalVerUsuario();
   });
 
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('modalCrearUsuario');
+    if (!modal) return;
+
+    const form         = modal.querySelector('#formCrearUsuario');
+    const selectRole   = modal.querySelector('#select-role');
+    const rolLabel     = modal.querySelector('#rol-actual-label');
+
+    const areaGeneral  = modal.querySelector('#area-general');
+    const areaAprendiz = modal.querySelector('#area-aprendiz');
+
+    const userSteps    = modal.querySelectorAll('.user-step');
+    const userNav      = modal.querySelector('#user-steps-nav');
+    const btnUserPrev  = modal.querySelector('#btn-user-prev');
+    const btnUserNext  = modal.querySelector('#btn-user-next');
+    const userStepLabel= modal.querySelector('#user-step-label');
+
+    const aprSteps     = modal.querySelectorAll('.apr-step');
+    const aprNav       = modal.querySelector('#apr-steps-nav');
+    const btnAprPrev   = modal.querySelector('#btn-apr-prev');
+    const btnAprNext   = modal.querySelector('#btn-apr-next');
+    const aprStepLabel = modal.querySelector('#apr-step-label');
+
+    const btnSave      = modal.querySelector('#btn-save-user');
+
+    // Campos que dependen del rol
+    const lsCorreo     = modal.querySelector('input[name="ls_correo_institucional"]');
+    const lsSemillero  = modal.querySelector('select[name="ls_semillero_id"]');
+    const aprCorreo    = modal.querySelector('input[name="correo_institucional"]');
+    const aprSemillero = modal.querySelector('select[name="semillero_id"]');
+
+    let currentUserStep = 1;
+    let maxUserSteps    = 1;
+    let currentAprStep  = 1;
+    const maxAprSteps   = aprSteps.length;
+
+    // Helpers -----------------------------------------------
+
+    function setStepVisibility(steps, current) {
+        steps.forEach(step => {
+            const n = parseInt(step.dataset.step, 10);
+            step.classList.toggle('d-none', n !== current);
+        });
+    }
+
+    function validateStep(steps, current) {
+        const step = Array.from(steps).find(s => parseInt(s.dataset.step, 10) === current);
+        if (!step) return true;
+
+        const inputs = step.querySelectorAll('input, select, textarea');
+        let firstInvalid = null;
+
+        inputs.forEach(el => {
+            el.classList.remove('is-invalid');
+            if (!el.checkValidity()) {
+                if (!firstInvalid) firstInvalid = el;
+                el.classList.add('is-invalid');
+            }
+        });
+
+        if (firstInvalid) {
+            if (typeof firstInvalid.reportValidity === 'function') {
+                firstInvalid.reportValidity();
+            }
+            firstInvalid.focus();
+            return false;
+        }
+
+        return true;
+    }
+
+    function updateRolLabel(role) {
+        if (!rolLabel) return;
+        if (!role) {
+            rolLabel.style.display = 'none';
+            rolLabel.textContent = '';
+            return;
+        }
+        const map = {
+            'ADMIN': 'Líder general',
+            'LIDER_SEMILLERO': 'Líder de semillero',
+            'LIDER_INVESTIGACION': 'Líder de investigación',
+            'APRENDIZ': 'Aprendiz'
+        };
+        rolLabel.textContent = map[role] || role;
+        rolLabel.style.display = 'inline-block';
+    }
+
+function updateRequiredByRole(role) {
+    [lsCorreo, lsSemillero, aprCorreo, aprSemillero].forEach(el => {
+        if (!el) return;
+        el.required = false;
+    });
+
+    if (role === 'LIDER_SEMILLERO') {
+        if (lsCorreo) lsCorreo.required = true; // solo el correo es obligatorio
+        // ls_semillero_id pasa a ser OPCIONAL
+    } else if (role === 'APRENDIZ') {
+        if (aprCorreo)    aprCorreo.required = true;
+        if (aprSemillero) aprSemillero.required = true;
+    }
+}
+    function updateSaveState() {
+        if (!btnSave) return;
+        const role = selectRole.value;
+
+        if (!role) {
+            btnSave.disabled = true;
+            return;
+        }
+
+        if (role === 'APRENDIZ') {
+            // Solo habilitar guardar en el último paso del aprendiz
+            btnSave.disabled = (currentAprStep !== maxAprSteps);
+        } else {
+            // Para ADMIN / LIDER_INVESTIGACION solo hay paso 1
+            // Para LIDER_SEMILLERO hay 2 pasos
+            btnSave.disabled = (currentUserStep !== maxUserSteps);
+        }
+    }
+
+    function configureByRole() {
+        const role = selectRole.value || '';
+
+        updateRolLabel(role);
+        updateRequiredByRole(role);
+
+        // Reset de pasos
+        currentUserStep = 1;
+        currentAprStep  = 1;
+
+        // Ocultar todo
+        areaGeneral.classList.add('d-none');
+        areaAprendiz.classList.add('d-none');
+        userNav.classList.add('d-none');
+        aprNav.classList.add('d-none');
+
+        if (!role) {
+            updateSaveState();
+            return;
+        }
+
+        if (role === 'APRENDIZ') {
+            // Wizard de aprendiz (4 pasos)
+            areaAprendiz.classList.remove('d-none');
+            aprNav.classList.remove('d-none');
+            setStepVisibility(aprSteps, currentAprStep);
+            if (aprStepLabel) aprStepLabel.textContent = `Paso ${currentAprStep} de ${maxAprSteps}`;
+        } else {
+            // Wizard general
+            areaGeneral.classList.remove('d-none');
+
+            // ADMIN y LIDER_INVESTIGACION -> solo paso 1
+            // LIDER_SEMILLERO -> pasos 1 y 2
+            maxUserSteps = (role === 'LIDER_SEMILLERO') ? userSteps.length : 1;
+
+            // Si no es líder de semillero, ocultar forzado el paso 2
+            userSteps.forEach(step => {
+                const n = parseInt(step.dataset.step, 10);
+                if (n === 2 && role !== 'LIDER_SEMILLERO') {
+                    step.classList.add('d-none');
+                }
+            });
+
+            setStepVisibility(userSteps, currentUserStep);
+
+            if (maxUserSteps > 1) {
+                userNav.classList.remove('d-none');
+                if (userStepLabel) userStepLabel.textContent = `Paso ${currentUserStep} de ${maxUserSteps}`;
+            } else {
+                userNav.classList.add('d-none');
+            }
+        }
+
+        updateSaveState();
+    }
+
+    // Navegación wizard GENERAL --------------------------------
+
+    if (btnUserNext) {
+        btnUserNext.addEventListener('click', () => {
+            if (!validateStep(userSteps, currentUserStep)) return;
+
+            if (currentUserStep < maxUserSteps) {
+                currentUserStep++;
+                setStepVisibility(userSteps, currentUserStep);
+                if (userStepLabel) userStepLabel.textContent = `Paso ${currentUserStep} de ${maxUserSteps}`;
+                updateSaveState();
+            }
+        });
+    }
+
+    if (btnUserPrev) {
+        btnUserPrev.addEventListener('click', () => {
+            if (currentUserStep > 1) {
+                currentUserStep--;
+                setStepVisibility(userSteps, currentUserStep);
+                if (userStepLabel) userStepLabel.textContent = `Paso ${currentUserStep} de ${maxUserSteps}`;
+                updateSaveState();
+            }
+        });
+    }
+
+    // Navegación wizard APRENDIZ ------------------------------
+
+    if (btnAprNext) {
+        btnAprNext.addEventListener('click', () => {
+            if (!validateStep(aprSteps, currentAprStep)) return;
+
+            if (currentAprStep < maxAprSteps) {
+                currentAprStep++;
+                setStepVisibility(aprSteps, currentAprStep);
+                if (aprStepLabel) aprStepLabel.textContent = `Paso ${currentAprStep} de ${maxAprSteps}`;
+                updateSaveState();
+            }
+        });
+    }
+
+    if (btnAprPrev) {
+        btnAprPrev.addEventListener('click', () => {
+            if (currentAprStep > 1) {
+                currentAprStep--;
+                setStepVisibility(aprSteps, currentAprStep);
+                if (aprStepLabel) aprStepLabel.textContent = `Paso ${currentAprStep} de ${maxAprSteps}`;
+                updateSaveState();
+            }
+        });
+    }
+
+    // Cambio de rol -------------------------------------------
+
+    if (selectRole) {
+        selectRole.addEventListener('change', configureByRole);
+    }
+
+    // Reset al cerrar modal -----------------------------------
+
+    modal.addEventListener('hidden.bs.modal', () => {
+        form.reset();
+        currentUserStep = 1;
+        currentAprStep  = 1;
+        configureByRole();
+    });
+
+    // Toggles de contraseña / generar contraseña --------------
+
+    modal.querySelectorAll('[data-toggle-pass]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetSel = btn.getAttribute('data-toggle-pass');
+            const input = modal.querySelector(targetSel);
+            if (!input) return;
+
+            const icon = btn.querySelector('i');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (icon) {
+                    icon.classList.remove('bi-eye');
+                    icon.classList.add('bi-eye-slash');
+                }
+            } else {
+                input.type = 'password';
+                if (icon) {
+                    icon.classList.remove('bi-eye-slash');
+                    icon.classList.add('bi-eye');
+                }
+            }
+        });
+    });
+
+    modal.querySelectorAll('[data-generate-pass]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetSel = btn.getAttribute('data-generate-pass');
+            const input = modal.querySelector(targetSel);
+            if (!input) return;
+
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@$%*?';
+            let pass = '';
+            for (let i = 0; i < 10; i++) {
+                pass += chars[Math.floor(Math.random() * chars.length)];
+            }
+            input.value = pass;
+            input.dispatchEvent(new Event('input'));
+        });
+    });
+
+    // Inicializar estado al cargar
+    configureByRole();
+});
+
+
+
+
+
+
+
+
+
 })();

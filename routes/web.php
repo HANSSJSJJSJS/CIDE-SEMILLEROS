@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UsuarioController;
 
 
+
 use App\Http\Controllers\Admin\SemilleroController;              // ← sin alias
 use App\Http\Controllers\Admin\ProyectoSemilleroController;
 use App\Http\Controllers\Admin\ReunionesLideresController;
@@ -192,23 +193,23 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
         Route::get('/crear', fn () => view('admin.crear'))->name('crear');
 
 
-        // ==========================
-        //         SEMILLEROS
-        // ==========================
+            // ==========================
+            //         SEMILLEROS
+            // ==========================
 
-        // 🔹 PRIMERO la ruta AJAX
-        Route::get('semilleros/lideres-disponibles',
-            [SemilleroController::class, 'lideresDisponibles']
-        )->name('semilleros.lideres-disponibles');
+           
 
-        // 🔹 LUEGO el resource, SIN show (no lo usas)
-        Route::resource('semilleros', SemilleroController::class)->except(['show']);
+            // 🔹 Ruta AJAX para líderes disponibles
+            Route::get('semilleros/lideres-disponibles', [SemilleroController::class, 'lideresDisponibles'])
+                ->name('semilleros.lideresDisponibles');
 
-        // Editar vía AJAX (si usas un edit-ajax específico)
-       Route::get('semilleros/{id}/edit-ajax', [SemilleroController::class, 'editAjax'])
-            ->whereNumber('id')
-            ->name('semilleros.edit.ajax');
+            // 🔹 Resource semilleros (sin show)
+            Route::resource('semilleros', SemilleroController::class)->except(['show']);
 
+            // 🔹 Editar vía AJAX
+            Route::get('semilleros/{id}/edit-ajax', [SemilleroController::class, 'editAjax'])
+                ->whereNumber('id')
+                ->name('semilleros.edit.ajax');
 
 
         // ==========================
