@@ -27,138 +27,33 @@ window.swalError = function (msg) {
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    // ========================================================
-    // EDITAR SEMILLERO (modal + buscador de líder)
-    // ========================================================
-    const modalEdit      = document.getElementById("modalEditarSemillero");
-    const formEdit       = document.getElementById("formEditarSemillero");
-    const editNombre     = document.getElementById("editNombre");
-    const editLinea      = document.getElementById("editLinea");
-    const liderRO        = document.getElementById("liderNombreRO");
-    const correoRO       = document.getElementById("liderCorreoRO");
-    const idLiderEditInp = document.getElementById("editIdLider");
-    const buscarEditInp  = document.getElementById("buscarLider");
-    const listaEdit      = document.getElementById("resultadosLider");
+    // =====================================================================
+    // UTILIDAD COMÚN: buscar líderes disponibles (crear / editar)
+    // =====================================================================
+    async function fetchLideres(baseUrl, q, includeCurrentId = null) {
+        if (!baseUrl) return { ok: false, items: [] };
 
-    if (modalEdit && formEdit && buscarEditInp && listaEdit) {
+        const params = new URLSearchParams();
+        if (q && q.trim() !== "") params.append("q", q.trim());
+        if (includeCurrentId) params.append("include_current", includeCurrentId);
 
-        // Quitar autocompletado / sugerencias en los campos de texto
-        [editNombre, editLinea].forEach(inp => {
-            if (!inp) return;
-            inp.setAttribute("autocomplete", "off");
-            inp.setAttribute("spellcheck", "false");
-        });
+        const url = `${baseUrl}?${params.toString()}`;
 
-        modalEdit.addEventListener("show.bs.modal", async (e) => {
-            // Cerrar modal "nuevo semillero" si estuviera abierto
-            const mNuevo    = document.getElementById("modalNuevoSemillero");
-            const instNuevo = mNuevo ? bootstrap.Modal.getInstance(mNuevo) : null;
-            instNuevo?.hide();
-
-            const id = e.relatedTarget?.dataset.id;
-            if (!id) return;
-
-            // Limpiar buscador y resultados de líder
-            buscarEditInp.value = "";
-            listaEdit.innerHTML = "";
-
-            try {
-                const res = await fetch(`/admin/semilleros/${id}/edit-ajax`);
-                let json  = null;
-
-                try {
-                    json = await res.json();
-                } catch (_) {
-                    // si no viene JSON, lo manejamos abajo
-                }
-
-                if (!res.ok) {
-                    const detalle = json && json.message
-                        ? json.message
-                        : `Error HTTP ${res.status}`;
-                    swalError(
-                        `No se pudo cargar la información del semillero.<br><small>${detalle}</small>`
-                    );
-                    return;
-                }
-
-                // El backend devuelve directamente el objeto semillero
-                const data = json || {};
-
-                formEdit.action      = `/admin/semilleros/${id}`;
-                editNombre.value     = data.nombre || "";
-                editLinea.value      = data.linea_investigacion || "";
-                liderRO.value        = data.lider_nombre || "—";
-                correoRO.value       = data.lider_correo || "—";
-                idLiderEditInp.value = data.id_lider_semi || "";
-
-            } catch (err) {
-                console.error(err);
-                swalError("No se pudo cargar la información del semillero.");
-            }
-        });
-
-        // Buscador de líderes dentro del modal de editar
-        let tEdit;
-        buscarEditInp.addEventListener("input", () => {
-            clearTimeout(tEdit);
-            tEdit = setTimeout(async () => {
-                const q = buscarEditInp.value.trim();
-                if (q.length < 2) {
-                    listaEdit.innerHTML = "";
-                    return;
-                }
-
-                const includeCurrent = idLiderEditInp.value
-                    ? `&include_current=${encodeURIComponent(idLiderEditInp.value)}`
-                    : "";
-
-                const url = `/admin/semilleros/lideres-disponibles?q=${encodeURIComponent(q)}${includeCurrent}`;
-
-                try {
-                    const res  = await fetch(url, { headers: { "Accept": "application/json" } });
-                    const data = await res.json();
-
-                    if (!data.ok) {
-                        console.error("Error en lideres-disponibles:", data.message);
-                        listaEdit.innerHTML = "";
-                        return;
-                    }
-
-                    const items = data.items || [];
-                    listaEdit.innerHTML = "";
-                    if (!items.length) return;
-
-                    items.forEach((r) => {
-                        const a = document.createElement("a");
-                        a.href = "#";
-                        a.className = "list-group-item list-group-item-action";
-                        a.innerHTML = `
-                            <div class="fw-semibold">${r.nombre}</div>
-                            <small class="text-muted">${r.correo || "—"}</small>
-                        `;
-                        a.addEventListener("click", (ev) => {
-                            ev.preventDefault();
-                            idLiderEditInp.value = r.id_lider_semi;
-                            liderRO.value        = r.nombre;
-                            correoRO.value       = r.correo || "—";
-                            listaEdit.innerHTML  = "";
-                            buscarEditInp.value  = "";
-                        });
-                        listaEdit.appendChild(a);
-                    });
-
-                } catch (err) {
-                    console.error("Error cargando líderes:", err);
-                }
-            }, 250);
-        });
+        const res  = await fetch(url, { headers: { "Accept": "application/json" } });
+        const data = await res.json();
+        if (!data.ok) {
+            console.error("Error en lideres-disponibles:", data.message);
+            return { ok: false, items: [] };
+        }
+        return data;
     }
 
-    // ========================================================
-    // NUEVO SEMILLERO – buscador de líder
-    // ========================================================
+    // =====================================================================
+    // NUEVO SEMILLERO – Select + buscador de líder
+    // =====================================================================
     const modalNuevo       = document.getElementById("modalNuevoSemillero");
+    const selectLiderDisp  = document.getElementById("selectLiderDisponible");
+    const btnLimpiarLider  = document.getElementById("btnLimpiarLiderNuevo");
     const buscarNuevo      = document.getElementById("buscarLiderNuevo");
     const btnBuscarNuevo   = document.getElementById("btnBuscarLiderNuevo");
     const listaNuevo       = document.getElementById("resultadosLiderNuevo");
@@ -166,81 +61,273 @@ document.addEventListener("DOMContentLoaded", () => {
     const liderNuevoNombre = document.getElementById("nuevoLiderNombreRO");
     const liderNuevoCorreo = document.getElementById("nuevoLiderCorreoRO");
 
-    async function fetchLideresNuevo(q) {
-        if (!q || q.trim().length < 2) {
+    function limpiarSeleccionNuevo() {
+        if (selectLiderDisp) selectLiderDisp.value = "";
+        if (idLiderNuevoInp) idLiderNuevoInp.value = "";
+        if (liderNuevoNombre) liderNuevoNombre.value = "—";
+        if (liderNuevoCorreo) liderNuevoCorreo.value = "—";
+        if (listaNuevo) listaNuevo.innerHTML = "";
+        if (buscarNuevo) buscarNuevo.value = "";
+    }
+
+    // Cuando el usuario selecciona un líder del select
+    if (selectLiderDisp) {
+        selectLiderDisp.addEventListener("change", () => {
+            const opt = selectLiderDisp.options[selectLiderDisp.selectedIndex];
+            if (!opt || !opt.value) {
+                limpiarSeleccionNuevo();
+                return;
+            }
+
+            const id     = opt.value;
+            const nombre = opt.dataset.nombre || "";
+            const correo = opt.dataset.correo || "—";
+
+            if (idLiderNuevoInp)  idLiderNuevoInp.value  = id;
+            if (liderNuevoNombre) liderNuevoNombre.value = nombre;
+            if (liderNuevoCorreo) liderNuevoCorreo.value = correo;
+
+            // limpiamos resultados de búsqueda manual para evitar confusión
+            if (listaNuevo) listaNuevo.innerHTML = "";
+            if (buscarNuevo) buscarNuevo.value = "";
+        });
+    }
+
+    // Botón "Quitar líder"
+    if (btnLimpiarLider) {
+        btnLimpiarLider.addEventListener("click", (e) => {
+            e.preventDefault();
+            limpiarSeleccionNuevo();
+        });
+    }
+
+    // Renderizar resultados en el modal de "Nuevo"
+    function renderResultadosNuevo(items) {
+        if (!listaNuevo) return;
+        listaNuevo.innerHTML = "";
+
+        if (!items.length) {
+            const empty = document.createElement("div");
+            empty.className = "list-group-item text-muted small";
+            empty.textContent = "No se encontraron líderes disponibles.";
+            listaNuevo.appendChild(empty);
+            return;
+        }
+
+        items.forEach((r) => {
+            const a = document.createElement("a");
+            a.href = "#";
+            a.className = "list-group-item list-group-item-action";
+            a.innerHTML = `
+                <div class="fw-semibold">${r.nombre}</div>
+                <small class="text-muted">${r.correo || "—"}</small>
+            `;
+            a.addEventListener("click", (ev) => {
+                ev.preventDefault();
+                if (idLiderNuevoInp)  idLiderNuevoInp.value  = r.id_lider_semi;
+                if (liderNuevoNombre) liderNuevoNombre.value = r.nombre;
+                if (liderNuevoCorreo) liderNuevoCorreo.value = r.correo || "—";
+
+                // limpiamos búsqueda manual
+                listaNuevo.innerHTML = "";
+                if (buscarNuevo) buscarNuevo.value = "";
+
+                // deseleccionamos el select para indicar que el líder vino por búsqueda
+                if (selectLiderDisp) selectLiderDisp.value = "";
+            });
+            listaNuevo.appendChild(a);
+        });
+    }
+
+    // Buscar líderes (nuevo semillero)
+    async function buscarLideresNuevo() {
+        if (!btnBuscarNuevo || !listaNuevo) return;
+        const baseUrl = btnBuscarNuevo.dataset.urlLideres;
+        if (!baseUrl) return;
+
+        const q = (buscarNuevo?.value || "").trim();
+        if (q.length < 2) {
             listaNuevo.innerHTML = "";
             return;
         }
 
-        const url = `/admin/semilleros/lideres-disponibles?q=${encodeURIComponent(q)}`;
-
         try {
-            const res  = await fetch(url, { headers: { "Accept": "application/json" } });
-            const data = await res.json();
-
-            if (!data.ok) {
-                console.error("Error en lideres-disponibles:", data.message);
-                listaNuevo.innerHTML = "";
-                return;
-            }
-
-            const items = data.items || [];
-            listaNuevo.innerHTML = "";
-            if (!items.length) return;
-
-            items.forEach((r) => {
-                const a = document.createElement("a");
-                a.href = "#";
-                a.className = "list-group-item list-group-item-action";
-                a.innerHTML = `
-                    <div class="fw-semibold">${r.nombre}</div>
-                    <small class="text-muted">${r.correo || "—"}</small>
-                `;
-                a.addEventListener("click", (ev) => {
-                    ev.preventDefault();
-                    idLiderNuevoInp.value  = r.id_lider_semi;
-                    liderNuevoNombre.value = r.nombre;
-                    liderNuevoCorreo.value = r.correo || "—";
-                    listaNuevo.innerHTML   = "";
-                    buscarNuevo.value      = "";
-                });
-                listaNuevo.appendChild(a);
-            });
-
+            const data = await fetchLideres(baseUrl, q);
+            renderResultadosNuevo(data.items || []);
         } catch (err) {
             console.error("Error cargando líderes (nuevo):", err);
-            swalError("No se pudieron cargar los líderes disponibles.");
+            listaNuevo.innerHTML = "";
+            const error = document.createElement("div");
+            error.className = "list-group-item text-danger small";
+            error.textContent = "No se pudieron cargar los líderes disponibles.";
+            listaNuevo.appendChild(error);
         }
     }
 
-    let tNuevo;
-    if (buscarNuevo && listaNuevo) {
+    let tNuevo = null;
+    if (buscarNuevo) {
         buscarNuevo.addEventListener("input", () => {
             clearTimeout(tNuevo);
-            tNuevo = setTimeout(() => fetchLideresNuevo(buscarNuevo.value), 250);
+            tNuevo = setTimeout(buscarLideresNuevo, 300);
         });
     }
 
     if (btnBuscarNuevo) {
         btnBuscarNuevo.addEventListener("click", (e) => {
             e.preventDefault();
-            fetchLideresNuevo(buscarNuevo.value);
+            buscarLideresNuevo();
         });
     }
 
     if (modalNuevo) {
         modalNuevo.addEventListener("hidden.bs.modal", () => {
-            buscarNuevo.value        = "";
-            listaNuevo.innerHTML     = "";
-            idLiderNuevoInp.value    = "";
-            liderNuevoNombre.value   = "—";
-            liderNuevoCorreo.value   = "—";
+            limpiarSeleccionNuevo();
         });
     }
 
-    // ========================================================
-    // CONFIRMAR ELIMINAR SEMILLERO
-    // ========================================================
+    // =====================================================================
+    // EDITAR SEMILLERO – Rellenar datos + buscador de líder
+    // =====================================================================
+    const modalEdit      = document.getElementById("modalEditarSemillero");
+    const formEdit       = document.getElementById("formEditarSemillero");
+    const editNombre     = document.getElementById("editNombre");
+    const editLinea      = document.getElementById("editLinea");
+    const liderRO        = document.getElementById("liderNombreRO");
+    const correoRO       = document.getElementById("liderCorreoRO");
+    const idLiderEditInp = document.getElementById("editIdLider");
+    const buscarEditInp  = document.getElementById("buscarLiderEditar");
+    const btnBuscarEdit  = document.getElementById("btnBuscarLiderEditar");
+    const listaEdit      = document.getElementById("resultadosLiderEditar");
+
+    // Para saber cuál es el líder actual y permitir incluirlo en la búsqueda
+    let currentLiderId = null;
+
+    // Cuando se abre el modal de editar
+    if (modalEdit) {
+        modalEdit.addEventListener("show.bs.modal", async (e) => {
+            const button = e.relatedTarget;
+            const id     = button?.dataset.id;
+            if (!id || !formEdit) return;
+
+            // limpiar estados de búsqueda
+            if (buscarEditInp) buscarEditInp.value = "";
+            if (listaEdit) listaEdit.innerHTML = "";
+
+            try {
+                const res  = await fetch(`/admin/semilleros/${id}/edit-ajax`, {
+                    headers: { "Accept": "application/json" }
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    const detalle = data && data.message
+                        ? data.message
+                        : `Error HTTP ${res.status}`;
+                    swalError(
+                        `No se pudo cargar la información del semillero.<br><small>${detalle}</small>`
+                    );
+                    return;
+                }
+
+                // Rellenar datos básicos
+                if (editNombre) editNombre.value = data.nombre || "";
+                if (editLinea)  editLinea.value  = data.linea_investigacion || "";
+
+                // Líder actual
+                if (liderRO)        liderRO.value        = data.lider_nombre || "—";
+                if (correoRO)       correoRO.value       = data.lider_correo || "—";
+                if (idLiderEditInp) idLiderEditInp.value = data.id_lider_semi || "";
+
+                currentLiderId = data.id_lider_semi || null;
+
+                // Action del form
+                formEdit.action = `/admin/semilleros/${id}`;
+
+            } catch (err) {
+                console.error(err);
+                swalError("No se pudo cargar la información del semillero.");
+            }
+        });
+    }
+
+    // Renderizar resultados en el modal de "Editar"
+    function renderResultadosEditar(items) {
+        if (!listaEdit) return;
+        listaEdit.innerHTML = "";
+
+        if (!items.length) {
+            const empty = document.createElement("div");
+            empty.className = "list-group-item text-muted small";
+            empty.textContent = "No se encontraron líderes disponibles.";
+            listaEdit.appendChild(empty);
+            return;
+        }
+
+        items.forEach((r) => {
+            const a = document.createElement("a");
+            a.href = "#";
+            a.className = "list-group-item list-group-item-action";
+            a.innerHTML = `
+                <div class="fw-semibold">${r.nombre}</div>
+                <small class="text-muted">${r.correo || "—"}</small>
+            `;
+            a.addEventListener("click", (ev) => {
+                ev.preventDefault();
+                if (idLiderEditInp) idLiderEditInp.value = r.id_lider_semi;
+                if (liderRO)        liderRO.value        = r.nombre;
+                if (correoRO)       correoRO.value       = r.correo || "—";
+
+                listaEdit.innerHTML = "";
+                if (buscarEditInp) buscarEditInp.value = "";
+            });
+            listaEdit.appendChild(a);
+        });
+    }
+
+    // Buscar líderes (editar semillero)
+    async function buscarLideresEditar() {
+        if (!btnBuscarEdit || !listaEdit) return;
+
+        const baseUrl = btnBuscarEdit.dataset.urlLideres;
+        if (!baseUrl) return;
+
+        const q = (buscarEditInp?.value || "").trim();
+        if (q.length < 2) {
+            listaEdit.innerHTML = "";
+            return;
+        }
+
+        try {
+            const data = await fetchLideres(baseUrl, q, idLiderEditInp?.value || null);
+            renderResultadosEditar(data.items || []);
+        } catch (err) {
+            console.error("Error cargando líderes (editar):", err);
+            listaEdit.innerHTML = "";
+            const error = document.createElement("div");
+            error.className = "list-group-item text-danger small";
+            error.textContent = "No se pudieron cargar los líderes disponibles.";
+            listaEdit.appendChild(error);
+        }
+    }
+
+    let tEdit = null;
+    if (buscarEditInp) {
+        buscarEditInp.addEventListener("input", () => {
+            clearTimeout(tEdit);
+            tEdit = setTimeout(buscarLideresEditar, 300);
+        });
+    }
+
+    if (btnBuscarEdit) {
+        btnBuscarEdit.addEventListener("click", (e) => {
+            e.preventDefault();
+            buscarLideresEditar();
+        });
+    }
+
+    // =====================================================================
+    // ELIMINAR SEMILLERO (SweetAlert + form dinámico si hace falta)
+    // =====================================================================
     document.addEventListener("click", function (e) {
         const btn = e.target.closest(".btn-eliminar-semillero");
         if (!btn) return;
@@ -249,7 +336,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const url    = btn.dataset.url;
         const nombre = btn.dataset.nombre || "este semillero";
-        const form   = btn.closest("form");
 
         Swal.fire({
             icon: "warning",
@@ -263,140 +349,40 @@ document.addEventListener("DOMContentLoaded", () => {
                 cancelButton: "custom-cancel swal2-cancel"
             }
         }).then((result) => {
-            if (result.isConfirmed) {
-                if (form) {
-                    form.submit();
-                }
+            if (!result.isConfirmed || !url) return;
+
+            // Si el botón está dentro de un form, usamos el form
+            const formParent = btn.closest("form");
+            if (formParent) {
+                formParent.submit();
+                return;
             }
+
+            // Si no hay form, creamos uno dinámico (Laravel)
+            const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+            const token     = tokenMeta ? tokenMeta.getAttribute("content") : null;
+
+            const form = document.createElement("form");
+            form.method = "POST";
+            form.action = url;
+
+            const methodInp = document.createElement("input");
+            methodInp.type  = "hidden";
+            methodInp.name  = "_method";
+            methodInp.value = "DELETE";
+            form.appendChild(methodInp);
+
+            if (token) {
+                const tokenInp = document.createElement("input");
+                tokenInp.type  = "hidden";
+                tokenInp.name  = "_token";
+                tokenInp.value = token;
+                form.appendChild(tokenInp);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
         });
     });
-
-document.addEventListener('DOMContentLoaded', () => {
-    const modalNuevo = document.getElementById('modalNuevoSemillero');
-    if (!modalNuevo) return;
-
-    const inputBuscar   = modalNuevo.querySelector('#buscarLiderNuevo');
-    const btnBuscar     = modalNuevo.querySelector('#btnBuscarLiderNuevo');
-    const resultadosBox = modalNuevo.querySelector('#resultadosLiderNuevo');
-
-    const inputIdLider  = modalNuevo.querySelector('#idLiderNuevo');
-    const inputNombreRO = modalNuevo.querySelector('#nuevoLiderNombreRO');
-    const inputCorreoRO = modalNuevo.querySelector('#nuevoLiderCorreoRO');
-
-    let searchTimeout = null;
-
-    function limpiarResultados() {
-        resultadosBox.innerHTML = '';
-    }
-
-    function seleccionarLider(lider) {
-        if (!lider) return;
-        inputIdLider.value  = lider.id;
-        inputNombreRO.value = `${lider.nombre} ${lider.apellidos}`.trim();
-        inputCorreoRO.value = lider.correo_lider || lider.email || '—';
-
-        // marcar visualmente seleccionado
-        Array.from(resultadosBox.children).forEach(el => el.classList.remove('active'));
-        const item = resultadosBox.querySelector(`[data-id="${lider.id}"]`);
-        if (item) item.classList.add('active');
-    }
-
-    function renderResultados(lista) {
-        limpiarResultados();
-
-        if (!lista || lista.length === 0) {
-            const empty = document.createElement('div');
-            empty.className = 'list-group-item text-muted small';
-            empty.textContent = 'No se encontraron líderes disponibles para ese criterio.';
-            resultadosBox.appendChild(empty);
-            return;
-        }
-
-        lista.forEach(l => {
-            const item = document.createElement('button');
-            item.type = 'button';
-            item.className = 'list-group-item list-group-item-action';
-            item.dataset.id = l.id;
-
-            const nombre = `${l.nombre} ${l.apellidos}`.trim();
-            const correo = l.correo_lider || l.email || '—';
-            const doc    = l.documento ? ` (${l.documento})` : '';
-
-            item.innerHTML = `
-                <div class="fw-semibold">${nombre}${doc}</div>
-                <div class="small text-muted">${correo}</div>
-            `;
-
-            item.addEventListener('click', () => seleccionarLider(l));
-            resultadosBox.appendChild(item);
-        });
-    }
-
-    async function buscarLider() {
-        const q = (inputBuscar.value || '').trim();
-        const url = btnBuscar.dataset.urlBuscarLider;
-        if (!url) return;
-
-        // opcional: si quieres evitar búsquedas vacías
-        // if (q.length < 2) {
-        //     limpiarResultados();
-        //     return;
-        // }
-
-        limpiarResultados();
-
-        const loading = document.createElement('div');
-        loading.className = 'list-group-item text-muted small';
-        loading.textContent = 'Buscando líderes disponibles...';
-        resultadosBox.appendChild(loading);
-
-        try {
-            const params = new URLSearchParams({ q });
-            const resp   = await fetch(`${url}?${params.toString()}`, {
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (!resp.ok) throw new Error('Error en la búsqueda');
-
-            const data = await resp.json();
-            renderResultados(data);
-        } catch (err) {
-            limpiarResultados();
-            const error = document.createElement('div');
-            error.className = 'list-group-item text-danger small';
-            error.textContent = 'Ocurrió un error al buscar líderes.';
-            resultadosBox.appendChild(error);
-            console.error(err);
-        }
-    }
-
-    // Click en botón "Buscar líder"
-    if (btnBuscar) {
-        btnBuscar.addEventListener('click', buscarLider);
-    }
-
-    // Búsqueda automática al escribir (con debounce)
-    if (inputBuscar) {
-        inputBuscar.addEventListener('input', () => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(buscarLider, 400);
-        });
-    }
-
-    // Cuando se cierra el modal, limpiar selección
-    modalNuevo.addEventListener('hidden.bs.modal', () => {
-        inputBuscar.value   = '';
-        inputIdLider.value  = '';
-        inputNombreRO.value = '—';
-        inputCorreoRO.value = '—';
-        limpiarResultados();
-    });
-});
-
-
-
-
 
 });

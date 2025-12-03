@@ -26,8 +26,8 @@
                 </p>
             </div>
 
-            {{-- Botón nuevo semillero (alineado a la izquierda en desktop) --}}
-            <div class="col-12 col-lg-5 d-flex justify-content-start justify-content-lg-start">
+            {{-- Botón nuevo semillero --}}
+            <div class="col-12 col-lg-5 d-flex justify-content-start">
                 @if($canCreate)
                     <button type="button"
                             class="btn btn-nuevo-semillero mt-2 mt-lg-0"
@@ -63,10 +63,10 @@
 
     {{-- MODAL CREAR --}}
     @if($canCreate)
-        @include('Admin.semilleros._modal_crear')
+        @include('admin.semilleros._modal_crear')
     @endif
 
-    {{-- TABLA (mismo estilo que usuarios) --}}
+    {{-- TABLA DE SEMILLEROS --}}
     <div class="tabla-semilleros-wrapper mt-2">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0 tabla-semilleros">
@@ -82,7 +82,8 @@
                 <tbody>
                 @forelse($semilleros as $s)
                     <tr>
-                        {{-- Nombre semillero --}}
+
+                        {{-- Nombre --}}
                         <td class="py-3 px-4">
                             <div class="fw-semibold">{{ $s->nombre }}</div>
                         </td>
@@ -111,7 +112,7 @@
                                 {{-- EDITAR --}}
                                 @if($canUpdate)
                                     <button type="button"
-                                            class="btn btn-accion-editar"
+                                            class="btn btn-accion-editar btn-editar-semillero"
                                             data-bs-toggle="modal"
                                             data-bs-target="#modalEditarSemillero"
                                             data-id="{{ $s->id_semillero }}">
@@ -119,7 +120,7 @@
                                     </button>
                                 @endif
 
-                                {{-- ELIMINAR (SweetAlert) --}}
+                                {{-- ELIMINAR --}}
                                 @if($canDelete)
                                     <button type="button"
                                             class="btn btn-accion-eliminar btn-eliminar-semillero"
@@ -137,6 +138,7 @@
 
                             </div>
                         </td>
+
                     </tr>
                 @empty
                     <tr>
@@ -151,14 +153,14 @@
         </div>
     </div>
 
-    {{-- PAGINACIÓN (12 por página en el controlador) --}}
+    {{-- PAGINACIÓN --}}
     <div class="mt-3">
         {{ $semilleros->links('pagination::bootstrap-5') }}
     </div>
 
     {{-- MODAL EDITAR --}}
     @if($canUpdate)
-        @include('Admin.semilleros._modal_editar')
+        @include('admin.semilleros._modal_editar')
     @endif
 
 </div> {{-- /.semilleros-wrapper --}}
@@ -172,19 +174,14 @@
 
 {{-- SCRIPTS ESPECÍFICOS --}}
 @push('scripts')
-    {{-- JS principal de semilleros (aquí están swalSuccess / swalError y el buscador de líderes) --}}
     <script src="{{ asset('js/admin/semilleros.js') }}"></script>
 
-    {{-- Lanzar alertas reutilizando el mismo estilo que Usuarios --}}
+    {{-- ALERTAS --}}
     @if(session('success'))
-        <script>
-            swalSuccess(@json(session('success')));
-        </script>
+        <script> swalSuccess(@json(session('success'))); </script>
     @endif
 
     @if(session('error'))
-        <script>
-            swalError(@json(session('error')));
-        </script>
+        <script> swalError(@json(session('error'))); </script>
     @endif
 @endpush
