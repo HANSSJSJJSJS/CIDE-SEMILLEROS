@@ -160,11 +160,12 @@
 
                                 {{-- EDITAR --}}
                                 @if($canUpdate)
-                                    <button type="button"
-                                            class="btn btn-accion-editar"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#modalEditarUsuario{{ $u->id }}">
-                                        <i class="bi bi-pencil me-1"></i> Editar
+                                   <button type="button"
+                                        class="btn btn-accion-editar btn-editar-usuario"
+                                        data-user-id="{{ $u->id }}"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalEditarUsuario{{ $u->id }}">
+                                    <i class="bi bi-pencil"></i> Editar
                                     </button>
                                 @endif
 

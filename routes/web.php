@@ -160,7 +160,7 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
         Route::get('/dashboard/stats',  [DashboardController::class, 'stats'])->name('dashboard.stats');
         Route::get('/dashboard/charts', [DashboardController::class, 'charts'])->name('dashboard.charts');
 
-        // ==========================
+       // ==========================
         //         USUARIOS
         // ==========================
         Route::resource('usuarios', AdminUsuarioController::class);
