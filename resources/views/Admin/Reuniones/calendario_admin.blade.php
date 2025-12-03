@@ -77,6 +77,8 @@
           </div>
         </div>
 
+
+
         <div class="form-group-calendario">
           <label for="event-title">Título de la reunión *</label>
           <input type="text" id="event-title" class="form-control-calendario" placeholder="Ej: Reunión Semillero IA" required>
@@ -89,19 +91,36 @@
           </select>
         </div>
 
-        <div class="form-group-calendario">
-          <label for="event-date">Fecha *</label>
-          <input type="date" id="event-date" class="form-control-calendario" required>
+        <div class="form-grid-2">
+          <div class="form-group-calendario">
+            <label for="event-duration">Duración <span class="required">*</span></label>
+            <select id="event-duration" name="duracion" class="form-control-calendario" required>
+              <option value="30">30 minutos</option>
+              <option value="60" selected>1 hora</option>
+              <option value="90">1 hora 30 minutos</option>
+              <option value="120">2 horas</option>
+              <option value="180">3 horas</option>
+              <option value="240">4 horas</option>
+            </select>
+          </div>
+
+          <div class="form-group-calendario">
+            <label>Hora seleccionada</label>
+            <div class="selected-time-display" id="selected-time-display">
+              <i class="fas fa-clock"></i>
+              <span id="display-time">--:-- --</span>
+            </div>
+          </div>
         </div>
 
         <div class="form-group-calendario">
-          <label for="event-time">Hora *</label>
-          <input type="time" id="event-time" class="form-control-calendario" required>
-        </div>
-
-        <div class="form-group-calendario">
-          <label for="event-duration">Duración (minutos) *</label>
-          <input type="number" id="event-duration" class="form-control-calendario" value="60" min="15" step="15" required>
+          <label for="event-location">Ubicación <span class="required">*</span></label>
+          <select id="event-location" name="ubicacion" class="form-control-calendario" required>
+            <option value="">Seleccione ubicación</option>
+            <option value="presencial">Presencial</option>
+            <option value="virtual">Reunión Virtual</option>
+            <option value="otra">Otra ubicación</option>
+          </select>
         </div>
 
         <div class="form-group-calendario">
@@ -111,9 +130,12 @@
 
         <div class="form-group-calendario">
           <label for="event-participants">Participantes (líderes del semillero)</label>
-          <input type="text" id="participants-search" class="form-control-calendario participants-search" placeholder="Buscar líder...">
-          <select id="event-participants" class="form-control-calendario" multiple size="5"></select>
-          <small class="text-muted">Mantén presionada la tecla Ctrl para seleccionar múltiples participantes</small>
+          <div class="participants-box">
+            <input type="text" id="participants-search" class="form-control-calendario participants-search" placeholder="Buscar líder...">
+            <div class="participants-list" id="participants-list"></div>
+            <select id="event-participants" class="form-control-calendario" multiple size="5" style="display:none;"></select>
+            <div class="participants-chips" id="participants-chips"></div>
+          </div>
         </div>
 
         <div class="form-actions-calendario">
@@ -165,21 +187,31 @@
           </div>
           <div class="drawer-field" id="detail-link-field" style="display:none;">
             <div class="drawer-label">Enlace</div>
-            <a href="#" id="detail-link" class="drawer-link" target="_blank" rel="noopener" style="display:none;">Abrir reunión</a>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <a href="#" id="detail-link" class="drawer-link" target="_blank" rel="noopener" style="display:none;">Abrir reunión</a>
+              <button type="button" id="detail-delete-link" title="Eliminar enlace" style="display:none; background:none;border:none;cursor:pointer;font-size:18px;">🗑️</button>
+            </div>
+            <div id="detail-link-editor" style="display:none; margin-top:8px; width:100%;">
+              <input type="url" id="detail-link-input" placeholder="Pega un enlace de reunión (https://...)" style="width:100%; padding:8px; border:1px solid #e1e4e8; border-radius:6px;" />
+              <div style="display:flex; gap:8px; margin-top:8px;">
+                <button type="button" id="detail-save-link" class="btn-calendario btn-primary-calendario btn-small">Guardar enlace</button>
+                <button type="button" id="detail-cancel-edit" class="btn-calendario btn-secondary-calendario btn-small">Cancelar</button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section class="drawer-section">
+      <section class="drawer-section" id="detail-asistencia-section" style="display:none;">
         <h4 class="drawer-section-title">Participantes</h4>
-        <select id="detail-participants" class="form-control-calendario" multiple size="5" disabled>
-          <option value="">(Se muestra solo como referencia)</option>
-        </select>
+        <p class="text-muted" style="font-size:12px;">Marca si el participante asistió o no a la reunión virtual.</p>
+        <div id="detail-asistencia-list" class="attendance-list"></div>
+        <div id="detail-asistencia-summary" class="attendance-summary" style="margin-top:16px; display:none;"></div>
       </section>
 
       <section class="drawer-section">
-        <h4 class="drawer-section-title">Descripción</h4>
-        <div id="detail-descripcion" class="drawer-description">--</div>
+        <h4 class="drawer-section-title">Participantes en la reunión</h4>
+        <ul id="detail-participants-names" class="participants-names"></ul>
       </section>
 
       <div class="drawer-actions">
