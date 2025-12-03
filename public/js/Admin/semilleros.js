@@ -270,4 +270,133 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     });
+
+document.addEventListener('DOMContentLoaded', () => {
+    const modalNuevo = document.getElementById('modalNuevoSemillero');
+    if (!modalNuevo) return;
+
+    const inputBuscar   = modalNuevo.querySelector('#buscarLiderNuevo');
+    const btnBuscar     = modalNuevo.querySelector('#btnBuscarLiderNuevo');
+    const resultadosBox = modalNuevo.querySelector('#resultadosLiderNuevo');
+
+    const inputIdLider  = modalNuevo.querySelector('#idLiderNuevo');
+    const inputNombreRO = modalNuevo.querySelector('#nuevoLiderNombreRO');
+    const inputCorreoRO = modalNuevo.querySelector('#nuevoLiderCorreoRO');
+
+    let searchTimeout = null;
+
+    function limpiarResultados() {
+        resultadosBox.innerHTML = '';
+    }
+
+    function seleccionarLider(lider) {
+        if (!lider) return;
+        inputIdLider.value  = lider.id;
+        inputNombreRO.value = `${lider.nombre} ${lider.apellidos}`.trim();
+        inputCorreoRO.value = lider.correo_lider || lider.email || '—';
+
+        // marcar visualmente seleccionado
+        Array.from(resultadosBox.children).forEach(el => el.classList.remove('active'));
+        const item = resultadosBox.querySelector(`[data-id="${lider.id}"]`);
+        if (item) item.classList.add('active');
+    }
+
+    function renderResultados(lista) {
+        limpiarResultados();
+
+        if (!lista || lista.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'list-group-item text-muted small';
+            empty.textContent = 'No se encontraron líderes disponibles para ese criterio.';
+            resultadosBox.appendChild(empty);
+            return;
+        }
+
+        lista.forEach(l => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'list-group-item list-group-item-action';
+            item.dataset.id = l.id;
+
+            const nombre = `${l.nombre} ${l.apellidos}`.trim();
+            const correo = l.correo_lider || l.email || '—';
+            const doc    = l.documento ? ` (${l.documento})` : '';
+
+            item.innerHTML = `
+                <div class="fw-semibold">${nombre}${doc}</div>
+                <div class="small text-muted">${correo}</div>
+            `;
+
+            item.addEventListener('click', () => seleccionarLider(l));
+            resultadosBox.appendChild(item);
+        });
+    }
+
+    async function buscarLider() {
+        const q = (inputBuscar.value || '').trim();
+        const url = btnBuscar.dataset.urlBuscarLider;
+        if (!url) return;
+
+        // opcional: si quieres evitar búsquedas vacías
+        // if (q.length < 2) {
+        //     limpiarResultados();
+        //     return;
+        // }
+
+        limpiarResultados();
+
+        const loading = document.createElement('div');
+        loading.className = 'list-group-item text-muted small';
+        loading.textContent = 'Buscando líderes disponibles...';
+        resultadosBox.appendChild(loading);
+
+        try {
+            const params = new URLSearchParams({ q });
+            const resp   = await fetch(`${url}?${params.toString()}`, {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!resp.ok) throw new Error('Error en la búsqueda');
+
+            const data = await resp.json();
+            renderResultados(data);
+        } catch (err) {
+            limpiarResultados();
+            const error = document.createElement('div');
+            error.className = 'list-group-item text-danger small';
+            error.textContent = 'Ocurrió un error al buscar líderes.';
+            resultadosBox.appendChild(error);
+            console.error(err);
+        }
+    }
+
+    // Click en botón "Buscar líder"
+    if (btnBuscar) {
+        btnBuscar.addEventListener('click', buscarLider);
+    }
+
+    // Búsqueda automática al escribir (con debounce)
+    if (inputBuscar) {
+        inputBuscar.addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(buscarLider, 400);
+        });
+    }
+
+    // Cuando se cierra el modal, limpiar selección
+    modalNuevo.addEventListener('hidden.bs.modal', () => {
+        inputBuscar.value   = '';
+        inputIdLider.value  = '';
+        inputNombreRO.value = '—';
+        inputCorreoRO.value = '—';
+        limpiarResultados();
+    });
+});
+
+
+
+
+
 });

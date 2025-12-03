@@ -538,22 +538,20 @@ document.addEventListener('DOMContentLoaded', () => {
         rolLabel.style.display = 'inline-block';
     }
 
-    function updateRequiredByRole(role) {
-        // quitar required a todos
-        [lsCorreo, lsSemillero, aprCorreo, aprSemillero].forEach(el => {
-            if (!el) return;
-            el.required = false;
-        });
+function updateRequiredByRole(role) {
+    [lsCorreo, lsSemillero, aprCorreo, aprSemillero].forEach(el => {
+        if (!el) return;
+        el.required = false;
+    });
 
-        if (role === 'LIDER_SEMILLERO') {
-            if (lsCorreo)    lsCorreo.required = true;
-            if (lsSemillero) lsSemillero.required = true;
-        } else if (role === 'APRENDIZ') {
-            if (aprCorreo)    aprCorreo.required = true;
-            if (aprSemillero) aprSemillero.required = true;
-        }
+    if (role === 'LIDER_SEMILLERO') {
+        if (lsCorreo) lsCorreo.required = true; // solo el correo es obligatorio
+        // ls_semillero_id pasa a ser OPCIONAL
+    } else if (role === 'APRENDIZ') {
+        if (aprCorreo)    aprCorreo.required = true;
+        if (aprSemillero) aprSemillero.required = true;
     }
-
+}
     function updateSaveState() {
         if (!btnSave) return;
         const role = selectRole.value;

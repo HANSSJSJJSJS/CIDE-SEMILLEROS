@@ -183,13 +183,12 @@ class UsuarioController extends Controller
 
             // Perfil LÍDER SEMILLERO
             'ls_correo_institucional' => ['nullable','email','max:160'],
-            'ls_semillero_id'         => [
-                'required_if:role,LIDER_SEMILLERO',
-                'integer',
-                Rule::exists('semilleros', 'id_semillero')
-                    ->whereNull('id_lider_semi'),
-            ],
-
+            'ls_semillero_id' => [
+            'nullable',
+            'integer',
+            Rule::exists('semilleros', 'id_semillero')
+                ->whereNull('id_lider_semi'),
+],
             // Perfil APRENDIZ
             'semillero_id'            => ['required_if:role,APRENDIZ','nullable','exists:semilleros,id_semillero'],
             'correo_institucional'    => ['nullable','email','max:160'],
@@ -565,7 +564,7 @@ class UsuarioController extends Controller
             if ($usuario->role === 'LIDER_SEMILLERO') {
                 // liberar semillero
                 DB::table('semilleros')
-                    ->where('id_lider_semi', $usuario->id)
+                    ->where('id_lider_se mi', $usuario->id)
                     ->update([
                         'id_lider_semi' => null,
                     ]);
