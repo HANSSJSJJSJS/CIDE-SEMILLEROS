@@ -1,0 +1,124 @@
+/* Calendario Admin - estilos unificados (Líder General)
+   Paleta: verde:#35A900, verde-oscuro:#007832, azul:#00304D, blanco:#ffffff, negro:#000000 */
+
+.cal-admin { --cal-green: #35A900; --cal-green-dark: #007832; --cal-blue: #00304D; --cal-white: #ffffff; --cal-black: #000000; --cal-bg: #F5F8FA; --cal-border: #E6EEF3; --cal-muted: #6B7280; --cal-shadow: 0 2px 6px rgba(0,0,0,.06); }
+
+.cal-admin { background: var(--cal-bg); }
+
+.cal-admin .header { background: transparent; margin: 16px 0 10px; }
+.cal-admin .header-top { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.cal-admin .header-top h1 { margin:0; color: var(--cal-blue); font-weight: 800; letter-spacing:.2px; }
+
+.cal-admin .view-switcher { display:flex; gap:8px; align-items:center; }
+.cal-admin .view-btn { appearance:none; border:1px solid var(--cal-border); background: var(--cal-white); color: var(--cal-blue); font-weight:600; padding:8px 14px; border-radius:20px; box-shadow: var(--cal-shadow); transition: all .15s ease; }
+.cal-admin .view-btn:hover { transform: translateY(-1px); }
+.cal-admin .view-btn.active { border-color: transparent; color: var(--cal-white); background: linear-gradient(135deg, var(--cal-green), var(--cal-green-dark)); }
+
+.cal-admin .header-controls { display:flex; align-items:center; justify-content:space-between; margin-top:12px; }
+.cal-admin .nav-controls { display:flex; gap:8px; align-items:center; }
+.cal-admin .nav-btn, .cal-admin .today-btn { border:1px solid var(--cal-border); background: var(--cal-white); color: var(--cal-blue); font-weight:600; padding:8px 12px; border-radius:10px; box-shadow: var(--cal-shadow); }
+.cal-admin .today-btn { color: var(--cal-white); background: linear-gradient(135deg, var(--cal-green), var(--cal-green-dark)); border-color: transparent; }
+.cal-admin #currentPeriod, .cal-admin #current-period { color: var(--cal-blue); font-weight:700; font-size:20px; }
+
+/* Encabezado semana (Mes) */
+.cal-admin .calendar-month { border-radius:12px; overflow:hidden; box-shadow: var(--cal-shadow); }
+.cal-admin .calendar-month .weekdays { display:grid; grid-template-columns: repeat(7,1fr); background: var(--cal-blue); color: var(--cal-white); }
+.cal-admin .calendar-month .weekday { padding:12px 10px; text-align:center; font-weight:700; letter-spacing:.3px; }
+
+/* Grilla de días */
+.cal-admin .days-grid { display:grid; grid-template-columns: repeat(7,1fr); background: var(--cal-white); border:1px solid var(--cal-border); border-top:none; }
+.cal-admin .days-grid > * { min-height:115px; border-right:1px solid var(--cal-border); border-bottom:1px solid var(--cal-border); padding:10px; position:relative; background: var(--cal-white); }
+.cal-admin .days-grid > *:nth-child(7n) { border-right:none; }
+
+/* Fecha en celda (si el render la incluye) */
+.cal-admin .day-number, .cal-admin .cell-date, .cal-admin .day-label { position:absolute; top:8px; left:10px; font-weight:700; color:#41566b; }
+.cal-admin .today .day-number, .cal-admin .is-today .day-number { background: rgba(0,120,50,.12); color: var(--cal-green-dark); border-radius:6px; padding:2px 6px; }
+
+/* Evento (chips) para todas las vistas conocidas */
+.cal-admin .event-chip,
+.cal-admin .week-event,
+.cal-admin .day-event { background: linear-gradient(135deg, var(--cal-green), var(--cal-green-dark)); color: var(--cal-white); border-radius:10px; padding:8px 10px; font-size:12px; font-weight:700; box-shadow: 0 2px 8px rgba(0,0,0,.08); border:1px solid rgba(0,0,0,.04); }
+
+/* Estado con evento */
+.cal-admin .has-event { background: #F3FFF6; }
+
+/* Vista Semana */
+.cal-admin .week-header { display:grid; grid-template-columns: 90px repeat(7, 1fr); align-items:center; background: var(--cal-blue); color: var(--cal-white); border-radius:12px 12px 0 0; overflow:hidden; }
+.cal-admin .week-time-label { padding:12px; font-weight:700; text-align:center; border-right:1px solid rgba(255,255,255,.12); }
+.cal-admin .week-day-header { padding:12px; text-align:center; font-weight:700; }
+.cal-admin .week-body { display:grid; grid-template-columns: 90px repeat(7, 1fr); background: var(--cal-white); border:1px solid var(--cal-border); border-top:none; }
+.cal-admin .week-time-row { display:contents; }
+.cal-admin .week-time-cell { padding:10px; font-weight:600; color: var(--cal-muted); border-right:1px solid var(--cal-border); border-bottom:1px solid var(--cal-border); background:#FAFCFF; }
+.cal-admin .week-hour-cell { min-height:64px; border-right:1px solid var(--cal-border); border-bottom:1px solid var(--cal-border); position:relative; }
+.cal-admin .week-hour-cell.blocked { background: #F2F5F7; opacity:.7; }
+.cal-admin .week-hour-cell.drag-over { outline:2px dashed var(--cal-green-dark); outline-offset:-4px; }
+
+/* Vista Día */
+.cal-admin .day-header { display:flex; align-items:center; gap:12px; background: var(--cal-blue); color: var(--cal-white); padding:12px 16px; border-radius:12px 12px 0 0; }
+.cal-admin .day-body { background: var(--cal-white); border:1px solid var(--cal-border); border-top:none; }
+.cal-admin .day-time-slot { display:grid; grid-template-columns: 90px 1fr; }
+.cal-admin .day-time-label { padding:12px; font-weight:600; color: var(--cal-muted); border-right:1px solid var(--cal-border); border-bottom:1px solid var(--cal-border); background:#FAFCFF; }
+.cal-admin .day-time-content { min-height:70px; padding:8px; border-bottom:1px solid var(--cal-border); }
+.cal-admin .day-time-content.blocked { background:#F2F5F7; opacity:.7; }
+.cal-admin .day-time-content.drag-over { outline:2px dashed var(--cal-green-dark); outline-offset:-4px; }
+
+/* Modal / Drawer (ventana flotante) */
+.cal-admin .modal-calendario { position: fixed; inset: 0; display:none; align-items:center; justify-content:center; padding:24px; background: rgba(0, 16, 26, .50); backdrop-filter: blur(2px); z-index: 1050; }
+.cal-admin .modal-calendario.active { display:flex; }
+.cal-admin .modal-content-calendario { width: 720px; max-width: 100%; max-height: calc(100vh - 96px); overflow: auto; background: var(--cal-white); border:1px solid var(--cal-border); border-radius: 16px; box-shadow: 0 24px 80px rgba(0,0,0,.25); }
+.cal-admin .modal-header-calendario { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 18px; border-bottom:1px solid #EEF3F6; position: sticky; top:0; background: var(--cal-white); z-index:1; }
+.cal-admin .modal-title-calendario { display:flex; align-items:center; gap:12px; margin:0; font-weight:800; color: var(--cal-blue); }
+.cal-admin .modal-title-calendario::before { content: "\f067"; font-family: "Font Awesome 6 Free"; font-weight: 900; width:28px; height:28px; border-radius:999px; background: linear-gradient(135deg, var(--cal-green), var(--cal-green-dark)); color: var(--cal-white); display:inline-flex; align-items:center; justify-content:center; font-size:14px; }
+.cal-admin .close-modal-calendario { appearance:none; border:1px solid var(--cal-border); background:#F2F5F7; color:#394b59; width:34px; height:34px; border-radius:8px; line-height:0; display:inline-flex; align-items:center; justify-content:center; font-size:20px; }
+.cal-admin .close-modal-calendario:hover { filter: brightness(.96); }
+
+/* Cuerpo del formulario */
+.cal-admin #event-form { padding:16px 18px 20px; }
+.cal-admin .form-group-calendario { margin-bottom:12px; }
+.cal-admin .form-group-calendario label { font-weight:700; color:#41566b; margin-bottom:6px; display:block; }
+.cal-admin .form-control-calendario, .cal-admin select.form-control-calendario, .cal-admin textarea.form-control-calendario { width:100%; border:1px solid var(--cal-border); background: var(--cal-white); color: var(--cal-blue); padding:10px 12px; border-radius:10px; outline:none; transition:border-color .15s, box-shadow .15s; }
+.cal-admin .form-control-calendario:focus { border-color: var(--cal-green-dark); box-shadow: 0 0 0 3px rgba(0,120,50,.12); }
+.cal-admin textarea.form-control-calendario { min-height:104px; resize: vertical; }
+
+/* Banner de fecha (estilo mockup) */
+.cal-admin .date-banner { display:flex; align-items:center; gap:14px; background: linear-gradient(135deg, rgba(53,169,0,.10), rgba(0,120,50,.10)); border:1px solid #CFEED8; border-radius:12px; padding:14px; margin-bottom:12px; }
+.cal-admin .date-badge { display:flex; flex-direction:column; align-items:center; justify-content:center; width:60px; height:60px; background: linear-gradient(135deg, var(--cal-green), var(--cal-green-dark)); color: var(--cal-white); border-radius:12px; font-weight:800; }
+.cal-admin .date-badge .day { font-size:18px; line-height:1; }
+.cal-admin .date-badge .month { font-size:11px; opacity:.95; margin-top:-2px; letter-spacing:.4px; }
+.cal-admin .date-text { color:#2b3e50; font-weight:800; }
+.cal-admin .date-sub { color:#4f6478; font-size:12px; }
+
+/* Acciones del formulario */
+.cal-admin .form-actions-calendario { display:flex; align-items:center; justify-content:flex-end; gap:10px; border-top:1px solid #EEF3F6; padding:12px 18px 16px; background: var(--cal-white); border-radius:0 0 16px 16px; position: sticky; bottom:0; }
+.cal-admin .btn-calendario { display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px; font-weight:700; }
+.cal-admin .btn-primary-calendario { background: linear-gradient(135deg, var(--cal-green), var(--cal-green-dark)); color: var(--cal-white); border:none; }
+.cal-admin .btn-secondary-calendario { background: var(--cal-white); color: var(--cal-blue); border:1px solid var(--cal-border); }
+
+/* Notificaciones */
+.cal-admin .notificacion { position:fixed; right:16px; bottom:16px; background: var(--cal-white); color: var(--cal-blue); border:1px solid var(--cal-border); border-radius:10px; padding:10px 14px; box-shadow: var(--cal-shadow); opacity:0; transform: translateY(8px); transition:.25s; display:flex; align-items:center; gap:8px; }
+.cal-admin .notificacion.show { opacity:1; transform: translateY(0); }
+.cal-admin .notificacion.notificacion-error { color: var(--cal-white); background: #ff4d4f; border-color: #ff6b6d; }
+
+/* Eventos en vista de mes (Admin JS usa .event) */
+.cal-admin .event { background: linear-gradient(135deg, var(--cal-green), var(--cal-green-dark)); color: var(--cal-white); border-radius:10px; padding:6px 8px; font-size:12px; font-weight:700; box-shadow: 0 2px 8px rgba(0,0,0,.08); border:1px solid rgba(0,0,0,.04); margin-top:6px; display:flex; align-items:center; gap:8px; }
+.cal-admin .event-time { background: rgba(255,255,255,.25); padding:2px 6px; border-radius:6px; font-weight:800; font-size:11px; }
+.cal-admin .event-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* Vista Semana (estructura Admin) */
+.cal-admin #weekHeader { display:grid; grid-template-columns: 90px repeat(7, 1fr); align-items:center; background: var(--cal-blue); color: var(--cal-white); border-radius:12px 12px 0 0; overflow:hidden; }
+.cal-admin #weekGrid { display:grid; grid-template-columns: 90px repeat(7, 1fr); background: var(--cal-white); border:1px solid var(--cal-border); border-top:none; }
+.cal-admin .week-times { display:flex; flex-direction:column; }
+.cal-admin .time-slot-label { padding:12px; font-weight:600; color: var(--cal-muted); border-right:1px solid var(--cal-border); border-bottom:1px solid var(--cal-border); background:#FAFCFF; }
+.cal-admin .week-day-column { position:relative; border-right:1px solid var(--cal-border); }
+.cal-admin .week-day-column:last-child { border-right:none; }
+.cal-admin .week-time-slot { height:60px; border-bottom:1px solid var(--cal-border); cursor:pointer; }
+.cal-admin .week-time-slot.disabled { background:#F2F5F7; opacity:.7; cursor:not-allowed; }
+.cal-admin .week-event, .cal-admin .day-event { position:absolute; left:6px; right:6px; }
+
+/* Vista Día (estructura Admin) */
+.cal-admin #dayHeader { display:flex; align-items:center; gap:12px; background: var(--cal-blue); color: var(--cal-white); padding:12px 16px; border-radius:12px 12px 0 0; }
+.cal-admin #dayGrid { display:grid; grid-template-columns: 90px 1fr; background: var(--cal-white); border:1px solid var(--cal-border); border-top:none; }
+.cal-admin .day-times .day-time-label { padding:12px; font-weight:600; color: var(--cal-muted); border-right:1px solid var(--cal-border); border-bottom:1px solid var(--cal-border); background:#FAFCFF; }
+.cal-admin .day-slots { position:relative; }
+.cal-admin .day-time-slot { height:80px; border-bottom:1px solid var(--cal-border); }
+.cal-admin .day-time-slot.disabled { background:#F2F5F7; opacity:.7; }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 
 class SemilleroController extends Controller
@@ -230,24 +231,57 @@ public function editAjax($id)
     // ============================================================
     public function destroy($id)
     {
-        DB::transaction(function () use ($id) {
+        try {
+            // 1) Bloquear si hay proyectos asociados
+            $tieneProyectos = Schema::hasTable('proyectos')
+                ? DB::table('proyectos')->where('id_semillero', $id)->exists()
+                : false;
 
-            // desasignar líder
-            DB::table('lideres_semillero')
-                ->where('id_semillero', $id)
-                ->update([
-                    'id_semillero'  => null,
-                    'actualizado_en'=> now(),
-                ]);
+            if ($tieneProyectos) {
+                return back()->with('error', 'No se puede eliminar el semillero porque tiene proyectos asociados. Elimina o reubica los proyectos primero.');
+            }
 
-            DB::table('semilleros')
-                ->where('id_semillero', $id)
-                ->delete();
-        });
+            DB::transaction(function () use ($id) {
+                // 2) Desasignar aprendices (1:N) si existe la columna
+                if (Schema::hasTable('aprendices') && Schema::hasColumn('aprendices', 'semillero_id')) {
+                    DB::table('aprendices')
+                        ->where('semillero_id', $id)
+                        ->update([
+                            'semillero_id'  => null,
+                            'actualizado_en'=> now(),
+                        ]);
+                }
 
-        return redirect()
-            ->route('admin.semilleros.index')
-            ->with('success', 'Semillero eliminado correctamente.');
+                // 2b) Si existiera tabla pivote aprendiz_semillero, limpiar
+                if (Schema::hasTable('aprendiz_semillero')) {
+                    DB::table('aprendiz_semillero')
+                        ->where('id_semillero', $id)
+                        ->delete();
+                }
+
+                // 3) Desasignar líder de este semillero (si lo hay)
+                if (Schema::hasTable('lideres_semillero')) {
+                    DB::table('lideres_semillero')
+                        ->where('id_semillero', $id)
+                        ->update([
+                            'id_semillero'  => null,
+                            'actualizado_en'=> now(),
+                        ]);
+                }
+
+                // 4) Eliminar semillero
+                DB::table('semilleros')
+                    ->where('id_semillero', $id)
+                    ->delete();
+            });
+
+            return redirect()
+                ->route('admin.semilleros.index')
+                ->with('success', 'Semillero eliminado correctamente.');
+
+        } catch (\Throwable $e) {
+            return back()->with('error', 'No se pudo eliminar el semillero: ' . $e->getMessage());
+        }
     }
 
     // ============================================================

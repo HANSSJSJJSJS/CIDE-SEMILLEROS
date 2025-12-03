@@ -266,6 +266,29 @@ document.addEventListener("DOMContentLoaded", () => {
             if (result.isConfirmed) {
                 if (form) {
                     form.submit();
+                } else if (url) {
+                    // Crear y enviar un formulario oculto con CSRF y método DELETE
+                    const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+                    const csrf = tokenMeta ? tokenMeta.getAttribute('content') : '';
+
+                    const f = document.createElement('form');
+                    f.method = 'POST';
+                    f.action = url;
+
+                    const iToken = document.createElement('input');
+                    iToken.type = 'hidden';
+                    iToken.name = '_token';
+                    iToken.value = csrf;
+                    f.appendChild(iToken);
+
+                    const iMethod = document.createElement('input');
+                    iMethod.type = 'hidden';
+                    iMethod.name = '_method';
+                    iMethod.value = 'DELETE';
+                    f.appendChild(iMethod);
+
+                    document.body.appendChild(f);
+                    f.submit();
                 }
             }
         });

@@ -30,6 +30,51 @@
     }
     return res.status === 204 ? null : res.json();
   }
+
+  // === Fecha (banner) ===
+  function updateDateBanner(dateStr) {
+    if (!dateStr) return;
+    const [y,m,d] = dateStr.split('-').map(Number);
+    const dt = new Date(y, (m||1)-1, d||1);
+    updateDateBannerFromDate(dt);
+  }
+
+  function updateDateBannerFromDate(dt) {
+    const banner = document.getElementById('date-banner');
+    if (!banner || !(dt instanceof Date)) return;
+    const dayEl   = document.getElementById('date-banner-day');
+    const monthEl = document.getElementById('date-banner-month');
+    const longEl  = document.getElementById('date-banner-long');
+
+    const MONTH_ABBR = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    const MONTH_LONG = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const WEEK_LONG  = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+
+    const dd = String(dt.getDate());
+    const mm = MONTH_ABBR[dt.getMonth()] || '';
+    const weekday = WEEK_LONG[dt.getDay()] || '';
+    const monthLong = MONTH_LONG[dt.getMonth()] || '';
+    const year = dt.getFullYear();
+    // Formato exacto del mockup: "Miércoles, 17 de diciembre 2025"
+    const long = `${capitalize(weekday)}, ${dd} de ${monthLong} ${year}`;
+
+    if (dayEl) dayEl.textContent = dd;
+    if (monthEl) monthEl.textContent = mm;
+    if (longEl) longEl.textContent = long;
+  }
+
+  function capitalize(s){ return (s||'').charAt(0).toUpperCase() + (s||'').slice(1); }
+
+  // === Filtro participantes ===
+  function filterParticipants(term) {
+    const sel = document.getElementById('event-participants');
+    if (!sel) return;
+    const q = (term || '').toLowerCase();
+    Array.from(sel.options).forEach(opt => {
+      const text = (opt.textContent || '').toLowerCase();
+      opt.hidden = q && !text.includes(q);
+    });
+  }
   const escapeHtml = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 
   // === Reglas de horario ===
@@ -61,14 +106,22 @@
   init();
   async function init() {
     await loadSemilleros();                       // llena el select de semilleros
+    await loadAllLeaders();                       // llena participantes con TODOS los líderes
     const selSem = document.getElementById('event-proyecto');
-    selSem?.addEventListener('change', (e) => {
+    selSem?.addEventListener('change', async (e) => {
       const id = e.target.value || '';
-      loadLideres(id);                            // trae líderes del semillero con correo
+      await markSemilleroLeaderSelected(id);      // selecciona automáticamente el líder del semillero
     });
 
     await loadEventsForCurrentPeriod();
     renderCalendar();
+
+    // Buscar participantes
+    const search = document.getElementById('participants-search');
+    if (search && !search.dataset.bound) {
+      search.addEventListener('input', () => filterParticipants(search.value));
+      search.dataset.bound = '1';
+    }
   }
 
   // === Semilleros & Líderes ===
@@ -114,6 +167,46 @@
     }
   }
 
+  // Cargar TODOS los líderes (para que el selector muestre la lista completa)
+  async function loadAllLeaders() {
+    const sel = document.getElementById('event-participants');
+    if (!sel) return;
+    if (!ROUTES.lideres) { console.error('Falta ROUTES.lideres'); return; }
+
+    sel.innerHTML = '<option>(Cargando líderes…)</option>';
+    try {
+      const { data } = await fetchJSON(ROUTES.lideres);
+      const items = Array.isArray(data) ? data : [];
+      sel.innerHTML = items.map(l => {
+        const label = `${escapeHtml(l.nombre || '')} — ${escapeHtml(l.email || '')}`;
+        return `<option value="${l.id}" data-email="${escapeHtml(l.email || '')}">${label}</option>`;
+      }).join('');
+    } catch (e) {
+      console.error('Todos los líderes:', e);
+      sel.innerHTML = '';
+    }
+  }
+
+  // Marca como seleccionado el líder del semillero
+  async function markSemilleroLeaderSelected(semilleroId) {
+    const sel = document.getElementById('event-participants');
+    if (!sel || !semilleroId) return;
+    if (!ROUTES.lideres) return;
+
+    try {
+      const url = new URL(ROUTES.lideres, window.location.origin);
+      url.searchParams.set('semillero_id', semilleroId);
+      const { data } = await fetchJSON(url.toString());
+      const leader = Array.isArray(data) ? data[0] : null;
+      if (leader) {
+        const opt = Array.from(sel.options).find(o => String(o.value) === String(leader.id));
+        if (opt) opt.selected = true; // no deselecciona otros
+      }
+    } catch (e) {
+      console.error('Seleccionar líder de semillero:', e);
+    }
+  }
+
   // === Listeners ===
   prevBtn?.addEventListener('click', async () => { navigatePeriod(-1); await loadEventsForCurrentPeriod(); renderCalendar(); });
   nextBtn?.addEventListener('click', async () => { navigatePeriod( 1); await loadEventsForCurrentPeriod(); renderCalendar(); });
@@ -152,7 +245,7 @@
         const hh  = String(d.getHours()).padStart(2,'0');
         const mm  = String(d.getMinutes()).padStart(2,'0');
         return {
-          id: ev.id,
+          id: ev.id_evento,
           date: yyyy,
           time: `${hh}:${mm}`,
           title: ev.titulo,
@@ -473,6 +566,12 @@
       dateInput.setAttribute('min', todayStr);
       const d = isPastDay(date) ? new Date() : date;
       dateInput.value = formatDate(d);
+      // Actualizar banner de fecha
+      updateDateBannerFromDate(d);
+      if (!dateInput.dataset.bannerBound) {
+        dateInput.addEventListener('change', () => updateDateBanner(dateInput.value));
+        dateInput.dataset.bannerBound = '1';
+      }
     }
 
     if (timeInput) {
@@ -678,6 +777,7 @@
     const descInput  = document.getElementById('event-description');
 
     if (dateInput)  { dateInput.setAttribute('min', formatDate(new Date())); dateInput.value = event.date; }
+    if (dateInput && dateInput.value) { updateDateBanner(dateInput.value); }
     if (timeInput)  timeInput.value  = event.time;
     if (titleInput) titleInput.value = event.title;
     if (durationInput) durationInput.value = event.duration;
