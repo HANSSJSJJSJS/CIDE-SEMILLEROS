@@ -180,27 +180,6 @@
                         </div>
 
                         <div class="mt-4">
-                            <h6 class="fw-bold mb-2">Crear Nuevo Aprendiz</h6>
-                            <div class="row g-2">
-                                <div class="col-md-6">
-                                    <label class="form-label">Nombres</label>
-                                    <input id="nombres-{{ $loop->index }}" type="text" class="form-control" placeholder="Nombres del aprendiz">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Apellidos</label>
-                                    <input id="apellidos-{{ $loop->index }}" type="text" class="form-control" placeholder="Apellidos del aprendiz">
-                                </div>
-                                <div class="col-md-12">
-                                    <label class="form-label">Correo Institucional (opcional)</label>
-                                    <input id="correo-{{ $loop->index }}" type="email" class="form-control" placeholder="correo@sena.edu.co">
-                                </div>
-                            </div>
-                            <button type="button" id="btn-crear-{{ $loop->index }}" class="btn btn-success btn-sm mt-2">
-                                <i class="bi bi-plus-circle me-1"></i>Crear y Agregar
-                            </button>
-                        </div>
-
-                        <div class="mt-4">
                             <h6 class="fw-bold mb-2">Aprendices Actuales</h6>
                             <div id="lista-asignados-{{ $loop->index }}" class="vstack gap-2">
                                 @php

@@ -27,13 +27,19 @@
                         @csrf
                         <div class="mb-4">
                             <label class="form-label fw-bold">Nombre completo</label>
-                            <input type="text" name="name" class="form-control pill-input @error('name') is-invalid @enderror" value="{{ old('name', Auth::user()->name) }}" required>
+                            @php
+                                $nombreCompleto = trim(($user->nombre ?? '').' '.($user->apellidos ?? ''));
+                                if ($nombreCompleto === '') {
+                                    $nombreCompleto = $user->name ?? '';
+                                }
+                            @endphp
+                            <input type="text" name="name" class="form-control pill-input @error('name') is-invalid @enderror" value="{{ old('name', $nombreCompleto) }}" required>
                             @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
                         <div class="mb-4">
                             <label class="form-label fw-bold">Correo Electrónico</label>
-                            <input type="email" name="email" class="form-control pill-input @error('email') is-invalid @enderror" value="{{ old('email', Auth::user()->email) }}" required>
+                            <input type="email" name="email" class="form-control pill-input @error('email') is-invalid @enderror" value="{{ old('email', $user->email) }}" required>
                             @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
@@ -47,7 +53,7 @@
                         </div>
                     </form>
 
-                    
+
 
                 </div>
             </div>

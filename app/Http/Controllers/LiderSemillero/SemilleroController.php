@@ -616,15 +616,24 @@ class SemilleroController extends Controller
     public function attachAprendiz(Request $request, $semilleroId)
     {
         $data = $request->validate([
-            'aprendiz_id' => ['required','integer','exists:aprendices,id_usuario'],
+            // El modal envía el id_aprendiz (PK de la tabla aprendices)
+            'aprendiz_id' => ['required','integer','exists:aprendices,id_aprendiz'],
         ]);
         $semillero = Semillero::where('id_semillero', $semilleroId)->firstOrFail();
+        // La relación many-to-many usa id_aprendiz en la pivote
         $semillero->aprendices()->syncWithoutDetaching([$data['aprendiz_id']]);
         if (Schema::hasColumn('semilleros','aprendices')) {
             $semillero->aprendices = $semillero->aprendices()->count();
             $semillero->save();
         }
-        $ap = Aprendiz::select('id_aprendiz',DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo"),'correo_institucional','programa')->find($data['aprendiz_id']);
+        $ap = Aprendiz::select(
+                'id_aprendiz',
+                DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo"),
+                'correo_institucional',
+                'programa'
+            )
+            ->where('id_aprendiz', $data['aprendiz_id'])
+            ->first();
         return response()->json(['ok'=>true,'aprendiz'=>$ap]);
     }
 

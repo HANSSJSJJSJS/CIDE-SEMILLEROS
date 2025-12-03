@@ -26,11 +26,12 @@ class Proyecto extends Model
         'fecha_fin',
     ];
 
-    protected $dates = [
-        'fecha_inicio',
-        'fecha_fin',
-        'creado_en',
-        'actualizado_en'
+    // Casts para que las fechas se traten como instancias de fecha/datetime
+    protected $casts = [
+        'fecha_inicio' => 'date',
+        'fecha_fin'    => 'date',
+        'creado_en'    => 'datetime',
+        'actualizado_en' => 'datetime',
     ];
 
     /** ---------------------------------------------------------

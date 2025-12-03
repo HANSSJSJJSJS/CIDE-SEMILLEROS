@@ -78,10 +78,35 @@
             <i class="bi bi-bell fs-5"></i>
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
           </button>
+          @php
+            $lsUser = Auth::user();
+            $lsDisplayName = trim($lsUser->name ?? '');
+            if (class_exists('Illuminate\\Support\\Facades\\Schema') && class_exists('Illuminate\\Support\\Facades\\DB')) {
+                if (\Illuminate\Support\Facades\Schema::hasTable('lideres_semillero')) {
+                    $lsProfile = \Illuminate\Support\Facades\DB::table('lideres_semillero')->where('id_usuario', $lsUser->id)->first();
+                    if ($lsProfile) {
+                        $lsDisplayName = trim(($lsProfile->nombres ?? '').' '.($lsProfile->apellidos ?? '')) ?: $lsDisplayName;
+                    }
+                }
+            }
+            if ($lsDisplayName === '' && !empty($lsUser->email)) {
+                $lsDisplayName = $lsUser->email;
+            }
+            $lsParts = preg_split('/\s+/', $lsDisplayName) ?: [];
+            $lsInitials = '';
+            foreach ($lsParts as $part) {
+                if ($part === '') continue;
+                $lsInitials .= mb_substr($part, 0, 1);
+                if (mb_strlen($lsInitials) >= 2) break;
+            }
+            if ($lsInitials === '' && $lsDisplayName !== '') {
+                $lsInitials = mb_substr($lsDisplayName, 0, 1);
+            }
+          @endphp
 
-          <div class="avatar">{{ strtoupper(substr(Auth::user()->name ?? 'LS', 0, 2)) }}</div>
+          <div class="avatar">{{ strtoupper($lsInitials ?: 'LS') }}</div>
           <div class="me-2 text-end d-none d-sm-block">
-            <div class="fw-semibold">{{ Auth::user()->name }}</div>
+            <div class="fw-semibold">{{ $lsDisplayName }}</div>
             <small class="opacity-75">Líder de Semillero</small>
           </div>
 

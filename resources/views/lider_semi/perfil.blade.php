@@ -26,7 +26,7 @@
         <div class="row g-3">
             <div class="col-md-6">
                 <label class="form-label">Nombres</label>
-                <input type="text" class="form-control form-input" value="{{ $user?->name }}" disabled>
+                <input type="text" class="form-control form-input" value="{{ $user?->nombre }}" disabled>
             </div>
             <div class="col-md-6">
                 <label class="form-label">Apellidos</label>
@@ -34,11 +34,11 @@
             </div>
             <div class="col-md-6">
                 <label class="form-label">Tipo de Documento</label>
-                <input type="text" class="form-control form-input" value="{{ $lider?->tipo_documento ?? '—' }}" disabled>
+                <input type="text" class="form-control form-input" value="{{ $user?->tipo_documento ?? '—' }}" disabled>
             </div>
             <div class="col-md-6">
                 <label class="form-label">Número de Documento</label>
-                <input type="text" class="form-control form-input" value="{{ $lider?->documento ?? '—' }}" disabled>
+                <input type="text" class="form-control form-input" value="{{ $user?->documento ?? '—' }}" disabled>
             </div>
         </div>
     </div>

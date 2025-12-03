@@ -61,8 +61,8 @@ class User extends Authenticatable
 
     public function liderSemillero()
     {
-        // id_lider_semi == users.id
-        return $this->hasOne(LiderSemillero::class, 'id_lider_semi', 'id');
+        // Tabla lideres_semillero: id_usuario -> users.id
+        return $this->hasOne(LiderSemillero::class, 'id_usuario', 'id');
     }
 
     public function aprendiz()

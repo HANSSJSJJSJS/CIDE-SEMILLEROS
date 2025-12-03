@@ -219,6 +219,42 @@ class ProyectoController extends Controller
 
     private function proyectoIdsUsuario(int $userId): array
     {
+        // Caso directo para el esquema más común: tabla aprendiz_proyecto + aprendices
+        if (Schema::hasTable('aprendiz_proyecto') && Schema::hasTable('aprendices')) {
+            try {
+                $aprTbl = 'aprendices';
+                $aprPkCol = Schema::hasColumn($aprTbl,'id_aprendiz') ? 'id_aprendiz' : (Schema::hasColumn($aprTbl,'id') ? 'id' : null);
+                $aprUserFk = null;
+                foreach (['id_usuario','user_id','id_user'] as $cand) {
+                    if (Schema::hasColumn($aprTbl,$cand)) { $aprUserFk = $cand; break; }
+                }
+                if ($aprPkCol && $aprUserFk && Schema::hasColumn('aprendiz_proyecto','id_aprendiz') && Schema::hasColumn('aprendiz_proyecto','id_proyecto')) {
+                    $aprId = DB::table($aprTbl)->where($aprUserFk, $userId)->value($aprPkCol);
+                    if ($aprId) {
+                        $ids = DB::table('aprendiz_proyecto')
+                            ->where('id_aprendiz', $aprId)
+                            ->distinct()
+                            ->pluck('id_proyecto')
+                            ->map(fn($v)=> (int)$v)
+                            ->all();
+                        if (!empty($ids)) {
+                            Log::info('Aprendiz/ProyectoController@proyectoIdsUsuario direct aprendiz_proyecto', [
+                                'user_id' => $userId,
+                                'aprendiz_id' => $aprId,
+                                'ids' => $ids,
+                            ]);
+                            return $ids;
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Aprendiz/ProyectoController@proyectoIdsUsuario direct aprendiz_proyecto error', [
+                    'user_id' => $userId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         // Intentar con pivotes conocidas
         $pivotTables = ['proyecto_user', 'aprendiz_proyecto', 'aprendices_proyectos', 'aprendiz_proyectos', 'proyecto_aprendiz', 'proyectos_aprendices', 'proyecto_aprendices'];
         $projCols   = ['id_proyecto','proyecto_id','idProyecto'];

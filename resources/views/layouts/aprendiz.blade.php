@@ -97,9 +97,31 @@
             </div>
           </div>
 
-          <div class="avatar">{{ strtoupper(substr(Auth::user()->name ?? 'AP', 0, 2)) }}</div>
+          @php
+            $apUser = Auth::user();
+            // Intentar usar nombre + apellidos registrados en users
+            $apDisplayName = trim(($apUser->nombre ?? '').' '.($apUser->apellidos ?? ''));
+            if ($apDisplayName === '') {
+                $apDisplayName = trim($apUser->name ?? '');
+            }
+            if ($apDisplayName === '' && !empty($apUser->email)) {
+                $apDisplayName = $apUser->email;
+            }
+            $apParts = preg_split('/\s+/', $apDisplayName) ?: [];
+            $apInitials = '';
+            foreach ($apParts as $part) {
+                if ($part === '') continue;
+                $apInitials .= mb_substr($part, 0, 1);
+                if (mb_strlen($apInitials) >= 2) break;
+            }
+            if ($apInitials === '' && $apDisplayName !== '') {
+                $apInitials = mb_substr($apDisplayName, 0, 1);
+            }
+          @endphp
+
+          <div class="avatar">{{ strtoupper($apInitials ?: 'AP') }}</div>
           <div class="me-2 text-end d-none d-sm-block">
-            <div class="fw-semibold">{{ Auth::user()->name }}</div>
+            <div class="fw-semibold">{{ $apDisplayName }}</div>
             <small class="opacity-75">Aprendiz</small>
           </div>
 

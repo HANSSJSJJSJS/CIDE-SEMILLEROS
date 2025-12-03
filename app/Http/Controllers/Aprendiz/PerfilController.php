@@ -50,7 +50,14 @@ class PerfilController extends Controller
         ]);
 
         $user = User::findOrFail(Auth::id());
-        $user->name = $request->name;
+        $fullName = trim($request->name);
+        $user->name = $fullName;
+        // Sincronizar con columnas nombre / apellidos de la tabla users
+        if ($fullName !== '') {
+            $parts = preg_split('/\s+/', $fullName);
+            $user->nombre = $parts[0] ?? null;
+            $user->apellidos = isset($parts[1]) ? implode(' ', array_slice($parts, 1)) : null;
+        }
         $user->email = $request->email;
         $user->save();
 
