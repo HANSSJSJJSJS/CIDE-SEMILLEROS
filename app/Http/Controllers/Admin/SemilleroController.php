@@ -182,49 +182,68 @@ public function editAjax($id)
     // ============================================================
     // ACTUALIZAR
     // ============================================================
-    public function update(Request $request, $id)
-    {
-        $data = $request->validate([
-            'nombre'             => 'required|string|max:255|unique:semilleros,nombre,' . $id . ',id_semillero',
-            'linea_investigacion'=> 'required|string|max:255',
-            'id_lider_semi'      => 'nullable|exists:lideres_semillero,id_lider_semi',
-        ]);
+   public function update(Request $request, $id)
+{
+    // Validación básica
+    $data = $request->validate([
+        'nombre'             => 'required|string|max:255|unique:semilleros,nombre,' . $id . ',id_semillero',
+        'linea_investigacion'=> 'required|string|max:255',
+        'id_lider_semi'      => 'nullable|exists:lideres_semillero,id_lider_semi',
+    ]);
 
-        DB::transaction(function () use ($data, $id) {
+    // Semillero actual (para saber el líder viejo)
+    $semillero = DB::table('semilleros')
+        ->where('id_semillero', $id)
+        ->first();
 
-            // limpiar cualquier líder que tuviera este semillero
+    if (! $semillero) {
+        return redirect()
+            ->route('admin.semilleros.index')
+            ->with('error', 'Semillero no encontrado.');
+    }
+
+    $oldLiderId = $semillero->id_lider_semi;                     // líder actual en BD
+    $hasNewLider = $request->filled('id_lider_semi');            // ¿el form trae un nuevo líder?
+    $newLiderId  = $hasNewLider ? $data['id_lider_semi'] : $oldLiderId; // si no se envía, mantener el viejo
+
+    DB::transaction(function () use ($data, $id, $oldLiderId, $newLiderId) {
+
+        // 1) Si el líder cambió, liberar al viejo
+        if ($oldLiderId && $oldLiderId != $newLiderId) {
             DB::table('lideres_semillero')
-                ->where('id_semillero', $id)
+                ->where('id_lider_semi', $oldLiderId)
                 ->update([
                     'id_semillero'  => null,
                     'actualizado_en'=> now(),
                 ]);
+        }
 
-            // actualizar semillero
-            DB::table('semilleros')
-                ->where('id_semillero', $id)
+        // 2) Actualizar datos del semillero
+        DB::table('semilleros')
+            ->where('id_semillero', $id)
+            ->update([
+                'nombre'             => $data['nombre'],
+                'linea_investigacion'=> $data['linea_investigacion'],
+                'id_lider_semi'      => $newLiderId,   // puede ser null o el mismo de antes
+                'updated_at'         => now(),
+            ]);
+
+        // 3) Si hay nuevo líder (y cambió), asignarlo a este semillero
+        if ($newLiderId && $newLiderId != $oldLiderId) {
+            DB::table('lideres_semillero')
+                ->where('id_lider_semi', $newLiderId)
                 ->update([
-                    'nombre'             => $data['nombre'],
-                    'linea_investigacion'=> $data['linea_investigacion'],
-                    'id_lider_semi'      => $data['id_lider_semi'] ?? null,
-                    'updated_at'         => now(),
+                    'id_semillero'  => $id,
+                    'actualizado_en'=> now(),
                 ]);
+        }
+    });
 
-            // asignar nuevo líder si viene
-            if (!empty($data['id_lider_semi'])) {
-                DB::table('lideres_semillero')
-                    ->where('id_lider_semi', $data['id_lider_semi'])
-                    ->update([
-                        'id_semillero'  => $id,
-                        'actualizado_en'=> now(),
-                    ]);
-            }
-        });
+    return redirect()
+        ->route('admin.semilleros.index')
+        ->with('success', 'Semillero actualizado correctamente.');
+}
 
-        return redirect()
-            ->route('admin.semilleros.index')
-            ->with('success', 'Semillero actualizado correctamente.');
-    }
 
     // ============================================================
     // ELIMINAR

@@ -411,3 +411,22 @@
 #apr-steps-nav {
     margin-top: 15px;
 }
+.input-locked {
+    background-color: #e9ecef !important;
+    border: 1px solid #ced4da !important;
+    color: #6c757d !important;
+    cursor: not-allowed !important;
+    opacity: 1 !important;
+}
+
+.input-locked::placeholder {
+    color: #a0a0a0 !important;
+}
+
+.label-locked::after {
+    content: " (bloqueado)";
+    color: #dc3545;
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-left: 4px;
+}
