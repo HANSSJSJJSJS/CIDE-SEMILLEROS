@@ -1,107 +1,287 @@
-{{-- MODAL EDITAR SEMILLERO --}}
-<div class="modal fade" id="modalEditarSemillero" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
+{{-- resources/views/admin/usuarios/_modal_editar.blade.php --}}
+@php
+    // Solo para mostrar etiquetas de rol en el badge (lo llena JS)
+    $rolesLabels = [
+        'ADMIN'               => 'Líder general',
+        'LIDER_SEMILLERO'     => 'Líder de semillero',
+        'LIDER_INVESTIGACION' => 'Líder de investigación',
+        'APRENDIZ'            => 'Aprendiz',
+    ];
+@endphp
 
-      <div class="modal-header">
-        <h5 class="modal-title">Editar Semillero</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
+<div class="modal fade"
+     id="modalEditarUsuario"
+     tabindex="-1"
+     aria-hidden="true"
+     data-bs-backdrop="static"
+     data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
 
-      <form
-        id="formEditarSemillero"
-        method="POST"
-        action=""   {{-- la llenamos en JS --}}
-        class="needs-validation"
-        novalidate
-      >
-        @csrf
-        @method('PUT')   {{-- IMPORTANTE para que la ruta update funcione --}}
+            {{-- HEADER --}}
+            <div class="modal-header">
+                <div class="d-flex flex-column flex-md-row w-100 justify-content-between align-items-md-center">
+                    <div>
+                        <h4 class="modal-title mb-1">
+                            <i class="bi bi-pencil-square"></i>
+                            Editar usuario
+                        </h4>
+                        <small class="text-muted">
+                            Algunos datos básicos están bloqueados y solo pueden modificarse por el administrador del sistema.
+                        </small>
+                    </div>
 
-        <div class="modal-body">
+                    <div class="text-md-end">
+                        <span class="small text-muted d-block">Rol</span>
+                        <span id="editar-rol-label"
+                              class="badge bg-primary fs-6 px-3 py-2">
+                            {{-- Lo rellena JS --}}
+                        </span>
+                    </div>
+                </div>
 
-          <div class="row g-3">
-            {{-- Nombre --}}
-            <div class="col-md-6">
-              <label class="form-label">Nombre del semillero</label>
-              <input
-                type="text"
-                id="editNombre"
-                name="nombre"
-                class="form-control"
-                required
-                autocomplete="off"
-                spellcheck="false"
-              >
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
-            {{-- Línea --}}
-            <div class="col-md-6">
-              <label class="form-label">Línea de investigación</label>
-              <input
-                type="text"
-                id="editLinea"
-                name="linea_investigacion"
-                class="form-control"
-                required
-                autocomplete="off"
-                spellcheck="false"
-              >
-            </div>
+            {{-- FORM --}}
+            <form id="formEditarUsuario"
+                  method="POST"
+                  action=""   {{-- la action la pone JS /admin/usuarios/{id} --}}
+                  class="needs-validation"
+                  novalidate
+                  autocomplete="off">
+                @csrf
+                @method('PUT')
 
-            {{-- Líder asignado (solo lectura) --}}
-            <div class="col-md-6">
-              <label class="form-label">Líder asignado</label>
-              <input
-                type="text"
-                id="liderNombreRO"
-                class="form-control"
-                readonly
-              >
-            </div>
+                <div class="modal-body" style="max-height: calc(100vh - 260px); overflow-y: auto;">
 
-            <div class="col-md-6">
-              <label class="form-label">Correo líder</label>
-              <input
-                type="text"
-                id="liderCorreoRO"
-                class="form-control"
-                readonly
-              >
-            </div>
+                    {{-- ================= DATOS BÁSICOS (SOLO LECTURA) ================= --}}
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <h6 class="fw-semibold mb-3">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Datos básicos del usuario
+                            </h6>
 
-            {{-- Hidden con el id del líder --}}
-            <input type="hidden" id="editIdLider" name="id_lider_semi">
-          </div>
+                            <div class="row g-3">
 
-          {{-- buscador de líder (esto ya lo tienes) --}}
-          {{-- ... --}}
+                                {{-- Tipo documento (RO) --}}
+                                <div class="col-md-3">
+                                    <label class="form-label">Tipo de documento</label>
+                                    <input type="text"
+                                           id="edit_tipo_documento"
+                                           class="form-control form-control-sm bg-light text-muted border-0"
+                                           readonly>
+                                </div>
 
+                                {{-- Documento (RO) --}}
+                                <div class="col-md-3">
+                                    <label class="form-label">Número de documento</label>
+                                    <input type="text"
+                                           id="edit_documento"
+                                           class="form-control form-control-sm bg-light text-muted border-0"
+                                           readonly>
+                                </div>
+
+                                {{-- Nombres (RO) --}}
+                                <div class="col-md-3">
+                                    <label class="form-label">Nombres</label>
+                                    <input type="text"
+                                           id="edit_nombre"
+                                           class="form-control form-control-sm bg-light text-muted border-0"
+                                           readonly>
+                                </div>
+
+                                {{-- Apellidos (RO) --}}
+                                <div class="col-md-3">
+                                    <label class="form-label">Apellidos</label>
+                                    <input type="text"
+                                           id="edit_apellidos"
+                                           class="form-control form-control-sm bg-light text-muted border-0"
+                                           readonly>
+                                </div>
+
+                                {{-- Género (RO) --}}
+                                <div class="col-md-3">
+                                    <label class="form-label">Género</label>
+                                    <input type="text"
+                                           id="edit_genero"
+                                           class="form-control form-control-sm bg-light text-muted border-0"
+                                           readonly>
+                                </div>
+
+                                {{-- Tipo RH (RO) --}}
+                                <div class="col-md-3">
+                                    <label class="form-label">Tipo de RH</label>
+                                    <input type="text"
+                                           id="edit_tipo_rh"
+                                           class="form-control form-control-sm bg-light text-muted border-0"
+                                           readonly>
+                                </div>
+
+                                {{-- Celular (EDITABLE) --}}
+                                <div class="col-md-3">
+                                    <label class="form-label">
+                                        Celular <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text"
+                                           name="celular"
+                                           id="edit_celular"
+                                           class="form-control"
+                                           required>
+                                    <div class="invalid-feedback">Ingrese el celular.</div>
+                                </div>
+
+                                {{-- Correo personal / acceso (EDITABLE) --}}
+                                <div class="col-md-3">
+                                    <label class="form-label">
+                                        Correo de acceso <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="email"
+                                           name="email"
+                                           id="edit_email"
+                                           class="form-control"
+                                           required>
+                                    <div class="invalid-feedback">Ingrese un correo válido.</div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ============ BLOQUE LÍDER / LÍDER INVESTIGACIÓN (INSTITUCIONAL) ============ --}}
+                    <div id="editar-bloque-lider" class="card border-0 shadow-sm mb-3 d-none">
+                        <div class="card-body">
+                            <h6 class="fw-semibold mb-3">
+                                <i class="bi bi-building me-1"></i>
+                                Información institucional del líder
+                            </h6>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">
+                                        Correo institucional <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="email"
+                                           name="ls_correo_institucional"
+                                           id="edit_ls_correo_institucional"
+                                           class="form-control">
+                                    <div class="invalid-feedback">Ingrese el correo institucional.</div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Semillero que lidera</label>
+                                    <input type="text"
+                                           id="edit_ls_semillero_nombre"
+                                           class="form-control form-control-sm bg-light text-muted border-0"
+                                           readonly>
+                                    {{-- Si luego quieres permitir cambiar el semillero, aquí
+                                         podrías sustituir por un <select>. --}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ===================== BLOQUE APRENDIZ ===================== --}}
+                    <div id="editar-bloque-aprendiz" class="card border-0 shadow-sm mb-3 d-none">
+                        <div class="card-body">
+                            <h6 class="fw-semibold mb-3">
+                                <i class="bi bi-mortarboard me-1"></i>
+                                Información del aprendiz
+                            </h6>
+
+                            <div class="row g-3">
+                                {{-- Semillero (RO) --}}
+                                <div class="col-md-6">
+                                    <label class="form-label">Semillero</label>
+                                    <input type="text"
+                                           id="edit_ap_semillero_nombre"
+                                           class="form-control form-control-sm bg-light text-muted border-0"
+                                           readonly>
+                                </div>
+
+                                {{-- Correo institucional (EDITABLE) --}}
+                                <div class="col-md-6">
+                                    <label class="form-label">
+                                        Correo institucional <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="email"
+                                           name="correo_institucional"
+                                           id="edit_ap_correo_institucional"
+                                           class="form-control">
+                                    <div class="invalid-feedback">Ingrese el correo institucional.</div>
+                                </div>
+
+                                {{-- Nivel educativo (RO) --}}
+                                <div class="col-md-4">
+                                    <label class="form-label">Nivel educativo</label>
+                                    <input type="text"
+                                           id="edit_ap_nivel_educativo"
+                                           class="form-control form-control-sm bg-light text-muted border-0"
+                                           readonly>
+                                </div>
+
+                                {{-- Ficha (RO) --}}
+                                <div class="col-md-4">
+                                    <label class="form-label">Ficha</label>
+                                    <input type="text"
+                                           id="edit_ap_ficha"
+                                           class="form-control form-control-sm bg-light text-muted border-0"
+                                           readonly>
+                                </div>
+
+                                {{-- Programa (RO) --}}
+                                <div class="col-md-4">
+                                    <label class="form-label">Programa</label>
+                                    <input type="text"
+                                           id="edit_ap_programa"
+                                           class="form-control form-control-sm bg-light text-muted border-0"
+                                           readonly>
+                                </div>
+
+                                {{-- Institución (RO cuando no es SENA) --}}
+                                <div class="col-md-6">
+                                    <label class="form-label">Institución</label>
+                                    <input type="text"
+                                           id="edit_ap_institucion"
+                                           class="form-control form-control-sm bg-light text-muted border-0"
+                                           readonly>
+                                </div>
+
+                                {{-- Contacto emergencia (EDITABLE) --}}
+                                <div class="col-md-6">
+                                    <label class="form-label">Nombre contacto de emergencia</label>
+                                    <input type="text"
+                                           name="contacto_nombre"
+                                           id="edit_ap_contacto_nombre"
+                                           class="form-control">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Celular contacto de emergencia</label>
+                                    <input type="text"
+                                           name="contacto_celular"
+                                           id="edit_ap_contacto_celular"
+                                           class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>{{-- /modal-body --}}
+
+                {{-- FOOTER --}}
+                <div class="modal-footer justify-content-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Guardar cambios
+                    </button>
+                </div>
+
+            </form>
         </div>
-
-        {{-- FOOTER --}}
-        <div class="modal-footer">
-          <button type="button" class="btn btn-user-secondary" data-bs-dismiss="modal">
-            Cancelar
-          </button>
-
-          <button type="submit" class="btn btn-user-primary">
-            <i class="bi bi-check-circle me-1"></i> Guardar cambios
-          </button>
-        </div>
-
-        <small class="text-muted">
-          Si lo dejas vacío, la contraseña no se modificará.
-        </small>
-
-        {{-- Aquí podrías agregar secciones extra para:
-             - Datos de líder de semillero (correo institucional, semillero)
-             - Datos de aprendiz (ficha, programa, nivel_educativo, etc.)
-           si quieres editar también el perfil. --}}
-
-      </form>
-
     </div>
-  </div>
 </div>
-

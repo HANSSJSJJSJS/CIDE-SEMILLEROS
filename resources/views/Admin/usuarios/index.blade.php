@@ -158,18 +158,18 @@
                         <td class="py-3 text-end pe-4">
                             <div class="acciones-semilleros">
 
-                                {{-- EDITAR --}}
-                                @if($canUpdate)
-                                   <button type="button"
+                                                {{-- EDITAR --}}
+                            @if($canUpdate)
+                                <button type="button"
                                         class="btn btn-accion-editar btn-editar-usuario"
                                         data-user-id="{{ $u->id }}"
                                         data-bs-toggle="modal"
-                                        data-bs-target="#modalEditarUsuario{{ $u->id }}">
+                                        data-bs-target="#modalEditarUsuario">
                                     <i class="bi bi-pencil"></i> Editar
-                                    </button>
-                                @endif
+                                </button>
+                            @endif
 
-                                {{-- PERMISOS INVESTIGACIÓN --}}
+                                                            {{-- PERMISOS INVESTIGACIÓN --}}
                                 @if(auth()->user()->role === 'ADMIN'
                                     && $u->role === 'LIDER_INVESTIGACION'
                                     && auth()->id() !== $u->id)
@@ -194,14 +194,12 @@
                                     </form>
                                 @endif
 
-                                {{-- ELIMINAR + VER DATOS --}}
+                                                            {{-- ELIMINAR + VER DATOS --}}
                                 @if($canDelete)
                                     <form method="POST"
-                                          action="{{ route('admin.usuarios.destroy', $u->id) }}"
-                                          class="needs-confirmation"
-                                          data-message="¿Deseas eliminar este usuario? Esta acción no se puede deshacer."
-                                          data-confirm-text="Sí, eliminar"
-                                          data-cancel-text="Cancelar">
+                                        action="{{ route('admin.usuarios.destroy', $u->id) }}"
+                                        class="form-eliminar-usuario"
+                                        data-user-name="{{ $nombreCompleto }}">
                                         @csrf
                                         @method('DELETE')
 
@@ -218,12 +216,10 @@
                                     </form>
                                 @endif
 
+
                             </div>
                         </td>
                     </tr>
-
-                    {{-- MODAL EDITAR POR USUARIO --}}
-                    @include('admin.usuarios._modal_editar', ['usuario' => $u])
 
                 @empty
                     <tr>
@@ -255,7 +251,12 @@
     @include('admin.usuarios._modal_crear')
 @endif
 
-@endsection   {{-- <-- único cierre de section --}}
+{{-- 🔹 UN SOLO MODAL EDITAR USUARIO GLOBAL --}}
+@if($canUpdate)
+    @include('admin.usuarios._modal_editar')
+@endif
+
+@endsection
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/admin/usuarios.css') }}">
@@ -285,15 +286,11 @@
 
     {{-- Mensajes de sesión --}}
     @if(session('success'))
-        <script>
-            swalSuccess(@json(session('success')));
-        </script>
+        <script> swalSuccess(@json(session('success'))); </script>
     @endif
 
     @if(session('error'))
-        <script>
-            swalError(@json(session('error')));
-        </script>
+        <script> swalError(@json(session('error'))); </script>
     @endif
 
     {{-- JS de la pantalla --}}
