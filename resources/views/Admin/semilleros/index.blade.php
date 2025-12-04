@@ -109,13 +109,15 @@
                         <td class="py-3 text-center">
                             <div class="acciones-semilleros">
 
-                                {{-- EDITAR --}}
+                               {{-- EDITAR --}}
                                 @if($canUpdate)
                                     <button type="button"
                                             class="btn btn-accion-editar btn-editar-semillero"
                                             data-bs-toggle="modal"
                                             data-bs-target="#modalEditarSemillero"
-                                            data-id="{{ $s->id_semillero }}">
+                                            data-id="{{ $s->id_semillero }}"
+                                            data-edit-url="{{ route('admin.semilleros.edit.ajax', $s->id_semillero) }}"
+                                            data-update-url="{{ route('admin.semilleros.update', $s->id_semillero) }}">
                                         <i class="bi bi-pencil me-1"></i> Editar
                                     </button>
                                 @endif

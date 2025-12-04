@@ -163,7 +163,9 @@ function switchView(view) {
             renderYearView();
             break;
         case 'month':
-            renderCalendar(); // Función existente
+            if (typeof renderCalendar === 'function') {
+                renderCalendar();
+            }
             break;
         case 'week':
             renderWeekView();
@@ -230,7 +232,7 @@ function goToPreviousPeriod() {
             break;
     }
     switchView(currentView);
-    cargarEventos();
+    if (typeof cargarEventos === 'function') cargarEventos();
 }
 
 function goToNextPeriod() {

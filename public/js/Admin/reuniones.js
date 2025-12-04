@@ -30,6 +30,127 @@
     }
     return res.status === 204 ? null : res.json();
   }
+
+  // === Fecha (banner) ===
+  function updateDateBanner(dateStr) {
+    if (!dateStr) return;
+    const [y,m,d] = dateStr.split('-').map(Number);
+    const dt = new Date(y, (m||1)-1, d||1);
+    updateDateBannerFromDate(dt);
+  }
+
+  function updateDateBannerFromDate(dt) {
+    const banner = document.getElementById('date-banner');
+    if (!banner || !(dt instanceof Date)) return;
+    const dayEl   = document.getElementById('date-banner-day');
+    const monthEl = document.getElementById('date-banner-month');
+    const longEl  = document.getElementById('date-banner-long');
+
+    const MONTH_ABBR = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    const MONTH_LONG = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const WEEK_LONG  = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+
+    const dd = String(dt.getDate());
+    const mm = MONTH_ABBR[dt.getMonth()] || '';
+    const weekday = WEEK_LONG[dt.getDay()] || '';
+    const monthLong = MONTH_LONG[dt.getMonth()] || '';
+    const year = dt.getFullYear();
+    // Formato exacto del mockup: "Miércoles, 17 de diciembre 2025"
+    const long = `${capitalize(weekday)}, ${dd} de ${monthLong} ${year}`;
+
+    if (dayEl) dayEl.textContent = dd;
+    if (monthEl) monthEl.textContent = mm;
+    if (longEl) longEl.textContent = long;
+  }
+
+  function capitalize(s){ return (s||'').charAt(0).toUpperCase() + (s||'').slice(1); }
+
+  // === Participantes (UI mejorada) ===
+  function filterParticipants(term) {
+    const q = (term || '').toLowerCase();
+    // Filtrar lista visual
+    const list = document.getElementById('participants-list');
+    if (list) {
+      list.querySelectorAll('.participant-item').forEach(item => {
+        const txt = (item.getAttribute('data-text') || '').toLowerCase();
+        item.style.display = q && !txt.includes(q) ? 'none' : 'flex';
+      });
+    }
+  }
+
+  function renderParticipantsList() {
+    const list = document.getElementById('participants-list');
+    const sel  = document.getElementById('event-participants');
+    if (!list || !sel) return;
+    list.innerHTML = '';
+    Array.from(sel.options).forEach(opt => {
+      const item = buildParticipantItem(opt.value, opt.textContent);
+      list.appendChild(item);
+    });
+    updateParticipantsUIFromSelect();
+    rebuildChips();
+  }
+
+  function buildParticipantItem(id, label) {
+    const item = document.createElement('div');
+    item.className = 'participant-item';
+    item.dataset.id = String(id);
+    item.setAttribute('data-text', label || '');
+    const initials = getInitials(label || '');
+    item.innerHTML = `
+      <div class="participant-check"><i class="fas fa-check" style="font-size:12px"></i></div>
+      <div class="participant-avatar">${initials}</div>
+      <div style="flex:1">
+        <div class="participant-name">${label?.split(' — ')[0] || label}</div>
+        <div class="participant-sub">${label?.split(' — ')[1] || 'Líder de semillero'}</div>
+      </div>
+    `;
+    item.addEventListener('click', () => toggleParticipantSelection(id));
+    return item;
+  }
+
+  function toggleParticipantSelection(id) {
+    const sel = document.getElementById('event-participants');
+    const opt = sel ? Array.from(sel.options).find(o => String(o.value) === String(id)) : null;
+    if (!opt) return;
+    opt.selected = !opt.selected;
+    updateParticipantsUIFromSelect();
+    rebuildChips();
+  }
+
+  function updateParticipantsUIFromSelect() {
+    const sel = document.getElementById('event-participants');
+    const list = document.getElementById('participants-list');
+    if (!sel || !list) return;
+    const selectedIds = new Set(Array.from(sel.selectedOptions).map(o => String(o.value)));
+    list.querySelectorAll('.participant-item').forEach(item => {
+      const id = item.dataset.id;
+      if (selectedIds.has(id)) item.classList.add('selected');
+      else item.classList.remove('selected');
+    });
+  }
+
+  function rebuildChips() {
+    const chips = document.getElementById('participants-chips');
+    const sel = document.getElementById('event-participants');
+    if (!chips || !sel) return;
+    chips.innerHTML = '';
+    Array.from(sel.selectedOptions).forEach(opt => {
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.innerHTML = `${(opt.textContent || '').split(' — ')[0]} <button type="button" class="chip-close" aria-label="Quitar">×</button>`;
+      chip.querySelector('.chip-close').addEventListener('click', () => {
+        opt.selected = false; updateParticipantsUIFromSelect(); rebuildChips();
+      });
+      chips.appendChild(chip);
+    });
+  }
+
+  function getInitials(text) {
+    const name = (text || '').split(' — ')[0] || '';
+    const parts = name.trim().split(/\s+/).slice(0,2);
+    return parts.map(p => p.charAt(0)).join('').toUpperCase() || 'LS';
+  }
   const escapeHtml = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 
   // === Reglas de horario ===
@@ -61,14 +182,22 @@
   init();
   async function init() {
     await loadSemilleros();                       // llena el select de semilleros
+    await loadAllLeaders();                       // llena participantes con TODOS los líderes
     const selSem = document.getElementById('event-proyecto');
-    selSem?.addEventListener('change', (e) => {
+    selSem?.addEventListener('change', async (e) => {
       const id = e.target.value || '';
-      loadLideres(id);                            // trae líderes del semillero con correo
+      await markSemilleroLeaderSelected(id);      // selecciona automáticamente el líder del semillero
     });
 
     await loadEventsForCurrentPeriod();
     renderCalendar();
+
+    // Buscar participantes
+    const search = document.getElementById('participants-search');
+    if (search && !search.dataset.bound) {
+      search.addEventListener('input', () => filterParticipants(search.value));
+      search.dataset.bound = '1';
+    }
   }
 
   // === Semilleros & Líderes ===
@@ -114,6 +243,49 @@
     }
   }
 
+  // Cargar TODOS los líderes (para que el selector muestre la lista completa)
+  async function loadAllLeaders() {
+    const sel = document.getElementById('event-participants');
+    if (!sel) return;
+    if (!ROUTES.lideres) { console.error('Falta ROUTES.lideres'); return; }
+
+    sel.innerHTML = '<option>(Cargando líderes…)</option>';
+    try {
+      const { data } = await fetchJSON(ROUTES.lideres);
+      const items = Array.isArray(data) ? data : [];
+      sel.innerHTML = items.map(l => {
+        const label = `${escapeHtml(l.nombre || '')} — ${escapeHtml(l.email || '')}`;
+        return `<option value="${l.id}" data-email="${escapeHtml(l.email || '')}">${label}</option>`;
+      }).join('');
+      renderParticipantsList();
+    } catch (e) {
+      console.error('Todos los líderes:', e);
+      sel.innerHTML = '';
+    }
+  }
+
+  // Marca como seleccionado el líder del semillero
+  async function markSemilleroLeaderSelected(semilleroId) {
+    const sel = document.getElementById('event-participants');
+    if (!sel || !semilleroId) return;
+    if (!ROUTES.lideres) return;
+
+    try {
+      const url = new URL(ROUTES.lideres, window.location.origin);
+      url.searchParams.set('semillero_id', semilleroId);
+      const { data } = await fetchJSON(url.toString());
+      const leader = Array.isArray(data) ? data[0] : null;
+      if (leader) {
+        const opt = Array.from(sel.options).find(o => String(o.value) === String(leader.id));
+        if (opt) opt.selected = true; // no deselecciona otros
+        updateParticipantsUIFromSelect();
+        rebuildChips();
+      }
+    } catch (e) {
+      console.error('Seleccionar líder de semillero:', e);
+    }
+  }
+
   // === Listeners ===
   prevBtn?.addEventListener('click', async () => { navigatePeriod(-1); await loadEventsForCurrentPeriod(); renderCalendar(); });
   nextBtn?.addEventListener('click', async () => { navigatePeriod( 1); await loadEventsForCurrentPeriod(); renderCalendar(); });
@@ -152,7 +324,7 @@
         const hh  = String(d.getHours()).padStart(2,'0');
         const mm  = String(d.getMinutes()).padStart(2,'0');
         return {
-          id: ev.id,
+          id: ev.id_evento,
           date: yyyy,
           time: `${hh}:${mm}`,
           title: ev.titulo,
@@ -160,6 +332,7 @@
           type: ev.tipo || 'general',
           location: ev.ubicacion || '',
           description: ev.descripcion || '',
+          id_proyecto: ev.id_proyecto || null,
           researchLine: ev.linea_investigacion || '',
           link: ev.link_virtual || ''
         };
@@ -180,6 +353,8 @@
 
   function renderMonthView() {
     monthView.style.display = 'block';
+    weekView.style.display  = 'none';
+    dayView.style.display   = 'none';
     weekView.classList.remove('active');
     dayView.classList.remove('active');
 
@@ -243,6 +418,8 @@
 
   function renderWeekView() {
     monthView.style.display = 'none';
+    weekView.style.display  = 'block';
+    dayView.style.display   = 'none';
     weekView.classList.add('active');
     dayView.classList.remove('active');
 
@@ -319,6 +496,8 @@
 
   function renderDayView() {
     monthView.style.display = 'none';
+    weekView.style.display  = 'none';
+    dayView.style.display   = 'block';
     weekView.classList.remove('active');
     dayView.classList.add('active');
 
@@ -464,31 +643,98 @@
 
     eventForm?.reset();
 
-    // Fecha mínima = hoy
+    // Controles de fecha/hora
     const dateInput = document.getElementById('event-date');
     const timeInput = document.getElementById('event-time');
 
+    // Fecha mínima = hoy y banner
     if (dateInput) {
       const todayStr = formatDate(new Date());
       dateInput.setAttribute('min', todayStr);
-      const d = isPastDay(date) ? new Date() : date;
-      dateInput.value = formatDate(d);
+      const dInput = isPastDay(date) ? new Date() : date;
+      dateInput.value = formatDate(dInput);
+      if (!dateInput.dataset.bannerBound) {
+        dateInput.addEventListener('change', () => updateDateBanner(dateInput.value));
+        dateInput.dataset.bannerBound = '1';
+      }
+    }
+    // Actualizar SIEMPRE el banner (aunque no exista #event-date)
+    {
+      const src = (date instanceof Date) ? date : (selectedDate instanceof Date ? selectedDate : new Date());
+      updateDateBannerFromDate(src);
     }
 
+    // Hora: input (si existe) o autoselección
     if (timeInput) {
-      // Hora por defecto = ahora (redondeada a 5 min)
-      const now = new Date();
+      timeInput.setAttribute('min', '08:00');
+      timeInput.setAttribute('max', '16:59');
       const pad = n => String(n).padStart(2, '0');
-      const rounded = new Date(now);
-      rounded.setSeconds(0, 0);
-      const m = rounded.getMinutes();
-      const r = Math.round(m / 5) * 5;
-      rounded.setMinutes(r >= 60 ? 55 : r);
-
-      timeInput.value = `${pad(rounded.getHours())}:${pad(rounded.getMinutes())}`;
+      let hh, mm;
+      if (date instanceof Date) { hh = date.getHours(); mm = date.getMinutes(); }
+      const isInvalidHour = (h) => (typeof h !== 'number') || h < 8 || h > 16 || (h >= 12 && h < 14);
+      if (isInvalidHour(hh)) {
+        const now = new Date();
+        const rounded = new Date(now);
+        rounded.setSeconds(0, 0);
+        const m = rounded.getMinutes();
+        const r = Math.round(m / 5) * 5;
+        rounded.setMinutes(r >= 60 ? 55 : r);
+        let candH = rounded.getHours();
+        if (isInvalidHour(candH)) candH = 10; // fallback a 10:00 AM
+        hh = candH; mm = rounded.getMinutes();
+      }
+      timeInput.value = `${pad(hh)}:${pad(mm)}`;
+      updateSelectedTimeDisplay(timeInput.value);
+      if (!timeInput.dataset.bound) {
+        timeInput.addEventListener('input', () => updateSelectedTimeDisplay(timeInput.value));
+        timeInput.dataset.bound = '1';
+      }
+    } else {
+      // Sin input de hora: escoger automáticamente una hora disponible
+      let chosen = null;
+      if (date instanceof Date && isWorkingDayLocal(date)) {
+        const h = date.getHours();
+        const m = date.getMinutes();
+        const pad = n => String(n).padStart(2,'0');
+        const invalid = (x)=> (x<8 || x>16 || (x>=12 && x<14));
+        const candidate = `${pad(h)}:${pad(m||0)}`;
+        const busy = getBusyTimesForDate(date);
+        if (!invalid(h) && m === 0 && !busy.has(candidate)) {
+          chosen = candidate;
+        }
+      }
+      if (!chosen) {
+        chosen = firstAvailableTime(date instanceof Date ? date : new Date());
+      }
+      const [H,M] = chosen.split(':').map(Number);
+      if (selectedDate instanceof Date) {
+        selectedDate.setHours(H, M, 0, 0);
+      } else if (date instanceof Date) {
+        selectedDate = new Date(date);
+        selectedDate.setHours(H, M, 0, 0);
+      }
+      updateSelectedTimeDisplay(chosen);
     }
 
     eventModal?.classList.add('active');
+
+    // Refresco de banner (seguridad extra)
+    const bDay = document.getElementById('date-banner-day');
+    const bMonth = document.getElementById('date-banner-month');
+    const bLong = document.getElementById('date-banner-long');
+    const baseDate = (selectedDate instanceof Date) ? selectedDate : (date instanceof Date ? date : new Date());
+    if (bDay && bMonth && bLong && baseDate instanceof Date) {
+      const MONTH_ABBR = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+      const WEEK_LONG  = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+      const MONTH_LONG = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      const dd = String(baseDate.getDate());
+      const mm = MONTH_ABBR[baseDate.getMonth()] || '';
+      const weekday = WEEK_LONG[baseDate.getDay()] || '';
+      const long = `${capitalize(weekday)}, ${dd} de ${MONTH_LONG[baseDate.getMonth()]} ${baseDate.getFullYear()}`;
+      bDay.textContent = dd;
+      bMonth.textContent = mm;
+      bLong.textContent = long;
+    }
   }
 
   function closeEventModal() {
@@ -510,8 +756,15 @@
     try {
       if (editingEventId) {
         await fetchJSON(`${ROUTES.baseEventos}/${editingEventId}`, { method: 'PUT', body: JSON.stringify(payload) });
+        if (payload.ubicacion === 'virtual') {
+          try { await fetchJSON(`${ROUTES.baseEventos}/${editingEventId}/generar-enlace`, { method: 'POST', body: JSON.stringify({ plataforma: 'teams' }) }); } catch (_) {}
+        }
       } else {
-        await fetchJSON(ROUTES.baseEventos, { method: 'POST', body: JSON.stringify(payload) });
+        const resp = await fetchJSON(ROUTES.baseEventos, { method: 'POST', body: JSON.stringify(payload) });
+        const newId = resp?.evento?.id_evento || resp?.id_evento || resp?.evento?.id || null;
+        if (payload.ubicacion === 'virtual' && newId) {
+          try { await fetchJSON(`${ROUTES.baseEventos}/${newId}/generar-enlace`, { method: 'POST', body: JSON.stringify({ plataforma: 'teams' }) }); } catch (_) {}
+        }
       }
       closeEventModal();
       await loadEventsForCurrentPeriod();
@@ -528,11 +781,24 @@
     const titleInput = document.getElementById('event-title');
     const durationInput = document.getElementById('event-duration');
     const descInput  = document.getElementById('event-description');
+    const locSelect  = document.getElementById('event-location');
     const projSelect = document.getElementById('event-proyecto');
     const partsSelect= document.getElementById('event-participants');
 
     const dateStr = dateInput ? dateInput.value : formatDate(selectedDate);
-    const timeStr = timeInput ? timeInput.value : '09:00';
+    const pad = n => String(n).padStart(2,'0');
+    const invalid = (h)=> (h<8 || h>16 || (h>=12 && h<14));
+    let timeStr;
+    if (timeInput && timeInput.value) {
+      timeStr = timeInput.value;
+    } else if (selectedDate instanceof Date) {
+      let hh = selectedDate.getHours();
+      let mm = selectedDate.getMinutes();
+      if (invalid(hh)) { hh = 10; mm = 0; }
+      timeStr = `${pad(hh)}:${pad(mm)}`;
+    } else {
+      timeStr = '10:00';
+    }
     const fechaHora = `${dateStr}T${timeStr}:00`;
 
     const participantes = partsSelect
@@ -548,7 +814,7 @@
       descripcion: descInput ? (descInput.value || null) : null,
       fecha_hora: fechaHora,
       duracion: durationInput ? (parseInt(durationInput.value) || 60) : 60,
-      ubicacion: 'presencial',
+      ubicacion: locSelect && locSelect.value ? locSelect.value : 'presencial',
       link_virtual: null,
       recordatorio: 'none',
       id_proyecto: idProyecto,
@@ -556,7 +822,7 @@
     };
   }
 
-  function showEventDetails(event) {
+  async function showEventDetails(event) {
     editingEventId = event.id;
     document.getElementById('detail-titulo').textContent = event.title || '--';
     document.getElementById('detail-tipo').textContent   = event.type || '--';
@@ -564,7 +830,33 @@
     document.getElementById('detail-hora').textContent   = event.time || '--';
     document.getElementById('detail-duracion').textContent = `${event.duration || 60} minutos`;
     document.getElementById('detail-ubicacion').textContent = event.location || '--';
-    document.getElementById('detail-descripcion').textContent = event.description || '--';
+    // Participantes (nombres): por ahora, mostrar líderes del semillero vinculado si existe
+    const namesList = document.getElementById('detail-participants-names');
+    if (namesList) {
+      namesList.innerHTML = '';
+      try {
+        if (event.id_proyecto && ROUTES.lideres) {
+          const url = new URL(ROUTES.lideres, window.location.origin);
+          url.searchParams.set('semillero_id', event.id_proyecto);
+          const { data } = await fetchJSON(url.toString());
+          const items = Array.isArray(data) ? data : [];
+          if (items.length) {
+            items.forEach(p => {
+              const li = document.createElement('li');
+              li.innerHTML = `<div style="font-weight:800;color:#0f172a;">${escapeHtml(p.nombre||'')}</div><div class="drawer-label">${escapeHtml(p.email||'')}</div>`;
+              namesList.appendChild(li);
+            });
+          } else {
+            namesList.innerHTML = '<li>--</li>';
+          }
+        } else {
+          namesList.innerHTML = '<li>--</li>';
+        }
+      } catch (e) {
+        console.error('Participantes (nombres):', e);
+        namesList.innerHTML = '<li>--</li>';
+      }
+    }
 
     const linkField  = document.getElementById('detail-link-field');
     const linkA      = document.getElementById('detail-link');
@@ -678,7 +970,8 @@
     const descInput  = document.getElementById('event-description');
 
     if (dateInput)  { dateInput.setAttribute('min', formatDate(new Date())); dateInput.value = event.date; }
-    if (timeInput)  timeInput.value  = event.time;
+    if (dateInput && dateInput.value) { updateDateBanner(dateInput.value); }
+    if (timeInput)  { timeInput.value  = event.time; updateSelectedTimeDisplay(event.time); }
     if (titleInput) titleInput.value = event.title;
     if (durationInput) durationInput.value = event.duration;
     if (descInput)  descInput.value  = event.description || '';
@@ -755,6 +1048,18 @@
     const displayHour = hour > 12 ? hour - 12 : hour;
     return `${displayHour}:00 ${period}`;
   }
+  function formatTime12(timeHHMM) {
+    if (!timeHHMM || typeof timeHHMM !== 'string') return '--:-- --';
+    const [hStr, mStr] = timeHHMM.split(':');
+    let h = parseInt(hStr, 10); const m = mStr || '00';
+    const period = h >= 12 ? 'PM' : 'AM';
+    const displayH = h % 12 || 12;
+    return `${displayH}:${m} ${period}`;
+  }
+  function updateSelectedTimeDisplay(timeHHMM) {
+    const el = document.getElementById('display-time');
+    if (el) el.textContent = formatTime12(timeHHMM);
+  }
   function isToday(date) {
     const t = new Date();
     return date.getDate() === t.getDate() && date.getMonth() === t.getMonth() && date.getFullYear() === t.getFullYear();
@@ -782,5 +1087,36 @@
     if (hm < 800 || hm > 1650) return false;
     if (hm >= 1200 && hm <= 1355) return false;
     return true;
+  }
+
+  // === Helpers: disponibilidad por día ===
+  function getBusyTimesForDate(date) {
+    const dateStr = formatDate(date);
+    const set = new Set();
+    events.filter(e => e.date === dateStr).forEach(e => set.add(e.time));
+    return set;
+  }
+  function isWorkingDayLocal(date) {
+    const d = date.getDay();
+    const dateStr = formatDate(date);
+    if (d === 0 || d === 6) return false;
+    if (HOLIDAYS.includes(dateStr)) return false;
+    return true;
+  }
+  function firstAvailableTime(date) {
+    const ALLOWED = [8,9,10,11,14,15,16];
+    const busy = getBusyTimesForDate(date);
+    const pad = n => String(n).padStart(2,'0');
+    const now = new Date();
+    const sameDay = date.toDateString() === now.toDateString();
+    for (const h of ALLOWED) {
+      if (sameDay && (h < now.getHours() || (h === now.getHours() && now.getMinutes() > 0))) {
+        continue;
+      }
+      const hhmm = `${pad(h)}:00`;
+      if (!busy.has(hhmm)) return hhmm;
+    }
+    // Si todo está ocupado, devolver un fallback válido
+    return '10:00';
   }
 })();

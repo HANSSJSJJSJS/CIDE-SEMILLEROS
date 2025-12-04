@@ -19,7 +19,7 @@ class ReunionesLideresController extends Controller
         // Si quieres precargar algo a la vista (opcional):
         $lideres = LiderSemillero::all();
 
-        return view('Admin.Reuniones.calendario_scml', compact('lideres'));
+        return view('Admin.Reuniones.calendario_admin', compact('lideres'));
     }
 
     /**
@@ -47,22 +47,34 @@ class ReunionesLideresController extends Controller
     public function lideres(Request $request)
     {
         $sid = (int) $request->query('semillero_id');
+
         if (!$sid) {
-            return response()->json(['data' => []]);
+            // Todos los líderes con su nombre y correo (desde users)
+            $rows = DB::table('lideres_semillero as l')
+                ->join('users as u', 'u.id', '=', 'l.id_lider_semi')
+                ->select(
+                    'l.id_lider_semi as id',
+                    DB::raw("CONCAT(u.nombre, ' ', u.apellidos) as nombre"),
+                    'u.email'
+                )
+                ->orderBy('u.nombre')
+                ->get();
+
+            return response()->json(['data' => $rows]);
         }
 
-        $lider = DB::table('semilleros as s')
-            ->join('lideres_semillero as l', 'l.id_lider_semi', '=', 's.id_lider_semi')
+        // Líder del semillero seleccionado
+        $lider = DB::table('lideres_semillero as l')
+            ->join('users as u', 'u.id', '=', 'l.id_lider_semi')
             ->select(
                 'l.id_lider_semi as id',
-                DB::raw("CONCAT(l.nombres, ' ', l.apellidos) as nombre")
+                DB::raw("CONCAT(u.nombre, ' ', u.apellidos) as nombre"),
+                'u.email'
             )
-            ->where('s.id_semillero', $sid)
+            ->where('l.id_semillero', $sid)
             ->first();
 
-        return response()->json([
-            'data' => $lider ? [ $lider ] : []
-        ]);
+        return response()->json(['data' => $lider ? [ $lider ] : []]);
     }
 
     /**
