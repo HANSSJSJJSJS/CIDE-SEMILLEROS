@@ -14,11 +14,10 @@ class Proyecto extends Model
     protected $primaryKey = 'id_proyecto';
     public $incrementing = true;
     protected $keyType = 'int';
-    public $timestamps = false;
+    public $timestamps = false; // usas creado_en / actualizado_en
 
     protected $fillable = [
         'id_semillero',
-        'id_tipo_proyecto',
         'nombre_proyecto',
         'descripcion',
         'estado',
@@ -28,9 +27,9 @@ class Proyecto extends Model
 
     // Casts para que las fechas se traten como instancias de fecha/datetime
     protected $casts = [
-        'fecha_inicio' => 'date',
-        'fecha_fin'    => 'date',
-        'creado_en'    => 'datetime',
+        'fecha_inicio'   => 'date',
+        'fecha_fin'      => 'date',
+        'creado_en'      => 'datetime',
         'actualizado_en' => 'datetime',
     ];
 
@@ -51,19 +50,34 @@ class Proyecto extends Model
     }
 
     // 🔹 Un proyecto tiene muchos aprendices (N-N) vía pivote aprendiz_proyecto
-   public function aprendices()
-{
-    return $this->belongsToMany(
-        Aprendiz::class,      // modelo relacionado
-        'aprendiz_proyecto',  // tabla pivote
-        'id_proyecto',        // FK del proyecto en el pivote
-        'id_aprendiz'         // FK del aprendiz en el pivote
-    );
-}
+    public function aprendices()
+    {
+        return $this->belongsToMany(
+            Aprendiz::class,      // modelo relacionado
+            'aprendiz_proyecto',  // tabla pivote
+            'id_proyecto',        // FK del proyecto en el pivote
+            'id_aprendiz'         // FK del aprendiz en el pivote
+        );
+    }
 
     // 🔹 Un proyecto tiene muchas evidencias
     public function evidencias()
     {
         return $this->hasMany(Evidencia::class, 'proyecto_id', 'id_proyecto');
+    }
+
+    // 🔹 (OPCIONAL) método para agregar una observación al historial en el mismo campo
+    public function agregarObservacionTexto(string $texto, ?User $usuario = null): void
+    {
+        $usuario = $usuario ?: auth()->user();
+
+        $linea = now()->format('Y-m-d H:i')
+               . ' - ' . ($usuario?->nombre ?? 'Sistema')
+               . ': ' . $texto;
+
+        $actual = $this->observaciones ? rtrim($this->observaciones) . "\n" : '';
+
+        $this->observaciones = $actual . $linea;
+        $this->save();
     }
 }

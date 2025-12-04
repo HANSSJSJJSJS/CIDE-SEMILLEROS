@@ -248,6 +248,11 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
                 )->name('proyectos.docs.download');
             });
         });
+        // cometnarios de los proyectos
+                Route::post(
+            'semilleros/{semillero}/proyectos/{proyecto}/observaciones',
+            [ProyectoSemilleroController::class, 'guardarObservaciones']
+        )->name('semilleros.proyectos.observaciones');
 
 
         // ==========================
