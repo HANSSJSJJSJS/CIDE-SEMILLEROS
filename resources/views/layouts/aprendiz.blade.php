@@ -93,6 +93,10 @@
                   <span>Reuniones próximas</span>
                   <span id="notifReuniones" class="badge bg-primary">0</span>
                 </div>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                  <span>Respuestas del líder</span>
+                  <span id="notifRespuestas" class="badge bg-info text-dark">0</span>
+                </div>
               </div>
             </div>
           </div>
@@ -200,9 +204,12 @@
         const total = Number(data?.total||0);
         const evid  = Number(data?.evidencias_nuevas||0);
         const reun  = Number(data?.reuniones_nuevas||0);
+        const respL = Number(data?.respuestas_nuevas||0);
         if (badge){ badge.textContent = total; badge.style.display = total>0 ? 'inline-block' : 'none'; }
         if (evEl) evEl.textContent = evid;
         if (reEl) reEl.textContent = reun;
+        const rsEl = document.getElementById('notifRespuestas');
+        if (rsEl) rsEl.textContent = respL;
         btn.setAttribute('aria-label', `Notificaciones (${total})`);
       } catch(_e){}
     }

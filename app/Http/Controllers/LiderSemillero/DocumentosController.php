@@ -304,6 +304,63 @@ class DocumentosController extends Controller
         }
     }
 
+    // Responder pregunta del aprendiz
+    public function responderPregunta(Request $request, $entregaId)
+    {
+        try {
+            $request->validate([
+                'respuesta' => 'required|string|min:1|max:2000'
+            ]);
+
+            if (!Schema::hasTable('documentos')) {
+                return response()->json(['success' => false, 'message' => 'Tabla de documentos no encontrada'], 404);
+            }
+
+            $documento = DB::table('documentos')->where('id_documento', $entregaId)->first();
+            if (!$documento) {
+                return response()->json(['success' => false, 'message' => 'Documento no encontrado'], 404);
+            }
+
+            // Asegurar columnas
+            try {
+                if (!Schema::hasColumn('documentos','respuesta_lider')) {
+                    Schema::table('documentos', function($table){ $table->text('respuesta_lider')->nullable()->after('descripcion'); });
+                }
+                if (!Schema::hasColumn('documentos','respondido_en')) {
+                    Schema::table('documentos', function($table){ $table->dateTime('respondido_en')->nullable()->after('respuesta_lider'); });
+                }
+            } catch (\Throwable $e) {}
+
+            DB::table('documentos')
+                ->where('id_documento', $entregaId)
+                ->update([
+                    'respuesta_lider' => $request->respuesta,
+                    'respondido_en'   => now(),
+                ]);
+
+            return response()->json(['success' => true, 'message' => 'Respuesta enviada al aprendiz.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    // Obtener el siguiente número de evidencia (consecutivo por proyecto)
+    public function siguienteNumeroEvidencia($proyectoId)
+    {
+        try {
+            if (!Schema::hasTable('documentos')) {
+                return response()->json(['next' => 1]);
+            }
+            if (!Schema::hasColumn('documentos','numero_evidencia')) {
+                return response()->json(['next' => 1]);
+            }
+            $max = (int) (DB::table('documentos')->where('id_proyecto', $proyectoId)->max('numero_evidencia') ?? 0);
+            return response()->json(['next' => $max + 1]);
+        } catch (\Throwable $e) {
+            return response()->json(['next' => 1]);
+        }
+    }
+
     // Guardar evidencia de avance (crea un registro en documentos)
     public function guardarEvidencia(Request $request)
     {
@@ -479,7 +536,11 @@ class DocumentosController extends Controller
                     'd.ruta_archivo as archivo_url',
                     'd.documento as archivo_nombre',
                     DB::raw("NULL as descripcion"),
-                    DB::raw("NULL as rechazado_en")
+                    DB::raw("NULL as rechazado_en"),
+                    DB::raw("d.pregunta_aprendiz as pregunta_aprendiz"),
+                    DB::raw("d.preguntado_en as preguntado_en"),
+                    DB::raw("d.respuesta_lider as respuesta_lider"),
+                    DB::raw("d.respondido_en as respondido_en")
                 )
                 ->orderBy('d.fecha_subido', 'desc')
                 ->get();

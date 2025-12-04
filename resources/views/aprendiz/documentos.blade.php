@@ -211,6 +211,9 @@
                                     <div class="p-2 rounded border border-success bg-success bg-opacity-10 pend-card" data-card-id="{{ $pendiente->id_documento }}">
                                         <div class="mb-1 small text-muted">ID: {{ $pendiente->id_documento }}</div>
                                         <div><strong>Proyecto:</strong> {{ $pendiente->nombre_proyecto ?? '—' }}</div>
+                                        @if(isset($pendiente->numero_evidencia))
+                                            <div><strong>Número de Evidencia:</strong> #{{ $pendiente->numero_evidencia }}</div>
+                                        @endif
                                         <div><strong>Título:</strong> {{ $pendiente->documento ?? '—' }}</div>
                                         <div><strong>Descripción:</strong> {{ $pendiente->descripcion ?? '—' }}</div>
                                         <div>
@@ -221,6 +224,27 @@
                                                 —
                                             @endif
                                         </div>
+                                        <div class="mt-2 d-flex align-items-center" style="gap:8px;">
+                                            <button type="button" class="btn btn-sm btn-outline-primary btn-preguntar-evid" data-evid="{{ $pendiente->id_documento }}">
+                                                <i class="bi bi-question-circle"></i> Preguntar al líder
+                                            </button>
+                                            @if(!empty($pendiente->respuesta_lider))
+                                                <button type="button" class="btn btn-sm btn-light" onclick="toggleQA_apr({{ $pendiente->id_documento }})" title="Ver respuesta del líder" style="border:1px solid #e0e0e0;">
+                                                    <i class="bi bi-chat-dots-fill" style="color:#0d6efd"></i>
+                                                </button>
+                                            @endif
+                                        </div>
+                                        @if(!empty($pendiente->respuesta_lider))
+                                            <div id="qa_apr_{{ $pendiente->id_documento }}" class="mt-2" style="display:none;">
+                                                <div class="p-2" style="background:#f3fbf4;border:1px dashed #a5d6a7;border-radius:8px;">
+                                                    <div class="small text-success mb-1"><i class="bi bi-reply-fill"></i> Respuesta del líder</div>
+                                                    <div class="text-success" style="white-space:pre-wrap;">{{ $pendiente->respuesta_lider }}</div>
+                                                    @if(!empty($pendiente->respondido_en))
+                                                        <div class="small text-muted mt-1">Respondido: {{ $pendiente->respondido_en }}</div>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
                                 </li>
                             @endforeach
@@ -271,6 +295,9 @@
                                             <td>{{ $doc->nombre_proyecto }}</td>
                                             <td>
                                                 <i class="fas fa-file-alt text-primary"></i>
+                                                @if(isset($doc->numero_evidencia))
+                                                    <span class="badge bg-primary me-1">#{{ $doc->numero_evidencia }}</span>
+                                                @endif
                                                 {{ $doc->documento }}
                                             </td>
                                             <td>
@@ -568,6 +595,66 @@ document.addEventListener('DOMContentLoaded', function(){
       }
     });
   });
+
+  // Preguntar al líder sobre una evidencia pendiente
+  document.querySelectorAll('.btn-preguntar-evid').forEach(function(btn){
+    btn.addEventListener('click', async function(e){
+      e.preventDefault();
+      const evidId = this.getAttribute('data-evid');
+      if (!evidId) return;
+      const pregunta = prompt('Escribe tu pregunta para el líder sobre esta evidencia:');
+      if (!pregunta || String(pregunta).trim().length < 3) return;
+      try {
+        const resp = await fetch(`/aprendiz/documentos/${evidId}/preguntar`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+          },
+          body: JSON.stringify({ pregunta })
+        });
+        const data = await resp.json();
+        if (resp.ok && data?.ok) {
+          alert('Tu pregunta fue enviada al líder.');
+          // Marcar visualmente
+          const parent = this.closest('.pend-card');
+          if (parent && !parent.querySelector('.badge.bg-secondary')){
+            const span = document.createElement('span');
+            span.className = 'badge bg-secondary ms-2';
+            span.textContent = 'Pregunta enviada';
+            this.parentElement.appendChild(span);
+          }
+        } else {
+          alert(data?.message || 'No se pudo enviar la pregunta.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error de conexión. Intenta nuevamente.');
+      }
+    });
+  });
+  // Toggle panel de pregunta/respuesta (aprendiz)
+  window.toggleQA_apr = function(id){
+    const panel = document.getElementById('qa_apr_' + id);
+    if (!panel) return;
+    const show = panel.style.display !== 'block';
+    panel.style.display = show ? 'block' : 'none';
+    if (show) {
+      // Marcar como leída la respuesta del líder si existe
+      fetch(`/aprendiz/documentos/${id}/respuesta-leida`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        }
+      }).then(()=>{
+        // refrescar resumen de notificaciones si la función existe en el layout
+        if (typeof fetchSummary === 'function') { fetchSummary(); }
+      }).catch(()=>{});
+    }
+  };
 });
 </script>
 @endpush

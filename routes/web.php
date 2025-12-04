@@ -414,9 +414,11 @@ Route::middleware(['auth', 'role:LIDER_SEMILLERO'])
         Route::get('/documentos', [DocumentosController::class, 'documentos'])->name('documentos');
         Route::get('/proyectos/list', [DocumentosController::class, 'listarProyectos'])->name('proyectos.list');
         Route::get('/proyectos/{id}/aprendices-list', [DocumentosController::class, 'obtenerAprendicesProyecto'])->name('proyectos.aprendices.list');
+        Route::get('/proyectos/{id}/siguiente-numero', [DocumentosController::class, 'siguienteNumeroEvidencia'])->name('proyectos.siguiente_numero');
         Route::post('/evidencias/store', [DocumentosController::class, 'guardarEvidencia'])->name('evidencias.store');
         Route::get('/proyectos/{id}/entregas', [DocumentosController::class, 'obtenerEntregas'])->name('proyectos.entregas');
         Route::put('/entregas/{id}/estado', [DocumentosController::class, 'cambiarEstadoEntrega'])->name('entregas.estado');
+        Route::put('/entregas/{id}/respuesta', [DocumentosController::class, 'responderPregunta'])->name('entregas.responder');
         // Ruta original para actualizar documento (compatibilidad)
         Route::put('/documentos/{id}', [DocumentosController::class, 'actualizarDocumento'])->name('documentos.actualizar');
         // Nueva ruta con sufijo /actualizar para coincidir con el JS del modal de edición
@@ -478,6 +480,8 @@ Route::middleware(['auth', 'role:APRENDIZ'])
         Route::get('/documentos', [DocumentoController::class, 'index'])->name('documentos.index');
         Route::post('/documentos', [DocumentoController::class, 'store'])->name('documentos.store');
         Route::post('/documentos/{id}/upload-assigned', [DocumentoController::class, 'uploadAssigned'])->whereNumber('id')->name('documentos.uploadAssigned');
+        Route::post('/documentos/{id}/preguntar', [DocumentoController::class, 'preguntar'])->whereNumber('id')->name('documentos.preguntar');
+        Route::put('/documentos/{id}/respuesta-leida', [DocumentoController::class, 'marcarRespuestaLeida'])->whereNumber('id')->name('documentos.respuesta_leida');
         Route::get('/documentos/{id}/download', [DocumentoController::class, 'download'])->whereNumber('id')->name('documentos.download');
         Route::put('/documentos/{id}', [DocumentoController::class, 'update'])->whereNumber('id')->name('documentos.update');
         Route::delete('/documentos/{id}', [DocumentoController::class, 'destroy'])->whereNumber('id')->name('documentos.destroy');
@@ -487,7 +491,7 @@ Route::middleware(['auth', 'role:APRENDIZ'])
             $user = Auth::user();
             if (!$user) return response()->json(['ok'=>false,'evidencias_nuevas'=>0,'reuniones_nuevas'=>0,'total'=>0]);
 
-            $evidencias = 0; $reuniones = 0;
+            $evidencias = 0; $reuniones = 0; $respuestas = 0;
 
             // Evidencias nuevas asignadas (documentos sin archivo para este aprendiz/usuario)
             try {
@@ -544,8 +548,42 @@ Route::middleware(['auth', 'role:APRENDIZ'])
                 }
             } catch (\Throwable $e) { $reuniones = 0; }
 
-            $total = $evidencias + $reuniones;
-            return response()->json(['ok'=>true,'evidencias_nuevas'=>$evidencias,'reuniones_nuevas'=>$reuniones,'total'=>$total]);
+            // Respuestas del líder a preguntas del aprendiz (no leídas) — filtrar SIEMPRE por el usuario actual
+            try {
+                if (\Illuminate\Support\Facades\Schema::hasTable('documentos')) {
+                    $aprIdLocal = null; $aprUserCol = null; $aprPkCol = null;
+                    if (\Illuminate\Support\Facades\Schema::hasTable('aprendices')) {
+                        if (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','id_usuario')) { $aprUserCol = 'id_usuario'; }
+                        elseif (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','user_id')) { $aprUserCol = 'user_id'; }
+                        if (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','id_aprendiz')) { $aprPkCol = 'id_aprendiz'; }
+                        elseif (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','id')) { $aprPkCol = 'id'; }
+                        if ($aprUserCol && $aprPkCol) {
+                            $aprIdLocal = \Illuminate\Support\Facades\DB::table('aprendices')->where($aprUserCol, $user->id)->value($aprPkCol);
+                        }
+                    }
+
+                    $q = \Illuminate\Support\Facades\DB::table('documentos')
+                        ->whereNotNull('respuesta_lider')
+                        ->where(function($w) use ($aprIdLocal, $user){
+                            $w->when(\Illuminate\Support\Facades\Schema::hasColumn('documentos','id_aprendiz'), function($qq) use ($aprIdLocal){ $qq->orWhere('id_aprendiz', $aprIdLocal ?? -1); })
+                              ->when(\Illuminate\Support\Facades\Schema::hasColumn('documentos','id_usuario'), function($qq) use ($user){ $qq->orWhere('id_usuario', (int)$user->id); });
+                        });
+
+                    if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','respuesta_leida')) {
+                        $q->where(function($w){ $w->whereNull('respuesta_leida')->orWhere('respuesta_leida',''); });
+                    } else {
+                        // Sin marca de lectura: considerar respondidas en últimos 2 días
+                        if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','respondido_en')) {
+                            $lim = now()->subDays(2);
+                            $q->where('respondido_en', '>=', $lim);
+                        }
+                    }
+                    $respuestas = (int) $q->count();
+                }
+            } catch (\Throwable $e) { $respuestas = 0; }
+
+            $total = $evidencias + $reuniones + $respuestas;
+            return response()->json(['ok'=>true,'evidencias_nuevas'=>$evidencias,'reuniones_nuevas'=>$reuniones,'respuestas_nuevas'=>$respuestas,'total'=>$total]);
         })->name('notifications.summary');
 
         // Calendario

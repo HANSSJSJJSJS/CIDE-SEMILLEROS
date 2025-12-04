@@ -171,6 +171,16 @@
                 </select>
             </div>
 
+            <!-- Número de Evidencia (autogenerado por proyecto) -->
+            <div class="mb-3">
+                <label class="form-label-evidencia">Número de Evidencia</label>
+                <div class="d-flex align-items-center" style="gap:10px;">
+                    <span id="numero-evidencia" class="badge" style="background:#1e4620;color:#fff;border-radius:8px;padding:6px 10px;">—</span>
+                    <small class="text-muted">Se asigna consecutivamente por proyecto</small>
+                </div>
+                <input type="hidden" id="numero_evidencia" name="numero_evidencia" value="">
+            </div>
+
             <!-- Aprendiz Asignado (obligatorio) -->
             <div class="mb-3">
                 <label class="form-label-evidencia">Aprendiz Asignado</label>
@@ -435,6 +445,34 @@ function cargarEntregas(proyectoId) {
                                 ${entrega.archivo_nombre || 'Sin archivo'} · ${entrega.fecha}
                             </div>
                             <p class="entrega-descripcion">${entrega.descripcion || 'Sin descripción'}</p>
+                            ${entrega.pregunta_aprendiz ? `
+                              <div class="qa-compact" style="margin:8px 0;">
+                                <button class="btn btn-light" style="padding:6px 10px; border:1px solid #e0e0e0; border-radius:8px; display:inline-flex; align-items:center; gap:6px;"
+                                        onclick="toggleQA(${entrega.id})" title="Ver pregunta y responder">
+                                  <i class="fas ${entrega.respuesta_lider ? 'fa-comment-dots' : 'fa-question-circle'}" style="color:${entrega.respuesta_lider ? '#2e7d32' : '#f9a825'}"></i>
+                                  <span style="font-size:0.85rem; color:#555;">${entrega.respuesta_lider ? 'Pregunta respondida' : 'Pregunta del aprendiz'}</span>
+                                </button>
+                                <div id="qa_${entrega.id}" style="display:none; margin-top:8px;">
+                                  <div class="entrega-pregunta" style="background:#fffef6;border:1px dashed #ffe082;border-radius:8px;padding:10px;">
+                                    <div style="font-weight:600;color:#8d6e63;display:flex;align-items:center;gap:6px;"><i class="fas fa-question-circle"></i> Pregunta del aprendiz</div>
+                                    <div style="margin-top:6px;color:#5d4037;white-space:pre-wrap;">${entrega.pregunta_aprendiz}</div>
+                                    <div style="font-size:12px;color:#8d6e63;">${entrega.preguntado_en ? 'Enviado: '+entrega.preguntado_en : ''}</div>
+                                  </div>
+                                  <div class="entrega-respuesta" style="background:#f3fbf4;border:1px dashed #a5d6a7;border-radius:8px;padding:10px;margin-top:8px;">
+                                    <div style="font-weight:600;color:#1b5e20;display:flex;align-items:center;gap:6px;"><i class="fas fa-reply"></i> Respuesta del líder</div>
+                                    ${entrega.respuesta_lider ? `
+                                      <div style="margin-top:6px;color:#1b5e20;white-space:pre-wrap;">${entrega.respuesta_lider}</div>
+                                      <div style="font-size:12px;color:#2e7d32;">${entrega.respondido_en ? 'Respondido: '+entrega.respondido_en : ''}</div>
+                                    ` : `
+                                      <div class="mt-2 d-flex" style="gap:6px;">
+                                        <input type="text" id="respuesta_${entrega.id}" class="form-control-evidencia" placeholder="Escribe tu respuesta..." style="flex:1;">
+                                        <button class="btn btn-guardar-modal" onclick="responderPregunta(${entrega.id})" title="Enviar respuesta"><i class="fas fa-paper-plane"></i></button>
+                                      </div>
+                                    `}
+                                  </div>
+                                </div>
+                              </div>
+                            ` : ''}
                             <div class="entrega-acciones">
                                 ${(tieneArchivo && entrega.archivo_url && entrega.archivo_url !== '' && entrega.archivo_url !== 'null') ? `
                                     <button class="btn-ver-documento" onclick="verDocumento('${entrega.archivo_url}')">
@@ -586,6 +624,72 @@ function verDocumento(url) {
     window.open(url, '_blank');
 }
 
+// Mostrar/ocultar panel compacto de Pregunta/Respuesta
+function toggleQA(entregaId) {
+    const panel = document.getElementById('qa_' + entregaId);
+    if (!panel) return;
+    const isHidden = panel.style.display === 'none' || panel.style.display === '';
+    panel.style.display = isHidden ? 'block' : 'none';
+}
+
+// Enviar respuesta del líder a la pregunta del aprendiz
+async function responderPregunta(entregaId) {
+    try {
+        const input = document.getElementById('respuesta_' + entregaId);
+        if (!input) return;
+        const respuesta = (input.value || '').trim();
+        if (respuesta.length < 1) {
+            showNotification('Respuesta requerida', 'Escribe una respuesta antes de enviar.', 'warning');
+            return;
+        }
+        const btn = input.nextElementSibling;
+        if (btn) { btn.disabled = true; }
+
+        const resp = await fetch(`/lider_semi/entregas/${entregaId}/respuesta`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ respuesta })
+        });
+        const data = await resp.json();
+        if (!resp.ok || !data?.success) {
+            throw new Error(data?.message || 'No se pudo enviar la respuesta');
+        }
+
+        showNotification('Respuesta enviada', 'Tu respuesta fue enviada al aprendiz.', 'success');
+        // Actualizar UI local: reemplazar el input por el texto de respuesta
+        const qaPanel = document.getElementById('qa_' + entregaId);
+        if (qaPanel) {
+            const respBox = qaPanel.querySelector('.entrega-respuesta');
+            if (respBox) {
+                respBox.innerHTML = `
+                  <div style="font-weight:600;color:#1b5e20;display:flex;align-items:center;gap:6px;"><i class="fas fa-reply"></i> Respuesta del líder</div>
+                  <div style="margin-top:6px;color:#1b5e20;white-space:pre-wrap;">${respuesta}</div>
+                  <div style="font-size:12px;color:#2e7d32;">Respondido: ahora</div>
+                `;
+            }
+        }
+        // Cambiar icono del botón a "respondida"
+        const toggleBtn = qaPanel?.previousElementSibling;
+        if (toggleBtn) {
+            const icon = toggleBtn.querySelector('i.fas');
+            const label = toggleBtn.querySelector('span');
+            if (icon) { icon.classList.remove('fa-question-circle'); icon.classList.add('fa-comment-dots'); icon.style.color = '#2e7d32'; }
+            if (label) { label.textContent = 'Pregunta respondida'; }
+        }
+    } catch (e) {
+        console.error(e);
+        showNotification('Error', e.message || 'No se pudo enviar la respuesta.', 'error');
+    } finally {
+        const input = document.getElementById('respuesta_' + entregaId);
+        const btn = input ? input.nextElementSibling : null;
+        if (btn) { btn.disabled = false; }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const modalOverlay = document.getElementById('modalEvidencia');
     const btnAbrirModal = document.getElementById('btnAbrirModal');
@@ -660,6 +764,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectAprendiz = document.getElementById('aprendiz_id');
         selectAprendiz.disabled = true;
         selectAprendiz.innerHTML = '<option value="">Selecciona primero un proyecto...</option>';
+        // Reset número de evidencia visual
+        const badgeNum = document.getElementById('numero-evidencia');
+        const inputNum = document.getElementById('numero_evidencia');
+        if (badgeNum) badgeNum.textContent = '—';
+        if (inputNum) inputNum.value = '';
         modalOverlay.classList.add('active');
     });
 
@@ -719,12 +828,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const proyectoId = this.value;
         const selectAprendiz = document.getElementById('aprendiz_id');
         const mensajeAprendices = document.getElementById('mensaje-aprendices');
+        const badgeNum = document.getElementById('numero-evidencia');
+        const inputNum = document.getElementById('numero_evidencia');
 
         if (!proyectoId) {
             selectAprendiz.innerHTML = '<option value="">Selecciona primero un proyecto...</option>';
             selectAprendiz.disabled = true;
             mensajeAprendices.textContent = 'Selecciona un proyecto para ver los aprendices asignados';
             mensajeAprendices.className = 'text-muted';
+            if (badgeNum) badgeNum.textContent = '—';
+            if (inputNum) inputNum.value = '';
             return;
         }
 
@@ -761,6 +874,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectAprendiz.disabled = false;
                 mensajeAprendices.textContent = 'Error al cargar los aprendices del proyecto';
                 mensajeAprendices.className = 'text-danger';
+            });
+
+        // Cargar siguiente número de evidencia para este proyecto
+        fetch(`/lider_semi/proyectos/${proyectoId}/siguiente-numero`)
+            .then(r => r.json())
+            .then(num => {
+                const next = (num && typeof num.next !== 'undefined') ? num.next : null;
+                if (badgeNum) badgeNum.textContent = next ? `#${next}` : '—';
+                if (inputNum) inputNum.value = next || '';
+            })
+            .catch(() => {
+                if (badgeNum) badgeNum.textContent = '—';
+                if (inputNum) inputNum.value = '';
             });
     });
 

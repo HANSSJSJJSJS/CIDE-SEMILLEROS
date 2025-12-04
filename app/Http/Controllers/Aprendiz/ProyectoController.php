@@ -46,19 +46,23 @@ class ProyectoController extends Controller
             }
         }
 
-        // Stats por proyecto (para progreso y X/Y)
+        // Stats por proyecto (para progreso y X/Y) – igual que líder: totales por proyecto en documentos
         $stats = [];
         foreach ($proyectos as $p) {
             $subidos = 0; $completos = 0; $pendientes = 0;
             try {
-                $subidos = Archivo::where('user_id', $user->id)
-                    ->where('proyecto_id', $p->id_proyecto)
-                    ->count();
-                $completos = Archivo::where('user_id', $user->id)
-                    ->where('proyecto_id', $p->id_proyecto)
-                    ->whereIn('estado', ['aprobado','completo','completado'])
-                    ->count();
-                $pendientes = max(0, $subidos - $completos);
+                if (Schema::hasTable('documentos')) {
+                    // Totales por proyecto (como líder): entregas = total documentos; aprobadas = estado=aprobado; pendientes = estado=pendiente
+                    $base = DB::table('documentos')->where('id_proyecto', $p->id_proyecto);
+                    $subidos = (clone $base)->count();
+                    if (Schema::hasColumn('documentos','estado')) {
+                        $completos = (clone $base)->where('estado','aprobado')->count();
+                        $pendientes = (clone $base)->where('estado','pendiente')->count();
+                    } else {
+                        $completos = $subidos;
+                        $pendientes = 0;
+                    }
+                }
             } catch (\Throwable $e) {}
             $den = max(1, $subidos);
             $pct = (int) round(($completos / $den) * 100);
@@ -101,12 +105,49 @@ class ProyectoController extends Controller
             $companeros = $companeros->values();
         }
 
-        // Líder del semillero (si el proyecto pertenece a un semillero con líder asociado)
+        // Fallback si la relación está vacía: construir compañeros desde pivotes disponibles
+        if ($companeros->isEmpty()) {
+            $idsApr = collect();
+            if (Schema::hasTable('aprendiz_proyecto')) {
+                $idsApr = $idsApr->merge(
+                    DB::table('aprendiz_proyecto')->where('id_proyecto', $proyecto->id_proyecto)->pluck('id_aprendiz')
+                );
+            }
+            if (Schema::hasTable('proyecto_user')) {
+                $userIds = DB::table('proyecto_user')->where('id_proyecto', $proyecto->id_proyecto)->pluck('user_id');
+                if ($userIds->isNotEmpty() && Schema::hasTable('aprendices')) {
+                    $aprUserFk = Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario'
+                                 : (Schema::hasColumn('aprendices','user_id') ? 'user_id' : null);
+                    if ($aprUserFk) {
+                        $idsApr = $idsApr->merge(DB::table('aprendices')->whereIn($aprUserFk, $userIds)->pluck('id_aprendiz'));
+                    }
+                }
+            }
+            $idsApr = $idsApr->filter()->unique()->values();
+            if ($idsApr->isNotEmpty() && Schema::hasTable('aprendices')) {
+                $companeros = DB::table('aprendices')->whereIn('id_aprendiz', $idsApr)->get()->map(function($ap){ return (object)$ap; });
+                // excluir al usuario actual si podemos mapear
+                if ($aprUserCol) {
+                    $companeros = $companeros->filter(function($ap) use ($aprUserCol, $user){ return (int)($ap->$aprUserCol ?? 0) !== (int)$user->id; })->values();
+                }
+            }
+        }
+
+        // Líder del semillero (tolerante a columnas id_lider_semi o id_lider_usuario)
         $lider = null;
-        if ($proyecto->semillero && !empty($proyecto->semillero->id_lider_usuario)) {
-            $lider = LiderSemillero::with('user')
-                ->where('id_usuario', $proyecto->semillero->id_lider_usuario)
-                ->first();
+        if ($proyecto->semillero) {
+            $idLiderSemi = $proyecto->semillero->id_lider_semi ?? null;
+            $idLiderUsuario = $proyecto->semillero->id_lider_usuario ?? null;
+            if (!empty($idLiderSemi)) {
+                $lider = LiderSemillero::with('user')->where('id_lider_semi', $idLiderSemi)->first();
+            } elseif (!empty($idLiderUsuario)) {
+                // Algunos esquemas guardan el id de usuario directamente
+                $lider = LiderSemillero::with('user')->where('id_lider_semi', $idLiderUsuario)->first();
+                if (!$lider) {
+                    // Fallback adicional: si existiera columna id_usuario en la tabla lideres_semillero
+                    $lider = LiderSemillero::with('user')->where('id_usuario', $idLiderUsuario)->first();
+                }
+            }
         }
 
         // Filtros de evidencias: por fecha exacta (created_at) y por nombre del compañero (autor)

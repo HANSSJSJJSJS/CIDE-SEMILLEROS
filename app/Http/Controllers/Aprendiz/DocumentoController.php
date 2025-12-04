@@ -37,6 +37,7 @@ class DocumentoController extends Controller
                 ->with('aprendiz', $aprendizStub);
         }
 
+
         // Obtener proyectos asignados al aprendiz, aunque aún no tenga documentos
         $proyectoIds = [];
         // 1) proyecto_user (user_id -> id_proyecto)
@@ -651,6 +652,43 @@ class DocumentoController extends Controller
     }
 
     /**
+     * Marcar como leída la respuesta del líder para un documento del aprendiz
+     */
+    public function marcarRespuestaLeida($id)
+    {
+        $userId = Auth::id();
+        $aprendiz = $this->getAprendizByUserId($userId);
+        if (!$aprendiz) { return response()->json(['ok' => false, 'message' => 'Perfil de aprendiz no encontrado'], 404); }
+
+        $docAprCol = $this->getDocumentoAprendizColumn();
+        $aprId = $this->getAprendizId($aprendiz);
+
+        $documento = DB::table('documentos')
+            ->where('id_documento', $id)
+            ->where(function($q) use ($docAprCol, $aprId, $userId){
+                $q->where($docAprCol, $aprId);
+                if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','id_usuario')) {
+                    $q->orWhere('id_usuario', $userId);
+                }
+            })
+            ->first();
+
+        if (!$documento) { return response()->json(['ok' => false, 'message' => 'Documento no encontrado o no te pertenece'], 404); }
+
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('documentos') && !\Illuminate\Support\Facades\Schema::hasColumn('documentos','respuesta_leida')) {
+                \Illuminate\Support\Facades\Schema::table('documentos', function($table){
+                    $table->dateTime('respuesta_leida')->nullable()->after('respondido_en');
+                });
+            }
+        } catch (\Throwable $e) { /* tolerante */ }
+
+        DB::table('documentos')->where('id_documento', $id)->update(['respuesta_leida' => now()]);
+
+        return response()->json(['ok' => true]);
+    }
+
+    /**
      * Eliminar un documento
      */
     public function destroy($id)
@@ -686,6 +724,70 @@ class DocumentoController extends Controller
         DB::table('documentos')->where('id_documento', $id)->delete();
 
         return back()->with('success', 'Documento eliminado correctamente');
+    }
+
+    /**
+     * Registrar una pregunta del aprendiz para el líder sobre una evidencia específica
+     */
+    public function preguntar(Request $request, $id)
+    {
+        $userId = Auth::id();
+        $aprendiz = $this->getAprendizByUserId($userId);
+        if (!$aprendiz) {
+            return response()->json(['ok' => false, 'message' => 'Perfil de aprendiz no encontrado'], 404);
+        }
+
+        $request->validate([
+            'pregunta' => 'required|string|min:3|max:1000',
+        ]);
+
+        $docAprCol = $this->getDocumentoAprendizColumn();
+        $aprId = $this->getAprendizId($aprendiz);
+
+        // Verificar propiedad del documento
+        $documento = DB::table('documentos')
+            ->where('id_documento', $id)
+            ->where($docAprCol, $aprId)
+            ->first();
+
+        if (!$documento) {
+            return response()->json(['ok' => false, 'message' => 'Documento no encontrado o no te pertenece'], 404);
+        }
+
+        // Asegurar columnas para preguntas/respuestas si no existen
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('documentos')) {
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('documentos','pregunta_aprendiz')) {
+                    \Illuminate\Support\Facades\Schema::table('documentos', function($table){
+                        $table->text('pregunta_aprendiz')->nullable()->after('descripcion');
+                    });
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('documentos','preguntado_en')) {
+                    \Illuminate\Support\Facades\Schema::table('documentos', function($table){
+                        $table->dateTime('preguntado_en')->nullable()->after('pregunta_aprendiz');
+                    });
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('documentos','respuesta_lider')) {
+                    \Illuminate\Support\Facades\Schema::table('documentos', function($table){
+                        $table->text('respuesta_lider')->nullable()->after('preguntado_en');
+                    });
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('documentos','respondido_en')) {
+                    \Illuminate\Support\Facades\Schema::table('documentos', function($table){
+                        $table->dateTime('respondido_en')->nullable()->after('respuesta_lider');
+                    });
+                }
+            }
+        } catch (\Throwable $e) { }
+
+        DB::table('documentos')
+            ->where('id_documento', $id)
+            ->update([
+                'pregunta_aprendiz' => $request->pregunta,
+                'preguntado_en'     => now(),
+            ]);
+
+        return response()->json(['ok' => true, 'message' => 'Tu pregunta fue enviada al líder.']);
     }
 
     /**
