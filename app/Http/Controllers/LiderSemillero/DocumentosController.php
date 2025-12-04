@@ -228,14 +228,21 @@ class DocumentosController extends Controller
             $aprIds = $aprIds->filter()->unique()->values();
             $aprendices = collect();
             if ($aprIds->isNotEmpty()) {
-                $aprendices = DB::table('aprendices')
+                $aprUserFkCol = Schema::hasColumn('aprendices','user_id') ? 'user_id' : (Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : null);
+                $hasUsers = Schema::hasTable('users') && $aprUserFkCol;
+                $nameExpr = $hasUsers
+                    ? "COALESCE(NULLIF(TRIM(u.name),''), u.email, COALESCE(aprendices.correo_institucional,''), 'Aprendiz')"
+                    : "COALESCE(aprendices.correo_institucional, 'Aprendiz')";
+
+                $q = DB::table('aprendices')
+                    ->when($hasUsers, function($q) use ($aprUserFkCol){ $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$aprUserFkCol)); })
                     ->whereIn('id_aprendiz', $aprIds)
                     ->select(
-                        DB::raw('id_aprendiz as id_aprendiz'),
-                        DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo")
+                        DB::raw('aprendices.id_aprendiz as id_aprendiz'),
+                        DB::raw($nameExpr.' as nombre_completo')
                     )
-                    ->orderBy('nombre_completo')
-                    ->get();
+                    ->orderBy('nombre_completo');
+                $aprendices = $q->get();
             }
 
             // Fallback: si no se encontró nadie por pivote, listar aprendices activos del semillero del proyecto
@@ -245,15 +252,22 @@ class DocumentosController extends Controller
                     $semilleroId = DB::table('proyectos')->where('id_proyecto', $proyectoId)->value('id_semillero');
                 }
                 if ($semilleroId) {
-                    $aprendices = DB::table('aprendices')
+                    $aprUserFkCol = Schema::hasColumn('aprendices','user_id') ? 'user_id' : (Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : null);
+                    $hasUsers = Schema::hasTable('users') && $aprUserFkCol;
+                    $nameExpr = $hasUsers
+                        ? "COALESCE(NULLIF(TRIM(u.name),''), u.email, COALESCE(aprendices.correo_institucional,''), 'Aprendiz')"
+                        : "COALESCE(aprendices.correo_institucional, 'Aprendiz')";
+
+                    $q = DB::table('aprendices')
+                        ->when($hasUsers, function($q) use ($aprUserFkCol){ $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$aprUserFkCol)); })
                         ->where('semillero_id', $semilleroId)
                         ->when(Schema::hasColumn('aprendices','estado'), function($q){ $q->where('estado', 'Activo'); })
                         ->select(
-                            DB::raw('id_aprendiz as id_aprendiz'),
-                            DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo")
+                            DB::raw('aprendices.id_aprendiz as id_aprendiz'),
+                            DB::raw($nameExpr.' as nombre_completo')
                         )
-                        ->orderBy('nombre_completo')
-                        ->get();
+                        ->orderBy('nombre_completo');
+                    $aprendices = $q->get();
                 }
             }
 
