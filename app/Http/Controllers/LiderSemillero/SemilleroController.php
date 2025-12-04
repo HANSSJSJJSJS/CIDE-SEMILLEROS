@@ -789,11 +789,14 @@ class SemilleroController extends Controller
                     'fecha_subida' => now(),
                 ];
             } else {
-                // Pivote tradicional: mapear id_aprendiz -> id_usuario cuando la pivote usa id_usuario/user_id
+                // Pivote tradicional: mapear id_aprendiz -> FK de usuario cuando la pivote usa id_usuario/user_id
                 $aprValue = $aid;
                 if (in_array($pivot['aprCol'], ['id_usuario','user_id'])) {
+                    // Preferir columna id_usuario si existe, de lo contrario user_id
                     if (Schema::hasColumn('aprendices','id_usuario')) {
                         $aprValue = (int) DB::table('aprendices')->where('id_aprendiz', $aid)->value('id_usuario');
+                    } elseif (Schema::hasColumn('aprendices','user_id')) {
+                        $aprValue = (int) DB::table('aprendices')->where('id_aprendiz', $aid)->value('user_id');
                     }
                 }
                 $insert[] = [ $pivot['projCol'] => $proyectoId, $pivot['aprCol'] => $aprValue ];
@@ -873,6 +876,31 @@ class SemilleroController extends Controller
             ->when($joinUser, function($q){ $q->leftJoin('users as u','u.id','=','aprendices.user_id'); })
             ->when($joinByEmail, function($q){ $q->leftJoin('users as ue', DB::raw('ue.email_lc'), '=', DB::raw('LOWER(aprendices.correo_institucional)')); })
             ->select($selects);
+
+        // Limitar candidatos al semillero del proyecto
+        try {
+            if (Schema::hasTable('proyectos') && Schema::hasColumn('proyectos','id_semillero')) {
+                $semilleroId = DB::table('proyectos')
+                    ->where('id_proyecto', $proyectoId)
+                    ->value('id_semillero');
+
+                if ($semilleroId) {
+                    if (Schema::hasColumn('aprendices','semillero_id')) {
+                        $query->where('aprendices.semillero_id', $semilleroId);
+                    } elseif (Schema::hasTable('aprendiz_semillero')) {
+                        $query->join('aprendiz_semillero', 'aprendiz_semillero.id_aprendiz', '=', 'aprendices.id_aprendiz')
+                              ->where('aprendiz_semillero.id_semillero', $semilleroId);
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Si falla algo de esquema, continuamos sin filtrar por semillero
+        }
+
+        // Cuando sea posible, asegurar que sean usuarios con rol APRENDIZ
+        if ($joinUser && Schema::hasColumn('users','role')) {
+            $query->where('u.role','APRENDIZ');
+        }
 
         // Aplicar filtros si existen
         if ($tipo !== '') {

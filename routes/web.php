@@ -116,7 +116,7 @@ Route::middleware(['auth'])->group(function () {
         ->whereNumber('id')->name('lider_semi.proyectos.show');
     Route::get('/lider_semillero/proyectos/{id}/participantes', [LiderProyectoController::class, 'participantesJson'])
         ->whereNumber('id')->name('lider_semi.proyectos.participantes');
-    Route::post('/lider_semillero/proyectos/{id}/participantes', [LiderProyectoController::class, 'assignParticipant'])
+    Route::match(['post','put','patch'], '/lider_semillero/proyectos/{id}/participantes', [LiderProyectoController::class, 'assignParticipant'])
         ->whereNumber('id')->name('lider_semi.proyectos.participantes.assign');
     Route::delete('/lider_semillero/proyectos/{id}/participantes/{user}', [LiderProyectoController::class, 'removeParticipant'])
         ->whereNumber('id')->whereNumber('user')->name('lider_semi.proyectos.participantes.remove');
@@ -132,7 +132,7 @@ Route::middleware(['auth'])->group(function () {
         ->whereNumber('proyecto')->name('lider_semi.proyectos.aprendices.attach.compat');
     Route::delete('/lider_semillero/proyectos/{proyecto}/aprendices/{aprendiz}', [LiderProyectoController::class, 'removeParticipant'])
         ->whereNumber('proyecto')->whereNumber('aprendiz')->name('lider_semi.proyectos.aprendices.detach.compat');
-    Route::put('/lider_semillero/proyectos/{proyecto}/aprendices', [LiderProyectoController::class, 'updateParticipants'])
+    Route::match(['put','patch'], '/lider_semillero/proyectos/{proyecto}/aprendices', [LiderProyectoController::class, 'updateParticipants'])
         ->whereNumber('proyecto')->name('lider_semi.proyectos.aprendices.update.compat');
 
     // Versión por Semillero → deriva a proyecto activo
@@ -197,7 +197,7 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
             //         SEMILLEROS
             // ==========================
 
-           
+
 
             // 🔹 Ruta AJAX para líderes disponibles
             Route::get('semilleros/lideres-disponibles', [SemilleroController::class, 'lideresDisponibles'])
@@ -248,6 +248,11 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
                 )->name('proyectos.docs.download');
             });
         });
+        // cometnarios de los proyectos
+                Route::post(
+            'semilleros/{semillero}/proyectos/{proyecto}/observaciones',
+            [ProyectoSemilleroController::class, 'guardarObservaciones']
+        )->name('semilleros.proyectos.observaciones');
 
 
         // ==========================

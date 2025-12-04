@@ -214,6 +214,10 @@ class AprendicesController extends Controller
 
             if (Schema::hasTable('proyecto_aprendiz')) {
                 $pivotTable = 'proyecto_aprendiz';
+                $pivotAprCol = 'id_aprendiz';
+            } elseif (Schema::hasTable('aprendiz_proyecto')) {
+                $pivotTable = 'aprendiz_proyecto';
+                $pivotAprCol = 'id_aprendiz';
             } elseif (Schema::hasTable('proyecto_user')) {
                 $pivotTable = 'proyecto_user';
                 $pivotAprCol = 'user_id';
@@ -221,20 +225,37 @@ class AprendicesController extends Controller
 
             if ($pivotTable) {
                 try {
-                    $aprColJoin = Schema::hasColumn('aprendices', 'id_usuario') ? 'id_usuario' : (Schema::hasColumn('aprendices','user_id') ? 'user_id' : 'id_aprendiz');
+                    // Siempre filtrar por aprendices.id_aprendiz en IN()
+                    $query = DB::table($pivotTable)
+                        ->join('proyectos', 'proyectos.id_proyecto', '=', DB::raw($pivotTable.'.'.$pivotProjCol));
 
-                    $proyectosRelaciones = DB::table($pivotTable)
-                        ->join('proyectos', 'proyectos.id_proyecto', '=', DB::raw($pivotTable.'.'.$pivotProjCol))
-                        ->join('aprendices', function ($join) use ($pivotTable, $pivotAprCol, $aprColJoin) {
-                            $join->on(DB::raw('aprendices.'.$aprColJoin), '=', DB::raw($pivotTable.'.'.$pivotAprCol));
-                        })
-                        ->whereIn(DB::raw('aprendices.'.$aprColJoin), $aprendicesIds)
-                        ->select(
-                            DB::raw('aprendices.'.$aprColJoin.' as id_aprendiz'),
-                            DB::raw('COALESCE(proyectos.nombre_proyecto, "Proyecto") as proyecto_nombre')
-                        )
-                        ->get()
-                        ->groupBy('id_aprendiz');
+                    if ($pivotAprCol === 'user_id') {
+                        // proyecto_user: join por FK a users en aprendices
+                        $aprUserFk = Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : (Schema::hasColumn('aprendices','user_id') ? 'user_id' : null);
+                        if ($aprUserFk) {
+                            $query->join('aprendices', DB::raw('aprendices.'.$aprUserFk), '=', DB::raw($pivotTable.'.user_id'))
+                                  ->whereIn('aprendices.id_aprendiz', $aprendicesIds)
+                                  ->select(
+                                      DB::raw('aprendices.id_aprendiz as id_aprendiz'),
+                                      DB::raw('COALESCE(proyectos.nombre_proyecto, "Proyecto") as proyecto_nombre')
+                                  );
+                        } else {
+                            // No podemos mapear user_id -> aprendiz: no devolvemos relaciones
+                            $query = null;
+                        }
+                    } else {
+                        // proyecto_aprendiz / aprendiz_proyecto: join directo por id_aprendiz
+                        $query->join('aprendices', 'aprendices.id_aprendiz', '=', DB::raw($pivotTable.'.id_aprendiz'))
+                              ->whereIn('aprendices.id_aprendiz', $aprendicesIds)
+                              ->select(
+                                  DB::raw('aprendices.id_aprendiz as id_aprendiz'),
+                                  DB::raw('COALESCE(proyectos.nombre_proyecto, "Proyecto") as proyecto_nombre')
+                              );
+                    }
+
+                    if ($query) {
+                        $proyectosRelaciones = $query->get()->groupBy('id_aprendiz');
+                    }
                 } catch (\Exception $e) {
                     // Si falla, continuar sin proyectos
                 }

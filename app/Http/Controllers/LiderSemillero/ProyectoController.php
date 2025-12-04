@@ -254,6 +254,19 @@ class ProyectoController extends Controller
                         DB::table('aprendiz_proyecto')->insert($data);
                     }
                 }
+                // Espejo en proyecto_user
+                if (Schema::hasTable('proyecto_user')) {
+                    $userIds = DB::table('aprendices')->whereIn('id_aprendiz', $aprendizIds)->pluck($userFkCol)->filter()->all();
+                    $existPU = DB::table('proyecto_user')->where('id_proyecto',$id)->pluck('user_id')->all();
+                    // borrar los que ya no están
+                    if (!empty($existPU)) {
+                        DB::table('proyecto_user')->where('id_proyecto',$id)->whereNotIn('user_id', $userIds)->delete();
+                    }
+                    // insertar faltantes
+                    foreach (array_diff($userIds, $existPU) as $uidAdd) {
+                        DB::table('proyecto_user')->insert(['id_proyecto'=>$id,'user_id'=>$uidAdd,'created_at'=>$now,'updated_at'=>$now]);
+                    }
+                }
                 return response()->json(['ok'=>true]);
             }
 
@@ -274,6 +287,17 @@ class ProyectoController extends Controller
                         if (Schema::hasColumn('proyecto_aprendiz','created_at')) { $data['created_at'] = $now; }
                         if (Schema::hasColumn('proyecto_aprendiz','updated_at')) { $data['updated_at'] = $now; }
                         DB::table('proyecto_aprendiz')->insert($data);
+                    }
+                }
+                // Espejo en proyecto_user
+                if (Schema::hasTable('proyecto_user')) {
+                    $userIds = DB::table('aprendices')->whereIn('id_aprendiz', $aprendizIds)->pluck($userFkCol)->filter()->all();
+                    $existPU = DB::table('proyecto_user')->where('id_proyecto',$id)->pluck('user_id')->all();
+                    if (!empty($existPU)) {
+                        DB::table('proyecto_user')->where('id_proyecto',$id)->whereNotIn('user_id', $userIds)->delete();
+                    }
+                    foreach (array_diff($userIds, $existPU) as $uidAdd) {
+                        DB::table('proyecto_user')->insert(['id_proyecto'=>$id,'user_id'=>$uidAdd,'created_at'=>$now,'updated_at'=>$now]);
                     }
                 }
                 return response()->json(['ok'=>true]);
@@ -400,8 +424,25 @@ class ProyectoController extends Controller
             if (!$uid) return response()->json(['error' => 'auth'], 401);
             if (!$this->canManage($uid, $id)) return response()->json(['error' => 'forbidden'], 403);
             // compat: aceptar user_id o aprendiz_id
-            $userId = (int)($request->input('user_id') ?? 0);
-            $aprendizId = (int)($request->input('aprendiz_id') ?? 0);
+            // Mapear múltiples nombres de campos que pueden venir desde el front
+            $userId = (int)($request->input('user_id')
+                        ?? $request->input('id_usuario')
+                        ?? $request->input('id')
+                        ?? 0);
+            $aprendizId = (int)($request->input('aprendiz_id')
+                          ?? $request->input('id_aprendiz')
+                          ?? $request->input('aprendiz')
+                          ?? 0);
+
+            // Si viene un arreglo (guardar lista completa), delegar al método de sincronización
+            $bulk = $request->input('aprendices_ids')
+                 ?? $request->input('ids')
+                 ?? $request->input('participantes');
+            if (is_array($bulk)) {
+                // Normalizar nombre esperado por updateParticipants
+                $request->merge(['aprendices_ids' => $bulk]);
+                return $this->updateParticipants($request, $id);
+            }
 
             // Detectar FK de aprendices -> users
             $dbName = DB::getDatabaseName();
@@ -424,6 +465,16 @@ class ProyectoController extends Controller
                     if (Schema::hasColumn('proyecto_aprendiz','updated_at')) { $data['updated_at'] = now(); }
                     DB::table('proyecto_aprendiz')->insert($data);
                 }
+                // Espejo en proyecto_user para compatibilidad con vistas que leen esa pivote
+                if (Schema::hasTable('proyecto_user')) {
+                    $uidMap = (int) DB::table('aprendices')->where('id_aprendiz', $aprendizId)->value($userFkCol);
+                    if ($uidMap) {
+                        $existsPU = DB::table('proyecto_user')->where(['id_proyecto'=>$id,'user_id'=>$uidMap])->exists();
+                        if (!$existsPU) {
+                            DB::table('proyecto_user')->insert(['id_proyecto'=>$id,'user_id'=>$uidMap,'created_at'=>now(),'updated_at'=>now()]);
+                        }
+                    }
+                }
                 return response()->json(['ok' => true]);
             } elseif (Schema::hasTable('aprendiz_proyecto')) {
                 if (!$aprendizId && $userId) {
@@ -440,6 +491,16 @@ class ProyectoController extends Controller
                     if (Schema::hasColumn('aprendiz_proyecto','created_at')) { $data['created_at'] = now(); }
                     if (Schema::hasColumn('aprendiz_proyecto','updated_at')) { $data['updated_at'] = now(); }
                     DB::table('aprendiz_proyecto')->insert($data);
+                }
+                // Espejo en proyecto_user para compatibilidad con vistas que leen esa pivote
+                if (Schema::hasTable('proyecto_user')) {
+                    $uidMap = (int) DB::table('aprendices')->where('id_aprendiz', $aprendizId)->value($userFkCol);
+                    if ($uidMap) {
+                        $existsPU = DB::table('proyecto_user')->where(['id_proyecto'=>$id,'user_id'=>$uidMap])->exists();
+                        if (!$existsPU) {
+                            DB::table('proyecto_user')->insert(['id_proyecto'=>$id,'user_id'=>$uidMap,'created_at'=>now(),'updated_at'=>now()]);
+                        }
+                    }
                 }
                 return response()->json(['ok' => true]);
             } else {

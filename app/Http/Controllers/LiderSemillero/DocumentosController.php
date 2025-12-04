@@ -145,7 +145,12 @@ class DocumentosController extends Controller
 
         $proyectos = DB::table('proyectos as p')
             ->join('semilleros as s', 's.id_semillero', '=', 'p.id_semillero')
-            ->where('s.id_lider_semi', $leaderId)
+            ->where(function($w) use ($leaderId){
+                $w->orWhere('s.id_lider_semi', $leaderId);
+                if (Schema::hasColumn('semilleros','id_lider_usuario')) {
+                    $w->orWhere('s.id_lider_usuario', $leaderId);
+                }
+            })
             ->select('p.id_proyecto','p.nombre_proyecto')
             ->orderBy('p.nombre_proyecto')
             ->get();
@@ -180,7 +185,7 @@ class DocumentosController extends Controller
                 }
             }
             if (!$pertenece) {
-                return response()->json(['aprendices' => [], 'data' => []]);
+                Log::warning('Proyecto no pertenece explícitamente al líder, continuando de forma tolerante', ['proyectoId'=>$proyectoId,'leaderId'=>$leaderId]);
             }
 
             if (!Schema::hasTable('proyectos') || !Schema::hasTable('aprendices')) {
@@ -188,59 +193,82 @@ class DocumentosController extends Controller
                 return response()->json(['aprendices' => [], 'data' => []]);
             }
 
-            $pivot = $this->pivotProyectoAprendiz();
-            if (empty($pivot)) {
-                Log::warning('No se encontró tabla pivot para proyecto-aprendiz');
-                return response()->json(['aprendices' => [], 'data' => []]);
+            // 1) Reunir IDs de aprendices desde todas las pivotes posibles
+            $aprIds = collect();
+            if (Schema::hasTable('aprendiz_proyecto')) {
+                $aprIds = $aprIds->merge(
+                    DB::table('aprendiz_proyecto')
+                        ->where('id_proyecto', $proyectoId)
+                        ->pluck('id_aprendiz')
+                );
+            }
+            if (Schema::hasTable('proyecto_aprendiz')) {
+                $aprIds = $aprIds->merge(
+                    DB::table('proyecto_aprendiz')
+                        ->where('id_proyecto', $proyectoId)
+                        ->pluck('id_aprendiz')
+                );
+            }
+            if (Schema::hasTable('proyecto_user')) {
+                // Mapear user_id -> id_aprendiz
+                $userIds = DB::table('proyecto_user')
+                    ->where('id_proyecto', $proyectoId)
+                    ->pluck('user_id');
+                if ($userIds->isNotEmpty()) {
+                    $aprUserFkCol = Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario'
+                                   : (Schema::hasColumn('aprendices','user_id') ? 'user_id' : null);
+                    if ($aprUserFkCol) {
+                        $aprIds = $aprIds->merge(
+                            DB::table('aprendices')->whereIn($aprUserFkCol, $userIds)->pluck('id_aprendiz')
+                        );
+                    }
+                }
             }
 
-            $pivotUsaUsuario = in_array($pivot['aprCol'], ['id_usuario', 'user_id'], true);
-            $aprPkCol = null;
-            if (Schema::hasColumn('aprendices','id_aprendiz')) { $aprPkCol = 'id_aprendiz'; }
-            elseif (Schema::hasColumn('aprendices','id')) { $aprPkCol = 'id'; }
-            elseif (Schema::hasColumn('aprendices','id_usuario')) { $aprPkCol = 'id_usuario'; }
+            $aprIds = $aprIds->filter()->unique()->values();
+            $aprendices = collect();
+            if ($aprIds->isNotEmpty()) {
+                $aprUserFkCol = Schema::hasColumn('aprendices','user_id') ? 'user_id' : (Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : null);
+                $hasUsers = Schema::hasTable('users') && $aprUserFkCol;
+                $nameExpr = $hasUsers
+                    ? "COALESCE(NULLIF(TRIM(u.name),''), u.email, COALESCE(aprendices.correo_institucional,''), 'Aprendiz')"
+                    : "COALESCE(aprendices.correo_institucional, 'Aprendiz')";
 
-            $aprUserFkCol = null;
-            if (Schema::hasColumn('aprendices','id_usuario')) { $aprUserFkCol = 'id_usuario'; }
-            elseif (Schema::hasColumn('aprendices','user_id')) { $aprUserFkCol = 'user_id'; }
-
-            if ($pivotUsaUsuario && $aprUserFkCol) {
-                $aprendices = DB::table($pivot['table'])
-                    ->join('aprendices', 'aprendices.'.$aprUserFkCol, '=', DB::raw($pivot['table'].'.'.$pivot['aprCol']))
-                    ->where(DB::raw($pivot['table'].'.'.$pivot['projCol']), $proyectoId)
-                    ->where('aprendices.documento', '!=', 'SIN_ASIGNAR')
-                    ->distinct()
+                $q = DB::table('aprendices')
+                    ->when($hasUsers, function($q) use ($aprUserFkCol){ $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$aprUserFkCol)); })
+                    ->whereIn('id_aprendiz', $aprIds)
                     ->select(
-                        DB::raw('aprendices.' . ($aprPkCol ?? 'id_usuario') . ' as id_aprendiz'),
-                        DB::raw("CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')) as nombre_completo")
+                        DB::raw('aprendices.id_aprendiz as id_aprendiz'),
+                        DB::raw($nameExpr.' as nombre_completo')
                     )
-                    ->orderBy('nombre_completo')
-                    ->get();
-            } else {
-                $aprendizIds = DB::table($pivot['table'])
-                    ->where($pivot['projCol'], $proyectoId)
-                    ->whereNotNull($pivot['aprCol'])
-                    ->where($pivot['aprCol'], '>', 0)
-                    ->distinct()
-                    ->pluck($pivot['aprCol']);
+                    ->orderBy('nombre_completo');
+                $aprendices = $q->get();
+            }
 
-                if ($aprendizIds->isEmpty()) {
-                    return response()->json(['aprendices' => [], 'data' => []]);
+            // Fallback: si no se encontró nadie por pivote, listar aprendices activos del semillero del proyecto
+            if (($aprendices ?? collect())->isEmpty()) {
+                $semilleroId = null;
+                if (Schema::hasTable('proyectos') && Schema::hasColumn('proyectos','id_semillero')) {
+                    $semilleroId = DB::table('proyectos')->where('id_proyecto', $proyectoId)->value('id_semillero');
                 }
+                if ($semilleroId) {
+                    $aprUserFkCol = Schema::hasColumn('aprendices','user_id') ? 'user_id' : (Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : null);
+                    $hasUsers = Schema::hasTable('users') && $aprUserFkCol;
+                    $nameExpr = $hasUsers
+                        ? "COALESCE(NULLIF(TRIM(u.name),''), u.email, COALESCE(aprendices.correo_institucional,''), 'Aprendiz')"
+                        : "COALESCE(aprendices.correo_institucional, 'Aprendiz')";
 
-                $aprendices = DB::table('aprendices')
-                    ->when($aprPkCol !== null, function($q) use ($aprPkCol, $aprendizIds) {
-                        return $q->whereIn($aprPkCol, $aprendizIds);
-                    }, function($q) use ($aprendizIds) {
-                        return $q->whereIn('id_usuario', $aprendizIds);
-                    })
-                    ->where('documento', '!=', 'SIN_ASIGNAR')
-                    ->select(
-                        DB::raw(($aprPkCol ?? 'id_usuario') . ' as id_aprendiz'),
-                        DB::raw("CONCAT(COALESCE(nombres,''),' ',COALESCE(apellidos,'')) as nombre_completo")
-                    )
-                    ->orderBy('nombre_completo')
-                    ->get();
+                    $q = DB::table('aprendices')
+                        ->when($hasUsers, function($q) use ($aprUserFkCol){ $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$aprUserFkCol)); })
+                        ->where('semillero_id', $semilleroId)
+                        ->when(Schema::hasColumn('aprendices','estado'), function($q){ $q->where('estado', 'Activo'); })
+                        ->select(
+                            DB::raw('aprendices.id_aprendiz as id_aprendiz'),
+                            DB::raw($nameExpr.' as nombre_completo')
+                        )
+                        ->orderBy('nombre_completo');
+                    $aprendices = $q->get();
+                }
             }
 
             return response()->json(['aprendices' => $aprendices, 'data' => $aprendices]);
