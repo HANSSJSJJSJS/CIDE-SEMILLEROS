@@ -114,7 +114,7 @@
                     <td class="pe-3">
                         <div class="acciones-proyecto">
 
-                            {{-- Ver detalle --}}
+                            {{-- Ver detalle (aquí se ven y gestionan las observaciones) --}}
                             <a href="{{ route('admin.semilleros.proyectos.detalle', [$semillero->id_semillero, $p->id_proyecto]) }}"
                                class="btn btn-sm btn-accion-ver">
                                 <i class="bi bi-eye me-1"></i> Ver detalle
@@ -211,60 +211,7 @@
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Fecha de inicio</label>
                         <input type="date" name="fecha_inicio" class="form-control">
-                    </div>   
-                    
- {{-- ================================
-         OBSERVACIONES
-    ================================== --}}
-    <div class="card shadow-sm mt-4 mb-5 border-0">
-        <div class="card-header text-white"
-             style="background-color:#2d572c;">
-            <i class="bi bi-chat-text me-1"></i>
-            Observaciones del líder
-        </div>
-
-        <div class="card-body">
-
-            {{-- Mensajes flash --}}
-            @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-                </div>
-            @endif
-
-            @if(session('error'))
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    {{ session('error') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-                </div>
-            @endif
-
-            <form method="POST"
-                  action="{{ route('admin.semilleros.proyectos.observaciones', [$semillero->id_semillero, $proyecto->id_proyecto]) }}">
-                @csrf
-
-                <div class="mb-3">
-                    <textarea
-                        name="observaciones"
-                        class="form-control @error('observaciones') is-invalid @enderror"
-                        rows="4"
-                        placeholder="Escribe aquí las observaciones del líder..."
-                    >{{ old('observaciones', $observaciones) }}</textarea>
-
-                    @error('observaciones')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="text-end">
-                    <button class="btn btn-nuevo-semillero" type="submit">
-                        <i class="bi bi-save me-1"></i> Guardar observaciones
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+                    </div>
 
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Fecha fin</label>
@@ -358,7 +305,6 @@
 ======================================================= --}}
 @push('scripts')
 
-    {{-- SweetAlert2 y helpers --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         function swalSuccess(msg) {
@@ -385,4 +331,3 @@
 
     <script src="{{ asset('js/admin/proyectos-semilleros.js') }}"></script>
 @endpush
-
