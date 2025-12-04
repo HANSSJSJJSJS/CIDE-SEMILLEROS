@@ -230,9 +230,21 @@ class DocumentosController extends Controller
             if ($aprIds->isNotEmpty()) {
                 $aprUserFkCol = Schema::hasColumn('aprendices','user_id') ? 'user_id' : (Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : null);
                 $hasUsers = Schema::hasTable('users') && $aprUserFkCol;
-                $nameExpr = $hasUsers
-                    ? "COALESCE(NULLIF(TRIM(u.name),''), u.email, COALESCE(aprendices.correo_institucional,''), 'Aprendiz')"
-                    : "COALESCE(aprendices.correo_institucional, 'Aprendiz')";
+                $usrNameCol = Schema::hasTable('users') && Schema::hasColumn('users','name') ? 'name' : (Schema::hasTable('users') && Schema::hasColumn('users','nombre') ? 'nombre' : null);
+                $usrEmailCol = Schema::hasTable('users') && Schema::hasColumn('users','email') ? 'email' : null;
+                if ($hasUsers) {
+                    if ($usrNameCol && $usrEmailCol) {
+                        $nameExpr = "COALESCE(NULLIF(TRIM(u.`$usrNameCol`),''), u.`$usrEmailCol`, COALESCE(aprendices.correo_institucional,''), 'Aprendiz')";
+                    } elseif ($usrNameCol) {
+                        $nameExpr = "COALESCE(NULLIF(TRIM(u.`$usrNameCol`),''), COALESCE(aprendices.correo_institucional,''), 'Aprendiz')";
+                    } elseif ($usrEmailCol) {
+                        $nameExpr = "COALESCE(u.`$usrEmailCol`, COALESCE(aprendices.correo_institucional,''), 'Aprendiz')";
+                    } else {
+                        $nameExpr = "COALESCE(aprendices.correo_institucional, 'Aprendiz')";
+                    }
+                } else {
+                    $nameExpr = "COALESCE(aprendices.correo_institucional, 'Aprendiz')";
+                }
 
                 $q = DB::table('aprendices')
                     ->when($hasUsers, function($q) use ($aprUserFkCol){ $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$aprUserFkCol)); })
@@ -254,9 +266,21 @@ class DocumentosController extends Controller
                 if ($semilleroId) {
                     $aprUserFkCol = Schema::hasColumn('aprendices','user_id') ? 'user_id' : (Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : null);
                     $hasUsers = Schema::hasTable('users') && $aprUserFkCol;
-                    $nameExpr = $hasUsers
-                        ? "COALESCE(NULLIF(TRIM(u.name),''), u.email, COALESCE(aprendices.correo_institucional,''), 'Aprendiz')"
-                        : "COALESCE(aprendices.correo_institucional, 'Aprendiz')";
+                    $usrNameCol = Schema::hasTable('users') && Schema::hasColumn('users','name') ? 'name' : (Schema::hasTable('users') && Schema::hasColumn('users','nombre') ? 'nombre' : null);
+                    $usrEmailCol = Schema::hasTable('users') && Schema::hasColumn('users','email') ? 'email' : null;
+                    if ($hasUsers) {
+                        if ($usrNameCol && $usrEmailCol) {
+                            $nameExpr = "COALESCE(NULLIF(TRIM(u.`$usrNameCol`),''), u.`$usrEmailCol`, COALESCE(aprendices.correo_institucional,''), 'Aprendiz')";
+                        } elseif ($usrNameCol) {
+                            $nameExpr = "COALESCE(NULLIF(TRIM(u.`$usrNameCol`),''), COALESCE(aprendices.correo_institucional,''), 'Aprendiz')";
+                        } elseif ($usrEmailCol) {
+                            $nameExpr = "COALESCE(u.`$usrEmailCol`, COALESCE(aprendices.correo_institucional,''), 'Aprendiz')";
+                        } else {
+                            $nameExpr = "COALESCE(aprendices.correo_institucional, 'Aprendiz')";
+                        }
+                    } else {
+                        $nameExpr = "COALESCE(aprendices.correo_institucional, 'Aprendiz')";
+                    }
 
                     $q = DB::table('aprendices')
                         ->when($hasUsers, function($q) use ($aprUserFkCol){ $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$aprUserFkCol)); })
@@ -335,6 +359,25 @@ class DocumentosController extends Controller
                 'id_proyecto' => $request->proyecto_id,
                 'documento' => $request->titulo,
             ];
+
+            // Asegurar columna de numeración si es posible y asignar consecutivo por proyecto
+            try {
+                if (Schema::hasTable('documentos')) {
+                    if (!Schema::hasColumn('documentos','numero_evidencia')) {
+                        Schema::table('documentos', function($table){
+                            $table->integer('numero_evidencia')->nullable()->after('id_proyecto');
+                        });
+                    }
+                    if (Schema::hasColumn('documentos','numero_evidencia')) {
+                        $maxNum = (int) (DB::table('documentos')
+                            ->where('id_proyecto', $request->proyecto_id)
+                            ->max('numero_evidencia') ?? 0);
+                        $dataToInsert['numero_evidencia'] = $maxNum + 1;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Si falla la alteración de esquema, continuar sin numeración
+            }
 
             if (Schema::hasColumn('documentos', 'ruta_archivo')) {
                 $dataToInsert['ruta_archivo'] = '';
