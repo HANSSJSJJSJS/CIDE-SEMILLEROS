@@ -14,22 +14,20 @@
     $canDelete = $user->canManageModule('proyectos','delete');
 @endphp
 
-{{-- SI HAY ERROR EN EL MODAL DE CREAR --}}
+{{-- ERRORES DEL MODAL CREAR --}}
 @if ($errors->crearProyecto->any())
-<div class="alert alert-danger">
-    <ul class="mb-0">
-        @foreach ($errors->crearProyecto->all() as $e)
-            <li>{{ $e }}</li>
-        @endforeach
-    </ul>
-</div>
+    <div class="alert alert-danger">
+        <ul class="mb-0">
+            @foreach ($errors->crearProyecto->all() as $e)
+                <li>{{ $e }}</li>
+            @endforeach
+        </ul>
+    </div>
 @endif
 
 <div class="container-fluid px-4 mt-4 semilleros-wrapper">
 
-    {{-- ================================
-         ENCABEZADO PRINCIPAL
-    ================================== --}}
+    {{-- ENCABEZADO DEL SEMILLERO --}}
     <div class="semilleros-header d-flex flex-wrap justify-content-between align-items-start mb-4">
         <div>
             <h2 class="fw-bold mb-1" style="color:#2d572c;">
@@ -61,9 +59,7 @@
         </div>
     </div>
 
-    {{-- ================================
-         TÍTULO PROYECTOS + BOTÓN
-    ================================== --}}
+    {{-- TÍTULO + BOTÓN CREAR --}}
     <div class="mb-3">
         <h3 class="fw-bold fs-4" style="color:#2d572c;">Proyectos del semillero</h3>
 
@@ -76,9 +72,7 @@
         @endif
     </div>
 
-    {{-- ================================
-         TABLA PROYECTOS
-    ================================== --}}
+    {{-- TABLA DE PROYECTOS --}}
     <div class="table-responsive mt-3">
         <table class="table tabla-semilleros table-hover align-middle">
             <thead>
@@ -119,7 +113,8 @@
 
                     <td class="pe-3">
                         <div class="acciones-proyecto">
-                            {{-- Ver detalle --}}
+
+                            {{-- Ver detalle (aquí se ven y gestionan las observaciones) --}}
                             <a href="{{ route('admin.semilleros.proyectos.detalle', [$semillero->id_semillero, $p->id_proyecto]) }}"
                                class="btn btn-sm btn-accion-ver">
                                 <i class="bi bi-eye me-1"></i> Ver detalle
@@ -148,6 +143,7 @@
                                     </button>
                                 </form>
                             @endif
+
                         </div>
                     </td>
                 </tr>
@@ -169,26 +165,34 @@
 
 </div> {{-- /.container-fluid --}}
 
-{{-- ============================================
+{{-- =======================================================
      MODAL CREAR PROYECTO
-=============================================== --}}
+======================================================= --}}
 @if($canCreate)
-<div class="modal fade" id="modalCrearProyecto" tabindex="-1">
+<div class="modal fade" id="modalCrearProyecto" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
-        <form class="modal-content" method="POST"
+        <form class="modal-content"
+              method="POST"
               action="{{ route('admin.semilleros.proyectos.store', $semillero->id_semillero) }}">
             @csrf
+
             <div class="modal-header">
                 <h5 class="modal-title">Crear proyecto</h5>
-                <button class="btn-close" data-bs-dismiss="modal"></button>
+                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
 
             <div class="modal-body">
                 <div class="row g-3">
+
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Estado</label>
                         <select name="estado" class="form-select" required>
-                            @foreach(['EN_FORMULACION'=>'En formulación','EN_EJECUCION'=>'En ejecución','FINALIZADO'=>'Finalizado','ARCHIVADO'=>'Archivado'] as $v=>$t)
+                            @foreach([
+                                'EN_FORMULACION' => 'En formulación',
+                                'EN_EJECUCION'   => 'En ejecución',
+                                'FINALIZADO'     => 'Finalizado',
+                                'ARCHIVADO'      => 'Archivado'
+                            ] as $v => $t)
                                 <option value="{{ $v }}">{{ $t }}</option>
                             @endforeach
                         </select>
@@ -213,6 +217,7 @@
                         <label class="form-label fw-semibold">Fecha fin</label>
                         <input type="date" name="fecha_fin" class="form-control">
                     </div>
+
                 </div>
             </div>
 
@@ -224,16 +229,17 @@
                     <i class="bi bi-save me-1"></i> Guardar
                 </button>
             </div>
+
         </form>
     </div>
 </div>
 @endif
 
-{{-- ============================================
+{{-- =======================================================
      MODAL EDITAR PROYECTO
-=============================================== --}}
+======================================================= --}}
 @if($canUpdate)
-<div class="modal fade" id="modalEditarProyecto" tabindex="-1">
+<div class="modal fade" id="modalEditarProyecto" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <form id="formEditarProyecto" class="modal-content" method="POST">
             @csrf
@@ -241,7 +247,7 @@
 
             <div class="modal-header">
                 <h5 class="modal-title">Editar proyecto</h5>
-                <button class="btn-close" data-bs-dismiss="modal"></button>
+                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
 
             <div class="modal-body">
@@ -250,6 +256,7 @@
                         <label class="form-label fw-semibold">Nombre</label>
                         <input type="text" id="e_nombre" name="nombre_proyecto" class="form-control" required>
                     </div>
+
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Estado</label>
                         <select id="e_estado" name="estado" class="form-select" required>
@@ -259,14 +266,17 @@
                             <option value="ARCHIVADO">Archivado</option>
                         </select>
                     </div>
+
                     <div class="col-12">
                         <label class="form-label fw-semibold">Descripción</label>
                         <textarea id="e_desc" name="descripcion" class="form-control" rows="3"></textarea>
                     </div>
+
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Fecha inicio</label>
                         <input type="date" id="e_inicio" name="fecha_inicio" class="form-control">
                     </div>
+
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Fecha fin</label>
                         <input type="date" id="e_fin" name="fecha_fin" class="form-control">
@@ -275,28 +285,49 @@
             </div>
 
             <div class="modal-footer">
-                <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
                 <button class="btn btn-nuevo-semillero" type="submit">
                     <i class="bi bi-save me-1"></i> Guardar cambios
                 </button>
             </div>
+
         </form>
     </div>
 </div>
 @endif
 
-{{-- ============================================
-     CONFIG JS (para el archivo externo)
-=============================================== --}}
-@push('scripts')
-<script>
-    window.proyectosSemillero = {
-        flashSuccess: @json(session('success') ?? session('ok')),
-        flashError:   @json(session('error')),
-        openCrear: {{ session('openModal') === 'modalCrearProyecto' ? 'true' : 'false' }},
-    };
-</script>
-<script src="{{ asset('js/admin/proyectos-semilleros.js') }}"></script>
-@endpush
-
 @endsection
+
+{{-- =======================================================
+     JS
+======================================================= --}}
+@push('scripts')
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function swalSuccess(msg) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: msg,
+            });
+        }
+
+        function swalError(msg) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: msg,
+            });
+        }
+
+        window.proyectosSemillero = {
+            flashSuccess: @json(session('success') ?? session('ok')),
+            flashError  : @json(session('error')),
+        };
+    </script>
+
+    <script src="{{ asset('js/admin/proyectos-semilleros.js') }}"></script>
+@endpush
