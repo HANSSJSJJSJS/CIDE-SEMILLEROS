@@ -9,7 +9,7 @@
 @endpush
 
 @section('content')
-    
+
 
     <div class="container px-4">
         <div class="row">
@@ -143,7 +143,12 @@
                                                     <td class="small text-muted">{{ optional($ev->created_at)->format('d/m/Y H:i') }}</td>
                                                     <td>
                                                         @if($file && !empty($file->ruta))
-                                                            <a href="{{ Storage::url($file->ruta) }}" target="_blank" class="btn btn-sm btn-outline-primary">Ver</a>
+                                                            @php $fileId = $file->id ?? null; @endphp
+                                                            @if($fileId)
+                                                                <a href="{{ route('aprendiz.archivos.show', $fileId) }}" target="_blank" class="btn btn-sm btn-outline-primary">Ver</a>
+                                                            @else
+                                                                <a href="{{ Storage::url($file->ruta) }}" target="_blank" class="btn btn-sm btn-outline-primary">Ver</a>
+                                                            @endif
                                                         @else
                                                             <button class="btn btn-sm btn-outline-secondary" disabled>Sin archivo</button>
                                                         @endif

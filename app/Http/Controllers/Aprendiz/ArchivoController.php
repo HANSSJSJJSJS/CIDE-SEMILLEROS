@@ -66,6 +66,40 @@ class ArchivoController extends Controller
         return view('aprendiz.archivos.archivo', compact('proyectos', 'archivos', 'proyecto', 'fecha'));
     }
 
+    /**
+     * Mostrar/stream del archivo subido por el aprendiz
+     */
+    public function show($id)
+    {
+        // Buscar registro y asegurar pertenencia al usuario autenticado
+        if (!\Illuminate\Support\Facades\Schema::hasTable('archivos')) {
+            abort(404);
+        }
+
+        $archivo = Archivo::find($id);
+        if (!$archivo) {
+            abort(404);
+        }
+        if ((int)$archivo->user_id !== (int)Auth::id()) {
+            abort(403);
+        }
+
+        $ruta = $archivo->ruta;
+        if (empty($ruta) || !Storage::disk('public')->exists($ruta)) {
+            abort(404);
+        }
+
+        // Determinar si se debe mostrar inline o descargar
+        $mime = $archivo->mime_type ?: Storage::disk('public')->mimeType($ruta);
+        $filename = $archivo->nombre_original ?: basename($ruta);
+        $headers = [
+            'Content-Type' => $mime,
+        ];
+
+        // Para PDF mostrar inline; para otros tipos, también inline si el navegador lo soporta
+        return Storage::disk('public')->response($ruta, $filename, $headers);
+    }
+
     public function create(Request $request)
     {
         $user = Auth::user();
