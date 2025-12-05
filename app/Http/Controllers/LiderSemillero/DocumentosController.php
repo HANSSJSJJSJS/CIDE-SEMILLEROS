@@ -20,6 +20,7 @@ class DocumentosController extends Controller
         if (!Schema::hasTable('proyectos')) {
             return view('lider_semi.documentos', ['proyectos' => collect([])]);
         }
+        
 
         $proyectos = DB::table('proyectos as p')
             ->join('semilleros as s', 's.id_semillero', '=', 'p.id_semillero')

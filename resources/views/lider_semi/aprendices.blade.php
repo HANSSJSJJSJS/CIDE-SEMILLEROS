@@ -58,7 +58,7 @@
                         <tr>
                             <td class="py-3 px-4">
                                 <div class="d-flex align-items-center gap-3">
-                                    <div class="rounded-circle d-flex justify-content-center align-items-center" 
+                                    <div class="rounded-circle d-flex justify-content-center align-items-center"
                                          style="width:42px;height:42px;background-color:#5aa72e;color:#fff;font-weight:700;font-size:14px;">
                                         {{ strtoupper(substr($aprendiz->nombre_completo ?? 'A', 0, 1)) }}{{ strtoupper(substr(explode(' ', $aprendiz->nombre_completo ?? 'M')[1] ?? 'M', 0, 1)) }}
                                     </div>
@@ -85,7 +85,7 @@
                                 @endif
                             </td>
                             <td class="py-3 text-end pe-4">
-                                <button class="btn btn-sm btn-outline-success btn-ver-detalle" 
+                                <button class="btn btn-sm btn-outline-success btn-ver-detalle"
                                         style="border-radius:20px;padding:4px 12px;"
                                         data-id="{{ $aprendiz->id_aprendiz }}"
                                         data-nombre="{{ $aprendiz->nombre_completo }}"
@@ -97,6 +97,9 @@
                                         data-semillero="{{ $aprendiz->semillero_nombre }}"
                                         data-ficha="{{ $aprendiz->ficha ?? '' }}"
                                         data-programa="{{ $aprendiz->programa ?? '' }}"
+                                        data-sexo="{{ $aprendiz->sexo ?? '' }}"
+                                        data-nivel-academico="{{ $aprendiz->nivel_academico ?? '' }}"
+                                        data-rh="{{ $aprendiz->rh ?? '' }}"
                                         data-contacto-nombre="{{ $aprendiz->contacto_nombre ?? '' }}"
                                         data-contacto-celular="{{ $aprendiz->contacto_celular ?? '' }}">
                                     <i class="fas fa-eye"></i> Ver
@@ -122,7 +125,7 @@
 <div class="offcanvas offcanvas-end" tabindex="-1" id="detalleAprendiz" style="width:500px;">
     <div class="offcanvas-header" style="background-color:#2d572c;color:#fff;">
         <div class="d-flex align-items-center gap-3">
-            <div class="rounded-circle d-flex justify-content-center align-items-center" 
+            <div class="rounded-circle d-flex justify-content-center align-items-center"
                  style="width:50px;height:50px;background-color:#5aa72e;color:#fff;font-weight:700;font-size:18px;"
                  id="modal-iniciales">MG</div>
             <h5 class="mb-0 fw-bold" id="modal-nombre">María González</h5>
@@ -154,8 +157,20 @@
                 </div>
                 <div class="col-6">
                     <div class="p-3" style="background-color:#f8f9fa;border-left:4px solid #5aa72e;border-radius:4px;">
+                        <small class="text-muted d-block mb-1">SEXO</small>
+                        <div class="fw-semibold" id="modal-sexo">—</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-3" style="background-color:#f8f9fa;border-left:4px solid #5aa72e;border-radius:4px;">
                         <small class="text-muted d-block mb-1">CORREO INSTITUCIONAL</small>
                         <div class="fw-semibold" style="font-size:12px;word-break:break-all;" id="modal-correo-inst">maria.gonzalez@sena.edu.co</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-3" style="background-color:#f8f9fa;border-left:4px solid #5aa72e;border-radius:4px;">
+                        <small class="text-muted d-block mb-1">RH</small>
+                        <div class="fw-semibold" id="modal-rh">—</div>
                     </div>
                 </div>
                 <div class="col-12">
@@ -189,6 +204,12 @@
                         <div class="fw-semibold" id="modal-programa">Programa IA</div>
                     </div>
                 </div>
+                <div class="col-12">
+                    <div class="p-3" style="background-color:#f8f9fa;border-left:4px solid #5aa72e;border-radius:4px;">
+                        <small class="text-muted d-block mb-1">NIVEL ACADÉMICO</small>
+                        <div class="fw-semibold" id="modal-nivel">—</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -216,15 +237,15 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Script cargado correctamente');
-    
+
     const modalElement = document.getElementById('detalleAprendiz');
     if (!modalElement) {
         console.error('No se encontró el elemento modal');
         return;
     }
-    
+
     const modal = new bootstrap.Offcanvas(modalElement);
-    
+
     // Elementos de filtro
     const filtroTipoDoc = document.getElementById('filtro-tipo-doc');
     const filtroDocumento = document.getElementById('filtro-documento');
@@ -232,26 +253,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnLimpiar = document.getElementById('btn-limpiar-filtros');
     const tbody = document.querySelector('tbody');
     const todasLasFilas = Array.from(tbody.querySelectorAll('tr:not(.no-results)'));
-    
+
     // Función de filtrado
     function aplicarFiltros() {
         const tipoSeleccionado = filtroTipoDoc.value.toLowerCase();
         const documentoBuscado = filtroDocumento.value.toLowerCase().trim();
         const nombreBuscado = filtroNombre.value.toLowerCase().trim();
-        
+
         let filasVisibles = 0;
-        
+
         todasLasFilas.forEach(fila => {
             if (fila.querySelector('.no-results')) return;
-            
+
             const tipoDoc = fila.querySelector('td:nth-child(3) .fw-semibold')?.textContent.toLowerCase() || '';
             const numDoc = fila.querySelector('td:nth-child(3) small')?.textContent.toLowerCase() || '';
             const nombre = fila.querySelector('td:nth-child(1) .fw-semibold')?.textContent.toLowerCase() || '';
-            
+
             const cumpleTipo = !tipoSeleccionado || tipoDoc.includes(tipoSeleccionado);
             const cumpleDocumento = !documentoBuscado || numDoc.includes(documentoBuscado);
             const cumpleNombre = !nombreBuscado || nombre.includes(nombreBuscado);
-            
+
             if (cumpleTipo && cumpleDocumento && cumpleNombre) {
                 fila.style.display = '';
                 filasVisibles++;
@@ -259,7 +280,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 fila.style.display = 'none';
             }
         });
-        
+
         // Mostrar mensaje si no hay resultados
         let mensajeNoResultados = tbody.querySelector('.no-results');
         if (filasVisibles === 0) {
@@ -274,12 +295,12 @@ document.addEventListener('DOMContentLoaded', function() {
             mensajeNoResultados.style.display = 'none';
         }
     }
-    
+
     // Event listeners para filtros
     filtroTipoDoc.addEventListener('change', aplicarFiltros);
     filtroDocumento.addEventListener('input', aplicarFiltros);
     filtroNombre.addEventListener('input', aplicarFiltros);
-    
+
     // Limpiar filtros
     btnLimpiar.addEventListener('click', function() {
         filtroTipoDoc.value = '';
@@ -287,16 +308,16 @@ document.addEventListener('DOMContentLoaded', function() {
         filtroNombre.value = '';
         aplicarFiltros();
     });
-    
+
     // Modal - Botones Ver
     const botones = document.querySelectorAll('.btn-ver-detalle');
     console.log('Botones encontrados:', botones.length);
-    
+
     botones.forEach((btn, index) => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             console.log('Click en botón Ver', this.dataset);
-            
+
             const nombre = this.dataset.nombre || '';
             const tipoDoc = this.dataset.tipoDoc || 'CC';
             const documento = this.dataset.documento || 'Sin documento';
@@ -306,16 +327,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const semillero = this.dataset.semillero || 'Sin asignar';
             const ficha = this.dataset.ficha || 'Sin ficha';
             const programa = this.dataset.programa || 'Sin programa';
+            const sexo = this.dataset.sexo || '—';
+            const nivel = this.dataset.nivelAcademico || this.dataset['nivel-academico'] || '—';
+            const rh = this.dataset.rh || '—';
             const contactoNombre = this.dataset.contactoNombre || 'Sin contacto';
             const contactoCelular = this.dataset.contactoCelular || 'Sin celular';
-            
+
             console.log('Datos del aprendiz:', { nombre, tipoDoc, documento });
-            
+
             // Generar iniciales
             const palabras = nombre.trim().split(' ');
             const ini1 = (palabras[0] || 'A').charAt(0).toUpperCase();
             const ini2 = (palabras[1] || 'M').charAt(0).toUpperCase();
-            
+
             // Actualizar modal
             document.getElementById('modal-iniciales').textContent = ini1 + ini2;
             document.getElementById('modal-nombre').textContent = nombre;
@@ -327,9 +351,12 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('modal-semillero').textContent = semillero;
             document.getElementById('modal-ficha').textContent = ficha;
             document.getElementById('modal-programa').textContent = programa;
+            document.getElementById('modal-sexo').textContent = sexo;
+            document.getElementById('modal-nivel').textContent = nivel;
+            document.getElementById('modal-rh').textContent = rh;
             document.getElementById('modal-contacto-nombre').textContent = contactoNombre;
             document.getElementById('modal-contacto-celular').textContent = contactoCelular;
-            
+
             console.log('Mostrando modal');
             modal.show();
         });
