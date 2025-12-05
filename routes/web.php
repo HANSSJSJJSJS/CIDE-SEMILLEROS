@@ -196,9 +196,6 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
             // ==========================
             //         SEMILLEROS
             // ==========================
-
-
-
             // 🔹 Ruta AJAX para líderes disponibles
             Route::get('semilleros/lideres-disponibles', [SemilleroController::class, 'lideresDisponibles'])
                 ->name('semilleros.lideresDisponibles');
@@ -210,6 +207,14 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
             Route::get('semilleros/{id}/edit-ajax', [SemilleroController::class, 'editAjax'])
                 ->whereNumber('id')
                 ->name('semilleros.edit.ajax');
+            
+            // 🔹 NUEVA: obtener líder de un semillero en JSON
+            Route::get('semilleros/{semillero}/lider', [SemilleroController::class, 'liderJson'])
+                ->name('semilleros.liderJson');
+            
+             Route::get('semilleros/{semillero}/recursos', [RecursoController::class, 'porSemillero'])
+            ->whereNumber('semillero')
+            ->name('semilleros.recursos');
 
 
         // ==========================
@@ -296,8 +301,10 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
 
             Route::put('/semillero/{recurso}/estado',
                 [RecursoController::class, 'actualizarEstadoRecurso']
-    )->name('semillero.estado');
-});
+            )->name('semillero.estado');
+            
+
+        });
 
 
 
@@ -458,15 +465,6 @@ Route::middleware(['auth', 'role:LIDER_SEMILLERO'])
         Route::put('/eventos/{evento}/participantes/{aprendiz}/asistencia', [CalendarioLiderController::class, 'actualizarAsistencia'])->name('eventos.participantes.asistencia');
     });
 
-/*
-|--------------------------------------------------------------------------
-| LÍDER GENERAL
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth', 'role:LIDER_GENERAL'])->group(function () {
-    Route::get('/lider_general/dashboard', fn () => view('lider_general.dashboard_lider'))
-        ->name('lider_general.dashboard');
-});
 
 /*
 |--------------------------------------------------------------------------

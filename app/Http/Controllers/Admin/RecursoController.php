@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Recurso;
-use App\Models\Semillero;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class RecursoController extends Controller
@@ -17,97 +17,64 @@ class RecursoController extends Controller
 
     /**
      * Vista principal del módulo de recursos.
-     * Ahora también muestra los semilleros con sus actividades.
+     * Muestra los semilleros con contadores de recursos para líderes.
      */
     public function index()
     {
-        $semilleros = Semillero::with('lider')->get();
+        // Traemos semilleros + info básica del líder
+        $semilleros = DB::table('semilleros as s')
+            ->leftJoin('lideres_semillero as ls', 'ls.id_lider_semi', '=', 's.id_lider_semi')
+            ->leftJoin('users as u', 'u.id', '=', 'ls.id_lider_semi')
+            ->select(
+                's.id_semillero',
+                's.nombre',
 
+                // columnas "virtuales" para la tarjeta
+                DB::raw("'Sin descripción' as descripcion"),
+                DB::raw("'ACTIVO' as estado"),
+
+                's.id_lider_semi',
+                DB::raw("
+                    TRIM(
+                        CONCAT(
+                            COALESCE(u.nombre, ''), ' ',
+                            COALESCE(u.apellidos, '')
+                        )
+                    ) as lider_nombre
+                ")
+            )
+            ->orderBy('s.nombre')
+            ->get();
+
+        // Contadores de recursos por semillero (solo los dirigidos a líderes)
         foreach ($semilleros as $s) {
-            $q = Recurso::where('dirigido_a', 'lideres')
+            $query = Recurso::where('dirigido_a', 'lideres')
                 ->where('semillero_id', $s->id_semillero);
 
-            $s->actividades_total      = (clone $q)->count();
-            $s->actividades_pendientes = (clone $q)->where('estado', 'pendiente')->count();
-            $s->actividades_aprobadas  = (clone $q)->where('estado', 'aprobado')->count();
-            $s->actividades_rechazadas = (clone $q)->where('estado', 'rechazado')->count();
-
-            $s->lider_nombre = optional($s->lider)->nombre_completo;
+            $s->actividades_total      = (clone $query)->count();
+            $s->actividades_pendientes = (clone $query)->where('estado', 'pendiente')->count();
+            $s->actividades_aprobadas  = (clone $query)->where('estado', 'aprobado')->count();
+            $s->actividades_rechazadas = (clone $query)->where('estado', 'rechazado')->count();
         }
 
         return view('admin.recursos.index', compact('semilleros'));
     }
 
-    /**
-     * Lista de recursos generales via AJAX
-     */
-    public function listar(Request $request)
-    {
-        $search = $request->get('search');
-        $categoria = $request->get('categoria');
-
-        $query = Recurso::query()->whereNull('semillero_id'); // solo recursos generales
-
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('nombre_archivo', 'like', "%$search%");
-                $q->orWhere('descripcion', 'like', "%$search%");
-            });
-        }
-
-        if ($categoria) {
-            $query->where('categoria', $categoria);
-        }
-
-        return response()->json([
-            'data' => $query->orderByDesc('created_at')->get()
-        ]);
-    }
-
-    /**
-     * Guardar un recurso general (con archivo)
-     */
-    public function store(Request $request)
-    {
-        $request->validate([
-            'nombre_archivo' => 'required|string|max:255',
-            'categoria'      => 'required|in:plantillas,manuales,otros',
-            'dirigido_a'     => 'required|in:todos,aprendices,lideres',
-            'archivo'        => 'required|file|max:15000',
-        ]);
-
-        $file = $request->file('archivo');
-        $fileName = time().'_'.$file->getClientOriginalName();
-        $filePath = $file->storeAs('recursos', $fileName, 'public');
-
-        $recurso = new Recurso();
-        $recurso->nombre_archivo = $request->nombre_archivo;
-        $recurso->archivo = $filePath;
-        $recurso->categoria = $request->categoria;
-        $recurso->dirigido_a = $request->dirigido_a;
-        $recurso->descripcion = $request->descripcion;
-        $recurso->estado = 'pendiente';
-        $recurso->user_id = Auth::id();
-        $recurso->save();
-
-        return response()->json(['success' => true]);
-    }
-
-    /**
-     * Descargar archivo
-     */
+    // ======================================================
+    // DESCARGAR RECURSO
+    // ======================================================
     public function download(Recurso $recurso)
     {
-        if (!$recurso->archivo || !Storage::disk('public')->exists($recurso->archivo)) {
+        if (! $recurso->archivo || ! Storage::disk('public')->exists($recurso->archivo)) {
             abort(404, 'Archivo no encontrado');
         }
 
         return Storage::disk('public')->download($recurso->archivo, $recurso->nombre_archivo);
     }
 
-    /**
-     * Eliminar recurso o actividad
-     */
+    // ======================================================
+    // ELIMINAR
+    // ======================================================
     public function destroy(Recurso $recurso)
     {
         if ($recurso->archivo && Storage::disk('public')->exists($recurso->archivo)) {
@@ -120,89 +87,102 @@ class RecursoController extends Controller
     }
 
     // ======================================================
-    //          ACTIVIDADES → (NOMBRE CONSERVADO)
+    //          RECURSOS PARA LÍDERES DE SEMILLERO
     // ======================================================
 
     /**
-     * Obtener actividades de un semillero
-     * GET admin/recursos/actividades/semillero/{semillero}
+     * Obtener recursos de un semillero para el modal "Ver Recursos"
+     * GET admin/semilleros/{semillero}/recursos
      */
-    public function actividadesPorSemillero(Semillero $semillero)
+    public function porSemillero($semilleroId)
     {
-        $actividades = Recurso::where('dirigido_a', 'lideres')
-            ->where('semillero_id', $semillero->id_semillero)
-            ->orderByDesc('created_at')
+        $recursos = DB::table('recursos as r')
+            ->leftJoin('users as u', 'u.id', '=', 'r.user_id')
+            ->where('r.semillero_id', $semilleroId)
+            ->where('r.dirigido_a', 'lideres')
+            ->select(
+                'r.id',
+                'r.nombre_archivo as titulo',
+                'r.descripcion',
+                'r.estado',
+                DB::raw('DATE(r.fecha_vencimiento) as fecha_limite'),
+                DB::raw("
+                    TRIM(
+                        CONCAT(
+                            COALESCE(u.nombre, ''), ' ',
+                            COALESCE(u.apellidos, '')
+                        )
+                    ) as lider_nombre
+                ")
+            )
+            ->orderBy('r.fecha_vencimiento', 'desc')
             ->get()
-            ->map(function ($a) use ($semillero) {
+            ->map(function ($r) {
+                // Detectar recursos vencidos (comparando strings Y-m-d)
+                $estado = $r->estado;
+                $hoy    = now()->toDateString(); // 'YYYY-mm-dd'
 
-                // Estado virtual "vencido"
-                $estadoVista = $a->estado;
                 if (
-                    $a->estado === 'pendiente' &&
-                    $a->fecha_vencimiento &&
-                    now()->gt($a->fecha_vencimiento)
+                    $estado === 'pendiente' &&
+                    $r->fecha_limite &&
+                    $r->fecha_limite < $hoy
                 ) {
-                    $estadoVista = 'vencido';
+                    $estado = 'vencido';
                 }
 
-                return [
-                    'id' => $a->id,
-                    'titulo' => $a->nombre_archivo,
-                    'descripcion' => $a->descripcion,
-                    'estado' => $estadoVista,
-                    'fecha_vencimiento' => optional($a->fecha_vencimiento)?->format('Y-m-d'),
-                    'fecha_creacion' => optional($a->created_at)?->format('Y-m-d'),
-                    'comentarios' => $a->comentarios,
-                    'lider_nombre' => optional($semillero->lider)->nombre_completo,
-                ];
+                $r->estado = $estado;
+                return $r;
             });
 
-        return response()->json(['actividades' => $actividades]);
+        return response()->json([
+            'actividades' => $recursos, // el JS usa data.actividades
+        ]);
     }
 
-    /**
-     * Crear actividad para líder de semillero
-     * POST admin/recursos/actividades
-     */
+    // ======================================================
+    // CREAR RECURSO PARA LÍDER DEL SEMILLERO
+    // ======================================================
     public function storeActividad(Request $request)
     {
         $request->validate([
             'semillero_id' => 'required|exists:semilleros,id_semillero',
             'titulo'       => 'required|string|max:255',
             'descripcion'  => 'required|string',
-            'fecha_limite' => 'required|date|after_or_equal:today'
+            'fecha_limite' => 'required|date|after_or_equal:today',
         ]);
 
-        $actividad = new Recurso();
-        $actividad->nombre_archivo = $request->titulo;
-        $actividad->descripcion = $request->descripcion;
-        $actividad->fecha_vencimiento = $request->fecha_limite;
-        $actividad->categoria = 'otros';
-        $actividad->dirigido_a = 'lideres';
-        $actividad->estado = 'pendiente';
-        $actividad->semillero_id = $request->semillero_id;
-        $actividad->user_id = Auth::id();
-        $actividad->save();
+        Recurso::create([
+            'nombre_archivo'    => $request->titulo,
+            'descripcion'       => $request->descripcion,
+            'fecha_vencimiento' => $request->fecha_limite,
+            'categoria'         => 'otros',
+            'dirigido_a'        => 'lideres',
+            'estado'            => 'pendiente',
+            'semillero_id'      => $request->semillero_id,
+            'user_id'           => Auth::id(),
+        ]);
 
         return response()->json(['success' => true]);
     }
 
-    /**
-     * Actualizar estado de una actividad
-     * PUT admin/recursos/actividades/{recurso}/estado
-     */
+    // ======================================================
+    // ACTUALIZAR ESTADO DEL RECURSO / ACTIVIDAD
+    // ======================================================
     public function actualizarEstadoActividad(Request $request, Recurso $recurso)
     {
         $request->validate([
             'estado'      => 'required|in:pendiente,aprobado,rechazado',
-            'comentarios' => 'nullable|string|max:500'
+            'comentarios' => 'nullable|string|max:500',
         ]);
 
         if ($recurso->dirigido_a !== 'lideres') {
-            return response()->json(['success' => false, 'message' => 'No es una actividad'], 400);
+            return response()->json([
+                'success' => false,
+                'message' => 'No es un recurso de líder',
+            ], 400);
         }
 
-        $recurso->estado = $request->estado;
+        $recurso->estado      = $request->estado;
         $recurso->comentarios = $request->comentarios;
         $recurso->save();
 

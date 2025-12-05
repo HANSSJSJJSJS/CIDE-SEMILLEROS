@@ -66,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputLiderId = document.getElementById('lider_id');
     const mensajeLider = document.getElementById('mensaje-lider');
 
+    // ya no usamos tipo_actividad, pero dejamos los nodos por si luego amplías
     const selectTipoActividad = document.getElementById('tipo_actividad');
     const infoTipoActividad = document.getElementById('info-tipo-actividad');
     const inputFechaLimite = document.getElementById('fecha_limite_actividad');
@@ -76,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         inputFechaLimite.min = hoy;
     }
 
-    // ==== Abrir modal actividades (ver) ====
+    // ==== Abrir modal recursos (ver) ====
     document.querySelectorAll('.btn-ver-actividades').forEach(btn => {
         btn.addEventListener('click', () => {
             const semilleroId = btn.dataset.semilleroId;
@@ -87,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function abrirModalActividades(semilleroId, semilleroNombre) {
         if (!modalActividades) return;
-        tituloModalActividades.textContent = `Actividades - ${semilleroNombre}`;
+        tituloModalActividades.textContent = `Recursos - ${semilleroNombre}`;
         modalActividades.classList.add('active');
         cargarActividades(semilleroId);
     }
@@ -98,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (contenedorActividades) contenedorActividades.innerHTML = '';
     }
 
-    // Cerrar modal actividades (botón X)
+    // Cerrar modal recursos (botón X)
     document.querySelectorAll('[data-close-modal="actividades"]').forEach(btn => {
         btn.addEventListener('click', cerrarModalActividades);
     });
@@ -109,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // === Cargar recursos por semillero ===
     function cargarActividades(semilleroId) {
         if (!contenedorActividades) return;
 
@@ -124,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     contenedorActividades.innerHTML = `
                         <div class="actividades-vacio">
                             <i class="bi bi-inbox"></i>
-                            <p>No hay actividades asignadas a este líder</p>
+                            <p>No hay recursos asignados a este líder</p>
                         </div>
                     `;
                     return;
@@ -135,13 +137,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     const estado = act.estado || 'pendiente';
                     const badgeClass =
                         estado === 'pendiente' ? 'badge-pendiente' :
-                        estado === 'en_proceso' ? 'badge-en-proceso' :
-                        'badge-completado';
+                        estado === 'vencido'    ? 'badge-rechazado' :
+                        estado === 'aprobado'   ? 'badge-aprobado' :
+                                                  'badge-completado';
 
                     const estadoTexto =
                         estado === 'pendiente' ? 'PENDIENTE' :
-                        estado === 'en_proceso' ? 'EN PROCESO' :
-                        'COMPLETADA';
+                        estado === 'vencido'    ? 'VENCIDO' :
+                        estado === 'aprobado'   ? 'APROBADO' :
+                                                  'COMPLETADO';
 
                     html += `
                         <div class="actividad-card">
@@ -151,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                             <div class="actividad-info">
                                 Líder: ${act.lider_nombre || 'N/A'} ·
-                                Fecha límite: ${act.fecha_limite || 'Sin definir'}
+                                Fecha límite: ${act.fecha_limite || act.fecha_vencimiento || 'Sin definir'}
                             </div>
                             <p class="actividad-descripcion">${act.descripcion || 'Sin descripción'}</p>
                         </div>
@@ -165,13 +169,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 contenedorActividades.innerHTML = `
                     <div class="actividades-vacio">
                         <i class="bi bi-exclamation-circle"></i>
-                        <p>Error al cargar las actividades</p>
+                        <p>Error al cargar los recursos</p>
                     </div>
                 `;
             });
     }
 
-    // ==== Abrir modal actividad (crear) ====
+    // ==== Abrir modal recurso (crear) ====
     function limpiarFormActividad() {
         if (!formActividadLider) return;
         formActividadLider.reset();
@@ -250,17 +254,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 .then(data => {
                     const lider = data.lider || null;
                     if (lider) {
-                        if (inputLiderNombre) inputLiderNombre.value = lider.nombre_completo;
+                        const nombreMostrado =
+                            lider.nombre_completo || lider.nombre || 'Sin nombre';
+
+                        if (inputLiderNombre) inputLiderNombre.value = nombreMostrado;
                         if (inputLiderId) inputLiderId.value = lider.id;
                         if (mensajeLider) {
-                            mensajeLider.textContent = 'Actividad será asignada directamente a este líder.';
+                            mensajeLider.textContent = 'Recurso será asignado directamente a este líder.';
                             mensajeLider.className = 'text-success';
                         }
                     } else {
                         if (inputLiderNombre) inputLiderNombre.value = 'Sin líder asignado';
                         if (inputLiderId) inputLiderId.value = '';
                         if (mensajeLider) {
-                            mensajeLider.textContent = 'Este semillero no tiene líder asignado. No podrás crear la actividad.';
+                            mensajeLider.textContent = 'Este semillero no tiene líder asignado. No podrás crear el recurso.';
                             mensajeLider.className = 'text-warning';
                         }
                     }
@@ -277,43 +284,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ==== Info por tipo de actividad ====
-    if (selectTipoActividad && infoTipoActividad) {
-        selectTipoActividad.addEventListener('change', () => {
-            const tipo = selectTipoActividad.value;
-            infoTipoActividad.innerHTML = '';
-            if (!tipo) return;
-
-            let descripcionTipo = '';
-            switch (tipo) {
-                case 'reunion':
-                    descripcionTipo = 'El líder deberá programar o asistir a una reunión con el semillero.';
-                    break;
-                case 'informe':
-                    descripcionTipo = 'El líder deberá entregar un informe (avance, resultados, etc.).';
-                    break;
-                case 'seguimiento':
-                    descripcionTipo = 'El líder deberá realizar seguimiento a los proyectos o actividades del semillero.';
-                    break;
-                case 'planeacion':
-                    descripcionTipo = 'El líder deberá planear actividades, cronogramas o metas del semillero.';
-                    break;
-                case 'otro':
-                    descripcionTipo = 'Actividad personalizada. Describe claramente lo que se espera del líder.';
-                    break;
-            }
-
-            infoTipoActividad.innerHTML = `
-                <div class="mb-3">
-                    <div class="alert" style="background-color:#e8f5e9;border-left:4px solid #5aa72e;border-radius:8px;padding:12px 16px;">
-                        <i class="bi bi-info-circle-fill text-success me-2"></i>
-                        <strong>${descripcionTipo}</strong>
-                    </div>
-                </div>
-            `;
-        });
-    }
-
     // ==== Enviar formulario ====
     if (formActividadLider) {
         formActividadLider.addEventListener('submit', e => {
@@ -325,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (fechaSeleccionada && fechaSeleccionada < fechaHoy) {
                 showNotification(
                     'Fecha inválida',
-                    'No se pueden crear actividades con fecha límite anterior a hoy.',
+                    'No se pueden crear recursos con fecha límite anterior a hoy.',
                     'error'
                 );
                 return;
@@ -334,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!inputLiderId || !inputLiderId.value) {
                 showNotification(
                     'Líder no asignado',
-                    'No es posible crear una actividad para un semillero sin líder asignado.',
+                    'No es posible crear un recurso para un semillero sin líder asignado.',
                     'error'
                 );
                 return;
@@ -357,8 +327,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 .then(data => {
                     if (data.success) {
                         showNotification(
-                            '¡Actividad creada!',
-                            'La actividad se ha asignado exitosamente al líder del semillero.',
+                            '¡Recurso creado!',
+                            'El recurso se ha asignado exitosamente al líder del semillero.',
                             'success'
                         );
                         cerrarModalActividad();
@@ -369,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         showNotification(
                             'Error al guardar',
-                            data.message || 'No se pudo guardar la actividad. Intenta nuevamente.',
+                            data.message || 'No se pudo guardar el recurso. Intenta nuevamente.',
                             'error'
                         );
                     }
@@ -385,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .finally(() => {
                     if (btnGuardar) {
                         btnGuardar.disabled = false;
-                        btnGuardar.textContent = 'Guardar Actividad';
+                        btnGuardar.textContent = 'Guardar Recurso';
                     }
                 });
         });

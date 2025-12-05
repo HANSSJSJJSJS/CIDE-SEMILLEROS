@@ -5,8 +5,8 @@
 <link rel="stylesheet" href="{{ asset('css/admin/recursos.css') }}">
 @endpush
 
-@section('module-title','Actividades para Líderes de Semillero')
-@section('module-subtitle','Asigna y gestiona actividades a los líderes de cada semillero')
+@section('module-title','Recursos para Líderes de Semillero')
+@section('module-subtitle','Asigna y gestiona recursos para los líderes de cada semillero')
 
 @section('content')
 <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -34,13 +34,13 @@
     {{-- HEADER usando .documentos-header y .btn-crear-proyecto --}}
     <div class="d-flex justify-content-between align-items-center mb-4 documentos-header">
         <div>
-            <h2>Gestión de Actividades a Líderes</h2>
-            <p>Asigna y revisa actividades destinadas a los líderes de cada semillero</p>
+            <h2>Gestión de Recursos para Líderes</h2>
+            <p>Asigna y revisa recursos destinados a los líderes de cada semillero</p>
         </div>
 
         @if($canCreate)
         <button class="btn btn-light btn-crear-proyecto" id="btnAbrirModalActividad">
-            <i class="bi bi-plus-lg me-2"></i>Crear Actividad
+            <i class="bi bi-plus-lg me-2"></i>Crear Recurso
         </button>
         @endif
     </div>
@@ -53,7 +53,7 @@
     @if($totalPendientes > 0)
     <div class="alert alerta-pendientes" role="alert">
         <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
-        <strong>Tienes {{ $totalPendientes }} actividad(es) pendiente(s) de seguimiento a líderes</strong>
+        <strong>Tienes {{ $totalPendientes }} recurso(s) pendiente(s) de seguimiento a líderes</strong>
     </div>
     @endif
 
@@ -85,7 +85,7 @@
                         <div class="row text-center proyecto-estadisticas">
                             <div class="col-4">
                                 <div class="estadistica-numero">{{ $semillero->actividades_total ?? 0 }}</div>
-                                <small class="estadistica-label">Actividades</small>
+                                <small class="estadistica-label">Recursos</small>
                             </div>
                             <div class="col-4">
                                 <div class="estadistica-numero">{{ $semillero->actividades_pendientes ?? 0 }}</div>
@@ -93,7 +93,7 @@
                             </div>
                             <div class="col-4">
                                 <div class="estadistica-numero">{{ $semillero->actividades_completadas ?? 0 }}</div>
-                                <small class="estadistica-label">Completadas</small>
+                                <small class="estadistica-label">Completados</small>
                             </div>
                         </div>
 
@@ -103,19 +103,19 @@
                                 class="btn btn-ver-entregas btn-ver-actividades"
                                 data-semillero-id="{{ $semillero->id_semillero }}"
                                 data-semillero-nombre="{{ $semillero->nombre }}">
-                                <i class="bi bi-card-checklist me-2"></i>Ver Actividades
+                                <i class="bi bi-card-checklist me-2"></i>Ver Recursos
                             </button>
 
-                            @if($semillero->lider_id && $canCreate)
+                           @if($semillero->id_lider_semi && $canCreate)
                                 <button
                                     class="btn btn-editar-proyecto btn-crear-actividad-card"
                                     data-semillero-id="{{ $semillero->id_semillero }}"
                                     data-semillero-nombre="{{ $semillero->nombre }}">
-                                    <i class="bi bi-plus-circle me-2"></i>Crear Actividad a su Líder
+                                    <i class="bi bi-plus-circle me-2"></i>Crear Recurso para su Líder
                                 </button>
                             @else
                                 <button class="btn btn-editar-proyecto" disabled
-                                    title="Este semillero no tiene líder asignado o no tienes permiso para crear actividades">
+                                    title="Este semillero no tiene líder asignado o no tienes permiso para crear recursos">
                                     <i class="bi bi-exclamation-circle me-2"></i>Sin líder asignado
                                 </button>
                             @endif
@@ -135,11 +135,11 @@
     </div>
 </div>
 
-{{-- MODAL VER ACTIVIDADES → usa .modal-entregas y .entrega-* --}}
+{{-- MODAL VER RECURSOS → usa .modal-entregas y .entrega-* --}}
 <div class="modal-overlay" id="modalActividades">
     <div class="modal-entregas"><!-- clase del CSS -->
         <button class="btn-cerrar-modal" data-close-modal="actividades">×</button>
-        <h2 id="tituloModalActividades">Actividades - Semillero</h2>
+        <h2 id="tituloModalActividades">Recursos - Semillero</h2>
 
         <div id="contenedorActividades">
             {{-- Se llena por JS con .entrega-card, .entrega-header, .badge-pendiente, etc. --}}
@@ -147,10 +147,10 @@
     </div>
 </div>
 
-{{-- MODAL CREAR ACTIVIDAD → usa .modal-evidencia y clases de formulario --}}
+{{-- MODAL CREAR RECURSO → usa .modal-evidencia y clases de formulario --}}
 <div class="modal-overlay" id="modalActividadLider">
     <div class="modal-evidencia"><!-- clase del CSS -->
-        <h2 id="tituloModalActividad">Crear Actividad para Líder de Semillero</h2>
+        <h2 id="tituloModalActividad">Crear Recurso para Líder de Semillero</h2>
 
         <form id="formActividadLider">
             @csrf
@@ -181,9 +181,9 @@
 
             {{-- Título --}}
             <div class="mb-3">
-                <label class="form-label-evidencia">Título de la Actividad</label>
+                <label class="form-label-evidencia">Título del Recurso</label>
                 <input type="text" class="form-control-evidencia" id="titulo_actividad" name="titulo"
-                       placeholder="Ej: Socializar cronograma con el semillero" required>
+                       placeholder="Ej: Guía de trabajo con el semillero" required>
             </div>
 
             {{-- Descripción --}}
@@ -191,8 +191,8 @@
                 <label class="form-label-evidencia">Descripción</label>
                 <textarea class="form-control-evidencia form-textarea-evidencia"
                           id="descripcion_actividad" name="descripcion"
-                          placeholder="Describe brevemente la actividad..." required></textarea>
-           
+                          placeholder="Describe brevemente el recurso..." required></textarea>
+            </div>
 
             {{-- Info según tipo (caja verde) --}}
             <div id="info-tipo-actividad"></div>
@@ -208,7 +208,7 @@
             {{-- Botones del modal: usan .modal-botones, .btn-cancelar-modal, .btn-guardar-modal --}}
             <div class="modal-botones">
                 <button type="button" class="btn-cancelar-modal" id="btnCancelarActividad">Cancelar</button>
-                <button type="submit" class="btn-guardar-modal">Guardar Actividad</button>
+                <button type="submit" class="btn-guardar-modal">Guardar Recurso</button>
             </div>
         </form>
     </div>

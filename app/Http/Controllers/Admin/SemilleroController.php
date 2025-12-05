@@ -355,6 +355,71 @@ public function editAjax($id)
         ]);
     }
     
+public function liderJson($id)
+{
+    try {
+        // Buscamos el semillero + su líder (misma lógica que en index/editAjax)
+        $row = DB::table('semilleros as s')
+            ->leftJoin('lideres_semillero as ls', 'ls.id_lider_semi', '=', 's.id_lider_semi')
+            ->leftJoin('users as u', 'u.id', '=', 'ls.id_lider_semi')
+            ->where('s.id_semillero', $id)
+            ->select(
+                's.id_semillero',
+                's.nombre',
+                's.id_lider_semi',
+                'ls.correo_institucional as lider_correo',
+                DB::raw("
+                    TRIM(
+                        CONCAT(
+                            COALESCE(u.nombre, ''), ' ',
+                            COALESCE(u.apellidos, '')
+                        )
+                    ) as lider_nombre
+                ")
+            )
+            ->first();
+
+        if (! $row) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Semillero no encontrado',
+            ], 404);
+        }
+
+        // Si no tiene líder asignado
+        if (! $row->id_lider_semi) {
+            return response()->json([
+                'success' => true,
+                'lider'   => null,
+                'message' => 'Semillero sin líder asignado',
+            ]);
+        }
+
+        // Devolvemos la info del líder
+        return response()->json([
+            'success' => true,
+            'lider'   => [
+                'id'     => $row->id_lider_semi,
+                'nombre' => $row->lider_nombre,
+                'email'  => $row->lider_correo,
+            ],
+        ]);
+
+    } catch (\Throwable $e) {
+        \Log::error('Error en SemilleroController@liderJson', [
+            'id'      => $id,
+            'mensaje' => $e->getMessage(),
+            'archivo' => $e->getFile(),
+            'linea'   => $e->getLine(),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Error interno al obtener líder',
+        ], 500);
+    }
+}
+
 
 
 
