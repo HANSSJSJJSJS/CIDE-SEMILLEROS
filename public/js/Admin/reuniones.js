@@ -5,20 +5,38 @@
   const ROUTES   = CFG.routes || {};        // { obtener, baseEventos, semilleros, lideres }
   const CSRF     = CFG.csrf || null;
   let HOLIDAYS = CFG.feriados || [];
-  let HOLIDAYS_YEAR = null;
+  const HOLIDAYS_LOADED = new Set();
+  const FIXED_MD_CO = ['01-01','05-01','07-20','08-07','12-08','12-25'];
+  const fixedColombia = (year)=> FIXED_MD_CO.map(md => `${String(year).padStart(4,'0')}-${md}`);
 
-  async function ensureHolidaysForYear(year){
-    if (HOLIDAYS_YEAR === year) return;
-    try {
+  async function fetchHolidaysYear(year){
+    try{
       const url = new URL(`/api/holidays/${year}`, window.location.origin);
       url.searchParams.set('country','CO');
       const res = await fetch(url.toString(), { headers: { 'Accept':'application/json' } });
-      if (res.ok) {
-        const data = await res.json();
-        const dates = Array.isArray(data?.dates) ? data.dates : [];
-        if (dates.length) { HOLIDAYS = dates; HOLIDAYS_YEAR = year; }
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data?.dates) ? data.dates : [];
+    }catch(_){ return []; }
+  }
+
+  async function ensureHolidaysForYear(year){
+    const targets = [year - 1, year, year + 1];
+    const missing = targets.filter(y => !HOLIDAYS_LOADED.has(y));
+    if (missing.length === 0) return;
+    const union = new Set(HOLIDAYS);
+    const results = await Promise.all(missing.map(y => fetchHolidaysYear(y)));
+    results.forEach((dates, idx) => {
+      const y = missing[idx];
+      if (Array.isArray(dates) && dates.length){
+        dates.forEach(d => union.add(d));
+      } else {
+        // Fallback client-side: fechas fijas mínimas de Colombia
+        fixedColombia(y).forEach(d => union.add(d));
       }
-    } catch (_) { /* fallback mantiene CFG.feriados */ }
+      HOLIDAYS_LOADED.add(y);
+    });
+    HOLIDAYS = Array.from(union);
   }
 
   // === Estado ===
@@ -317,6 +335,7 @@
       viewBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentView = btn.dataset.view;
+      await ensureHolidaysForYear(currentDate.getFullYear());
       await loadEventsForCurrentPeriod();
       renderCalendar();
     });
@@ -417,6 +436,9 @@
     events.filter(e => e.date === dateStr)
       .forEach(event => cell.appendChild(createEventElement(event)));
 
+    // marcar festivo visualmente
+    if (HOLIDAYS.includes(dateStr)) cell.classList.add('festivo');
+
     // reglas de bloqueo
     const disabled = isWeekend(date) || HOLIDAYS.includes(dateStr) || isPastDay(date);
     if (disabled) {
@@ -452,6 +474,7 @@
       const header = document.createElement('div');
       header.className = 'week-day-header';
       if (isToday(date)) header.classList.add('today');
+      if (HOLIDAYS.includes(formatDate(date))) header.classList.add('festivo');
       header.innerHTML = `<div class="week-day-name">${getDayName(date)}</div><div class="week-day-number">${date.getDate()}</div>`;
       weekHeader.appendChild(header);
     });
@@ -473,6 +496,7 @@
       const dayCol  = document.createElement('div');
       dayCol.className = 'week-day-column';
       const dateStr = formatDate(date);
+      if (HOLIDAYS.includes(dateStr)) dayCol.classList.add('festivo');
 
       const disabledDay = isWeekend(date) || HOLIDAYS.includes(dateStr) || isPastDay(date);
       WORK_HOURS.forEach(hour => {
@@ -484,6 +508,8 @@
         const hm      = hour * 100;
         const isLunch = hm >= 1200 && hm <= 1355;
         const allowed = !disabledDay && hm >= 800 && hm <= 1650 && !isLunch;
+
+        if (isLunch) slot.classList.add('lunch');
 
         if (!allowed) {
           slot.classList.add('disabled');
@@ -548,6 +574,8 @@
       const hm      = hour * 100;
       const isLunch = hm >= 1200 && hm <= 1355;
       const allowed = !isDisabled && hm >= 800 && hm <= 1650 && !isLunch;
+
+      if (isLunch) slot.classList.add('lunch');
 
       if (!allowed) {
         slot.classList.add('disabled');
@@ -1052,7 +1080,13 @@
   }
 
   function isWeekend(date) { const dow = date.getDay(); return dow === 0 || dow === 6; }
-  function formatDate(date) { return date.toISOString().split('T')[0]; }
+  // Formateo local YYYY-MM-DD (evita desfases por UTC de toISOString)
+  function formatDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
   function formatDateLong(date) {
     const days  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
     const months= ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];

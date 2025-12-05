@@ -34,6 +34,12 @@
 .cal-admin .days-grid > * { min-height:115px; border-right:1px solid var(--cal-border); border-bottom:1px solid var(--cal-border); padding:10px; position:relative; background: var(--cal-white); }
 .cal-admin .days-grid > *:nth-child(7n) { border-right:none; }
 
+/* Resaltado de festivos (Mes) */
+.cal-admin .day-cell.festivo { background-color: #ffe9a8 !important; border-left: 4px solid #f59e0b; }
+.cal-admin .day-cell.festivo.disabled { background-color: #ffe9a8 !important; }
+.cal-admin .day-cell.festivo .day-number { background: #fde68a; color: #7c2d12; border-radius:6px; padding:2px 6px; }
+.cal-admin .day-cell.festivo::after { content: 'Festivo'; position:absolute; top:8px; right:8px; font-size:10px; font-weight:800; color:#7c2d12; background:#ffd166; padding:2px 6px; border-radius:6px; box-shadow: var(--cal-shadow); }
+
 /* Fecha en celda (si el render la incluye) */
 .cal-admin .day-number, .cal-admin .cell-date, .cal-admin .day-label { position:absolute; top:8px; left:10px; font-weight:700; color:#41566b; }
 .cal-admin .today .day-number, .cal-admin .is-today .day-number { background: rgba(0,120,50,.12); color: var(--cal-green-dark); border-radius:6px; padding:2px 6px; }
@@ -50,6 +56,11 @@
 .cal-admin .week-header { display:grid; grid-template-columns: 90px repeat(7, 1fr); align-items:center; background: var(--cal-blue); color: var(--cal-white); border-radius:12px 12px 0 0; overflow:hidden; }
 .cal-admin .week-time-label { padding:12px; font-weight:700; text-align:center; border-right:1px solid rgba(255,255,255,.12); }
 .cal-admin .week-day-header { padding:12px; text-align:center; font-weight:700; }
+
+/* Resaltado de festivos (Semana) */
+.cal-admin .week-day-header.festivo { background-color: #ffe9a8; color: var(--cal-blue); }
+.cal-admin .week-day-header.festivo .week-day-number { color: #a16207; }
+.cal-admin .week-day-header.festivo::after { content:'Festivo'; display:inline-block; margin-left:8px; font-size:11px; font-weight:800; color:#7c2d12; background:#ffd166; padding:2px 6px; border-radius:6px; }
 .cal-admin .week-body { display:grid; grid-template-columns: 90px repeat(7, 1fr); background: var(--cal-white); border:1px solid var(--cal-border); border-top:none; }
 .cal-admin .week-time-row { display:contents; }
 .cal-admin .week-time-cell { padding:10px; font-weight:600; color: var(--cal-muted); border-right:1px solid var(--cal-border); border-bottom:1px solid var(--cal-border); background:#FAFCFF; }
@@ -140,6 +151,10 @@
 .cal-admin .week-day-column:last-child { border-right:none; }
 .cal-admin .week-time-slot { height:60px; border-bottom:1px solid var(--cal-border); cursor:pointer; }
 .cal-admin .week-time-slot.disabled { background:#F2F5F7; opacity:.7; cursor:not-allowed; }
+
+/* Columna del día festivo en Semana */
+.cal-admin .week-day-column.festivo .week-time-slot { background-color: #fff6d1; }
+.cal-admin .week-day-column.festivo .week-time-slot.disabled { background-color: #fff6d1; opacity:.85; }
 .cal-admin .week-event, .cal-admin .day-event { position:absolute; left:6px; right:6px; }
 
 /* Vista Día (estructura Admin) */

@@ -414,17 +414,28 @@ const PARTICIPANTS_MAP = @json(isset($aprendices) ? $aprendices->pluck('nombre_c
 const workHours = Array.from({ length: 9 }, (_, i) => i + 8); // 8..16
 let HOLIDAYS = @json(config('app.feriados', []));
 
-async function ensureHolidaysForYear(year){
+const HOLIDAYS_LOADED = new Set();
+async function fetchHolidaysYear(year){
   try{
-    if (ensureHolidaysForYear._year === year) return;
     const url = new URL(`/api/holidays/${year}`, window.location.origin);
     url.searchParams.set('country','CO');
     const res = await fetch(url.toString(), { headers: { 'Accept':'application/json' } });
-    if (res.ok){
-      const data = await res.json();
-      if (Array.isArray(data?.dates) && data.dates.length){ HOLIDAYS = data.dates; ensureHolidaysForYear._year = year; }
-    }
-  }catch(_){ /* usa fallback de config */ }
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data?.dates) ? data.dates : [];
+  }catch(_){ return []; }
+}
+async function ensureHolidaysForYear(year){
+  const targets = [year-1, year, year+1];
+  const missing = targets.filter(y => !HOLIDAYS_LOADED.has(y));
+  if (missing.length === 0) return;
+  const union = new Set(HOLIDAYS);
+  const results = await Promise.all(missing.map(y => fetchHolidaysYear(y)));
+  results.forEach((dates, idx) => {
+    const y = missing[idx];
+    if (Array.isArray(dates) && dates.length){ dates.forEach(d=>union.add(d)); HOLIDAYS_LOADED.add(y); }
+  });
+  HOLIDAYS = Array.from(union);
 }
 
 const prevBtn = document.getElementById('prevBtn');
