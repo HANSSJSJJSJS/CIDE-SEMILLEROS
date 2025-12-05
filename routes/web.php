@@ -46,6 +46,7 @@ use App\Http\Controllers\Aprendiz\ProyectoController;
 use App\Http\Controllers\Aprendiz\ArchivoController;
 use App\Http\Controllers\Aprendiz\DocumentoController;
 use App\Http\Controllers\Aprendiz\CalendarioController;
+use App\Http\Controllers\HolidayController;
 
 
 /*
@@ -61,6 +62,11 @@ Route::get('/', function () {
         ? redirect()->route('dashboard')
         : redirect()->route('login');
 })->name('home');
+
+// API: Feriados por año (proxy con caché)
+Route::get('/api/holidays/{year?}', [HolidayController::class, 'index'])
+    ->whereNumber('year')
+    ->name('api.holidays');
 
 // Vista de login personalizada
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');

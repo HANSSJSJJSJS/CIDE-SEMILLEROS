@@ -4,7 +4,22 @@
   const CFG = cfgEl ? JSON.parse(cfgEl.textContent) : { routes:{}, csrf:null, feriados:[] };
   const ROUTES   = CFG.routes || {};        // { obtener, baseEventos, semilleros, lideres }
   const CSRF     = CFG.csrf || null;
-  const HOLIDAYS = CFG.feriados || [];
+  let HOLIDAYS = CFG.feriados || [];
+  let HOLIDAYS_YEAR = null;
+
+  async function ensureHolidaysForYear(year){
+    if (HOLIDAYS_YEAR === year) return;
+    try {
+      const url = new URL(`/api/holidays/${year}`, window.location.origin);
+      url.searchParams.set('country','CO');
+      const res = await fetch(url.toString(), { headers: { 'Accept':'application/json' } });
+      if (res.ok) {
+        const data = await res.json();
+        const dates = Array.isArray(data?.dates) ? data.dates : [];
+        if (dates.length) { HOLIDAYS = dates; HOLIDAYS_YEAR = year; }
+      }
+    } catch (_) { /* fallback mantiene CFG.feriados */ }
+  }
 
   // === Estado ===
   let currentDate     = new Date();
@@ -182,6 +197,7 @@
   init();
   async function init() {
     await loadSemilleros();                       // llena el select de semilleros
+    await ensureHolidaysForYear(currentDate.getFullYear());
     await loadAllLeaders();                       // llena participantes con TODOS los líderes
     const selSem = document.getElementById('event-proyecto');
     selSem?.addEventListener('change', async (e) => {
@@ -287,9 +303,9 @@
   }
 
   // === Listeners ===
-  prevBtn?.addEventListener('click', async () => { navigatePeriod(-1); await loadEventsForCurrentPeriod(); renderCalendar(); });
-  nextBtn?.addEventListener('click', async () => { navigatePeriod( 1); await loadEventsForCurrentPeriod(); renderCalendar(); });
-  todayBtn?.addEventListener('click', async () => { goToToday();          await loadEventsForCurrentPeriod(); renderCalendar(); });
+  prevBtn?.addEventListener('click', async () => { navigatePeriod(-1); await ensureHolidaysForYear(currentDate.getFullYear()); await loadEventsForCurrentPeriod(); renderCalendar(); });
+  nextBtn?.addEventListener('click', async () => { navigatePeriod( 1); await ensureHolidaysForYear(currentDate.getFullYear()); await loadEventsForCurrentPeriod(); renderCalendar(); });
+  todayBtn?.addEventListener('click', async () => { goToToday();          await ensureHolidaysForYear(currentDate.getFullYear()); await loadEventsForCurrentPeriod(); renderCalendar(); });
   closeModal?.addEventListener('click', closeEventModal);
   drawerCloseBtn?.addEventListener('click', closeDetailDrawer);
   drawerCloseCta?.addEventListener('click', closeDetailDrawer);

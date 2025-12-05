@@ -8,6 +8,7 @@ use App\Models\Semillero;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Schema;
 
 class RecursoController extends Controller
 {
@@ -23,14 +24,25 @@ class RecursoController extends Controller
     {
         $semilleros = Semillero::with('lider')->get();
 
-        foreach ($semilleros as $s) {
-            $q = Recurso::where('dirigido_a', 'lideres')
-                ->where('semillero_id', $s->id_semillero);
+        $hasSemilleroCol = Schema::hasColumn('recursos', 'semillero_id');
+        $hasEstadoCol     = Schema::hasColumn('recursos', 'estado');
 
-            $s->actividades_total      = (clone $q)->count();
-            $s->actividades_pendientes = (clone $q)->where('estado', 'pendiente')->count();
-            $s->actividades_aprobadas  = (clone $q)->where('estado', 'aprobado')->count();
-            $s->actividades_rechazadas = (clone $q)->where('estado', 'rechazado')->count();
+        foreach ($semilleros as $s) {
+            if ($hasSemilleroCol) {
+                $q = Recurso::where('dirigido_a', 'lideres')
+                    ->where('semillero_id', $s->id_semillero);
+
+                $s->actividades_total      = (clone $q)->count();
+                $s->actividades_pendientes = $hasEstadoCol ? (clone $q)->where('estado', 'pendiente')->count() : 0;
+                $s->actividades_aprobadas  = $hasEstadoCol ? (clone $q)->where('estado', 'aprobado')->count() : 0;
+                $s->actividades_rechazadas = $hasEstadoCol ? (clone $q)->where('estado', 'rechazado')->count() : 0;
+            } else {
+                // Base de datos sin columna semillero_id: no hay actividades por semillero registradas
+                $s->actividades_total      = 0;
+                $s->actividades_pendientes = 0;
+                $s->actividades_aprobadas  = 0;
+                $s->actividades_rechazadas = 0;
+            }
 
             $s->lider_nombre = optional($s->lider)->nombre_completo;
         }
@@ -46,7 +58,11 @@ class RecursoController extends Controller
         $search = $request->get('search');
         $categoria = $request->get('categoria');
 
-        $query = Recurso::query()->whereNull('semillero_id'); // solo recursos generales
+        $query = Recurso::query();
+        // Solo filtra por recursos generales si la columna existe
+        if (Schema::hasColumn('recursos', 'semillero_id')) {
+            $query->whereNull('semillero_id');
+        }
 
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -86,7 +102,9 @@ class RecursoController extends Controller
         $recurso->categoria = $request->categoria;
         $recurso->dirigido_a = $request->dirigido_a;
         $recurso->descripcion = $request->descripcion;
-        $recurso->estado = 'pendiente';
+        if (Schema::hasColumn('recursos', 'estado')) {
+            $recurso->estado = 'pendiente';
+        }
         $recurso->user_id = Auth::id();
         $recurso->save();
 
@@ -129,6 +147,11 @@ class RecursoController extends Controller
      */
     public function actividadesPorSemillero(Semillero $semillero)
     {
+        // Si la BD no tiene columna semillero_id, no hay actividades asociadas por semillero
+        if (!Schema::hasColumn('recursos', 'semillero_id')) {
+            return response()->json(['actividades' => collect()]);
+        }
+
         $actividades = Recurso::where('dirigido_a', 'lideres')
             ->where('semillero_id', $semillero->id_semillero)
             ->orderByDesc('created_at')
@@ -166,6 +189,13 @@ class RecursoController extends Controller
      */
     public function storeActividad(Request $request)
     {
+        // Validación temprana: si no hay columna semillero_id, la instancia no soporta actividades por semillero
+        if (!Schema::hasColumn('recursos', 'semillero_id')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Esta instancia no soporta actividades por semillero (falta columna recursos.semillero_id).'], 400);
+        }
+
         $request->validate([
             'semillero_id' => 'required|exists:semilleros,id_semillero',
             'titulo'       => 'required|string|max:255',

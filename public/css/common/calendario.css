@@ -142,6 +142,16 @@
     border-left: 3px solid #ffc107;
 }
 
+/* Resaltado de festivos en Semana/Día */
+.week-day-header.festivo { background-color: #fff3cd; }
+.week-day-header.festivo .week-day-number { color: #a16207; }
+.week-day-column.festivo .week-time-slot { background-color: #fff7e6; }
+.week-day-column.festivo .week-time-slot.disabled { background-color: #fff7e6 !important; }
+
+/* Forzar que el festivo mensual no pierda el color con la clase disabled */
+.day-cell.festivo.disabled { background-color: #fff3cd !important; border-left: 3px solid #ffc107; }
+.calendar-scml .day-cell.festivo.disabled { background-color: #fff3cd !important; border-left: 3px solid #ffc107; }
+
 .calendar-day.past-day {
     opacity: 0.5;
     background-color: #e9ecef;
