@@ -25,25 +25,26 @@ class AprendicesController extends Controller
         $aprHas = fn(string $c) => Schema::hasColumn('aprendices', $c);
         $usrHas = fn(string $c) => Schema::hasColumn('users', $c);
         $joinCol = $aprHas('user_id') ? 'user_id' : ($aprHas('id_usuario') ? 'id_usuario' : null);
+        $canJoinByEmail = $aprHas('correo_institucional') && $hasUsers && $usrHas('email');
 
         // tipo_documento
         if ($aprHas('tipo_documento')) {
             $selectCols[] = 'aprendices.tipo_documento';
-        } elseif ($hasUsers && $usrHas('tipo_documento') && ($aprHas('user_id') || $aprHas('id_usuario'))) {
+        } elseif ($hasUsers && $usrHas('tipo_documento') && (($aprHas('user_id') || $aprHas('id_usuario')) || $canJoinByEmail)) {
             $selectCols[] = 'u.tipo_documento as tipo_documento';
             $joinUser = true;
         }
         // documento
         if ($aprHas('documento')) {
             $selectCols[] = 'aprendices.documento';
-        } elseif ($hasUsers && $usrHas('documento') && ($aprHas('user_id') || $aprHas('id_usuario'))) {
+        } elseif ($hasUsers && $usrHas('documento') && (($aprHas('user_id') || $aprHas('id_usuario')) || $canJoinByEmail)) {
             $selectCols[] = 'u.documento as documento';
             $joinUser = true;
         }
         // celular
         if ($aprHas('celular')) {
             $selectCols[] = 'aprendices.celular';
-        } elseif ($hasUsers && $usrHas('celular') && ($aprHas('user_id') || $aprHas('id_usuario'))) {
+        } elseif ($hasUsers && $usrHas('celular') && (($aprHas('user_id') || $aprHas('id_usuario')) || $canJoinByEmail)) {
             $selectCols[] = 'u.celular as celular';
             $joinUser = true;
         }
@@ -52,12 +53,12 @@ class AprendicesController extends Controller
             if ($aprHas($c)) $selectCols[] = 'aprendices.'.$c;
         }
         // Fallback para correo_personal desde users si no existe en aprendices
-        if (!$aprHas('correo_personal') && $hasUsers && ($usrHas('correo_personal') || $usrHas('email_personal') || $usrHas('email')) && ($aprHas('user_id') || $aprHas('id_usuario'))) {
+        if (!$aprHas('correo_personal') && $hasUsers && ($usrHas('correo_personal') || $usrHas('email_personal') || $usrHas('email')) && (($aprHas('user_id') || $aprHas('id_usuario')) || $canJoinByEmail)) {
             $uCol = $usrHas('correo_personal') ? 'correo_personal' : ($usrHas('email_personal') ? 'email_personal' : 'email');
             $selectCols[] = 'u.'.$uCol.' as correo_personal';
             $joinUser = true;
         }
-        // RH (tolerante a tipo_sangre / grupo_sanguineo / grupo_sangre)
+        // RH (tolerante a tipo_sangre / grupo_sanguineo / grupo_sangre / tipo_rh)
         if ($aprHas('rh')) {
             $selectCols[] = 'aprendices.rh';
         } elseif ($aprHas('tipo_sangre')) {
@@ -66,8 +67,8 @@ class AprendicesController extends Controller
             $selectCols[] = 'aprendices.grupo_sanguineo as rh';
         } elseif ($aprHas('grupo_sangre')) {
             $selectCols[] = 'aprendices.grupo_sangre as rh';
-        } elseif ($hasUsers && ($usrHas('rh') || $usrHas('tipo_sangre') || $usrHas('grupo_sanguineo') || $usrHas('grupo_sangre')) && ($aprHas('user_id') || $aprHas('id_usuario'))) {
-            $col = $usrHas('rh') ? 'rh' : ($usrHas('tipo_sangre') ? 'tipo_sangre' : ($usrHas('grupo_sanguineo') ? 'grupo_sanguineo' : 'grupo_sangre'));
+        } elseif ($hasUsers && ($usrHas('rh') || $usrHas('tipo_sangre') || $usrHas('grupo_sanguineo') || $usrHas('grupo_sangre') || $usrHas('tipo_rh')) && (($aprHas('user_id') || $aprHas('id_usuario')) || $canJoinByEmail)) {
+            $col = $usrHas('rh') ? 'rh' : ($usrHas('tipo_sangre') ? 'tipo_sangre' : ($usrHas('grupo_sanguineo') ? 'grupo_sanguineo' : ($usrHas('grupo_sangre') ? 'grupo_sangre' : 'tipo_rh')));
             $selectCols[] = 'u.'.$col.' as rh';
             $joinUser = true;
         }
@@ -76,7 +77,7 @@ class AprendicesController extends Controller
             $selectCols[] = 'aprendices.sexo';
         } elseif ($aprHas('genero')) {
             $selectCols[] = 'aprendices.genero as sexo';
-        } elseif ($hasUsers && ($usrHas('sexo') || $usrHas('genero')) && ($aprHas('user_id') || $aprHas('id_usuario'))) {
+        } elseif ($hasUsers && ($usrHas('sexo') || $usrHas('genero')) && (($aprHas('user_id') || $aprHas('id_usuario')) || $canJoinByEmail)) {
             $col = $usrHas('sexo') ? 'sexo' : 'genero';
             $selectCols[] = 'u.'.$col.' as sexo';
             $joinUser = true;
@@ -88,7 +89,7 @@ class AprendicesController extends Controller
             $selectCols[] = 'aprendices.nivel as nivel_academico';
         } elseif ($aprHas('nivel_educativo')) {
             $selectCols[] = 'aprendices.nivel_educativo as nivel_academico';
-        } elseif ($hasUsers && ($usrHas('nivel_academico') || $usrHas('nivelAcademico') || $usrHas('nivel') || $usrHas('nivel_educativo')) && ($aprHas('user_id') || $aprHas('id_usuario'))) {
+        } elseif ($hasUsers && ($usrHas('nivel_academico') || $usrHas('nivelAcademico') || $usrHas('nivel') || $usrHas('nivel_educativo')) && (($aprHas('user_id') || $aprHas('id_usuario')) || $canJoinByEmail)) {
             $col = $usrHas('nivel_academico') ? 'nivel_academico' : ($usrHas('nivelAcademico') ? 'nivelAcademico' : ($usrHas('nivel') ? 'nivel' : 'nivel_educativo'));
             $selectCols[] = 'u.'.$col.' as nivel_academico';
             $joinUser = true;
@@ -102,7 +103,7 @@ class AprendicesController extends Controller
         $aprHasApellidos = $aprHas('apellidos');
         $usrNameCol = $usrHas('name') ? 'name' : ($usrHas('nombre') ? 'nombre' : null);
         $usrLastCol = $usrHas('apellidos') ? 'apellidos' : ($usrHas('apellido') ? 'apellido' : null);
-        if (!($aprHasNombres && $aprHasApellidos) && $hasUsers && ($usrNameCol || $usrLastCol) && ($aprHas('user_id') || $aprHas('id_usuario'))) {
+        if (!($aprHasNombres && $aprHasApellidos) && $hasUsers && ($usrNameCol || $usrLastCol) && (($aprHas('user_id') || $aprHas('id_usuario')) || $canJoinByEmail)) {
             $joinUser = true;
         }
         $baseConcat = $aprHasNombres && $aprHasApellidos
@@ -224,7 +225,13 @@ class AprendicesController extends Controller
                 if (Schema::hasColumn('aprendices','semillero_id')) {
                     // Camino directo por columna en aprendices
                     $aprendices = DB::table('aprendices')
-                        ->when($joinUser, function($q) use ($joinCol){ if ($joinCol) { $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$joinCol)); } })
+                        ->when($joinUser, function($q) use ($joinCol, $usrHas){
+                            if ($joinCol) {
+                                $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$joinCol));
+                            } elseif (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','correo_institucional') && $usrHas('email')) {
+                                $q->leftJoin('users as u','u.email','=','aprendices.correo_institucional');
+                            }
+                        })
                         ->whereIn('aprendices.semillero_id', $semilleroIds)
                         ->select(array_merge($selectCols, [ DB::raw($nameExpr.' as nombre_completo') ]))
                         ->orderByRaw($nameExpr)
@@ -233,7 +240,13 @@ class AprendicesController extends Controller
                 } elseif (Schema::hasTable('aprendiz_semillero')) {
                     // Fallback a pivote
                     $aprendices = DB::table('aprendices')
-                        ->when($joinUser, function($q) use ($joinCol){ if ($joinCol) { $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$joinCol)); } })
+                        ->when($joinUser, function($q) use ($joinCol, $usrHas){
+                            if ($joinCol) {
+                                $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$joinCol));
+                            } elseif (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','correo_institucional') && $usrHas('email')) {
+                                $q->leftJoin('users as u','u.email','=','aprendices.correo_institucional');
+                            }
+                        })
                         ->join('aprendiz_semillero', 'aprendiz_semillero.id_aprendiz', '=', 'aprendices.id_aprendiz')
                         ->whereIn('aprendiz_semillero.id_semillero', $semilleroIds)
                         ->select(array_merge($selectCols, [ DB::raw($nameExpr.' as nombre_completo') ]))
@@ -342,7 +355,13 @@ class AprendicesController extends Controller
 
                 if (!empty($semillerosLider)) {
                     $aprendices = DB::table('aprendices')
-                        ->when($joinUser, function($q) use ($joinCol){ if ($joinCol) { $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$joinCol)); } })
+                        ->when($joinUser, function($q) use ($joinCol, $usrHas){
+                            if ($joinCol) {
+                                $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$joinCol));
+                            } elseif (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','correo_institucional') && $usrHas('email')) {
+                                $q->leftJoin('users as u','u.email','=','aprendices.correo_institucional');
+                            }
+                        })
                         ->whereIn('semillero_id', $semillerosLider)
                         ->select(array_merge($selectCols, [ DB::raw($nameExpr.' as nombre_completo') ]))
                         ->orderByRaw($nameExpr)
@@ -354,7 +373,13 @@ class AprendicesController extends Controller
             // Fallback 2: si aún no hay aprendices, listar algunos sin filtro para no dejar el módulo vacío
             if ($aprendices->isEmpty() && Schema::hasTable('aprendices')) {
                 $aprendices = DB::table('aprendices')
-                    ->when($joinUser, function($q) use ($joinCol){ if ($joinCol) { $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$joinCol)); } })
+                    ->when($joinUser, function($q) use ($joinCol, $usrHas){
+                        if ($joinCol) {
+                            $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$joinCol));
+                        } elseif (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','correo_institucional') && $usrHas('email')) {
+                            $q->leftJoin('users as u','u.email','=','aprendices.correo_institucional');
+                        }
+                    })
                     ->select(array_merge($selectCols, [ DB::raw($nameExpr.' as nombre_completo') ]))
                     ->orderByRaw($nameExpr)
                     ->limit(50)
