@@ -143,14 +143,37 @@ const viewBtns = document.querySelectorAll('.view-btn');
 
 // Horario permitido: 08:00 a 16:50 (coincide con líder para visualización)
 const workHours = Array.from({ length: 9 }, (_, i) => i + 8); // 8..16
-const HOLIDAYS = @json(config('app.feriados', []));
+let HOLIDAYS = @json(config('app.feriados', []));
+const HOLIDAYS_LOADED = new Set();
+async function fetchHolidaysYear(year){
+  try{
+    const url = new URL(`/api/holidays/${year}`, window.location.origin);
+    url.searchParams.set('country','CO');
+    const res = await fetch(url.toString(), { headers: { 'Accept':'application/json' } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data?.dates) ? data.dates : [];
+  }catch(_){ return []; }
+}
+async function ensureHolidaysForYear(year){
+  const targets = [year-1, year, year+1];
+  const missing = targets.filter(y => !HOLIDAYS_LOADED.has(y));
+  if (missing.length === 0) return;
+  const union = new Set(HOLIDAYS);
+  const results = await Promise.all(missing.map(y => fetchHolidaysYear(y)));
+  results.forEach((dates, idx) => {
+    const y = missing[idx];
+    if (Array.isArray(dates) && dates.length){ dates.forEach(d=>union.add(d)); HOLIDAYS_LOADED.add(y); }
+  });
+  HOLIDAYS = Array.from(union);
+}
 
 initCalendar();
-async function initCalendar(){ mapReunionesToEvents(); renderCalendar(); }
+async function initCalendar(){ await ensureHolidaysForYear(currentDate.getFullYear()); mapReunionesToEvents(); renderCalendar(); }
 
-prevBtn.addEventListener('click', async () => { navigatePeriod(-1); renderCalendar(); });
-nextBtn.addEventListener('click', async () => { navigatePeriod(1); renderCalendar(); });
-todayBtn.addEventListener('click', async () => { goToToday(); renderCalendar(); });
+prevBtn.addEventListener('click', async () => { navigatePeriod(-1); await ensureHolidaysForYear(currentDate.getFullYear()); renderCalendar(); });
+nextBtn.addEventListener('click', async () => { navigatePeriod(1); await ensureHolidaysForYear(currentDate.getFullYear()); renderCalendar(); });
+todayBtn.addEventListener('click', async () => { goToToday(); await ensureHolidaysForYear(currentDate.getFullYear()); renderCalendar(); });
 drawerCloseBtn.addEventListener('click', closeDetailDrawer);
 drawerCloseCta.addEventListener('click', closeDetailDrawer);
 
@@ -229,6 +252,7 @@ function createDayCell(date, otherMonth){
   const isWeekend = date.getDay()===0 || date.getDay()===6;
   const isHoliday = HOLIDAYS.includes(formatDate(date));
   const isPastDay = isPastDate(date);
+  if (isHoliday) { cell.classList.add('festivo'); }
   if (isWeekend || isHoliday || isPastDay) {
     cell.classList.add('disabled');
   } else {
@@ -241,10 +265,10 @@ function renderWeekView(){
   monthView.style.display='none'; weekView.classList.add('active'); dayView.classList.remove('active');
   const weekStart=getWeekStart(currentDate); const weekDays=Array.from({length:7},(_,i)=>{ const d=new Date(weekStart); d.setDate(weekStart.getDate()+i); return d; });
   const weekHeader=document.getElementById('weekHeader'); weekHeader.innerHTML='<div class="week-time-label">Hora</div>';
-  weekDays.forEach(date=>{ const header=document.createElement('div'); header.className='week-day-header'; if(isToday(date)) header.classList.add('today'); header.innerHTML=`<div class="week-day-name">${getDayName(date)}</div><div class="week-day-number">${date.getDate()}</div>`; weekHeader.appendChild(header); });
+  weekDays.forEach(date=>{ const header=document.createElement('div'); header.className='week-day-header'; if(isToday(date)) header.classList.add('today'); if (HOLIDAYS.includes(formatDate(date))) header.classList.add('festivo'); header.innerHTML=`<div class="week-day-name">${getDayName(date)}</div><div class="week-day-number">${date.getDate()}</div>`; weekHeader.appendChild(header); });
   const weekGrid=document.getElementById('weekGrid'); weekGrid.innerHTML=''; const timesCol=document.createElement('div'); timesCol.className='week-times';
   workHours.forEach(hour=>{ const tl=document.createElement('div'); tl.className='time-slot-label'; tl.textContent=formatHour(hour); timesCol.appendChild(tl); }); weekGrid.appendChild(timesCol);
-  weekDays.forEach(date=>{ const dayCol=document.createElement('div'); dayCol.className='week-day-column'; const dateStr=formatDate(date);
+  weekDays.forEach(date=>{ const dayCol=document.createElement('div'); dayCol.className='week-day-column'; const dateStr=formatDate(date); if (HOLIDAYS.includes(dateStr)) dayCol.classList.add('festivo');
     workHours.forEach(hour=>{ const slot=document.createElement('div'); slot.className='week-time-slot'; slot.dataset.date=dateStr; slot.dataset.hour=hour;
       const hm = hour*100; const isLunch = hm>=1200 && hm<=1355; const slotDt = new Date(`${dateStr}T${String(hour).padStart(2,'0')}:00`); const allowed = hm>=800 && hm<=1650 && !isLunch; // sin validación de pasado
       const occupied = isHourOccupied(dateStr, hour);

@@ -1,74 +1,57 @@
 <?php
 
+// app/Models/Recurso.php
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
 class Recurso extends Model
 {
-    use HasFactory;
-
     protected $table = 'recursos';
 
     protected $fillable = [
         'nombre_archivo',
         'archivo',
-        'descripcion',
         'categoria',
+        'dirigido_a',
+        'estado',
+        'fecha_vencimiento',
+        'descripcion',
+        'comentarios',
         'user_id',
+        'semillero_id',
     ];
 
-    protected $dates = ['created_at', 'updated_at'];
+    protected $casts = [
+        'fecha_vencimiento' => 'date',
+    ];
 
-    /**
-     * Devuelve la URL pública al archivo.
-     */
-    public function getUrlAttribute(): ?string
+    // Relación con semillero
+    public function semillero()
     {
-        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
-        $disk = Storage::disk('public');
-
-        if ($this->archivo && $disk->exists($this->archivo)) {
-            return $disk->url($this->archivo);
-        }
-        return null;
+        return $this->belongsTo(Semillero::class, 'semillero_id', 'id_semillero');
     }
 
-    /**
-     * Devuelve el tamaño en bytes del archivo.
-     */
-    public function getSizeAttribute(): ?int
+    // Scope para actividades dirigidas a líderes
+    public function scopeParaLideres($query)
     {
-        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
-        $disk = Storage::disk('public');
-
-        if ($this->archivo && $disk->exists($this->archivo)) {
-            return $disk->size($this->archivo);
-        }
-        return null;
+        return $query->where('dirigido_a', 'lideres');
     }
 
-    /**
-     * Devuelve el tipo MIME del archivo.
-     */
-    public function getMimeAttribute(): ?string
+    // Estado calculado (incluye "vencido")
+    public function getEstadoCalculadoAttribute()
     {
-        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
-        $disk = Storage::disk('public');
+        $estado = $this->estado;
 
-        if ($this->archivo && $disk->exists($this->archivo)) {
-            return $disk->mimeType($this->archivo);
+        if (
+            $estado === 'pendiente' &&
+            $this->fecha_vencimiento &&
+            now()->gt($this->fecha_vencimiento)
+        ) {
+            return 'vencido';
         }
-        return null;
-    }
 
-    /**
-     * Relación: cada recurso pertenece a un usuario.
-     */
-    public function user()
-    {
-        return $this->belongsTo(User::class);
+        return $estado;
     }
 }

@@ -6,115 +6,186 @@ use App\Http\Controllers\Controller;
 use App\Models\Recurso;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class RecursoController extends Controller
 {
-    // GET /admin/recursos  -> vista
+    // ======================================================
+    //              CENTRO DE RECURSOS + NUEVO MÓDULO
+    // ======================================================
+
+    /**
+     * Vista principal del módulo de recursos.
+     * Muestra los semilleros con contadores de recursos para líderes.
+     */
     public function index()
     {
-        return view('admin.recursos.index');
+        // Traemos semilleros + info básica del líder
+        $semilleros = DB::table('semilleros as s')
+            ->leftJoin('lideres_semillero as ls', 'ls.id_lider_semi', '=', 's.id_lider_semi')
+            ->leftJoin('users as u', 'u.id', '=', 'ls.id_lider_semi')
+            ->select(
+                's.id_semillero',
+                's.nombre',
+
+                // columnas "virtuales" para la tarjeta
+                DB::raw("'Sin descripción' as descripcion"),
+                DB::raw("'ACTIVO' as estado"),
+
+                's.id_lider_semi',
+                DB::raw("
+                    TRIM(
+                        CONCAT(
+                            COALESCE(u.nombre, ''), ' ',
+                            COALESCE(u.apellidos, '')
+                        )
+                    ) as lider_nombre
+                ")
+            )
+            ->orderBy('s.nombre')
+            ->get();
+
+        // Contadores de recursos por semillero (solo los dirigidos a líderes)
+        foreach ($semilleros as $s) {
+            $query = Recurso::where('dirigido_a', 'lideres')
+                ->where('semillero_id', $s->id_semillero);
+
+            $s->actividades_total      = (clone $query)->count();
+            $s->actividades_pendientes = (clone $query)->where('estado', 'pendiente')->count();
+            $s->actividades_aprobadas  = (clone $query)->where('estado', 'aprobado')->count();
+            $s->actividades_rechazadas = (clone $query)->where('estado', 'rechazado')->count();
+        }
+
+        return view('admin.recursos.index', compact('semilleros'));
     }
 
-    // GET /admin/recursos/listar  -> JSON que consume tu JS
-    public function listar(Request $request)
+    // ======================================================
+    // DESCARGAR RECURSO
+    // ======================================================
+    public function download(Recurso $recurso)
     {
-        $q   = trim((string) $request->get('q'));
-        $cat = (string) $request->get('categoria');
+        if (! $recurso->archivo || ! Storage::disk('public')->exists($recurso->archivo)) {
+            abort(404, 'Archivo no encontrado');
+        }
 
-        $query = Recurso::query();
+        return Storage::disk('public')->download($recurso->archivo, $recurso->nombre_archivo);
+    }
 
-        if ($q !== '') {
-            $query->where(function ($w) use ($q) {
-                $w->where('nombre_archivo', 'like', "%{$q}%")
-                  ->orWhere('descripcion', 'like', "%{$q}%");
+    // ======================================================
+    // ELIMINAR
+    // ======================================================
+    public function destroy(Recurso $recurso)
+    {
+        if ($recurso->archivo && Storage::disk('public')->exists($recurso->archivo)) {
+            Storage::disk('public')->delete($recurso->archivo);
+        }
+
+        $recurso->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    // ======================================================
+    //          RECURSOS PARA LÍDERES DE SEMILLERO
+    // ======================================================
+
+    /**
+     * Obtener recursos de un semillero para el modal "Ver Recursos"
+     * GET admin/semilleros/{semillero}/recursos
+     */
+    public function porSemillero($semilleroId)
+    {
+        $recursos = DB::table('recursos as r')
+            ->leftJoin('users as u', 'u.id', '=', 'r.user_id')
+            ->where('r.semillero_id', $semilleroId)
+            ->where('r.dirigido_a', 'lideres')
+            ->select(
+                'r.id',
+                'r.nombre_archivo as titulo',
+                'r.descripcion',
+                'r.estado',
+                DB::raw('DATE(r.fecha_vencimiento) as fecha_limite'),
+                DB::raw("
+                    TRIM(
+                        CONCAT(
+                            COALESCE(u.nombre, ''), ' ',
+                            COALESCE(u.apellidos, '')
+                        )
+                    ) as lider_nombre
+                ")
+            )
+            ->orderBy('r.fecha_vencimiento', 'desc')
+            ->get()
+            ->map(function ($r) {
+                // Detectar recursos vencidos (comparando strings Y-m-d)
+                $estado = $r->estado;
+                $hoy    = now()->toDateString(); // 'YYYY-mm-dd'
+
+                if (
+                    $estado === 'pendiente' &&
+                    $r->fecha_limite &&
+                    $r->fecha_limite < $hoy
+                ) {
+                    $estado = 'vencido';
+                }
+
+                $r->estado = $estado;
+                return $r;
             });
-        }
-
-        if ($cat !== '') {
-            $query->where('categoria', $cat);
-        }
-
-        $items = $query->latest('id')->get();
-
-        // Para ayudar al autocompletado del IDE
-        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
-        $disk = Storage::disk('public');
-
-        $data = $items->map(function (Recurso $r) use ($disk) {
-            $exists = $disk->exists($r->archivo);
-            $mime   = $exists ? $disk->mimeType($r->archivo) : null;
-            $size   = $exists ? (int) $disk->size($r->archivo) : null;
-            $url    = $exists ? $disk->url($r->archivo) : '#';
-
-            return [
-                'id'          => $r->id,
-                // la vista usa 'titulo' para mostrar
-                'titulo'      => $r->nombre_archivo,
-                'descripcion' => $r->descripcion,
-                'categoria'   => $r->categoria,      // 'plantillas'|'manuales'|'otros'
-                'mime'        => $mime,
-                'size'        => $size,
-                'url'         => $url,
-                'download'    => route('admin.recursos.download', ['recurso' => $r->id], false),
-                'created_at'  => optional($r->created_at)->toDateTimeString(),
-                'updated_at'  => optional($r->updated_at)->toDateTimeString(),
-            ];
-        });
-
-        return response()->json(['data' => $data]);
-    }
-
-    // POST /admin/recursos  -> subir archivo
-    public function store(Request $request)
-    {
-        // Debe coincidir con los names del form
-        $request->validate([
-            'nombre_archivo' => ['required','string','max:255'],
-            'categoria'      => ['required','in:plantillas,manuales,otros'],
-            'descripcion'    => ['nullable','string'],
-            'archivo'        => ['required','file','max:20480'], // 20 MB
-        ]);
-
-        $file = $request->file('archivo');
-
-        // Guarda en storage/app/public/recursos y devuelve "recursos/xxxxx.ext"
-        $path = $file->store('recursos', 'public');
-
-        $recurso = Recurso::create([
-            'nombre_archivo' => $request->nombre_archivo,
-            'categoria'      => $request->categoria,
-            'descripcion'    => $request->descripcion,
-            'archivo'        => $path,
-            'user_id'        => Auth::id(),
-        ]);
 
         return response()->json([
-            'ok' => true,
-            'id' => $recurso->id,
-        ], 201);
+            'actividades' => $recursos, // el JS usa data.actividades
+        ]);
     }
 
-    // GET /admin/recursos/{recurso}/dl  -> descarga
-    public function download(Recurso $recurso)
-{
-    $disk = Storage::disk('public');
+    // ======================================================
+    // CREAR RECURSO PARA LÍDER DEL SEMILLERO
+    // ======================================================
+    public function storeActividad(Request $request)
+    {
+        $request->validate([
+            'semillero_id' => 'required|exists:semilleros,id_semillero',
+            'titulo'       => 'required|string|max:255',
+            'descripcion'  => 'required|string',
+            'fecha_limite' => 'required|date|after_or_equal:today',
+        ]);
 
-    if (!$disk->exists($recurso->archivo)) {
-        abort(404, 'Archivo no encontrado');
+        Recurso::create([
+            'nombre_archivo'    => $request->titulo,
+            'descripcion'       => $request->descripcion,
+            'fecha_vencimiento' => $request->fecha_limite,
+            'categoria'         => 'otros',
+            'dirigido_a'        => 'lideres',
+            'estado'            => 'pendiente',
+            'semillero_id'      => $request->semillero_id,
+            'user_id'           => Auth::id(),
+        ]);
+
+        return response()->json(['success' => true]);
     }
 
-    // nombre de descarga amigable con extensión
-    $downloadName = $recurso->nombre_archivo;
-    $ext = pathinfo($recurso->archivo, PATHINFO_EXTENSION);
-    if ($ext && !Str::endsWith(Str::lower($downloadName), '.'.Str::lower($ext))) {
-        $downloadName .= '.'.$ext;
+    // ======================================================
+    // ACTUALIZAR ESTADO DEL RECURSO / ACTIVIDAD
+    // ======================================================
+    public function actualizarEstadoActividad(Request $request, Recurso $recurso)
+    {
+        $request->validate([
+            'estado'      => 'required|in:pendiente,aprobado,rechazado',
+            'comentarios' => 'nullable|string|max:500',
+        ]);
+
+        if ($recurso->dirigido_a !== 'lideres') {
+            return response()->json([
+                'success' => false,
+                'message' => 'No es un recurso de líder',
+            ], 400);
+        }
+
+        $recurso->estado      = $request->estado;
+        $recurso->comentarios = $request->comentarios;
+        $recurso->save();
+
+        return response()->json(['success' => true]);
     }
-
-    // ruta física absoluta y respuesta de descarga (sin warnings del IDE)
-    $absolutePath = $disk->path($recurso->archivo);
-    return response()->download($absolutePath, $downloadName);
-}
-
 }

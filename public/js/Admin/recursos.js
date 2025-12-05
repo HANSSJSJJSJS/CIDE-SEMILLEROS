@@ -1,228 +1,363 @@
-/* public/js/admin/recursos.js */
+// public/js/admin/recursos.js
 
-(() => {
-    const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+// ===== Utilidades =====
+const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+const CSRF_TOKEN = csrfTokenMeta ? csrfTokenMeta.content : null;
 
-    const ENDPOINTS = {
-        listar:  window.REC_LISTAR_URL,
-        store:   window.REC_STORE_URL,
-        destroy: (id) => window.REC_DELETE_URL.replace(':id', id)
+function buildUrl(template, id) {
+    return template.replace(':id', id);
+}
+
+// ===== Notificaciones =====
+function showNotification(title, message, type = 'success') {
+    const container = document.getElementById('notificationContainer');
+    if (!container) return;
+
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+
+    const iconMap = {
+        success: '<i class="bi bi-check-circle-fill"></i>',
+        error: '<i class="bi bi-x-circle-fill"></i>',
+        warning: '<i class="bi bi-exclamation-triangle-fill"></i>',
+        info: '<i class="bi bi-info-circle-fill"></i>'
     };
 
-    const recContainer = document.getElementById('recContainer');
-    const recSearch    = document.getElementById('recSearch');
-    const recFilter    = document.getElementById('recFilter');
-    const recForm      = document.getElementById('recForm');         // puede ser null
-    const modalEl      = document.getElementById('recUploadModal');  // puede ser null
+    notification.innerHTML = `
+        <div class="notification-icon">
+            ${iconMap[type] || iconMap.success}
+        </div>
+        <div class="notification-content">
+            <div class="notification-title">${title}</div>
+            <div class="notification-message">${message}</div>
+        </div>
+        <button class="notification-close">
+            <i class="bi bi-x"></i>
+        </button>
+    `;
 
-    function iconFromMime(mime) {
-        if (!mime) return '📎';
-        if (mime.includes('pdf')) return '📘';
-        if (mime.includes('word') || mime.includes('officedocument.word')) return '📄';
-        if (mime.includes('excel') || mime.includes('spreadsheet')) return '📊';
-        if (mime.includes('image')) return '🖼️';
-        return '📎';
+    container.appendChild(notification);
+
+    const closeBtn = notification.querySelector('.notification-close');
+    closeBtn.addEventListener('click', () => closeNotification(notification));
+
+    setTimeout(() => closeNotification(notification), 5000);
+}
+
+function closeNotification(notificationEl) {
+    if (!notificationEl) return;
+    notificationEl.classList.add('hiding');
+    setTimeout(() => notificationEl.remove(), 300);
+}
+
+// ===== Lógica principal =====
+document.addEventListener('DOMContentLoaded', () => {
+    const modalActividades = document.getElementById('modalActividades');
+    const contenedorActividades = document.getElementById('contenedorActividades');
+    const tituloModalActividades = document.getElementById('tituloModalActividades');
+
+    const modalActividadLider = document.getElementById('modalActividadLider');
+    const btnAbrirModalActividad = document.getElementById('btnAbrirModalActividad');
+    const btnCancelarActividad = document.getElementById('btnCancelarActividad');
+    const formActividadLider = document.getElementById('formActividadLider');
+
+    const selectSemillero = document.getElementById('semillero_id');
+    const inputLiderNombre = document.getElementById('lider_nombre');
+    const inputLiderId = document.getElementById('lider_id');
+    const mensajeLider = document.getElementById('mensaje-lider');
+
+    // ya no usamos tipo_actividad, pero dejamos los nodos por si luego amplías
+    const selectTipoActividad = document.getElementById('tipo_actividad');
+    const infoTipoActividad = document.getElementById('info-tipo-actividad');
+    const inputFechaLimite = document.getElementById('fecha_limite_actividad');
+
+    const hoy = new Date().toISOString().split('T')[0];
+    if (inputFechaLimite) {
+        inputFechaLimite.value = hoy;
+        inputFechaLimite.min = hoy;
     }
 
-    function prettySize(bytes) {
-        if (!bytes) return '';
-        if (bytes < 1024) return bytes + ' B';
-        const kb = bytes / 1024;
-        if (kb < 1024) return kb.toFixed(1) + ' KB';
-        const mb = kb / 1024;
-        return mb.toFixed(1) + ' MB';
-    }
-
-    function escapeHtml(s) {
-        return String(s ?? '')
-            .replaceAll('&', '&amp;')
-            .replaceAll('<', '&lt;')
-            .replaceAll('>', '&gt;')
-            .replaceAll('"', '&quot;')
-            .replaceAll("'", '&#039;');
-    }
-
-    const cleanupBackdrop = () => {
-        document.body.classList.remove('modal-open');
-        document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
-    };
-
-    // =======================
-    //      LISTAR RECURSOS
-    // =======================
-    async function loadResources() {
-        const q = recSearch ? recSearch.value.trim() : '';
-        const categoria = recFilter ? recFilter.value : '';
-
-        const url = new URL(ENDPOINTS.listar, window.location.origin);
-        if (q) url.searchParams.set('q', q);
-        if (categoria) url.searchParams.set('categoria', categoria);
-
-        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-        const json = await res.json();
-        renderGrouped(json.data || []);
-    }
-
-    function renderGrouped(items) {
-        const cats = { plantillas: [], manuales: [], otros: [] };
-        items.forEach(it => {
-            if (!cats[it.categoria]) cats[it.categoria] = [];
-            cats[it.categoria].push(it);
+    // ==== Abrir modal recursos (ver) ====
+    document.querySelectorAll('.btn-ver-actividades').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const semilleroId = btn.dataset.semilleroId;
+            const semilleroNombre = btn.dataset.semilleroNombre;
+            abrirModalActividades(semilleroId, semilleroNombre);
         });
+    });
 
-        recContainer.innerHTML = '';
-        renderSection('Plantillas del sistema', cats.plantillas);
-        renderSection('Manuales y guías', cats.manuales);
-        renderSection('Otros documentos', cats.otros);
+    function abrirModalActividades(semilleroId, semilleroNombre) {
+        if (!modalActividades) return;
+        tituloModalActividades.textContent = `Recursos - ${semilleroNombre}`;
+        modalActividades.classList.add('active');
+        cargarActividades(semilleroId);
     }
 
-    function renderSection(title, arr) {
-        const section = document.createElement('section');
-        section.className = 'rec-section';
-        section.innerHTML = `<h4>${title}</h4>`;
-
-        if (!arr || arr.length === 0) {
-            section.innerHTML += `<div class="rec-empty">No hay recursos en esta sección.</div>`;
-            recContainer.appendChild(section);
-            return;
-        }
-
-        const grid = document.createElement('div');
-        grid.className = 'rec-grid';
-
-        arr.forEach(r => {
-            const card = document.createElement('div');
-            card.className = 'rec-card';
-            card.innerHTML = `
-                <div class="d-flex justify-content-between align-items-start">
-                    <span class="badge-cat">${r.categoria}</span>
-                    <small class="text-muted">${prettySize(r.size)}</small>
-                </div>
-                <h5>${iconFromMime(r.mime)} ${escapeHtml(r.titulo)}</h5>
-                <p>${escapeHtml(r.descripcion || '')}</p>
-                <div class="rec-actions">
-                    <a class="btn btn-sm btn-outline-primary" href="${r.url}" target="_blank" rel="noopener">Ver</a>
-                    <a class="btn btn-sm btn-primary" href="${r.download}">Descargar</a>
-
-                    ${
-                        window.REC_CAN_DELETE
-                            ? `<button class="btn btn-sm btn-outline-danger" data-id="${r.id}">Eliminar</button>`
-                            : ``
-                    }
-                </div>
-            `;
-            grid.appendChild(card);
-
-            if (window.REC_CAN_DELETE) {
-                const btnDel = card.querySelector('button[data-id]');
-                if (btnDel) {
-                    btnDel.addEventListener('click', async (e) => {
-                        const id = e.currentTarget.getAttribute('data-id');
-                        if (!confirm('¿Eliminar este recurso?')) return;
-
-                        await fetch(ENDPOINTS.destroy(id), {
-                            method: 'DELETE',
-                            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
-                        });
-
-                        await loadResources();
-                    });
-                }
-            }
-        });
-
-        section.appendChild(grid);
-        recContainer.appendChild(section);
+    function cerrarModalActividades() {
+        if (!modalActividades) return;
+        modalActividades.classList.remove('active');
+        if (contenedorActividades) contenedorActividades.innerHTML = '';
     }
 
-    // =======================
-    //    BUSCAR / FILTRAR
-    // =======================
-    let searchDebounce;
-    if (recSearch) {
-        recSearch.addEventListener('input', () => {
-            clearTimeout(searchDebounce);
-            searchDebounce = setTimeout(loadResources, 300);
+    // Cerrar modal recursos (botón X)
+    document.querySelectorAll('[data-close-modal="actividades"]').forEach(btn => {
+        btn.addEventListener('click', cerrarModalActividades);
+    });
+
+    if (modalActividades) {
+        modalActividades.addEventListener('click', e => {
+            if (e.target === modalActividades) cerrarModalActividades();
         });
     }
 
-    if (recFilter) {
-        recFilter.addEventListener('change', loadResources);
-    }
+    // === Cargar recursos por semillero ===
+    function cargarActividades(semilleroId) {
+        if (!contenedorActividades) return;
 
-    // =======================
-    //   SUBIR ARCHIVOS (solo si hay formulario)
-    // =======================
-    if (recForm && modalEl) {
-        const btnSubmit = recForm.querySelector('button[type="submit"]');
-        const btnText   = btnSubmit ? btnSubmit.innerHTML : '';
+        const url = buildUrl(window.ACT_ACTIVIDADES_POR_SEMILLERO_URL, semilleroId);
+        contenedorActividades.innerHTML =
+            '<div class="text-center py-4"><i class="bi bi-arrow-repeat spin fs-3 text-muted"></i></div>';
 
-        function setLoading(on) {
-            if (!btnSubmit) return;
-            btnSubmit.disabled = on;
-            btnSubmit.innerHTML = on
-                ? '<span class="spinner-border spinner-border-sm me-2"></span> Subiendo...'
-                : btnText;
-        }
-
-        recForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            if (!window.REC_CAN_CREATE) {
-                alert("No tienes permiso para subir recursos.");
-                return;
-            }
-
-            const fd = new FormData(recForm);
-            setLoading(true);
-
-            try {
-                const res = await fetch(ENDPOINTS.store, {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-                    body: fd
-                });
-
-                if (!res.ok) {
-                    const txt = await res.text();
-                    try {
-                        const j = JSON.parse(txt);
-                        alert(Object.values(j.errors || { error: [j.message || 'Error al subir'] }).flat().join('\n'));
-                    } catch {
-                        alert('Error al subir el recurso');
-                    }
+        fetch(url)
+            .then(r => r.json())
+            .then(data => {
+                const actividades = data.actividades || [];
+                if (!actividades.length) {
+                    contenedorActividades.innerHTML = `
+                        <div class="actividades-vacio">
+                            <i class="bi bi-inbox"></i>
+                            <p>No hay recursos asignados a este líder</p>
+                        </div>
+                    `;
                     return;
                 }
 
-                bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+                let html = '';
+                actividades.forEach(act => {
+                    const estado = act.estado || 'pendiente';
+                    const badgeClass =
+                        estado === 'pendiente' ? 'badge-pendiente' :
+                        estado === 'vencido'    ? 'badge-rechazado' :
+                        estado === 'aprobado'   ? 'badge-aprobado' :
+                                                  'badge-completado';
 
-                modalEl.addEventListener('hidden.bs.modal', () => {
-                    recForm.reset();
-                    setLoading(false);
-                    cleanupBackdrop();
-                    loadResources();
-                }, { once: true });
+                    const estadoTexto =
+                        estado === 'pendiente' ? 'PENDIENTE' :
+                        estado === 'vencido'    ? 'VENCIDO' :
+                        estado === 'aprobado'   ? 'APROBADO' :
+                                                  'COMPLETADO';
 
-            } catch (err) {
-                alert('Ocurrió un error.');
-            } finally {
-                if (!document.body.classList.contains('modal-open')) {
-                    setLoading(false);
-                    cleanupBackdrop();
+                    html += `
+                        <div class="actividad-card">
+                            <div class="actividad-header">
+                                <h3 class="actividad-titulo">${act.titulo || 'Sin título'}</h3>
+                                <span class="${badgeClass}">${estadoTexto}</span>
+                            </div>
+                            <div class="actividad-info">
+                                Líder: ${act.lider_nombre || 'N/A'} ·
+                                Fecha límite: ${act.fecha_limite || act.fecha_vencimiento || 'Sin definir'}
+                            </div>
+                            <p class="actividad-descripcion">${act.descripcion || 'Sin descripción'}</p>
+                        </div>
+                    `;
+                });
+
+                contenedorActividades.innerHTML = html;
+            })
+            .catch(err => {
+                console.error(err);
+                contenedorActividades.innerHTML = `
+                    <div class="actividades-vacio">
+                        <i class="bi bi-exclamation-circle"></i>
+                        <p>Error al cargar los recursos</p>
+                    </div>
+                `;
+            });
+    }
+
+    // ==== Abrir modal recurso (crear) ====
+    function limpiarFormActividad() {
+        if (!formActividadLider) return;
+        formActividadLider.reset();
+        if (inputFechaLimite) inputFechaLimite.value = hoy;
+        if (infoTipoActividad) infoTipoActividad.innerHTML = '';
+        if (inputLiderNombre) inputLiderNombre.value = '';
+        if (inputLiderId) inputLiderId.value = '';
+        if (mensajeLider) {
+            mensajeLider.textContent = 'El líder se cargará automáticamente al seleccionar el semillero.';
+            mensajeLider.className = 'text-muted';
+        }
+    }
+
+    function abrirModalActividad(preselectSemilleroId = null) {
+        if (!modalActividadLider) return;
+        limpiarFormActividad();
+        modalActividadLider.classList.add('active');
+
+        if (preselectSemilleroId && selectSemillero) {
+            selectSemillero.value = preselectSemilleroId;
+            selectSemillero.dispatchEvent(new Event('change'));
+        }
+    }
+
+    if (btnAbrirModalActividad && window.ACT_CAN_CREATE) {
+        btnAbrirModalActividad.addEventListener('click', () => abrirModalActividad());
+    }
+
+    // Abrir modal desde card concreta
+    document.querySelectorAll('.btn-crear-actividad-card').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const semilleroId = btn.dataset.semilleroId;
+            abrirModalActividad(semilleroId);
+        });
+    });
+
+    function cerrarModalActividad() {
+        if (!modalActividadLider) return;
+        modalActividadLider.classList.remove('active');
+    }
+
+    if (btnCancelarActividad) {
+        btnCancelarActividad.addEventListener('click', cerrarModalActividad);
+    }
+
+    if (modalActividadLider) {
+        modalActividadLider.addEventListener('click', e => {
+            if (e.target === modalActividadLider) cerrarModalActividad();
+        });
+    }
+
+    // ==== Al cambiar semillero, cargar líder ====
+    if (selectSemillero) {
+        selectSemillero.addEventListener('change', () => {
+            const semilleroId = selectSemillero.value;
+            if (!semilleroId) {
+                if (inputLiderNombre) inputLiderNombre.value = '';
+                if (inputLiderId) inputLiderId.value = '';
+                if (mensajeLider) {
+                    mensajeLider.textContent = 'El líder se cargará automáticamente al seleccionar el semillero.';
+                    mensajeLider.className = 'text-muted';
                 }
+                return;
             }
-        });
 
-        modalEl.addEventListener('hidden.bs.modal', () => {
-            setLoading(false);
-            cleanupBackdrop();
+            if (inputLiderNombre) inputLiderNombre.value = 'Cargando líder...';
+            if (mensajeLider) {
+                mensajeLider.textContent = 'Buscando líder asociado al semillero...';
+                mensajeLider.className = 'text-muted';
+            }
+
+            const url = buildUrl(window.ACT_SEMILLERO_LIDER_URL, semilleroId);
+
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    const lider = data.lider || null;
+                    if (lider) {
+                        const nombreMostrado =
+                            lider.nombre_completo || lider.nombre || 'Sin nombre';
+
+                        if (inputLiderNombre) inputLiderNombre.value = nombreMostrado;
+                        if (inputLiderId) inputLiderId.value = lider.id;
+                        if (mensajeLider) {
+                            mensajeLider.textContent = 'Recurso será asignado directamente a este líder.';
+                            mensajeLider.className = 'text-success';
+                        }
+                    } else {
+                        if (inputLiderNombre) inputLiderNombre.value = 'Sin líder asignado';
+                        if (inputLiderId) inputLiderId.value = '';
+                        if (mensajeLider) {
+                            mensajeLider.textContent = 'Este semillero no tiene líder asignado. No podrás crear el recurso.';
+                            mensajeLider.className = 'text-warning';
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    if (inputLiderNombre) inputLiderNombre.value = 'Error al cargar líder';
+                    if (inputLiderId) inputLiderId.value = '';
+                    if (mensajeLider) {
+                        mensajeLider.textContent = 'No se pudo cargar el líder del semillero.';
+                        mensajeLider.className = 'text-danger';
+                    }
+                });
         });
     }
 
-    // =======================
-    //   INICIO
-    // =======================
-    if (recContainer) {
-        loadResources();
+    // ==== Enviar formulario ====
+    if (formActividadLider) {
+        formActividadLider.addEventListener('submit', e => {
+            e.preventDefault();
+
+            const fechaSeleccionada = inputFechaLimite ? inputFechaLimite.value : null;
+            const fechaHoy = new Date().toISOString().split('T')[0];
+
+            if (fechaSeleccionada && fechaSeleccionada < fechaHoy) {
+                showNotification(
+                    'Fecha inválida',
+                    'No se pueden crear recursos con fecha límite anterior a hoy.',
+                    'error'
+                );
+                return;
+            }
+
+            if (!inputLiderId || !inputLiderId.value) {
+                showNotification(
+                    'Líder no asignado',
+                    'No es posible crear un recurso para un semillero sin líder asignado.',
+                    'error'
+                );
+                return;
+            }
+
+            const formData = new FormData(formActividadLider);
+            const btnGuardar = formActividadLider.querySelector('.btn-guardar-modal');
+
+            if (btnGuardar) {
+                btnGuardar.disabled = true;
+                btnGuardar.textContent = 'Guardando...';
+            }
+
+            fetch(window.ACT_STORE_URL, {
+                method: 'POST',
+                body: formData,
+                headers: CSRF_TOKEN ? { 'X-CSRF-TOKEN': CSRF_TOKEN } : {}
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(
+                            '¡Recurso creado!',
+                            'El recurso se ha asignado exitosamente al líder del semillero.',
+                            'success'
+                        );
+                        cerrarModalActividad();
+                        setTimeout(() => {
+                            window.location.href =
+                                window.location.href.split('?')[0] + '?t=' + new Date().getTime();
+                        }, 1500);
+                    } else {
+                        showNotification(
+                            'Error al guardar',
+                            data.message || 'No se pudo guardar el recurso. Intenta nuevamente.',
+                            'error'
+                        );
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    showNotification(
+                        'Error de conexión',
+                        'Hubo un problema al conectar con el servidor. Verifica tu conexión.',
+                        'error'
+                    );
+                })
+                .finally(() => {
+                    if (btnGuardar) {
+                        btnGuardar.disabled = false;
+                        btnGuardar.textContent = 'Guardar Recurso';
+                    }
+                });
+        });
     }
-})();
+});
