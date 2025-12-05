@@ -4,117 +4,208 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Recurso;
+use App\Models\Semillero;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class RecursoController extends Controller
 {
-    // GET /admin/recursos  -> vista
+    // ======================================================
+    //              CENTRO DE RECURSOS + NUEVO MÓDULO
+    // ======================================================
+
+    /**
+     * Vista principal del módulo de recursos.
+     * Ahora también muestra los semilleros con sus actividades.
+     */
     public function index()
     {
-        return view('admin.recursos.index');
+        $semilleros = Semillero::with('lider')->get();
+
+        foreach ($semilleros as $s) {
+            $q = Recurso::where('dirigido_a', 'lideres')
+                ->where('semillero_id', $s->id_semillero);
+
+            $s->actividades_total      = (clone $q)->count();
+            $s->actividades_pendientes = (clone $q)->where('estado', 'pendiente')->count();
+            $s->actividades_aprobadas  = (clone $q)->where('estado', 'aprobado')->count();
+            $s->actividades_rechazadas = (clone $q)->where('estado', 'rechazado')->count();
+
+            $s->lider_nombre = optional($s->lider)->nombre_completo;
+        }
+
+        return view('admin.recursos.index', compact('semilleros'));
     }
 
-    // GET /admin/recursos/listar  -> JSON que consume tu JS
+    /**
+     * Lista de recursos generales via AJAX
+     */
     public function listar(Request $request)
     {
-        $q   = trim((string) $request->get('q'));
-        $cat = (string) $request->get('categoria');
+        $search = $request->get('search');
+        $categoria = $request->get('categoria');
 
-        $query = Recurso::query();
+        $query = Recurso::query()->whereNull('semillero_id'); // solo recursos generales
 
-        if ($q !== '') {
-            $query->where(function ($w) use ($q) {
-                $w->where('nombre_archivo', 'like', "%{$q}%")
-                  ->orWhere('descripcion', 'like', "%{$q}%");
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nombre_archivo', 'like', "%$search%");
+                $q->orWhere('descripcion', 'like', "%$search%");
             });
         }
 
-        if ($cat !== '') {
-            $query->where('categoria', $cat);
+        if ($categoria) {
+            $query->where('categoria', $categoria);
         }
 
-        $items = $query->latest('id')->get();
-
-        // Para ayudar al autocompletado del IDE
-        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
-        $disk = Storage::disk('public');
-
-        $data = $items->map(function (Recurso $r) use ($disk) {
-            $exists = $disk->exists($r->archivo);
-            $mime   = $exists ? $disk->mimeType($r->archivo) : null;
-            $size   = $exists ? (int) $disk->size($r->archivo) : null;
-            $url    = $exists ? $disk->url($r->archivo) : '#';
-
-            return [
-                'id'          => $r->id,
-                // la vista usa 'titulo' para mostrar
-                'titulo'      => $r->nombre_archivo,
-                'descripcion' => $r->descripcion,
-                'categoria'   => $r->categoria,      // 'plantillas'|'manuales'|'otros'
-                'mime'        => $mime,
-                'size'        => $size,
-                'url'         => $url,
-                'download'    => route('admin.recursos.download', ['recurso' => $r->id], false),
-                'created_at'  => optional($r->created_at)->toDateTimeString(),
-                'updated_at'  => optional($r->updated_at)->toDateTimeString(),
-            ];
-        });
-
-        return response()->json(['data' => $data]);
+        return response()->json([
+            'data' => $query->orderByDesc('created_at')->get()
+        ]);
     }
 
-    // POST /admin/recursos  -> subir archivo
+    /**
+     * Guardar un recurso general (con archivo)
+     */
     public function store(Request $request)
     {
-        // Debe coincidir con los names del form
         $request->validate([
-            'nombre_archivo' => ['required','string','max:255'],
-            'categoria'      => ['required','in:plantillas,manuales,otros'],
-            'descripcion'    => ['nullable','string'],
-            'archivo'        => ['required','file','max:20480'], // 20 MB
+            'nombre_archivo' => 'required|string|max:255',
+            'categoria'      => 'required|in:plantillas,manuales,otros',
+            'dirigido_a'     => 'required|in:todos,aprendices,lideres',
+            'archivo'        => 'required|file|max:15000',
         ]);
 
         $file = $request->file('archivo');
+        $fileName = time().'_'.$file->getClientOriginalName();
+        $filePath = $file->storeAs('recursos', $fileName, 'public');
 
-        // Guarda en storage/app/public/recursos y devuelve "recursos/xxxxx.ext"
-        $path = $file->store('recursos', 'public');
+        $recurso = new Recurso();
+        $recurso->nombre_archivo = $request->nombre_archivo;
+        $recurso->archivo = $filePath;
+        $recurso->categoria = $request->categoria;
+        $recurso->dirigido_a = $request->dirigido_a;
+        $recurso->descripcion = $request->descripcion;
+        $recurso->estado = 'pendiente';
+        $recurso->user_id = Auth::id();
+        $recurso->save();
 
-        $recurso = Recurso::create([
-            'nombre_archivo' => $request->nombre_archivo,
-            'categoria'      => $request->categoria,
-            'descripcion'    => $request->descripcion,
-            'archivo'        => $path,
-            'user_id'        => Auth::id(),
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Descargar archivo
+     */
+    public function download(Recurso $recurso)
+    {
+        if (!$recurso->archivo || !Storage::disk('public')->exists($recurso->archivo)) {
+            abort(404, 'Archivo no encontrado');
+        }
+
+        return Storage::disk('public')->download($recurso->archivo, $recurso->nombre_archivo);
+    }
+
+    /**
+     * Eliminar recurso o actividad
+     */
+    public function destroy(Recurso $recurso)
+    {
+        if ($recurso->archivo && Storage::disk('public')->exists($recurso->archivo)) {
+            Storage::disk('public')->delete($recurso->archivo);
+        }
+
+        $recurso->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    // ======================================================
+    //          ACTIVIDADES → (NOMBRE CONSERVADO)
+    // ======================================================
+
+    /**
+     * Obtener actividades de un semillero
+     * GET admin/recursos/actividades/semillero/{semillero}
+     */
+    public function actividadesPorSemillero(Semillero $semillero)
+    {
+        $actividades = Recurso::where('dirigido_a', 'lideres')
+            ->where('semillero_id', $semillero->id_semillero)
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($a) use ($semillero) {
+
+                // Estado virtual "vencido"
+                $estadoVista = $a->estado;
+                if (
+                    $a->estado === 'pendiente' &&
+                    $a->fecha_vencimiento &&
+                    now()->gt($a->fecha_vencimiento)
+                ) {
+                    $estadoVista = 'vencido';
+                }
+
+                return [
+                    'id' => $a->id,
+                    'titulo' => $a->nombre_archivo,
+                    'descripcion' => $a->descripcion,
+                    'estado' => $estadoVista,
+                    'fecha_vencimiento' => optional($a->fecha_vencimiento)?->format('Y-m-d'),
+                    'fecha_creacion' => optional($a->created_at)?->format('Y-m-d'),
+                    'comentarios' => $a->comentarios,
+                    'lider_nombre' => optional($semillero->lider)->nombre_completo,
+                ];
+            });
+
+        return response()->json(['actividades' => $actividades]);
+    }
+
+    /**
+     * Crear actividad para líder de semillero
+     * POST admin/recursos/actividades
+     */
+    public function storeActividad(Request $request)
+    {
+        $request->validate([
+            'semillero_id' => 'required|exists:semilleros,id_semillero',
+            'titulo'       => 'required|string|max:255',
+            'descripcion'  => 'required|string',
+            'fecha_limite' => 'required|date|after_or_equal:today'
         ]);
 
-        return response()->json([
-            'ok' => true,
-            'id' => $recurso->id,
-        ], 201);
+        $actividad = new Recurso();
+        $actividad->nombre_archivo = $request->titulo;
+        $actividad->descripcion = $request->descripcion;
+        $actividad->fecha_vencimiento = $request->fecha_limite;
+        $actividad->categoria = 'otros';
+        $actividad->dirigido_a = 'lideres';
+        $actividad->estado = 'pendiente';
+        $actividad->semillero_id = $request->semillero_id;
+        $actividad->user_id = Auth::id();
+        $actividad->save();
+
+        return response()->json(['success' => true]);
     }
 
-    // GET /admin/recursos/{recurso}/dl  -> descarga
-    public function download(Recurso $recurso)
-{
-    $disk = Storage::disk('public');
+    /**
+     * Actualizar estado de una actividad
+     * PUT admin/recursos/actividades/{recurso}/estado
+     */
+    public function actualizarEstadoActividad(Request $request, Recurso $recurso)
+    {
+        $request->validate([
+            'estado'      => 'required|in:pendiente,aprobado,rechazado',
+            'comentarios' => 'nullable|string|max:500'
+        ]);
 
-    if (!$disk->exists($recurso->archivo)) {
-        abort(404, 'Archivo no encontrado');
+        if ($recurso->dirigido_a !== 'lideres') {
+            return response()->json(['success' => false, 'message' => 'No es una actividad'], 400);
+        }
+
+        $recurso->estado = $request->estado;
+        $recurso->comentarios = $request->comentarios;
+        $recurso->save();
+
+        return response()->json(['success' => true]);
     }
-
-    // nombre de descarga amigable con extensión
-    $downloadName = $recurso->nombre_archivo;
-    $ext = pathinfo($recurso->archivo, PATHINFO_EXTENSION);
-    if ($ext && !Str::endsWith(Str::lower($downloadName), '.'.Str::lower($ext))) {
-        $downloadName .= '.'.$ext;
-    }
-
-    // ruta física absoluta y respuesta de descarga (sin warnings del IDE)
-    $absolutePath = $disk->path($recurso->archivo);
-    return response()->download($absolutePath, $downloadName);
-}
-
 }
