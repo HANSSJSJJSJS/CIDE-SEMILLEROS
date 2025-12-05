@@ -147,7 +147,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // ======================================================
-//          RUTAS ADMIN / LÍDER INVESTIGACIÓN
+//          RUTAS ADMIN/ LIDER GENERAL / LÍDER INVESTIGACIÓN
 // ======================================================
 Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
     ->prefix('admin')
@@ -277,12 +277,28 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
         //            RECURSOS
         // ==========================
         Route::prefix('recursos')->as('recursos.')->group(function () {
-            Route::get('/',               [RecursoController::class, 'index'])->name('index');
-            Route::get('/listar',         [RecursoController::class, 'listar'])->name('listar');
-            Route::post('/',              [RecursoController::class, 'store'])->name('store');
-            Route::get('/{recurso}/dl',   [RecursoController::class, 'download'])->name('download');
-            Route::delete('/{recurso}',   [RecursoController::class, 'destroy'])->name('destroy');
-        });
+
+            // Recursos generales
+            Route::get('/', [RecursoController::class, 'index'])->name('index');
+            Route::get('/listar', [RecursoController::class, 'listar'])->name('listar');
+            Route::post('/', [RecursoController::class, 'store'])->name('store');
+            Route::get('/{recurso}/dl', [RecursoController::class, 'download'])->name('download');
+            Route::delete('/{recurso}', [RecursoController::class, 'destroy'])->name('destroy');
+
+            // ⭐ Recursos asignados a semilleros ⭐
+            Route::get('/semillero/{semillero}', 
+                [RecursoController::class, 'recursosPorSemillero']
+            )->name('porSemillero');
+
+            Route::post('/semillero', 
+                [RecursoController::class, 'storeSemilleroRecurso']
+            )->name('semillero.store');
+
+            Route::put('/semillero/{recurso}/estado',
+                [RecursoController::class, 'actualizarEstadoRecurso']
+    )->name('semillero.estado');
+});
+
 
 
         // ==========================
