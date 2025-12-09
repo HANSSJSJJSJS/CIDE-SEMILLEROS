@@ -172,13 +172,16 @@ class CalendarioLiderController extends Controller
             }
 
             $userId = Auth::id();
-            $leaderCol = Schema::hasColumn('eventos','id_lider_semi')
-                ? 'id_lider_semi'
-                : (Schema::hasColumn('eventos','id_lider_usuario') ? 'id_lider_usuario' : 'id_lider');
+            // Detectar columna de líder de manera tolerante
+            $leaderCol = null;
+            foreach (['id_lider_semi','id_lider_usuario','id_lider','id_usuario'] as $cand) {
+                if (Schema::hasColumn('eventos', $cand)) { $leaderCol = $cand; break; }
+            }
             $mes = $request->input('mes');
             $anio = $request->input('anio');
 
-            $query = Evento::where($leaderCol, $userId)
+            $query = Evento::query()
+                ->when($leaderCol !== null, function($q) use ($leaderCol, $userId){ $q->where($leaderCol, $userId); })
                 ->with([
                     'participantes' => function($q){
                         $q->select(DB::raw('aprendices.id_aprendiz as id_aprendiz'));
@@ -196,9 +199,12 @@ class CalendarioLiderController extends Controller
             $eventos = $query->orderBy('fecha_hora', 'asc')->get();
 
             $tz = config('app.timezone', 'America/Bogota');
-            $leaderCol = $leaderCol ?? (Schema::hasColumn('eventos','id_lider_semi')
-                ? 'id_lider_semi'
-                : (Schema::hasColumn('eventos','id_lider_usuario') ? 'id_lider_usuario' : 'id_lider'));
+            // asegurar leaderCol para mapeo si no se detectó antes
+            if ($leaderCol === null) {
+                foreach (['id_lider_semi','id_lider_usuario','id_lider','id_usuario'] as $cand) {
+                    if (Schema::hasColumn('eventos', $cand)) { $leaderCol = $cand; break; }
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -353,7 +359,7 @@ class CalendarioLiderController extends Controller
 
                     return [
                         'id' => $evento->id_evento,
-                        'leader_id' => $evento->{$leaderCol} ?? null,
+                        'leader_id' => $leaderCol ? ($evento->{$leaderCol} ?? null) : null,
                         'titulo' => $evento->titulo,
                         'descripcion' => $evento->descripcion,
                         'linea_investigacion' => $evento->linea_investigacion,
@@ -396,7 +402,8 @@ class CalendarioLiderController extends Controller
                 'recordatorio' => 'nullable|string',
                 'id_proyecto' => 'nullable|exists:proyectos,id_proyecto',
                 'participantes' => 'nullable|array',
-                'participantes.*' => 'exists:aprendices,id_aprendiz',
+                // tolerante: aceptamos ints y luego filtramos por aprendices existentes
+                'participantes.*' => 'integer',
                 'generar_enlace' => 'nullable|string|in:teams,meet,personalizado'
             ]);
 
@@ -422,12 +429,15 @@ class CalendarioLiderController extends Controller
                 ], 422);
             }
 
-            $leaderCol = Schema::hasColumn('eventos','id_lider_semi')
-                ? 'id_lider_semi'
-                : (Schema::hasColumn('eventos','id_lider_usuario') ? 'id_lider_usuario' : 'id_lider');
-            $exists = Evento::where($leaderCol, Auth::id())
-                ->where('fecha_hora', $validated['fecha_hora'])
-                ->exists();
+            // detectar columna del líder (tolerante)
+            $leaderCol = null;
+            foreach (['id_lider_semi','id_lider_usuario','id_lider','id_usuario'] as $cand) {
+                if (Schema::hasColumn('eventos', $cand)) { $leaderCol = $cand; break; }
+            }
+            // Verificar duplicado: si no hay columna de líder, solo por fecha
+            $existsQuery = Evento::query();
+            if ($leaderCol !== null) { $existsQuery->where($leaderCol, Auth::id()); }
+            $exists = $existsQuery->where('fecha_hora', $validated['fecha_hora'])->exists();
             if ($exists) {
                 return response()->json([
                     'success' => false,
@@ -446,9 +456,8 @@ class CalendarioLiderController extends Controller
 
             $nextId = (int) (DB::table('eventos')->max('id_evento') ?? 0) + 1;
 
-            $evento = Evento::create([
+            $payload = [
                 'id_evento' => $nextId,
-                $leaderCol => Auth::id(),
                 'id_proyecto' => $validated['id_proyecto'] ?? null,
                 'titulo' => $validated['titulo'],
                 'tipo' => $validated['tipo'],
@@ -460,7 +469,9 @@ class CalendarioLiderController extends Controller
                 'link_virtual' => $linkVirtual,
                 'codigo_reunion' => $codigoReunion,
                 'recordatorio' => is_numeric($validated['recordatorio'] ?? null) ? (int)$validated['recordatorio'] : 0
-            ]);
+            ];
+            if ($leaderCol !== null) { $payload[$leaderCol] = Auth::id(); }
+            $evento = Evento::create($payload);
 
             if (Schema::hasTable('evento_participantes')) {
                 DB::table('evento_participantes')->where('id_evento', $evento->id_evento)->delete();
@@ -468,6 +479,8 @@ class CalendarioLiderController extends Controller
                 $insert = [];
                 $now = now();
                 $hasAsistenciaCol = Schema::hasColumn('evento_participantes','asistencia');
+                $hasCreatedCol = Schema::hasColumn('evento_participantes','created_at');
+                $hasUpdatedCol = Schema::hasColumn('evento_participantes','updated_at');
 
                 $aprendizIdsProyecto = [];
                 if (!empty($validated['id_proyecto'])) {
@@ -478,7 +491,11 @@ class CalendarioLiderController extends Controller
                 if (!empty($aprendizIdsProyecto)) {
                     $idsBase = $aprendizIdsProyecto;
                 } elseif (!empty($validated['participantes'])) {
-                    $idsBase = $validated['participantes'];
+                    // filtrar por aprendices realmente existentes
+                    $idsIngresados = array_values(array_unique(array_map('intval', (array)$validated['participantes'])));
+                    if (!empty($idsIngresados) && Schema::hasTable('aprendices')) {
+                        $idsBase = DB::table('aprendices')->whereIn('id_aprendiz', $idsIngresados)->pluck('id_aprendiz')->map(fn($v)=>(int)$v)->all();
+                    }
                 }
 
                 foreach ($idsBase as $aid) {
@@ -487,12 +504,12 @@ class CalendarioLiderController extends Controller
                     $row = [
                         'id_evento' => $evento->id_evento,
                         'id_aprendiz' => $aid,
-                        'created_at' => $now,
-                        'updated_at' => $now,
                     ];
                     if ($hasAsistenciaCol) {
                         $row['asistencia'] = 'pendiente';
                     }
+                    if ($hasCreatedCol) { $row['created_at'] = $now; }
+                    if ($hasUpdatedCol) { $row['updated_at'] = $now; }
                     $insert[] = $row;
                 }
 
@@ -501,11 +518,33 @@ class CalendarioLiderController extends Controller
                 }
             }
 
-            $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
-                ? "COALESCE(aprendices.nombre_completo, CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')))"
-                : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
+            // Construir nombre de participante de forma tolerante
+            $aprHas = fn(string $c) => Schema::hasColumn('aprendices', $c);
+            $usrHas = fn(string $c) => Schema::hasColumn('users', $c);
+            $hasUsers = Schema::hasTable('users');
+            $joinCol = $aprHas('user_id') ? 'user_id' : ($aprHas('id_usuario') ? 'id_usuario' : null);
+            $joinUser = $hasUsers && $joinCol !== null;
+
+            $aprHasNombres = $aprHas('nombres');
+            $aprHasApellidos = $aprHas('apellidos');
+            $userNameCol = $usrHas('name') ? 'name' : ($usrHas('nombre') ? 'nombre' : null);
+            $userLastCol = $usrHas('apellidos') ? 'apellidos' : ($usrHas('apellido') ? 'apellido' : null);
+
+            $baseConcat = ($aprHasNombres && $aprHasApellidos)
+                ? "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))"
+                : (($userNameCol || $userLastCol) && $joinUser
+                    ? "CONCAT(COALESCE(u.`".($userNameCol??'')."`,''),' ',COALESCE(u.`".($userLastCol??'')."`,''))"
+                    : "''");
+
+            $nameExpr = $aprHas('nombre_completo')
+                ? "COALESCE(NULLIF(aprendices.nombre_completo,''), NULLIF(TRIM($baseConcat),''))"
+                : "NULLIF(TRIM($baseConcat),'')";
+
             $evento->load([
-                'participantes' => function($q) use ($nameExpr){
+                'participantes' => function($q) use ($nameExpr, $joinUser, $joinCol){
+                    if ($joinUser && $joinCol) {
+                        $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$joinCol));
+                    }
                     $q->select(
                         DB::raw('aprendices.id_aprendiz as id_aprendiz'),
                         DB::raw($nameExpr.' as nombre_completo')
@@ -576,6 +615,7 @@ class CalendarioLiderController extends Controller
             if (Schema::hasColumn('eventos','id_lider_semi')) $leaderCol = 'id_lider_semi';
             elseif (Schema::hasColumn('eventos','id_lider_usuario')) $leaderCol = 'id_lider_usuario';
             elseif (Schema::hasColumn('eventos','id_lider')) $leaderCol = 'id_lider';
+            elseif (Schema::hasColumn('eventos','id_usuario')) $leaderCol = 'id_usuario';
 
             $eventoQ = Evento::where('id_evento', $id);
             if ($leaderCol) { $eventoQ->where($leaderCol, Auth::id()); }
@@ -655,7 +695,15 @@ class CalendarioLiderController extends Controller
                 $updateData['ubicacion'] = $validated['ubicacion'];
             }
 
+            $hasLinkCol = Schema::hasColumn('eventos', 'link_virtual');
+            $hasCodeCol = Schema::hasColumn('eventos', 'codigo_reunion');
             if (array_key_exists('link_virtual', $validated)) {
+                if (!$hasLinkCol) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "La columna 'link_virtual' no existe en la tabla eventos"
+                    ], 500);
+                }
                 $link = $validated['link_virtual'];
                 if (is_string($link)) {
                     $trim = trim($link);
@@ -664,22 +712,30 @@ class CalendarioLiderController extends Controller
                     }
                     $updateData['link_virtual'] = $trim === '' ? null : $trim;
                 } else {
-                    $updateData['link_virtual'] = $link;
+                    $updateData['link_virtual'] = $link; // puede ser null
                 }
             } elseif (($validated['ubicacion'] ?? $evento->ubicacion) === 'virtual' && empty($evento->link_virtual)) {
-                $plataforma = $validated['generar_enlace'] ?? 'teams';
-                $updateData['link_virtual'] = $this->generarEnlaceReunion($plataforma, $validated['titulo'] ?? $evento->titulo);
-                $updateData['codigo_reunion'] = $evento->codigo_reunion ?: \Illuminate\Support\Str::random(10);
+                // Autogenerar link solo si la columna existe
+                if ($hasLinkCol) {
+                    $plataforma = $validated['generar_enlace'] ?? 'teams';
+                    $updateData['link_virtual'] = $this->generarEnlaceReunion($plataforma, $validated['titulo'] ?? $evento->titulo);
+                }
+                if ($hasCodeCol) {
+                    $updateData['codigo_reunion'] = $evento->codigo_reunion ?: \Illuminate\Support\Str::random(10);
+                }
             }
 
             $evento->update($updateData);
 
-            if (Schema::hasTable('evento_participantes')) {
+            // Si solo estamos actualizando el enlace, no tocar participantes
+            if (!$onlyLinkUpdate && Schema::hasTable('evento_participantes')) {
                 DB::table('evento_participantes')->where('id_evento', $evento->id_evento)->delete();
 
                 $now = now();
                 $insert = [];
                 $hasAsistenciaCol = Schema::hasColumn('evento_participantes','asistencia');
+                $hasCreatedCol = Schema::hasColumn('evento_participantes','created_at');
+                $hasUpdatedCol = Schema::hasColumn('evento_participantes','updated_at');
 
                 $pid = $updateData['id_proyecto'] ?? $evento->id_proyecto ?? null;
                 $idsBase = [];
@@ -700,12 +756,12 @@ class CalendarioLiderController extends Controller
                     $row = [
                         'id_evento' => $evento->id_evento,
                         'id_aprendiz' => $aid,
-                        'created_at' => $now,
-                        'updated_at' => $now,
                     ];
                     if ($hasAsistenciaCol) {
                         $row['asistencia'] = 'pendiente';
                     }
+                    if ($hasCreatedCol) { $row['created_at'] = $now; }
+                    if ($hasUpdatedCol) { $row['updated_at'] = $now; }
                     $insert[] = $row;
                 }
 
@@ -714,20 +770,43 @@ class CalendarioLiderController extends Controller
                 }
             }
 
-            $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
-                ? "COALESCE(aprendices.nombre_completo, CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')))"
-                : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
-            $evento->load([
-                'participantes' => function($q) use ($nameExpr){
-                    $q->select(
-                        DB::raw('aprendices.id_aprendiz as id_aprendiz'),
-                        DB::raw($nameExpr.' as nombre_completo')
-                    );
-                    if (Schema::hasColumn('aprendices','nombres'))   { $q->addSelect('aprendices.nombres'); }
-                    if (Schema::hasColumn('aprendices','apellidos')) { $q->addSelect('aprendices.apellidos'); }
-                },
-                'proyecto:id_proyecto,nombre_proyecto'
-            ]);
+            if (!$onlyLinkUpdate) {
+                $aprHas = fn(string $c) => Schema::hasColumn('aprendices', $c);
+                $usrHas = fn(string $c) => Schema::hasColumn('users', $c);
+                $hasUsers = Schema::hasTable('users');
+                $joinCol = $aprHas('user_id') ? 'user_id' : ($aprHas('id_usuario') ? 'id_usuario' : null);
+                $joinUser = $hasUsers && $joinCol !== null;
+
+                $aprHasNombres = $aprHas('nombres');
+                $aprHasApellidos = $aprHas('apellidos');
+                $userNameCol = $usrHas('name') ? 'name' : ($usrHas('nombre') ? 'nombre' : null);
+                $userLastCol = $usrHas('apellidos') ? 'apellidos' : ($usrHas('apellido') ? 'apellido' : null);
+
+                $baseConcat = ($aprHasNombres && $aprHasApellidos)
+                    ? "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))"
+                    : (($userNameCol || $userLastCol) && $joinUser
+                        ? "CONCAT(COALESCE(u.`".($userNameCol??'')."`,''),' ',COALESCE(u.`".($userLastCol??'')."`,''))"
+                        : "''");
+
+                $nameExpr = $aprHas('nombre_completo')
+                    ? "COALESCE(NULLIF(aprendices.nombre_completo,''), NULLIF(TRIM($baseConcat),''))"
+                    : "NULLIF(TRIM($baseConcat),'')";
+
+                $evento->load([
+                    'participantes' => function($q) use ($nameExpr, $joinUser, $joinCol){
+                        if ($joinUser && $joinCol) {
+                            $q->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$joinCol));
+                        }
+                        $q->select(
+                            DB::raw('aprendices.id_aprendiz as id_aprendiz'),
+                            DB::raw($nameExpr.' as nombre_completo')
+                        );
+                        if (Schema::hasColumn('aprendices','nombres'))   { $q->addSelect('aprendices.nombres'); }
+                        if (Schema::hasColumn('aprendices','apellidos')) { $q->addSelect('aprendices.apellidos'); }
+                    },
+                    'proyecto:id_proyecto,nombre_proyecto'
+                ]);
+            }
 
             $tz = config('app.timezone', 'America/Bogota');
             $dt = $evento->fecha_hora instanceof \DateTimeInterface
@@ -775,7 +854,7 @@ class CalendarioLiderController extends Controller
             Log::error('Error al actualizar evento (CalendarioLiderController): ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar el evento'
+                'message' => 'Error al actualizar el evento: ' . $e->getMessage()
             ], 500);
         }
     }
