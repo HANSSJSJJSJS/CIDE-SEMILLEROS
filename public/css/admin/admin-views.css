@@ -52,3 +52,53 @@
 @media (max-width: 991.98px){
   .dash-admin::before{ background-position: center top; }
 }
+
+.gestion-usuarios-wrapper{
+  position: relative;
+  min-height: calc(100vh - 200px);
+  padding-bottom: 56px;
+  z-index: 0;
+}
+
+.gestion-usuarios-wrapper::before{
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  margin-top: 80px;
+  background-image: url("/images/fondo_page.png");
+  background-repeat: no-repeat;
+  background-position: calc(50% + 140px) top;
+  background-size: clamp(980px, 60vw, 1400px) auto;
+  pointer-events: none;
+}
+
+@media (max-width: 991.98px){
+  .gestion-usuarios-wrapper::before{
+    background-position: center top;
+  }
+}
+
+.semilleros-wrapper{
+  position: relative;
+  min-height: calc(100vh - 200px);
+  padding-bottom: 56px;
+  z-index: 0;
+}
+
+.semilleros-wrapper::before{
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  margin-top: 80px;
+  background-image: url("/images/fondo_page.png");
+  background-repeat: no-repeat;
+  background-position: calc(50% + 140px) top;
+  background-size: clamp(980px, 60vw, 1400px) auto;
+  pointer-events: none;
+}
+
+@media (max-width: 991.98px){
+  .semilleros-wrapper::before{ background-position: center top; }
+}
