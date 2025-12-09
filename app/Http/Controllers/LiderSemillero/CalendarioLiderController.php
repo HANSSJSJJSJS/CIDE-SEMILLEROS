@@ -480,6 +480,17 @@ class CalendarioLiderController extends Controller
                 } elseif (!empty($validated['participantes'])) {
                     $idsBase = $validated['participantes'];
                 }
+                // Normalizar, deduplicar y verificar existencia en aprendices
+                $idsBase = array_values(array_unique(array_filter(array_map('intval', $idsBase))));
+                if (!empty($idsBase) && Schema::hasTable('aprendices')) {
+                    $idsBase = DB::table('aprendices')
+                        ->whereIn('id_aprendiz', $idsBase)
+                        ->pluck('id_aprendiz')
+                        ->map(fn($v) => (int)$v)
+                        ->unique()
+                        ->values()
+                        ->all();
+                }
 
                 foreach ($idsBase as $aid) {
                     $aid = (int) $aid;
@@ -501,20 +512,76 @@ class CalendarioLiderController extends Controller
                 }
             }
 
-            $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
-                ? "COALESCE(aprendices.nombre_completo, CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')))"
-                : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
-            $evento->load([
-                'participantes' => function($q) use ($nameExpr){
-                    $q->select(
-                        DB::raw('aprendices.id_aprendiz as id_aprendiz'),
-                        DB::raw($nameExpr.' as nombre_completo')
-                    );
-                    if (Schema::hasColumn('aprendices','nombres'))   { $q->addSelect('aprendices.nombres'); }
-                    if (Schema::hasColumn('aprendices','apellidos')) { $q->addSelect('aprendices.apellidos'); }
-                },
-                'proyecto:id_proyecto,nombre_proyecto'
-            ]);
+            // Cargar solo el proyecto; participantes se resuelven de forma defensiva abajo
+            $evento->load(['proyecto:id_proyecto,nombre_proyecto']);
+
+            // Construir lista de participantes con nombre seguro (sin asumir columnas específicas)
+            $parts = collect();
+            try {
+                if (Schema::hasTable('evento_participantes')) {
+                    $hasAsistenciaCol = Schema::hasColumn('evento_participantes', 'asistencia');
+                    $rows = DB::table('evento_participantes')
+                        ->where('id_evento', $evento->id_evento)
+                        ->select(
+                            'id_aprendiz',
+                            DB::raw($hasAsistenciaCol
+                                ? "COALESCE(asistencia, 'pendiente') as asistencia"
+                                : "'pendiente' as asistencia"
+                            )
+                        )
+                        ->get();
+
+                    if ($rows->isNotEmpty() && Schema::hasTable('aprendices')) {
+                        $aprIds = $rows->pluck('id_aprendiz')->map(fn($v)=>(int)$v)->unique()->values()->all();
+                        $aprHas = fn(string $c) => Schema::hasColumn('aprendices', $c);
+                        $usrHas = fn(string $c) => Schema::hasColumn('users', $c);
+                        $hasUsers = Schema::hasTable('users');
+                        $joinCol = $aprHas('user_id') ? 'user_id' : ($aprHas('id_usuario') ? 'id_usuario' : null);
+                        $joinUser = $hasUsers && $joinCol !== null;
+                        $aprHasNombres = $aprHas('nombres');
+                        $aprHasApellidos = $aprHas('apellidos');
+                        $usrNameCol = $usrHas('name') ? 'name' : ($usrHas('nombre') ? 'nombre' : null);
+                        $usrLastCol = $usrHas('apellidos') ? 'apellidos' : ($usrHas('apellido') ? 'apellido' : null);
+                        if (!($aprHasNombres && $aprHasApellidos) && !($usrNameCol || $usrLastCol)) {
+                            $joinUser = false;
+                        }
+                        $baseConcat = $aprHasNombres && $aprHasApellidos
+                            ? "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))"
+                            : (($usrNameCol || $usrLastCol)
+                                ? "CONCAT(COALESCE(u.`".($usrNameCol??'')."`,''),' ',COALESCE(u.`".($usrLastCol??'')."`,''))"
+                                : "''");
+                        $emailExpr = $aprHas('correo_institucional') ? 'aprendices.correo_institucional' : ($usrHas('email') ? 'u.email' : "''");
+                        $nameExpr = "COALESCE(NULLIF(TRIM($baseConcat),''), $emailExpr)";
+
+                        $aprRowsQ = DB::table('aprendices');
+                        if ($joinUser) {
+                            $aprRowsQ->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$joinCol));
+                        }
+                        $aprRows = $aprRowsQ
+                            ->whereIn('aprendices.id_aprendiz', $aprIds)
+                            ->select(DB::raw('aprendices.id_aprendiz as id_aprendiz'), DB::raw($nameExpr.' as nombre'))
+                            ->get()
+                            ->keyBy('id_aprendiz');
+
+                        $parts = $rows->map(function($r) use ($aprRows){
+                            $id = (int) $r->id_aprendiz;
+                            $nombre = '';
+                            if ($aprRows->has($id)) {
+                                $nombre = trim((string)($aprRows[$id]->nombre ?? ''));
+                            }
+                            if ($nombre === '') { $nombre = 'Aprendiz #'.$id; }
+                            return [ 'id' => $id, 'nombre_completo' => $nombre, 'asistencia' => $r->asistencia ];
+                        });
+                    } else {
+                        $parts = $rows->map(function($r){
+                            $id = (int) $r->id_aprendiz;
+                            return [ 'id' => $id, 'nombre_completo' => 'Aprendiz #'.$id, 'asistencia' => $r->asistencia ];
+                        });
+                    }
+                }
+            } catch (\Throwable $t) {
+                // dejar $parts vacío
+            }
 
             $tz = config('app.timezone', 'America/Bogota');
             $dt = $evento->fecha_hora instanceof \DateTimeInterface
@@ -537,19 +604,7 @@ class CalendarioLiderController extends Controller
                     'link_virtual' => $evento->link_virtual,
                     'codigo_reunion' => $evento->codigo_reunion,
                     'proyecto' => $evento->proyecto ? $evento->proyecto->nombre_proyecto : null,
-                    'participantes' => $evento->participantes->map(function($p) {
-                        $nombre = trim((string)($p->nombre_completo ?? ''));
-                        if ($nombre === '') {
-                            $nombre = trim(trim((string)($p->nombres ?? '')) . ' ' . trim((string)($p->apellidos ?? '')));
-                        }
-                        if ($nombre === '') {
-                            $nombre = 'Aprendiz #'.$p->id_aprendiz;
-                        }
-                        return [
-                            'id' => $p->id_aprendiz,
-                            'nombre' => $nombre
-                        ];
-                    })
+                    'participantes' => $parts->map(function($p){ return [ 'id' => $p['id'], 'nombre' => $p['nombre_completo'] ]; })
                 ]
             ]);
 
@@ -693,6 +748,17 @@ class CalendarioLiderController extends Controller
                 if (empty($idsBase) && isset($validated['participantes']) && is_array($validated['participantes'])) {
                     $idsBase = $validated['participantes'];
                 }
+                // Normalizar, deduplicar y verificar existencia en aprendices
+                $idsBase = array_values(array_unique(array_filter(array_map('intval', $idsBase))));
+                if (!empty($idsBase) && Schema::hasTable('aprendices')) {
+                    $idsBase = DB::table('aprendices')
+                        ->whereIn('id_aprendiz', $idsBase)
+                        ->pluck('id_aprendiz')
+                        ->map(fn($v) => (int)$v)
+                        ->unique()
+                        ->values()
+                        ->all();
+                }
 
                 foreach ($idsBase as $aid) {
                     $aid = (int) $aid;
@@ -714,20 +780,67 @@ class CalendarioLiderController extends Controller
                 }
             }
 
-            $nameExpr = Schema::hasColumn('aprendices','nombre_completo')
-                ? "COALESCE(aprendices.nombre_completo, CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')))"
-                : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
-            $evento->load([
-                'participantes' => function($q) use ($nameExpr){
-                    $q->select(
-                        DB::raw('aprendices.id_aprendiz as id_aprendiz'),
-                        DB::raw($nameExpr.' as nombre_completo')
-                    );
-                    if (Schema::hasColumn('aprendices','nombres'))   { $q->addSelect('aprendices.nombres'); }
-                    if (Schema::hasColumn('aprendices','apellidos')) { $q->addSelect('aprendices.apellidos'); }
-                },
-                'proyecto:id_proyecto,nombre_proyecto'
-            ]);
+            // Cargar solo el proyecto; participantes se resuelven de manera defensiva para evitar columnas inexistentes
+            $evento->load(['proyecto:id_proyecto,nombre_proyecto']);
+
+            $parts = collect();
+            try {
+                if (Schema::hasTable('evento_participantes')) {
+                    $hasAsistenciaCol = Schema::hasColumn('evento_participantes', 'asistencia');
+                    $rows = DB::table('evento_participantes')
+                        ->where('id_evento', $evento->id_evento)
+                        ->select(
+                            'id_aprendiz',
+                            DB::raw($hasAsistenciaCol
+                                ? "COALESCE(asistencia, 'pendiente') as asistencia"
+                                : "'pendiente' as asistencia"
+                            )
+                        )
+                        ->get();
+
+                    if ($rows->isNotEmpty() && Schema::hasTable('aprendices')) {
+                        $aprIds = $rows->pluck('id_aprendiz')->map(fn($v)=>(int)$v)->unique()->values()->all();
+                        $aprHas = fn(string $c) => Schema::hasColumn('aprendices', $c);
+                        $usrHas = fn(string $c) => Schema::hasColumn('users', $c);
+                        $hasUsers = Schema::hasTable('users');
+                        $joinCol = $aprHas('user_id') ? 'user_id' : ($aprHas('id_usuario') ? 'id_usuario' : null);
+                        $joinUser = $hasUsers && $joinCol !== null;
+                        $aprHasNombres = $aprHas('nombres');
+                        $aprHasApellidos = $aprHas('apellidos');
+                        $usrNameCol = $usrHas('name') ? 'name' : ($usrHas('nombre') ? 'nombre' : null);
+                        $usrLastCol = $usrHas('apellidos') ? 'apellidos' : ($usrHas('apellido') ? 'apellido' : null);
+                        if (!($aprHasNombres && $aprHasApellidos) && !($usrNameCol || $usrLastCol)) { $joinUser = false; }
+                        $baseConcat = $aprHasNombres && $aprHasApellidos
+                            ? "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))"
+                            : (($usrNameCol || $usrLastCol)
+                                ? "CONCAT(COALESCE(u.`".($usrNameCol??'')."`,''),' ',COALESCE(u.`".($usrLastCol??'')."`,''))"
+                                : "''");
+                        $emailExpr = $aprHas('correo_institucional') ? 'aprendices.correo_institucional' : ($usrHas('email') ? 'u.email' : "''");
+                        $nameExpr = "COALESCE(NULLIF(TRIM($baseConcat),''), $emailExpr)";
+
+                        $aprRowsQ = DB::table('aprendices');
+                        if ($joinUser) { $aprRowsQ->leftJoin('users as u','u.id','=',DB::raw('aprendices.'.$joinCol)); }
+                        $aprRows = $aprRowsQ
+                            ->whereIn('aprendices.id_aprendiz', $aprIds)
+                            ->select(DB::raw('aprendices.id_aprendiz as id_aprendiz'), DB::raw($nameExpr.' as nombre'))
+                            ->get()
+                            ->keyBy('id_aprendiz');
+
+                        $parts = $rows->map(function($r) use ($aprRows){
+                            $id = (int) $r->id_aprendiz;
+                            $nombre = '';
+                            if ($aprRows->has($id)) { $nombre = trim((string)($aprRows[$id]->nombre ?? '')); }
+                            if ($nombre === '') { $nombre = 'Aprendiz #'.$id; }
+                            return [ 'id' => $id, 'nombre_completo' => $nombre, 'asistencia' => $r->asistencia ];
+                        });
+                    } else {
+                        $parts = $rows->map(function($r){
+                            $id = (int) $r->id_aprendiz;
+                            return [ 'id' => $id, 'nombre_completo' => 'Aprendiz #'.$id, 'asistencia' => $r->asistencia ];
+                        });
+                    }
+                }
+            } catch (\Throwable $t) { /* noop, dejar $parts vacío */ }
 
             $tz = config('app.timezone', 'America/Bogota');
             $dt = $evento->fecha_hora instanceof \DateTimeInterface
@@ -750,19 +863,7 @@ class CalendarioLiderController extends Controller
                     'link_virtual' => $evento->link_virtual,
                     'codigo_reunion' => $evento->codigo_reunion,
                     'proyecto' => $evento->proyecto ? $evento->proyecto->nombre_proyecto : null,
-                    'participantes' => $evento->participantes->map(function($p) {
-                        $nombre = trim((string)($p->nombre_completo ?? ''));
-                        if ($nombre === '') {
-                            $nombre = trim(trim((string)($p->nombres ?? '')) . ' ' . trim((string)($p->apellidos ?? '')));
-                        }
-                        if ($nombre === '') {
-                            $nombre = 'Aprendiz #'.$p->id_aprendiz;
-                        }
-                        return [
-                            'id' => $p->id_aprendiz,
-                            'nombre' => $nombre
-                        ];
-                    })
+                    'participantes' => $parts->map(function($p){ return [ 'id' => $p['id'], 'nombre' => $p['nombre_completo'] ]; })
                 ]
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -842,12 +943,33 @@ class CalendarioLiderController extends Controller
     {
         try {
             if (Schema::hasTable('aprendiz_proyecto')) {
-                $ids = DB::table('aprendiz_proyecto')
-                    ->where('id_proyecto', $projectId)
-                    ->pluck('id_aprendiz')
-                    ->map(fn($v)=> (int)$v)
-                    ->all();
-                if (!empty($ids)) return $ids;
+                // Detectar nombres de columnas del pivote
+                $pivotAprCol = Schema::hasColumn('aprendiz_proyecto','id_aprendiz') ? 'id_aprendiz'
+                               : (Schema::hasColumn('aprendiz_proyecto','aprendiz_id') ? 'aprendiz_id' : null);
+                $pivotProyCol = Schema::hasColumn('aprendiz_proyecto','id_proyecto') ? 'id_proyecto'
+                                 : (Schema::hasColumn('aprendiz_proyecto','proyecto_id') ? 'proyecto_id' : null);
+
+                if ($pivotProyCol) {
+                    $q = DB::table('aprendiz_proyecto')->where($pivotProyCol, $projectId);
+                    // Si existe tabla aprendices, asegurar que IDs existen uniendo por id_aprendiz
+                    if ($pivotAprCol && Schema::hasTable('aprendices') && Schema::hasColumn('aprendices','id_aprendiz')) {
+                        $q->join('aprendices', 'aprendices.id_aprendiz', '=', DB::raw('aprendiz_proyecto.'.$pivotAprCol));
+                        $ids = $q->pluck('aprendices.id_aprendiz')
+                                ->map(fn($v)=> (int)$v)
+                                ->unique()
+                                ->values()
+                                ->all();
+                    } elseif ($pivotAprCol) {
+                        $ids = $q->pluck($pivotAprCol)
+                                ->map(fn($v)=> (int)$v)
+                                ->unique()
+                                ->values()
+                                ->all();
+                    } else {
+                        $ids = [];
+                    }
+                    if (!empty($ids)) return $ids;
+                }
             }
         } catch (\Throwable $e) {
         }

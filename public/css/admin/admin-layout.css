@@ -61,6 +61,25 @@
 .menu-card .nav-link:hover{
   background:rgba(255,255,255,.12); color:#fff;
 }
+.menu-card .nav-link:focus-visible{
+  outline:2px solid rgba(255,255,255,.6);
+  outline-offset:2px;
+}
+/* Animar solo los hijos para mantener el hover activo sobre el enlace */
+.menu-card .nav-link:hover > i,
+.menu-card .nav-link:hover > span{
+  animation: slideOutLeft .6s both;
+}
+.menu-card .nav-link:focus-visible > i,
+.menu-card .nav-link:focus-visible > span{
+  animation: slideOutLeft .6s both;
+}
+@media (prefers-reduced-motion: reduce){
+  .menu-card .nav-link:hover > i,
+  .menu-card .nav-link:hover > span,
+  .menu-card .nav-link:focus-visible > i,
+  .menu-card .nav-link:focus-visible > span{ animation: none; }
+}
 .menu-card .nav-link.active{
   background:#39A900; color:#fff; font-weight:700; border-radius:14px;
 }
@@ -102,8 +121,8 @@
   /* Mostrar imagen completa de forma responsiva */
   background-image: url("/images/fondo_page.png");
   background-repeat:no-repeat;
-  background-position:center 38%;
-  background-size:clamp(520px, 60vw, 1400px) auto;
+  background-position:center top;
+  background-size: contain;
   opacity:.40;
   pointer-events:none;
 }
@@ -122,21 +141,11 @@
   .adm-sidebar.show{ transform:translateX(0); }
 }
 
-@media (min-width: 900px){
-  .adm-page::before{ background-size: 1200px auto; background-position: center 36%; }
-}
-@media (min-width: 1200px) and (max-width: 1599.98px){
-  .adm-page::before{ background-size: 980px auto; background-position: center 38%; }
-}
-@media (min-width: 992px) and (max-width: 1199.98px){
-  .adm-page::before{ background-size: 64vw auto; background-position: center 40%; }
-}
-@media (min-width: 768px) and (max-width: 991.98px){
-  .adm-page::before{ background-size: 72vw auto; background-position: center 42%; }
-}
-@media (max-width: 575.98px){
-  .adm-page::before{ background-position:center 18px; background-size: 86vw auto; }
-}
+@media (min-width: 900px){ .adm-page::before{ background-size: contain; background-position:center top; } }
+@media (min-width: 1200px) and (max-width: 1599.98px){ .adm-page::before{ background-size: contain; background-position:center top; } }
+@media (min-width: 992px) and (max-width: 1199.98px){ .adm-page::before{ background-size: contain; background-position:center top; } }
+@media (min-width: 768px) and (max-width: 991.98px){ .adm-page::before{ background-size: contain; background-position:center top; } }
+@media (max-width: 575.98px){ .adm-page::before{ background-size: contain; background-position:center top; } }
 
 /* Botón hamburguesa */
 .btn-outline-light#sidebarToggle{
@@ -176,3 +185,16 @@
 
 /* Bloquea scroll al abrir sidebar */
 .noscroll{ overflow: hidden; height: 100vh; }
+
+/* Fallback local para la animación si animate.css no está disponible */
+@keyframes slideOutLeft {
+  from {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+  to {
+    transform: translate3d(-100%, 0, 0);
+    opacity: 0;
+    visibility: hidden;
+  }
+}

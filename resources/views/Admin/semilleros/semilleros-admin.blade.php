@@ -1,4 +1,4 @@
-{{-- resources/views/admin/semilleros/index.blade.php (alias de semilleros-admin) --}}
+{{-- resources/views/admin/semilleros/index.blade.php --}}
 @extends('layouts.admin')
 
 @section('content')
@@ -63,7 +63,7 @@
 
     {{-- MODAL CREAR --}}
     @if($canCreate)
-        @include('Admin.semilleros._modal_crear')
+        @include('admin.semilleros._modal_crear')
     @endif
 
     {{-- TABLA DE SEMILLEROS --}}
@@ -162,17 +162,19 @@
 
     {{-- MODAL EDITAR --}}
     @if($canUpdate)
-        @include('Admin.semilleros._modal_editar')
+        @include('admin.semilleros._modal_editar')
     @endif
 
 </div> {{-- /.semilleros-wrapper --}}
 
 @endsection
 
+{{-- ESTILOS ESPECÍFICOS --}}
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/admin/semilleros.css') }}">
 @endpush
 
+{{-- SCRIPTS ESPECÍFICOS --}}
 @push('scripts')
     <script src="{{ asset('js/admin/semilleros.js') }}"></script>
 

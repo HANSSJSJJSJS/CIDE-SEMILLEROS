@@ -1,0 +1,54 @@
+/* Contenedores translúcidos en módulos Admin */
+.adm-page .card{
+  background: rgba(255,255,255,.82) !important;
+  backdrop-filter: blur(2px);
+  border-color: rgba(230,238,243,.85) !important;
+}
+
+.adm-page .table{
+  background: rgba(255,255,255,.82);
+}
+
+.adm-page .table-responsive{
+  background: rgba(255,255,255,.82);
+  backdrop-filter: blur(2px);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.adm-page .search-bar-wrapper{
+  background: rgba(255,255,255,.82);
+  backdrop-filter: blur(2px);
+  border: 1px solid rgba(230,238,243,.85);
+  border-radius: 12px;
+}
+
+.adm-page .alert,
+.adm-page .estado-vacio{
+  background: rgba(255,255,255,.82);
+  backdrop-filter: blur(2px);
+}
+
+.dash-admin{
+  position: relative;
+  min-height: clamp(720px, 86vh, 1200px);
+  padding-bottom: 56px;
+  z-index: 0;
+}
+
+.dash-admin::before{
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  margin-top: 80px;
+  background-image: url("/images/fondo_page.png");
+  background-repeat: no-repeat;
+  background-position: calc(50% + 140px) top;
+  background-size: clamp(980px, 60vw, 1400px) auto;
+  pointer-events: none;
+}
+
+@media (max-width: 991.98px){
+  .dash-admin::before{ background-position: center top; }
+}
