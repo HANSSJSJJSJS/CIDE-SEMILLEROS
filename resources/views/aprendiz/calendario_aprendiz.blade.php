@@ -4,6 +4,30 @@
 @php($v = time())
 <link rel="stylesheet" href="{{ asset('css/common/calendario.css') }}?v={{ $v }}">
 <link rel="stylesheet" href="{{ asset('css/common/calendario-views.css') }}?v={{ $v }}">
+<style>
+  /* Normalizar estilo de enlaces que puedan inyectarse por librerías externas
+     dentro del contenedor del calendario del aprendiz */
+  .container .calendar-month a,
+  .container .calendar-week a,
+  .container .calendar-day a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+  .container .calendar-month a:hover,
+  .container .calendar-week a:hover,
+  .container .calendar-day a:hover {
+    text-decoration: none !important;
+  }
+  /* Asegurar que los eventos no se muestren como enlaces azules */
+  .calendar-month .event, .calendar-week .week-event, .calendar-day .day-event {
+    color: #0f172a; /* slate-900 */
+  }
+  .calendar-month .event .event-title,
+  .calendar-week .week-event,
+  .calendar-day .day-event { font-weight: 600; }
+  /* Nombres de días en mayúscula visual si se desea consistencia con captura */
+  .calendar-month .weekdays .weekday { text-transform: uppercase; }
+</style>
 @endpush
 
 @section('content')

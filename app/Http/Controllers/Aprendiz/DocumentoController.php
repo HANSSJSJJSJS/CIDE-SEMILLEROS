@@ -635,6 +635,11 @@ class DocumentoController extends Controller
             return back()->with('error', 'Documento no encontrado');
         }
 
+        // Si no hay archivo asociado aún
+        if (empty($documento->ruta_archivo)) {
+            return back()->with('error', 'Esta evidencia aún no tiene archivo para ver/descargar');
+        }
+
         // Si es un enlace externo, redirigir al URL
         if (filter_var($documento->ruta_archivo, FILTER_VALIDATE_URL)) {
             return redirect()->away($documento->ruta_archivo);

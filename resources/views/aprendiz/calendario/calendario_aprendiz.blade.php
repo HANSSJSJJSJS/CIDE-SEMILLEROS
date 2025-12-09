@@ -40,7 +40,7 @@
                     Tienes reuniones virtuales próximas.
                 </div>
 
-                
+
 
                 <div class="card shadow-sm">
                     <div class="card-body">
@@ -102,11 +102,24 @@
                 ];
                 $bg = $colorMap[strtolower((string)$tipo)] ?? '#0ea5e9';
 
+                // Normalizar inicio y fin: si no hay fin, calcular con duracion (minutos)
+                $start = (string)($r->fecha_inicio ?? $r->inicio ?? '');
+                $end   = (string)($r->fecha_fin ?? $r->fin ?? '');
+                if ($start && !$end) {
+                    try {
+                        $d = new \DateTime($start);
+                        $mins = (int)($r->duracion ?? 60);
+                        if ($mins <= 0) { $mins = 60; }
+                        $d->modify("+{$mins} minutes");
+                        $end = $d->format('Y-m-d\TH:i:s');
+                    } catch (\Throwable $e) { $end = $start; }
+                }
+
                 return [
                     'id'    => $r->id ?? null,
                     'title' => ($r->titulo ?? 'Reunión') . (isset($r->proyecto) ? ' · ' . ($r->proyecto->nombre_proyecto ?? $r->proyecto->nombre ?? '') : ''),
-                    'start' => (string)($r->fecha_inicio ?? $r->inicio ?? ''),
-                    'end'   => (string)($r->fecha_fin ?? $r->fin ?? ''),
+                    'start' => $start,
+                    'end'   => $end,
                     'backgroundColor' => $bg,
                     'borderColor' => $bg,
                     'textColor' => '#fff',
@@ -115,7 +128,9 @@
                                             ? (($r->lider->user->name ?? $r->lider->nombre_completo ?? '') )
                                             : (string)($r->lider ?? ($r->lider_nombre ?? ''))),
                         'proyecto'   => isset($r->proyecto) ? ($r->proyecto->nombre_proyecto ?? $r->proyecto->nombre ?? '') : '',
-                        'descripcion'=> $r->descripcion ?? '',
+                        'descripcion'=> (isset($r->descripcion) && $r->descripcion !== null && $r->descripcion !== '')
+                            ? $r->descripcion
+                            : (isset($r->proyecto) ? ($r->proyecto->descripcion ?? '') : ''),
                         'tipo'       => $tipo,
                         'ubicacion'  => $r->ubicacion ?? null,
                         'link'       => $r->link_virtual ?? null,
@@ -164,8 +179,8 @@
             initialView: 'dayGridMonth',
             headerToolbar: {
                 left: 'prev,next today',
-                center: '',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek title'
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
             },
             locale: 'es',
             buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día', list: 'Agenda', prev: 'Anterior', next: 'Siguiente' },
@@ -174,6 +189,11 @@
             selectable: false,
             eventStartEditable: false,
             eventDurationEditable: false,
+            dayMaxEvents: true,
+            dayMaxEventRows: true,
+            eventOverlap: true,
+            eventDisplay: 'block',
+            eventTimeFormat: { hour: '2-digit', minute: '2-digit', meridiem: false },
             // Horario laboral como en Líder
             businessHours: [
                 { daysOfWeek: [1,2,3,4,5], startTime: '08:00', endTime: '17:00' }
@@ -190,7 +210,9 @@
                     const wrap = document.createElement('div');
                     const title = document.createElement('div');
                     title.className = 'fc-event-title fc-sticky';
-                    title.textContent = arg.event.title || 'Reunión';
+                    // recortar título para que no ocupe varias celdas visualmente
+                    const t = String(arg.event.title || 'Reunión');
+                    title.textContent = t.length > 48 ? (t.slice(0,48) + '…') : t;
                     wrap.appendChild(title);
                     const meta = document.createElement('div');
                     meta.style.fontSize = '.75rem';
