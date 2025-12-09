@@ -187,7 +187,7 @@
   const escapeHtml = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 
   // === Reglas de horario ===
-  const WORK_HOURS = Array.from({ length: 9 }, (_, i) => i + 8); // 08..16
+  const WORK_HOURS = Array.from({ length: 10 }, (_, i) => i + 8); // 08..17 (límite 17:00)
 
   // === DOM ===
   const prevBtn         = document.getElementById('prevBtn');
@@ -343,6 +343,15 @@
   eventModal?.addEventListener('click', e => { if (e.target === eventModal) closeEventModal(); });
   detailOverlay?.addEventListener('click', closeDetailDrawer);
 
+  // Botón "Nueva Reunión" (abre modal en la fecha actual)
+  const newBtn = document.getElementById('newMeetingBtn');
+  if (newBtn && !newBtn.dataset.bound) {
+    newBtn.addEventListener('click', () => {
+      openEventModal(new Date());
+    });
+    newBtn.dataset.bound = '1';
+  }
+
   // === Carga eventos ===
   async function loadEventsForCurrentPeriod() {
     try {
@@ -473,9 +482,16 @@
     weekDays.forEach(date => {
       const header = document.createElement('div');
       header.className = 'week-day-header';
+      const dateStrX = formatDate(date);
+      const isActive = dateStrX === formatDate(currentDate);
       if (isToday(date)) header.classList.add('today');
-      if (HOLIDAYS.includes(formatDate(date))) header.classList.add('festivo');
-      header.innerHTML = `<div class="week-day-name">${getDayName(date)}</div><div class="week-day-number">${date.getDate()}</div>`;
+      if (isActive) header.classList.add('active');
+      if (HOLIDAYS.includes(dateStrX)) header.classList.add('festivo');
+      if (isActive) {
+        header.innerHTML = `<div class="week-day-pill"><div class="wd-name">${getDayName(date)}</div><div class="wd-day">${date.getDate()}</div></div>`;
+      } else {
+        header.innerHTML = `<div class="week-day-name">${getDayName(date)}</div><div class="week-day-number">${date.getDate()}</div>`;
+      }
       weekHeader.appendChild(header);
     });
 
@@ -488,6 +504,8 @@
       const tl = document.createElement('div');
       tl.className = 'time-slot-label';
       tl.textContent = formatHour(h);
+      const hmLabel = h * 100;
+      if (hmLabel >= 1200 && hmLabel <= 1355) tl.classList.add('lunch');
       timesCol.appendChild(tl);
     });
     weekGrid.appendChild(timesCol);
@@ -497,6 +515,8 @@
       dayCol.className = 'week-day-column';
       const dateStr = formatDate(date);
       if (HOLIDAYS.includes(dateStr)) dayCol.classList.add('festivo');
+      if (isToday(date)) dayCol.classList.add('today');
+      if (dateStr === formatDate(currentDate)) dayCol.classList.add('active');
 
       const disabledDay = isWeekend(date) || HOLIDAYS.includes(dateStr) || isPastDay(date);
       WORK_HOURS.forEach(hour => {
@@ -507,7 +527,7 @@
 
         const hm      = hour * 100;
         const isLunch = hm >= 1200 && hm <= 1355;
-        const allowed = !disabledDay && hm >= 800 && hm <= 1650 && !isLunch;
+        const allowed = !disabledDay && hm >= 800 && hm < 1700 && !isLunch;
 
         if (isLunch) slot.classList.add('lunch');
 
@@ -527,6 +547,7 @@
           });
           slot.addEventListener('dragleave', handleDragLeave);
         }
+        dayCol.appendChild(slot);
       });
 
       events.filter(e => e.date === dateStr)
@@ -544,26 +565,52 @@
     dayView.classList.add('active');
 
     const dateStr    = formatDate(currentDate);
-    const isDisabled = isWeekend(currentDate) || HOLIDAYS.includes(dateStr) || isPastDay(currentDate);
+    const isHoliday  = HOLIDAYS.includes(dateStr);
+    const isDisabled = isWeekend(currentDate) || isHoliday || isPastDay(currentDate);
 
     const dayHeader = document.getElementById('dayHeader');
-    dayHeader.innerHTML = `<div></div><div class="day-header-info"><div class="day-header-name">${getDayName(currentDate)}</div><div class="day-header-date">${currentDate.getDate()}</div></div>`;
+    const DOW3 = ['DOM','LUN','MAR','MIE','JUE','VIE','SAB'];
+    const dow = DOW3[currentDate.getDay()] || '';
+    const dd  = currentDate.getDate();
+    dayHeader.innerHTML = `
+      <div class="day-header-card">
+        <div class="dh-week">${dow}</div>
+        <div class="dh-day">${dd}</div>
+      </div>
+    `;
+    if (isHoliday) {
+      const badge = document.createElement('span');
+      badge.className = 'badge-festivo';
+      badge.textContent = 'Festivo';
+      dayHeader.appendChild(badge);
+    }
 
     const dayGrid = document.getElementById('dayGrid');
     dayGrid.innerHTML = '';
 
     const timesCol = document.createElement('div');
     timesCol.className = 'day-times';
+    if (isToday(currentDate)) timesCol.classList.add('today');
     WORK_HOURS.forEach(h => {
       const tl = document.createElement('div');
       tl.className = 'day-time-label';
       tl.textContent = formatHour(h);
+      // Sombrear almuerzo también en la columna de horas
+      const hmLabel = h * 100;
+      if (hmLabel >= 1200 && hmLabel <= 1355) tl.classList.add('lunch');
       timesCol.appendChild(tl);
     });
     dayGrid.appendChild(timesCol);
 
     const slotsCol = document.createElement('div');
     slotsCol.className = 'day-slots';
+    if (isToday(currentDate)) slotsCol.classList.add('today');
+
+    // Sombreado por festivo (vista Día)
+    if (isHoliday) {
+      timesCol.classList.add('festivo');
+      slotsCol.classList.add('festivo');
+    }
 
     WORK_HOURS.forEach(hour => {
       const slot = document.createElement('div');
@@ -573,7 +620,7 @@
 
       const hm      = hour * 100;
       const isLunch = hm >= 1200 && hm <= 1355;
-      const allowed = !isDisabled && hm >= 800 && hm <= 1650 && !isLunch;
+      const allowed = !isDisabled && hm >= 800 && hm < 1700 && !isLunch;
 
       if (isLunch) slot.classList.add('lunch');
 
@@ -596,10 +643,37 @@
       slotsCol.appendChild(slot);
     });
 
+    // Indicador de hora actual
+    const now = new Date();
+    const isTodayLocal = isToday(currentDate);
+    if (isTodayLocal) {
+      const hmNow = now.getHours() * 100 + now.getMinutes();
+      const insideWork = hmNow >= 800 && hmNow < 1700 && !(hmNow >= 1200 && hmNow <= 1355);
+      if (insideWork) {
+        const topPx = (now.getHours() - 8) * 80 + Math.round((now.getMinutes() / 60) * 80);
+        const line = document.createElement('div');
+        line.className = 'day-current-time';
+        line.style.top = `${topPx}px`;
+        slotsCol.appendChild(line);
+      }
+    }
+
     events.filter(e => e.date === dateStr)
       .forEach(event => slotsCol.appendChild(createDayEventElement(event)));
 
     dayGrid.appendChild(slotsCol);
+
+    // Auto-actualizar la línea de hora actual cada minuto cuando sea hoy
+    if (isTodayLocal) {
+      if (renderDayView._timer) clearInterval(renderDayView._timer);
+      renderDayView._timer = setInterval(() => {
+        // Solo si seguimos en vista día y en el mismo día
+        if (currentView !== 'day') { clearInterval(renderDayView._timer); return; }
+        const t = new Date();
+        if (!isToday(currentDate)) { clearInterval(renderDayView._timer); return; }
+        renderDayView();
+      }, 60000);
+    }
   }
 
   // === Nodos de evento ===
@@ -620,12 +694,19 @@
     el.className = 'week-event';
     el.draggable = true;
     el.dataset.id = event.id;
-    const [h] = event.time.split(':').map(Number);
-    const top = (h - 8) * 60 + 4;
-    const height = Math.min(event.duration || 60, 60) - 8;
-    el.style.top = `${top}px`;
-    el.style.height = `${height}px`;
-    el.innerHTML = `<div style="font-weight:600;">${event.time}</div><div style="font-size:10px;">${event.title}</div>`;
+    const parts = event.time.split(':');
+    const h = parseInt(parts[0] || '0', 10);
+    const m = parseInt(parts[1] || '0', 10);
+    const top = (h - 8) * 60 + (isNaN(m) ? 0 : m) + 2; // 1px/minuto
+    const durationMin = Math.max(15, Number(event.duration) || 60);
+    const colHeight = WORK_HOURS.length * 60; // 60px por hora
+    let height = Math.round((durationMin / 60) * 60) - 4;
+    if (top + height > colHeight) {
+      height = Math.max(20, colHeight - top - 2);
+    }
+    el.style.top = `${Math.max(0, top)}px`;
+    el.style.height = `${Math.max(20, height)}px`;
+    el.innerHTML = `<div class="we-time">${event.time}</div><div class="we-title">${escapeHtml(event.title || '')}</div>`;
     el.addEventListener('click', (e) => { e.stopPropagation(); showEventDetails(event); });
     el.addEventListener('dragstart', (e) => { draggedEvent = event; el.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
     el.addEventListener('dragend',   ()  => { el.classList.remove('dragging'); draggedEvent = null; });
@@ -637,11 +718,18 @@
     el.className = 'day-event';
     el.draggable = true;
     el.dataset.id = event.id;
-    const [h] = event.time.split(':').map(Number);
-    const top = (h - 8) * 80 + 4;
-    const height = Math.min((event.duration || 60) / 60 * 80, 80) - 8;
-    el.style.top = `${top}px`;
-    el.style.height = `${height}px`;
+    const parts = event.time.split(':');
+    const h = parseInt(parts[0] || '0', 10);
+    const m = parseInt(parts[1] || '0', 10);
+    const top = (h - 8) * 80 + Math.round((isNaN(m) ? 0 : m) / 60 * 80) + 2;
+    const durationMin = Math.max(15, Number(event.duration) || 60);
+    const colHeight = WORK_HOURS.length * 80; // 80px por hora
+    let height = Math.round((durationMin / 60) * 80) - 4;
+    if (top + height > colHeight) {
+      height = Math.max(20, colHeight - top - 2);
+    }
+    el.style.top = `${Math.max(0, top)}px`;
+    el.style.height = `${Math.max(20, height)}px`;
     el.innerHTML = `<div style="font-weight:600;font-size:13px;">${event.time}</div><div style="font-size:12px;margin-top:2px;">${event.title}</div>`;
     el.addEventListener('click', (e) => { e.stopPropagation(); showEventDetails(event); });
     el.addEventListener('dragstart', (e) => { draggedEvent = event; el.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
@@ -671,7 +759,7 @@
 
     const candidate = new Date(`${newDateStr}T${newTime}:00`);
     if (!isAllowedDateTime(candidate) || isPastDateTime(candidate)) {
-      alert('No puedes mover el evento a una fecha/horario no permitido o pasado.');
+      if (typeof mostrarNotificacion==='function') mostrarNotificacion('No puedes mover el evento a un horario no permitido o pasado','error'); else alert('No puedes mover el evento a una fecha/horario no permitido o pasado.');
       return;
     }
     await updateEventOnServer(events[idx].id, newDateStr, newTime);
@@ -794,8 +882,8 @@
     const payload = buildEventPayload();
 
     const when = new Date(payload.fecha_hora);
-    if (isPastDateTime(when)) { alert('No puedes crear reuniones en fecha/horario pasado.'); return; }
-    if (!isAllowedDateTime(when)) { alert('Horario no permitido.'); return; }
+    if (isPastDateTime(when)) { if (typeof mostrarNotificacion==='function') mostrarNotificacion('No puedes crear reuniones en fecha/horario pasado','error'); else alert('No puedes crear reuniones en fecha/horario pasado.'); return; }
+    if (!isAllowedDateTime(when)) { if (typeof mostrarNotificacion==='function') mostrarNotificacion('Horario no permitido','error'); else alert('Horario no permitido.'); return; }
 
     try {
       if (editingEventId) {
@@ -813,9 +901,10 @@
       closeEventModal();
       await loadEventsForCurrentPeriod();
       renderCalendar();
+      if (typeof mostrarNotificacion==='function') mostrarNotificacion('Reunión guardada correctamente','success');
     } catch (err) {
       console.error('Error guardando evento', err);
-      alert('No se pudo guardar el evento.');
+      if (typeof mostrarNotificacion==='function') mostrarNotificacion('No se pudo guardar el evento','error'); else alert('No se pudo guardar el evento.');
     }
   }
 
@@ -1034,7 +1123,7 @@
       renderCalendar();
     } catch (err) {
       console.error('Error eliminando evento', err);
-      alert('No se pudo eliminar.');
+      if (typeof mostrarNotificacion==='function') mostrarNotificacion('No se pudo eliminar el evento','error'); else alert('No se pudo eliminar.');
     }
   }
 
@@ -1047,7 +1136,7 @@
       });
     } catch (err) {
       console.error('Error al actualizar (drop)', err);
-      alert('No se pudo mover el evento.');
+      if (typeof mostrarNotificacion==='function') mostrarNotificacion('No se pudo mover el evento','error'); else alert('No se pudo mover el evento.');
     }
   }
 
@@ -1060,15 +1149,17 @@
   function goToToday() { currentDate = new Date(); }
 
   function updatePeriodDisplay() {
-    const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const MONTH_ABBR = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    const MONTH_LONG = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
     if (currentView === 'month') {
-      currentPeriodEl.textContent = `${months[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+      currentPeriodEl.textContent = `${MONTH_LONG[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
     } else if (currentView === 'week') {
       const ws = getWeekStart(currentDate);
       const we = new Date(ws); we.setDate(ws.getDate() + 6);
-      currentPeriodEl.textContent = `${ws.getDate()} ${months[ws.getMonth()]} - ${we.getDate()} ${months[we.getMonth()]} ${we.getFullYear()}`;
+      const label = `${ws.getDate()} ${MONTH_ABBR[ws.getMonth()]} - ${we.getDate()} ${MONTH_ABBR[we.getMonth()]} ${we.getFullYear()}`;
+      currentPeriodEl.textContent = label;
     } else {
-      currentPeriodEl.textContent = `${currentDate.getDate()} de ${months[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+      currentPeriodEl.textContent = `${currentDate.getDate()} de ${MONTH_LONG[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
     }
   }
 
@@ -1094,9 +1185,7 @@
   }
   function getDayName(date) { const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']; return days[date.getDay()]; }
   function formatHour(hour) {
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour > 12 ? hour - 12 : hour;
-    return `${displayHour}:00 ${period}`;
+    return `${String(hour).padStart(2, '0')}:00`;
   }
   function formatTime12(timeHHMM) {
     if (!timeHHMM || typeof timeHHMM !== 'string') return '--:-- --';
@@ -1134,7 +1223,7 @@
     const dateStr = formatDate(dt);
     if (HOLIDAYS.includes(dateStr)) return false;
     const hm = dt.getHours() * 100 + dt.getMinutes();
-    if (hm < 800 || hm > 1650) return false;
+    if (hm < 800 || hm >= 1700) return false; // hasta antes de 17:00
     if (hm >= 1200 && hm <= 1355) return false;
     return true;
   }

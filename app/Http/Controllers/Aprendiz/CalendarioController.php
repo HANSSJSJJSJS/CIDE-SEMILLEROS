@@ -426,7 +426,7 @@ class CalendarioController extends Controller
     {
         try {
             // 1) Relación estándar si existe
-            if (isset($e->relationLoaded) && $e->relationLoaded('lider') && $e->lider) {
+            if (method_exists($e, 'relationLoaded') && $e->relationLoaded('lider') && $e->lider) {
                 return $e->lider->name ?? null;
             }
             if (isset($e->lider) && !is_null($e->lider)) {

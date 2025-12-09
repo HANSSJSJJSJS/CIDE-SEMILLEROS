@@ -10,6 +10,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 
   {{-- Estilos base comunes --}}
   <link href="{{ asset('css/common/base.css') }}?v={{ time() }}" rel="stylesheet">
@@ -29,7 +30,7 @@
 <body class="adm-body">
   <div class="adm-shell">
     <aside id="admSidebar" class="adm-sidebar">
-      <div class="adm-brand brand-large">
+      <div class="adm-brand brand-large animate__animated animate__flipInX">
         <img src="{{ asset('images/logo-sena.png') }}" alt="Logo SENA" class="brand-logo-lg">
         <div class="brand-system-lg">Sistema de Gestión Semillero</div>
       </div>
