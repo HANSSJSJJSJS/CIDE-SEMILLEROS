@@ -213,11 +213,11 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
             Route::get('semilleros/{id}/edit-ajax', [SemilleroController::class, 'editAjax'])
                 ->whereNumber('id')
                 ->name('semilleros.edit.ajax');
-            
+
             // 🔹 NUEVA: obtener líder de un semillero en JSON
             Route::get('semilleros/{semillero}/lider', [SemilleroController::class, 'liderJson'])
                 ->name('semilleros.liderJson');
-            
+
              Route::get('semilleros/{semillero}/recursos', [RecursoController::class, 'porSemillero'])
             ->whereNumber('semillero')
             ->name('semilleros.recursos');
@@ -297,18 +297,18 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
             Route::delete('/{recurso}', [RecursoController::class, 'destroy'])->name('destroy');
 
             // ⭐ Recursos asignados a semilleros ⭐
-            Route::get('/semillero/{semillero}', 
+            Route::get('/semillero/{semillero}',
                 [RecursoController::class, 'recursosPorSemillero']
             )->name('porSemillero');
 
-            Route::post('/semillero', 
+            Route::post('/semillero',
                 [RecursoController::class, 'storeSemilleroRecurso']
             )->name('semillero.store');
 
             Route::put('/semillero/{recurso}/estado',
                 [RecursoController::class, 'actualizarEstadoRecurso']
             )->name('semillero.estado');
-            
+
 
         });
 
@@ -554,22 +554,54 @@ Route::middleware(['auth', 'role:APRENDIZ'])
                 }
             } catch (\Throwable $e) { $evidencias = 0; }
 
-            // Reuniones próximas (dependiente del esquema)
+            // Reuniones próximas (usar fecha_hora y pivote evento_participantes)
             try {
                 if (\Illuminate\Support\Facades\Schema::hasTable('eventos')) {
-                    $hoy = now()->startOfDay()->toDateString();
-                    $colFecha = \Illuminate\Support\Facades\Schema::hasColumn('eventos','fecha') ? 'fecha'
-                              : (\Illuminate\Support\Facades\Schema::hasColumn('eventos','fecha_inicio') ? 'fecha_inicio' : null);
-                    if ($colFecha) {
-                        $rq = \Illuminate\Support\Facades\DB::table('eventos')
-                            ->whereDate($colFecha, '>=', $hoy);
-                        if (\Illuminate\Support\Facades\Schema::hasColumn('eventos','id_aprendiz')) {
-                            $rq->where('id_aprendiz', $aprId ?? -1);
-                        } elseif (\Illuminate\Support\Facades\Schema::hasColumn('eventos','id_usuario')) {
-                            $rq->where('id_usuario', (int)$user->id);
-                        }
-                        $reuniones = (int) $rq->count();
+                    $hoy = now()->startOfDay();
+                    $rq = \Illuminate\Support\Facades\DB::table('eventos');
+                    // Fecha columna principal
+                    if (\Illuminate\Support\Facades\Schema::hasColumn('eventos','fecha_hora')) {
+                        $rq->where('fecha_hora', '>=', $hoy);
+                    } elseif (\Illuminate\Support\Facades\Schema::hasColumn('eventos','fecha')) {
+                        $rq->whereDate('fecha', '>=', $hoy->toDateString());
+                    } elseif (\Illuminate\Support\Facades\Schema::hasColumn('eventos','fecha_inicio')) {
+                        $rq->whereDate('fecha_inicio', '>=', $hoy->toDateString());
+                    } else {
+                        throw new \Exception('Sin columna de fecha en eventos');
                     }
+
+                    // Excluir canceladas si existe estado
+                    if (\Illuminate\Support\Facades\Schema::hasColumn('eventos','estado')) {
+                        $rq->where(function($q){ $q->whereNull('estado')->orWhere('estado','<>','cancelado'); });
+                    }
+
+                    // Resolver id_aprendiz real para pivote
+                    $aprIdCount = null;
+                    if (\Illuminate\Support\Facades\Schema::hasTable('aprendices')) {
+                        $aprPk = \Illuminate\Support\Facades\Schema::hasColumn('aprendices','id_aprendiz') ? 'id_aprendiz' : (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','id') ? 'id' : null);
+                        $aprUserCol = \Illuminate\Support\Facades\Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','user_id') ? 'user_id' : null);
+                        if ($aprPk && $aprUserCol) {
+                            $aprIdCount = \Illuminate\Support\Facades\DB::table('aprendices')->where($aprUserCol, $user->id)->value($aprPk);
+                        } elseif (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','email')) {
+                            $email = (string)($user->email ?? '');
+                            if ($email !== '') {
+                                $aprPk = $aprPk ?: (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','id_aprendiz') ? 'id_aprendiz' : 'id');
+                                $aprIdCount = \Illuminate\Support\Facades\DB::table('aprendices')->where('email', $email)->value($aprPk);
+                            }
+                        }
+                    }
+
+                    if (\Illuminate\Support\Facades\Schema::hasTable('evento_participantes') && !is_null($aprIdCount)) {
+                        $rq->join('evento_participantes as ep','ep.id_evento','=','eventos.id_evento')
+                           ->where('ep.id_aprendiz', (int)$aprIdCount);
+                    } elseif (\Illuminate\Support\Facades\Schema::hasColumn('eventos','id_usuario')) {
+                        $rq->where('id_usuario', (int)$user->id);
+                    } else {
+                        // Sin forma de relacionar: no contar
+                        $rq->whereRaw('1=0');
+                    }
+
+                    $reuniones = (int) $rq->count();
                 }
             } catch (\Throwable $e) { $reuniones = 0; }
 
