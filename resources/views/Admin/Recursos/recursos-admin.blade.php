@@ -5,8 +5,6 @@
 <link rel="stylesheet" href="{{ asset('css/admin/recursos.css') }}">
 @endpush
 
-@section('module-title','Recursos para Líderes de Semillero')
-@section('module-subtitle','Asigna y gestiona recursos para los líderes de cada semillero')
 
 @section('content')
 <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -29,7 +27,7 @@
 {{-- Contenedor de Notificaciones --}}
 <div class="notification-container" id="notificationContainer"></div>
 
-<div class="container-fluid mt-4 px-4">
+<div class="container-fluid mt-4 px-4 recursos-admin">
 
     {{-- HEADER usando .documentos-header y .btn-crear-proyecto --}}
     <div class="d-flex justify-content-between align-items-center mb-4 documentos-header">

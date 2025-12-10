@@ -1027,15 +1027,19 @@
           if (linkA) { linkA.href = url; linkA.style.display = 'inline-block'; }
           delBtn && (delBtn.style.display = 'inline-block');
           editorBox && (editorBox.style.display = 'none');
+          if (typeof mostrarNotificacion==='function') mostrarNotificacion('Enlace generado correctamente','success');
         }
       } catch (err) {
-        console.error(err); alert('No se pudo generar el enlace.');
+        console.error(err);
+        if (window.Swal) Swal.fire({icon:'error',title:'No se pudo generar el enlace'});
+        else if (typeof mostrarNotificacion==='function') mostrarNotificacion('No se pudo generar el enlace','error');
+        else alert('No se pudo generar el enlace.');
       }
     };
 
     if (saveBtn) saveBtn.onclick = async () => {
       const url = (editorInput?.value || '').trim();
-      if (!url) { alert('Ingresa un enlace válido'); return; }
+      if (!url) { if (window.Swal) Swal.fire({icon:'info',title:'Ingresa un enlace válido'}); else if (typeof mostrarNotificacion==='function') mostrarNotificacion('Ingresa un enlace válido','info'); else alert('Ingresa un enlace válido'); return; }
       try {
         await fetchJSON(`${ROUTES.baseEventos}/${event.id}`, {
           method: 'PUT',
@@ -1044,15 +1048,31 @@
         if (linkA) { linkA.href = url; linkA.style.display = 'inline-block'; }
         delBtn && (delBtn.style.display = 'inline-block');
         editorBox && (editorBox.style.display = 'none');
+        if (typeof mostrarNotificacion==='function') mostrarNotificacion('Enlace guardado correctamente','success');
       } catch (err) {
-        console.error(err); alert('No se pudo guardar el enlace.');
+        console.error(err);
+        if (window.Swal) Swal.fire({icon:'error',title:'No se pudo guardar el enlace'});
+        else if (typeof mostrarNotificacion==='function') mostrarNotificacion('No se pudo guardar el enlace','error');
+        else alert('No se pudo guardar el enlace.');
       }
     };
 
     if (cancelBtnE) cancelBtnE.onclick = () => { editorBox && (editorBox.style.display = 'none'); };
 
     if (delBtn) delBtn.onclick = async () => {
-      if (!confirm('¿Eliminar el enlace de la reunión?')) return;
+      if (window.Swal) {
+        const r = await Swal.fire({
+          title: '¿Eliminar enlace?',
+          text: '¿Eliminar el enlace de la reunión?',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Eliminar',
+          cancelButtonText: 'Cancelar'
+        });
+        if (!r.isConfirmed) return;
+      } else {
+        if (!confirm('¿Eliminar el enlace de la reunión?')) return;
+      }
       try {
         await fetchJSON(`${ROUTES.baseEventos}/${event.id}`, {
           method: 'PUT',
@@ -1062,8 +1082,12 @@
         delBtn.style.display = 'none';
         editorBox && (editorBox.style.display = 'block');
         editorInput && (editorInput.value = '');
+        if (typeof mostrarNotificacion==='function') mostrarNotificacion('Enlace eliminado correctamente','success');
       } catch (err) {
-        console.error(err); alert('No se pudo eliminar el enlace.');
+        console.error(err);
+        if (window.Swal) Swal.fire({icon:'error',title:'No se pudo eliminar el enlace'});
+        else if (typeof mostrarNotificacion==='function') mostrarNotificacion('No se pudo eliminar el enlace','error');
+        else alert('No se pudo eliminar el enlace.');
       }
     };
 
@@ -1114,16 +1138,31 @@
 
   async function deleteEvent() {
     if (!editingEventId) return;
-    if (!confirm('¿Estás seguro de que quieres eliminar esta reunión?')) return;
+    if (window.Swal) {
+      const r = await Swal.fire({
+        title: '¿Eliminar reunión?',
+        text: 'Esta acción no se puede deshacer',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Eliminar',
+        cancelButtonText: 'Cancelar'
+      });
+      if (!r.isConfirmed) return;
+    } else {
+      if (!confirm('¿Estás seguro de que quieres eliminar esta reunión?')) return;
+    }
     try {
       await fetchJSON(`${ROUTES.baseEventos}/${editingEventId}`, { method: 'DELETE' });
       closeEventModal();
       closeDetailDrawer();
       await loadEventsForCurrentPeriod();
       renderCalendar();
+      if (typeof mostrarNotificacion==='function') mostrarNotificacion('Reunión eliminada','success');
     } catch (err) {
       console.error('Error eliminando evento', err);
-      if (typeof mostrarNotificacion==='function') mostrarNotificacion('No se pudo eliminar el evento','error'); else alert('No se pudo eliminar.');
+      if (window.Swal) Swal.fire({icon:'error',title:'No se pudo eliminar el evento'});
+      else if (typeof mostrarNotificacion==='function') mostrarNotificacion('No se pudo eliminar el evento','error');
+      else alert('No se pudo eliminar.');
     }
   }
 
