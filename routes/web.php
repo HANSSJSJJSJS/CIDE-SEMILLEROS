@@ -39,6 +39,7 @@ use App\Http\Controllers\LiderSemillero\PerfilController as LiderPerfilControlle
 use App\Http\Controllers\LiderSemillero\RecursosController;
 use App\Http\Controllers\LiderSemillero\DocumentosController;
 
+
 // Aprendiz
 use App\Http\Controllers\Aprendiz\DashboardController as AprendizDashboardController;
 use App\Http\Controllers\Aprendiz\PerfilController;
@@ -159,6 +160,13 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
+
+        Route::get('/rutas-prueba', function () {
+            return "Grupo admin cargado OK";
+        });
+        Route::get('/test-multimedia', function () {
+    return route('admin.recursos.multimedia.store');
+});
 
         // ==========================
         //         DASHBOARD
@@ -283,34 +291,43 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
                 ->whereNumber('id')->name('generar-enlace');
         });
 
+               // ==========================
+            //       RECURSOS
+            // ==========================
+            Route::prefix('recursos')->as('recursos.')->group(function () {
 
-        // ==========================
-        //            RECURSOS
-        // ==========================
-        Route::prefix('recursos')->as('recursos.')->group(function () {
+                // Recursos normales
+                Route::get('/', [RecursoController::class, 'index'])->name('index');
+                Route::get('/listar', [RecursoController::class, 'listar'])->name('listar');
+                Route::post('/', [RecursoController::class, 'store'])->name('store');
+                Route::get('/{recurso}/dl', [RecursoController::class, 'download'])->name('download');
+                Route::delete('/{recurso}', [RecursoController::class, 'destroy'])->name('destroy');
 
-            // Recursos generales
-            Route::get('/', [RecursoController::class, 'index'])->name('index');
-            Route::get('/listar', [RecursoController::class, 'listar'])->name('listar');
-            Route::post('/', [RecursoController::class, 'store'])->name('store');
-            Route::get('/{recurso}/dl', [RecursoController::class, 'download'])->name('download');
-            Route::delete('/{recurso}', [RecursoController::class, 'destroy'])->name('destroy');
+                // Semilleros
+                Route::get('/semillero/{semillero}', [RecursoController::class, 'porSemillero'])->name('porSemillero');
+                Route::post('/semillero', [RecursoController::class, 'storeActividad'])->name('semillero.store');
+                Route::put('/semillero/{recurso}/estado', [RecursoController::class, 'actualizarEstadoActividad'])->name('semillero.estado');
+                Route::get('/semillero/{id}/lider', [RecursoController::class, 'liderDeSemillero'])->name('semillero.lider');
 
-            // ⭐ Recursos asignados a semilleros ⭐
-            Route::get('/semillero/{semillero}', 
-                [RecursoController::class, 'recursosPorSemillero']
-            )->name('porSemillero');
+                // Proyectos
+                Route::get('/proyectos/{id}', [RecursoController::class, 'getProyectos'])->name('proyectos');
 
-            Route::post('/semillero', 
-                [RecursoController::class, 'storeSemilleroRecurso']
-            )->name('semillero.store');
+                // MULTIMEDIA
+                Route::get('/multimedia', [RecursoController::class, 'multimedia'])
+                    ->name('multimedia');
 
-            Route::put('/semillero/{recurso}/estado',
-                [RecursoController::class, 'actualizarEstadoRecurso']
-            )->name('semillero.estado');
-            
+                Route::post('/multimedia/store', [RecursoController::class, 'storeMultimedia'])
+                    ->name('multimedia.store');
 
-        });
+                // ✔ ESTA ES LA CORRECTA
+                Route::get('/multimedia/list', [RecursoController::class, 'obtenerMultimedia'])
+                    ->name('multimedia.list');
+                    Route::delete('/multimedia/{id}', [RecursoController::class, 'deleteMultimedia'])
+                    ->name('multimedia.delete');
+
+});
+
+
 
 
 
@@ -411,19 +428,50 @@ Route::middleware(['auth', 'role:LIDER_SEMILLERO'])
     ->prefix('lider_semi')
     ->name('lider_semi.')
     ->group(function () {
-        Route::get('/dashboard', [DashboardController_semi::class, 'index'])->name('dashboard');
+
+        Route::get('/dashboard', [DashboardController_semi::class, 'index'])
+            ->name('dashboard');
 
         // Vistas principales
-        Route::get('/semilleros', [LiderSemilleroUIController::class, 'semilleros'])->name('semilleros');
-        Route::get('/aprendices', [LiderAprendicesController::class, 'index'])->name('aprendices');
-        // Recursos (solo Líder Semillero)
+        Route::get('/semilleros', [LiderSemilleroUIController::class, 'semilleros'])
+            ->name('semilleros');
+
+        Route::get('/aprendices', [LiderAprendicesController::class, 'index'])
+            ->name('aprendices');
+
+        /*
+        |--------------------------------------------------------------------------
+        | RUTAS DE RECURSOS (LÍDER DE SEMILLERO)
+        |--------------------------------------------------------------------------
+        */
         Route::prefix('recursos')->name('recursos.')->group(function () {
-            Route::get('/',              [RecursosController::class, 'index'])->name('index');
-            Route::get('/crear',         [RecursosController::class, 'create'])->name('create');
-            Route::post('/',             [RecursosController::class, 'store'])->name('store');
-            Route::get('/{id}/download', [RecursosController::class, 'download'])->whereNumber('id')->name('download');
-            Route::delete('/{id}',       [RecursosController::class, 'destroy'])->whereNumber('id')->name('destroy');
+
+            // LISTAR recursos
+            Route::get('/', [RecursosController::class, 'index'])
+                ->name('index');
+
+            // FORMULARIO crear recurso
+            Route::get('/crear', [RecursosController::class, 'create'])
+                ->name('create');
+
+            // GUARDAR recurso
+            Route::post('/', [RecursosController::class, 'store'])
+                ->name('store');
+
+            // DESCARGAR archivo
+            Route::get('/{id}/download', [RecursosController::class, 'download'])
+                ->whereNumber('id')
+                ->name('download');
+
+            // ELIMINAR recurso (si está pendiente)
+            Route::delete('/{id}', [RecursosController::class, 'destroy'])
+                ->whereNumber('id')
+                ->name('destroy');
         });
+
+
+
+        
         Route::view('/perfil', 'lider_semi.perfil')->name('perfil');
         Route::put('/perfil/contacto', [LiderPerfilController::class, 'updateContacto'])->name('perfil.contacto.update');
         Route::put('/perfil/password', [LiderPerfilController::class, 'updatePassword'])->name('perfil.password.update');
