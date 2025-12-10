@@ -19,12 +19,26 @@
   <link href="{{ asset('css/admin/admin-layout.css') }}?v={{ time() }}" rel="stylesheet">
   <link href="{{ asset('css/admin/admin-views.css') }}?v={{ time() }}" rel="stylesheet">
 
+  {{-- Loader CSS global --}}
+  <link href="{{ asset('css/common/loader.css') }}?v={{ time() }}" rel="stylesheet">
+
 
   @stack('styles')
   @yield('styles')
 </head>
 
 <body class="adm-body">
+  {{-- Loader Overlay --}}
+  <div id="pageLoader" class="page-loader" aria-hidden="true" role="status">
+    <div class="loader">
+      <div class="orbe" style="--index:0"></div>
+      <div class="orbe" style="--index:1"></div>
+      <div class="orbe" style="--index:2"></div>
+      <div class="orbe" style="--index:3"></div>
+      <div class="orbe" style="--index:4"></div>
+    </div>
+    <div class="loader-text">Cargando...</div>
+  </div>
 @php
     $authUser = Auth::user();
 
@@ -205,6 +219,21 @@
   {{-- Inyección de scripts personalizados --}}
   @stack('scripts')
   @yield('scripts')
+
+  {{-- Loader JS: ocultar al terminar carga --}}
+  <script>
+    (function(){
+      const hide = () => {
+        const el = document.getElementById('pageLoader');
+        if (!el) return;
+        el.classList.add('hidden');
+        setTimeout(()=>{ try{ el.remove(); }catch(e){} }, 400);
+      };
+      // Si el documento ya está listo, oculta rápido
+      if (document.readyState === 'complete') hide();
+      window.addEventListener('load', hide);
+    })();
+  </script>
 
 
 @if(session('success'))
