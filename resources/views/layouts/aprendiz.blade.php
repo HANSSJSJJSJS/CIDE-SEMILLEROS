@@ -85,19 +85,19 @@
             </button>
             <div id="notifDropdown" class="card shadow" style="position:absolute; right:0; top:110%; min-width: 260px; display:none; z-index: 1100;">
               <div class="card-header py-2 px-3">Notificaciones</div>
-              <div class="card-body py-2 px-3">
-                <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="list-group list-group-flush">
+                <a href="{{ route('aprendiz.documentos.index') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" id="notifItemEvidencias">
                   <span>Evidencias nuevas</span>
                   <span id="notifEvidencias" class="badge bg-success">0</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center">
+                </a>
+                <a href="{{ route('aprendiz.calendario.index') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" id="notifItemReuniones">
                   <span>Reuniones próximas</span>
                   <span id="notifReuniones" class="badge bg-primary">0</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mt-2">
+                </a>
+                <a href="{{ route('aprendiz.documentos.index') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" id="notifItemRespuestas">
                   <span>Respuestas del líder</span>
                   <span id="notifRespuestas" class="badge bg-info text-dark">0</span>
-                </div>
+                </a>
               </div>
             </div>
           </div>
