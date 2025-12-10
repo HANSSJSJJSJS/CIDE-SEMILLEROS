@@ -23,11 +23,24 @@
 
     {{-- Estilos específicos del panel de Líder de Semillero --}}
     <link href="{{ asset('css/lider_semi/lider.css') }}?v={{ time() }}" rel="stylesheet">
+    {{-- Loader CSS global --}}
+    <link href="{{ asset('css/common/loader.css') }}?v={{ time() }}" rel="stylesheet">
     @stack('styles')
     @yield('styles')
 </head>
 
 <body class="adm-body">
+  {{-- Loader Overlay --}}
+  <div id="pageLoader" class="page-loader" aria-hidden="true" role="status">
+    <div class="loader">
+      <div class="orbe" style="--index:0"></div>
+      <div class="orbe" style="--index:1"></div>
+      <div class="orbe" style="--index:2"></div>
+      <div class="orbe" style="--index:3"></div>
+      <div class="orbe" style="--index:4"></div>
+    </div>
+    <div class="loader-text">Cargando...</div>
+  </div>
   <div class="adm-shell">
     <aside id="admSidebar" class="adm-sidebar">
       <div class="adm-brand brand-large animate__animated animate__flipInX">
@@ -293,6 +306,20 @@
     fetchNotifications();
     setInterval(fetchNotifications, 60000);
   })();
+  </script>
+
+  {{-- Loader JS: ocultar al terminar carga --}}
+  <script>
+    (function(){
+      const hide = () => {
+        const el = document.getElementById('pageLoader');
+        if (!el) return;
+        el.classList.add('hidden');
+        setTimeout(()=>{ try{ el.remove(); }catch(e){} }, 400);
+      };
+      if (document.readyState === 'complete') hide();
+      window.addEventListener('load', hide);
+    })();
   </script>
 </body>
 

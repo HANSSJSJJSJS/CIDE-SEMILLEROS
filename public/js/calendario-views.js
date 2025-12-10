@@ -73,21 +73,29 @@ function formatTime12Hour(time24) {
 
 // Función para mostrar notificaciones
 function mostrarNotificacion(mensaje, tipo = 'info') {
-    // Crear elemento de notificación
+    // Si está disponible SweetAlert2, usar toast estilizado
+    if (window.Swal) {
+        const map = { error:'error', success:'success', warning:'warning', info:'info' };
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: map[tipo] || 'info',
+            title: mensaje,
+            showConfirmButton: false,
+            timer: 3200,
+            timerProgressBar: true
+        });
+        return;
+    }
+    // Fallback simple si no está SweetAlert2
     const notif = document.createElement('div');
     notif.className = `notificacion notificacion-${tipo}`;
     notif.innerHTML = `
         <i class="fas fa-${tipo === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
         <span>${mensaje}</span>
     `;
-    
-    // Agregar al body
     document.body.appendChild(notif);
-    
-    // Mostrar con animación
     setTimeout(() => notif.classList.add('show'), 10);
-    
-    // Ocultar después de 4 segundos
     setTimeout(() => {
         notif.classList.remove('show');
         setTimeout(() => notif.remove(), 300);
