@@ -190,11 +190,14 @@
         </div>
 
         <div class="col-md-6">
-            <div class="card shadow-sm @if(isset($pendientesAsignadas) && $pendientesAsignadas->isNotEmpty()) border border-success @endif">
-                <div class="card-header @if(isset($pendientesAsignadas) && $pendientesAsignadas->isNotEmpty()) bg-success text-white @endif d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Información</h5>
+            <div class="card evidencias-box shadow-sm">
+                <div class="section-head section-head-blue d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-info-circle"></i>
+                        <h5 class="mb-0">Información</h5>
+                    </div>
                     @if(isset($pendientesAsignadas) && $pendientesAsignadas->isNotEmpty())
-                        <span class="badge bg-light text-success">{{ $pendientesAsignadas->count() }} pendiente(s)</span>
+                        <span class="badge count-badge">{{ $pendientesAsignadas->count() }} pendiente(s)</span>
                     @endif
                 </div>
                 <div class="card-body">
@@ -265,9 +268,13 @@
     {{-- Lista de documentos subidos --}}
     <div class="row">
         <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-folder-open"></i> Mis Documentos Subidos</h5>
+            <div class="card evidencias-box shadow-sm">
+                <div class="section-head section-head-blue d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-folder2-open"></i>
+                        <h5 class="mb-0">Mis Documentos Subidos</h5>
+                    </div>
+                    <span class="badge count-badge">{{ $documentos->count() }} documento(s)</span>
                 </div>
                 <div class="card-body">
                     @if($documentos->isEmpty())
@@ -277,7 +284,7 @@
                         </div>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-hover" id="docsTable">
+                            <table class="table table-hover align-middle evid-table" id="docsTable">
                                 <thead>
                                     <tr>
                                         <th>Proyecto</th>
@@ -329,6 +336,10 @@
                                             </td>
                                             <td class="text-center align-middle">
                                                 <div class="acciones-docs">
+                                                    {{-- Ver inline --}}
+                                                    <a href="{{ route('aprendiz.documentos.view', $doc->id_documento) }}" target="_blank" class="btn btn-sm btn-outline-primary me-1" title="Ver">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
                                                     {{-- Descargar --}}
                                                     <a href="{{ route('aprendiz.documentos.download', $doc->id_documento) }}" class="btn btn-sm btn-success me-1" title="Descargar">
                                                         <i class="fas fa-download"></i>

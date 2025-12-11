@@ -76,8 +76,10 @@
                                             <div>
                                                 <div class="fw-semibold">{{ $ap->nombre_completo ?? trim(($ap->nombres ?? '') . ' ' . ($ap->apellidos ?? '')) ?: 'Aprendiz' }}</div>
                                                 <div class="small text-muted">Documento: {{ $ap->documento ?? '—' }}</div>
+
                                             </div>
                                         </li>
+
                                     @endforeach
                                 </ul>
                             @endif
@@ -172,4 +174,4 @@
         </div>
     </div>
 @endsection
-|
+

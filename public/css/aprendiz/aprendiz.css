@@ -5,7 +5,7 @@
 .evidencias-box{
   background: rgba(255,255,255,0.65) !important;
   border-radius:20px !important;
-  border:1px solid rgba(0,0,0,0.10) !important;
+  border:2px solid rgba(107,114,128,0.30) !important; /* gris medio suave */
   -webkit-backdrop-filter: blur(3px) !important;
   backdrop-filter: blur(3px) !important;
   box-shadow:0 8px 24px rgba(16,24,40,.08) !important;
@@ -26,7 +26,7 @@
 .filter-controls .form-control.pill{ border:2px solid #e5e7eb; border-radius:999px; padding:.55rem .85rem; }
 .filter-controls .form-control.pill:focus{ border-color:#374151; box-shadow:0 0 0 0.12rem rgba(55,65,81,.12); }
 .filter-controls .btn.btn-success.btn-pill{ background:#2BB673; border:0; box-shadow:0 4px 12px rgba(0,0,0,.12) }
-.filter-controls .btn.btn-outline-secondary.btn-pill{ border:2px solid #6b7280; color:#374151; }
+.filter-controls .btn.btn-outline-secondary.btn-pill{ border:2px solid rgba(107,114,128,.55); color:#374151; }
 
 .evid-table thead th{ font-size:.9rem; text-transform:uppercase; letter-spacing:.3px; color:#6b7280; border-bottom:1px solid #e5e7eb; }
 .evid-table tbody td{ vertical-align: middle; }
@@ -37,10 +37,12 @@
   padding: .80rem 1rem; /* aire interno */
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
-  border-bottom: 1px solid rgba(0,0,0,.06);
+  border-bottom: 1px solid rgba(107,114,128,.25); /* gris suave */
 }
 .section-head h5{ margin: 0; font-weight: 800; color:#0f172a; }
 .section-head-green{ background: rgba(67,160,71,0.10); }
+/* Variante azul para headers de sección */
+.section-head-blue{ background: rgba(0,48,77,0.92); color:#fff; }
 
 
 /* Header */
@@ -139,7 +141,7 @@
 .glass-box{
   background: rgba(255,255,255,0.65) !important;
   border-radius:20px !important;
-  border:1px solid rgba(0,0,0,0.10) !important;
+  border:2px solid rgba(107,114,128,0.30) !important; /* gris medio suave */
   -webkit-backdrop-filter: blur(3px) !important;
   backdrop-filter: blur(3px) !important;
   box-shadow:0 8px 24px rgba(16,24,40,.08) !important;

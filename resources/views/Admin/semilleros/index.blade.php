@@ -29,7 +29,8 @@
                             class="btn btn-nuevo-semillero mt-2 mt-lg-0"
                             data-bs-toggle="modal"
                             data-bs-target="#modalNuevoSemillero">
-                        <i class="bi bi-people-fill me-1"></i> Nuevo semillero
+                        <i class="bi bi-people-fill
+                         me-1"></i> Nuevo semillero
                     </button>
                 @endif
             </div>
