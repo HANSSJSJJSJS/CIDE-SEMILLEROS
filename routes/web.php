@@ -39,6 +39,7 @@ use App\Http\Controllers\LiderSemillero\PerfilController as LiderPerfilControlle
 use App\Http\Controllers\LiderSemillero\RecursosController;
 use App\Http\Controllers\LiderSemillero\DocumentosController;
 
+
 // Aprendiz
 use App\Http\Controllers\Aprendiz\DashboardController as AprendizDashboardController;
 use App\Http\Controllers\Aprendiz\PerfilController;
@@ -153,12 +154,18 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // ======================================================
-//          RUTAS ADMIN/ LIDER GENERAL / LÍDER INVESTIGACIÓN
+//     RUTAS ADMIN / LÍDER GENERAL / LÍDER INVESTIGACIÓN
 // ======================================================
 Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
+
+        // ==========================
+        //         TEST
+        // ==========================
+        Route::get('/rutas-prueba', fn() => "Grupo admin cargado OK");
+        Route::get('/test-multimedia', fn() => route('admin.recursos.multimedia.store'));
 
         // ==========================
         //         DASHBOARD
@@ -167,30 +174,24 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
         Route::get('/dashboard/stats',  [DashboardController::class, 'stats'])->name('dashboard.stats');
         Route::get('/dashboard/charts', [DashboardController::class, 'charts'])->name('dashboard.charts');
 
-       // ==========================
+        // ==========================
         //         USUARIOS
         // ==========================
         Route::resource('usuarios', AdminUsuarioController::class);
 
-        // Editar por AJAX
         Route::get('usuarios/{id}/edit-ajax', [AdminUsuarioController::class, 'editAjax'])
-            ->whereNumber('id')
-            ->name('usuarios.edit.ajax');
+            ->whereNumber('id')->name('usuarios.edit.ajax');
 
-        // Crear por AJAX
         Route::post('usuarios/ajax/store', [AdminUsuarioController::class, 'storeAjax'])
             ->name('usuarios.store.ajax');
 
-        // Toggle permisos líder investigación
         Route::post('usuarios/{usuario}/toggle-permisos-investigacion',
             [AdminUsuarioController::class, 'togglePermisosInvestigacion']
         )->name('usuarios.togglePermisosInvestigacion');
 
-        // Detalle por AJAX
         Route::get('usuarios/{usuario}/detalle-ajax',
             [AdminUsuarioController::class, 'showAjax']
         )->name('usuarios.detalle.ajax');
-
 
         // ==========================
         //         FUNCIONES ADMIN
@@ -198,38 +199,30 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
         Route::get('/funciones', [AdminController::class, 'index'])->name('functions');
         Route::get('/crear', fn () => view('admin.crear'))->name('crear');
 
+        // ======================================================
+        //                    SEMILLEROS
+        // ======================================================
+        Route::get('semilleros/lideres-disponibles', [SemilleroController::class, 'lideresDisponibles'])
+            ->name('semilleros.lideresDisponibles');
 
-            // ==========================
-            //         SEMILLEROS
-            // ==========================
-            // 🔹 Ruta AJAX para líderes disponibles
-            Route::get('semilleros/lideres-disponibles', [SemilleroController::class, 'lideresDisponibles'])
-                ->name('semilleros.lideresDisponibles');
+        Route::resource('semilleros', SemilleroController::class)->except(['show']);
 
-            // 🔹 Resource semilleros (sin show)
-            Route::resource('semilleros', SemilleroController::class)->except(['show']);
+        Route::get('semilleros/{id}/edit-ajax', [SemilleroController::class, 'editAjax'])
+            ->whereNumber('id')->name('semilleros.edit.ajax');
 
-            // 🔹 Editar vía AJAX
-            Route::get('semilleros/{id}/edit-ajax', [SemilleroController::class, 'editAjax'])
-                ->whereNumber('id')
-                ->name('semilleros.edit.ajax');
+        Route::get('semilleros/{semillero}/lider', [SemilleroController::class, 'liderJson'])
+            ->name('semilleros.liderJson');
 
-            // 🔹 NUEVA: obtener líder de un semillero en JSON
-            Route::get('semilleros/{semillero}/lider', [SemilleroController::class, 'liderJson'])
-                ->name('semilleros.liderJson');
+        Route::get('semilleros/{semillero}/recursos',
+            [RecursoController::class, 'porSemillero']
+        )->whereNumber('semillero')->name('semilleros.recursos');
 
-             Route::get('semilleros/{semillero}/recursos', [RecursoController::class, 'porSemillero'])
-            ->whereNumber('semillero')
-            ->name('semilleros.recursos');
-
-
-        // ==========================
-        //   PROYECTOS POR SEMILLERO
-        // ==========================
+        // ======================================================
+        //             PROYECTOS POR SEMILLERO
+        // ======================================================
         Route::prefix('semilleros')->name('semilleros.')->group(function () {
 
-            // Listar + crear
-            Route::get('{semillero}/proyectos',  [ProyectoSemilleroController::class, 'index'])
+            Route::get('{semillero}/proyectos', [ProyectoSemilleroController::class, 'index'])
                 ->name('proyectos.index');
 
             Route::post('{semillero}/proyectos', [ProyectoSemilleroController::class, 'store'])
@@ -253,84 +246,84 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
                     [ProyectoSemilleroController::class, 'destroy']
                 )->name('proyectos.destroy');
 
-                // Descargar documento
                 Route::get('{semillero}/proyectos/{proyecto}/docs/{doc}',
                     [ProyectoSemilleroController::class, 'download']
                 )->name('proyectos.docs.download');
             });
+
+            Route::post('{semillero}/proyectos/{proyecto}/observaciones',
+                [ProyectoSemilleroController::class, 'guardarObservaciones']
+            )->name('proyectos.observaciones');
         });
-        // cometnarios de los proyectos
-                Route::post(
-            'semilleros/{semillero}/proyectos/{proyecto}/observaciones',
-            [ProyectoSemilleroController::class, 'guardarObservaciones']
-        )->name('semilleros.proyectos.observaciones');
 
-
-        // ==========================
-        //        REUNIONES LÍDERES
-        // ==========================
+        // ======================================================
+        //                 REUNIONES LÍDERES
+        // ======================================================
         Route::get('/reuniones-lideres', [ReunionesLideresController::class, 'index'])
             ->name('reuniones-lideres.index');
 
         Route::prefix('reuniones-lideres')->as('reuniones-lideres.')->group(function () {
-            Route::get('obtener',    [ReunionesLideresController::class, 'obtener'])->name('obtener');
+            Route::get('obtener', [ReunionesLideresController::class, 'obtener'])->name('obtener');
             Route::get('semilleros', [ReunionesLideresController::class, 'semilleros'])->name('semilleros');
-            Route::get('lideres',    [ReunionesLideresController::class, 'lideres'])->name('lideres');
-            Route::post('',          [ReunionesLideresController::class, 'store'])->name('store');
-            Route::put('{id}',       [ReunionesLideresController::class, 'update'])->whereNumber('id')->name('update');
-            Route::delete('{id}',    [ReunionesLideresController::class, 'destroy'])->whereNumber('id')->name('destroy');
-            Route::post('{id}/generar-enlace', [ReunionesLideresController::class, 'generarEnlace'])
-                ->whereNumber('id')->name('generar-enlace');
+            Route::get('lideres', [ReunionesLideresController::class, 'lideres'])->name('lideres');
+            Route::post('', [ReunionesLideresController::class, 'store'])->name('store');
+            Route::put('{id}', [ReunionesLideresController::class, 'update'])->name('update');
+            Route::delete('{id}', [ReunionesLideresController::class, 'destroy'])->name('destroy');
+            Route::post('{id}/generar-enlace', [ReunionesLideresController::class, 'generarEnlace'])->name('generar-enlace');
         });
 
-
-        // ==========================
-        //            RECURSOS
-        // ==========================
+        // ======================================================
+        //                        RECURSOS
+        // ======================================================
         Route::prefix('recursos')->as('recursos.')->group(function () {
 
-            // Recursos generales
+            // CRUD básico
             Route::get('/', [RecursoController::class, 'index'])->name('index');
             Route::get('/listar', [RecursoController::class, 'listar'])->name('listar');
             Route::post('/', [RecursoController::class, 'store'])->name('store');
             Route::get('/{recurso}/dl', [RecursoController::class, 'download'])->name('download');
             Route::delete('/{recurso}', [RecursoController::class, 'destroy'])->name('destroy');
 
-            // ⭐ Recursos asignados a semilleros ⭐
-            Route::get('/semillero/{semillero}',
-                [RecursoController::class, 'recursosPorSemillero']
-            )->name('porSemillero');
+            // Recursos asignados
+            Route::get('/semillero/{semillero}', [RecursoController::class, 'porSemillero'])
+                ->whereNumber('semillero')->name('porSemillero');
 
-            Route::post('/semillero',
-                [RecursoController::class, 'storeSemilleroRecurso']
-            )->name('semillero.store');
+            Route::post('/semillero', [RecursoController::class, 'storeActividad'])
+                ->name('semillero.store');
 
-            Route::put('/semillero/{recurso}/estado',
-                [RecursoController::class, 'actualizarEstadoRecurso']
-            )->name('semillero.estado');
+            Route::put('/semillero/{recurso}/estado', [RecursoController::class, 'actualizarEstadoActividad'])
+                ->name('semillero.estado');
 
+            Route::get('/semillero/{id}/lider', [RecursoController::class, 'liderDeSemillero'])
+                ->name('semillero.lider');
 
+            // Proyectos vinculados
+            Route::get('/proyectos/{id}', [RecursoController::class, 'getProyectos'])
+                ->name('proyectos');
+
+            // Multimedia
+            Route::get('/multimedia', [RecursoController::class, 'multimedia'])->name('multimedia');
+            Route::post('/multimedia/store', [RecursoController::class, 'storeMultimedia'])->name('multimedia.store');
+            Route::get('/multimedia/list', [RecursoController::class, 'obtenerMultimedia'])->name('multimedia.list');
+            Route::delete('/multimedia/{id}', [RecursoController::class, 'deleteMultimedia'])->name('multimedia.delete');
         });
 
-
-
-        // ==========================
-        //            PERFIL ADMIN
-        // ==========================
+        // ======================================================
+        //                      PERFIL ADMIN
+        // ======================================================
         Route::prefix('perfil')->as('perfil.')->group(function () {
-            Route::get('/',         [AdminPerfilController::class, 'edit'])->name('edit');
-            Route::put('/',         [AdminPerfilController::class, 'update'])->name('update');
+            Route::get('/', [AdminPerfilController::class, 'edit'])->name('edit');
+            Route::put('/', [AdminPerfilController::class, 'update'])->name('update');
             Route::put('/password', [AdminPerfilController::class, 'updatePassword'])->name('password.update');
         });
 
-
-        // ==========================
-        //          NOTIFICACIONES
-        // ==========================
+        // ======================================================
+        //                    NOTIFICACIONES
+        // ======================================================
         Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');
         Route::post('/notifications/read-all', [AdminNotificationController::class, 'readAll'])->name('notifications.read_all');
-
     });
+
 
 /*
 |--------------------------------------------------------------------------
@@ -411,19 +404,49 @@ Route::middleware(['auth', 'role:LIDER_SEMILLERO'])
     ->prefix('lider_semi')
     ->name('lider_semi.')
     ->group(function () {
-        Route::get('/dashboard', [DashboardController_semi::class, 'index'])->name('dashboard');
+
+        Route::get('/dashboard', [DashboardController_semi::class, 'index'])
+            ->name('dashboard');
 
         // Vistas principales
-        Route::get('/semilleros', [LiderSemilleroUIController::class, 'semilleros'])->name('semilleros');
-        Route::get('/aprendices', [LiderAprendicesController::class, 'index'])->name('aprendices');
-        // Recursos (solo Líder Semillero)
+        Route::get('/semilleros', [LiderSemilleroUIController::class, 'semilleros'])
+            ->name('semilleros');
+
+        Route::get('/aprendices', [LiderAprendicesController::class, 'index'])
+            ->name('aprendices');
+
+        /*
+        |--------------------------------------------------------------------------
+        | RUTAS DE RECURSOS (LÍDER DE SEMILLERO)
+        |--------------------------------------------------------------------------
+        */
         Route::prefix('recursos')->name('recursos.')->group(function () {
-            Route::get('/',              [RecursosController::class, 'index'])->name('index');
-            Route::get('/crear',         [RecursosController::class, 'create'])->name('create');
-            Route::post('/',             [RecursosController::class, 'store'])->name('store');
-            Route::get('/{id}/download', [RecursosController::class, 'download'])->whereNumber('id')->name('download');
-            Route::delete('/{id}',       [RecursosController::class, 'destroy'])->whereNumber('id')->name('destroy');
+
+            // LISTAR recursos
+            Route::get('/', [RecursosController::class, 'index'])
+                ->name('index');
+
+            // FORMULARIO crear recurso
+            Route::get('/crear', [RecursosController::class, 'create'])
+                ->name('create');
+
+            // GUARDAR recurso
+            Route::post('/', [RecursosController::class, 'store'])
+                ->name('store');
+
+            // DESCARGAR archivo
+            Route::get('/{id}/download', [RecursosController::class, 'download'])
+                ->whereNumber('id')
+                ->name('download');
+
+            // ELIMINAR recurso (si está pendiente)
+            Route::delete('/{id}', [RecursosController::class, 'destroy'])
+                ->whereNumber('id')
+                ->name('destroy');
         });
+
+
+        
         Route::view('/perfil', 'lider_semi.perfil')->name('perfil');
         Route::put('/perfil/contacto', [LiderPerfilController::class, 'updateContacto'])->name('perfil.contacto.update');
         Route::put('/perfil/password', [LiderPerfilController::class, 'updatePassword'])->name('perfil.password.update');

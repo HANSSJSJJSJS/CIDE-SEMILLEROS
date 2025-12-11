@@ -114,10 +114,13 @@
           <i class="bi bi-list"></i> Menú
         </button>
 
-        {{-- Cambio de contraseña --}}
-        <a href="{{ route('password.change') }}" class="btn btn-light">
-          <i class="bi bi-lock-fill me-2"></i> Cambio contraseña
-        </a>
+    }
+       {{-- Cambio de contraseña --}}
+        {{--
+<a href="{{ route('password.change') }}" class="btn btn-light">
+    <i class="bi bi-lock-fill me-2"></i> Cambio contraseña
+</a>
+--}}
 
         {{-- Cerrar sesión --}}
         <a href="{{ route('logout') }}" class="btn btn-light"
