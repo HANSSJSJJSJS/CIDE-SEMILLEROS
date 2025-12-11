@@ -10,6 +10,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 
   {{-- Estilos base comunes --}}
   <link href="{{ asset('css/common/base.css') }}?v={{ time() }}" rel="stylesheet">
@@ -22,14 +23,28 @@
   {{-- Estilos específicos del panel del Aprendiz --}}
   <link href="{{ asset('css/aprendiz/aprendiz.css') }}?v={{ time() }}" rel="stylesheet">
 
+  {{-- Loader CSS global --}}
+  <link href="{{ asset('css/common/loader.css') }}?v={{ time() }}" rel="stylesheet">
+
 
   @stack('styles')
   @yield('styles')
 </head>
 <body class="adm-body">
+  {{-- Loader Overlay --}}
+  <div id="pageLoader" class="page-loader" aria-hidden="true" role="status">
+    <div class="loader">
+      <div class="orbe" style="--index:0"></div>
+      <div class="orbe" style="--index:1"></div>
+      <div class="orbe" style="--index:2"></div>
+      <div class="orbe" style="--index:3"></div>
+      <div class="orbe" style="--index:4"></div>
+    </div>
+    <div class="loader-text">Cargando...</div>
+  </div>
   <div class="adm-shell">
     <aside id="admSidebar" class="adm-sidebar">
-      <div class="adm-brand brand-large">
+      <div class="adm-brand brand-large animate__animated animate__flipInX">
         <img src="{{ asset('images/logo-sena.png') }}" alt="Logo SENA" class="brand-logo-lg">
         <div class="brand-system-lg">Sistema de Gestión Semillero</div>
       </div>
@@ -84,19 +99,19 @@
             </button>
             <div id="notifDropdown" class="card shadow" style="position:absolute; right:0; top:110%; min-width: 260px; display:none; z-index: 1100;">
               <div class="card-header py-2 px-3">Notificaciones</div>
-              <div class="card-body py-2 px-3">
-                <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="list-group list-group-flush">
+                <a href="{{ route('aprendiz.documentos.index') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" id="notifItemEvidencias">
                   <span>Evidencias nuevas</span>
                   <span id="notifEvidencias" class="badge bg-success">0</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center">
+                </a>
+                <a href="{{ route('aprendiz.calendario.index') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" id="notifItemReuniones">
                   <span>Reuniones próximas</span>
                   <span id="notifReuniones" class="badge bg-primary">0</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mt-2">
+                </a>
+                <a href="{{ route('aprendiz.documentos.index') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" id="notifItemRespuestas">
                   <span>Respuestas del líder</span>
                   <span id="notifRespuestas" class="badge bg-info text-dark">0</span>
-                </div>
+                </a>
               </div>
             </div>
           </div>
@@ -226,6 +241,20 @@
       if (!dd.contains(e.target)) dd.style.display='none';
     });
   })();
+  </script>
+
+  {{-- Loader JS: ocultar al terminar carga --}}
+  <script>
+    (function(){
+      const hide = () => {
+        const el = document.getElementById('pageLoader');
+        if (!el) return;
+        el.classList.add('hidden');
+        setTimeout(()=>{ try{ el.remove(); }catch(e){} }, 400);
+      };
+      if (document.readyState === 'complete') hide();
+      window.addEventListener('load', hide);
+    })();
   </script>
 
   @stack('scripts')

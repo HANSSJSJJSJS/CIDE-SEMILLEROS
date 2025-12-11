@@ -1185,11 +1185,38 @@ async function deleteEvent(){
 }
 
 async function updateEventOnServer(id,newDateStr,newTime){
-  const fechaHora=`${newDateStr}T${newTime}:00`;
-  try{
-    const res = await fetch(`${ROUTES.baseEventos}/${id}`,{method:'PUT',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},body:JSON.stringify({fecha_hora:fechaHora})});
-    if(!res.ok){ const txt = await res.text(); console.error('Error al actualizar (drop)', res.status, txt); showToast('No se pudo mover el evento.','error'); }
-  }catch(err){ console.error('Error actualizando evento',err); }
+  const fechaHora = `${newDateStr}T${newTime}:00`;
+  try {
+    const res = await fetch(`${ROUTES.baseEventos}/${id}` ,{
+      method:'PUT',
+      headers:{
+        'Content-Type':'application/json',
+        'X-CSRF-TOKEN':CSRF,
+        'Accept':'application/json',
+        'X-Requested-With':'XMLHttpRequest'
+      },
+      body: JSON.stringify({ fecha_hora: fechaHora })
+    });
+    const ct = res.headers.get('content-type')||'';
+    let data=null, text='';
+    if (ct.includes('application/json')) {
+      try { data = await res.json(); } catch(_){ data=null; }
+    } else {
+      try { text = await res.text(); } catch(_){ text=''; }
+    }
+    if (!res.ok || (data && data.success===false)) {
+      const msg = (data && (data.message||data.error)) || text || `Error ${res.status}`;
+      console.error('Error al actualizar (drop)', res.status, data||text);
+      showToast(msg, 'error');
+      return false;
+    }
+    showToast('Reunión movida correctamente.', 'success');
+    return true;
+  } catch (err) {
+    console.error('Error actualizando evento', err);
+    showToast('No se pudo mover el evento (red).', 'error');
+    return false;
+  }
 }
 
 function navigatePeriod(direction){ if(currentView==='month'){ currentDate.setMonth(currentDate.getMonth()+direction); } else if(currentView==='week'){ currentDate.setDate(currentDate.getDate()+(direction*7)); } else { currentDate.setDate(currentDate.getDate()+direction); } }

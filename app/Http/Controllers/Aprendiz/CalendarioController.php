@@ -426,7 +426,7 @@ class CalendarioController extends Controller
     {
         try {
             // 1) Relación estándar si existe
-            if (isset($e->relationLoaded) && $e->relationLoaded('lider') && $e->lider) {
+            if (method_exists($e, 'relationLoaded') && $e->relationLoaded('lider') && $e->lider) {
                 return $e->lider->name ?? null;
             }
             if (isset($e->lider) && !is_null($e->lider)) {
@@ -435,8 +435,26 @@ class CalendarioController extends Controller
             // 2) Resolver por columnas posibles en eventos
             $leaderId = $e->id_lider ?? $e->id_lider_usuario ?? $e->id_lider_semi ?? $e->id_usuario ?? null;
             if ($leaderId) {
-                $name = DB::table('users')->where('id', $leaderId)->value('name');
-                if ($name) return $name;
+                // Intentar nombre completo en users (nombre + apellidos) o name/email
+                $row = DB::table('users')->where('id', $leaderId)->first();
+                if ($row) {
+                    $nombre = '';
+                    if (isset($row->nombre) || isset($row->apellidos)) {
+                        $nombre = trim(((string)($row->nombre ?? '')) . ' ' . ((string)($row->apellidos ?? '')));
+                    }
+                    if ($nombre !== '') { return $nombre; }
+                    if (isset($row->name) && trim((string)$row->name) !== '') { return (string)$row->name; }
+                    if (isset($row->email) && trim((string)$row->email) !== '') { return (string)$row->email; }
+                }
+                // Fallback: lideres_semillero por id_usuario
+                if (\Illuminate\Support\Facades\Schema::hasTable('lideres_semillero')) {
+                    $ls = DB::table('lideres_semillero')->where('id_usuario', $leaderId)->first();
+                    if ($ls) {
+                        $nombre = trim(((string)($ls->nombres ?? '')) . ' ' . ((string)($ls->apellidos ?? '')));
+                        if ($nombre !== '') { return $nombre; }
+                        if (isset($ls->correo_institucional) && trim((string)$ls->correo_institucional) !== '') { return (string)$ls->correo_institucional; }
+                    }
+                }
             }
         } catch (\Throwable $ex) {
             // noop
@@ -610,12 +628,35 @@ class CalendarioController extends Controller
                 $aprPk = null;
                 foreach (['id_aprendiz','id','id_usuario','user_id'] as $cand) { if (Schema::hasColumn('aprendices', $cand)) { $aprPk = $cand; break; } }
                 if ($aprPk) {
+                    // Primer intento: nombres desde aprendices
                     $rows = DB::table('evento_participantes')
                         ->join('aprendices', DB::raw('aprendices.' . $aprPk), '=', DB::raw('evento_participantes.' . $epCol))
                         ->whereIn('evento_participantes.id_evento', $ids)
                         ->select('evento_participantes.id_evento', DB::raw($aprNameExpr.' as nombre'))
                         ->get();
-                    return $rows->groupBy('id_evento')->map(fn($g)=> $g->pluck('nombre')->filter()->values()->all());
+                    $grouped = $rows->groupBy('id_evento')->map(fn($g)=> $g->pluck('nombre')->filter()->values()->all());
+
+                    // Si algún evento quedó sin nombres (por falta de columnas en aprendices), intentar vía users
+                    $missingIds = $ids->diff($grouped->keys())->values();
+                    if ($missingIds->isNotEmpty()) {
+                        $aprUserFk = null; foreach (['id_usuario','user_id','id_user'] as $fk) { if (Schema::hasColumn('aprendices', $fk)) { $aprUserFk = $fk; break; } }
+                        if ($aprUserFk && Schema::hasTable('users')) {
+                            $rowsU = DB::table('evento_participantes')
+                                ->join('aprendices', DB::raw('aprendices.' . $aprPk), '=', DB::raw('evento_participantes.' . $epCol))
+                                ->join('users', 'users.id', '=', DB::raw('aprendices.' . $aprUserFk))
+                                ->whereIn('evento_participantes.id_evento', $missingIds)
+                                ->select(
+                                    'evento_participantes.id_evento',
+                                    DB::raw("COALESCE(NULLIF(CONCAT(COALESCE(users.nombre,''),' ',COALESCE(users.apellidos,'')), ' '), NULLIF(users.name,''), users.email) as nombre")
+                                )
+                                ->get();
+                            $g2 = $rowsU->groupBy('id_evento')->map(fn($g)=> $g->pluck('nombre')->filter()->values()->all());
+                            // Unir resultados
+                            foreach ($g2 as $k => $arr) { $grouped[$k] = $arr; }
+                        }
+                    }
+
+                    return $grouped;
                 }
             }
 

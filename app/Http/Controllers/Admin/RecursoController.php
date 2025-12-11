@@ -147,42 +147,39 @@ class RecursoController extends Controller
     }
 
     // ======================================================
-    // OBTENER LÍDER DEL SEMILLERO
+    // SUBIR MULTIMEDIA
     // ======================================================
-public function storeMultimedia(Request $request)
-{
-    $request->validate([
-        'titulo'     => 'required|string|max:255',
-        'categoria'  => 'required|in:plantillas,manuales,otros',
-        'archivo'    => 'required|file|max:20480',
-        'destino'    => 'required|in:todos,semillero',
-        'descripcion'=> 'nullable|string',
-        'semillero_id' => 'required_if:destino,semillero|nullable|exists:semilleros,id_semillero'
-    ]);
+    public function storeMultimedia(Request $request)
+    {
+        $request->validate([
+            'titulo'     => 'required|string|max:255',
+            'categoria'  => 'required|in:plantillas,manuales,otros',
+            'archivo'    => 'required|file|max:20480',
+            'destino'    => 'required|in:todos,semillero',
+            'descripcion'=> 'nullable|string',
+            'semillero_id' => 'required_if:destino,semillero|nullable|exists:semilleros,id_semillero'
+        ]);
 
-    $path = $request->file('archivo')->store('multimedia', 'public');
+        $path = $request->file('archivo')->store('multimedia', 'public');
 
-    DB::table('recursos')->insert([
-        'nombre_archivo' => $request->titulo,
-        'archivo'        => $path,
-        'categoria'      => $request->categoria,
-        'dirigido_a'     => $request->destino,
-        'semillero_id'   => $request->destino === 'semillero' ? $request->semillero_id : null,
-        'descripcion'    => $request->descripcion,
-        'user_id'        => auth()->id(),
-        'estado'         => 'pendiente',
-        'created_at'     => now(),
-        'updated_at'     => now(),
-    ]);
+        DB::table('recursos')->insert([
+            'nombre_archivo' => $request->titulo,
+            'archivo'        => $path,
+            'categoria'      => $request->categoria,
+            'dirigido_a'     => $request->destino,
+            'semillero_id'   => $request->destino === 'semillero' ? $request->semillero_id : null,
+            'descripcion'    => $request->descripcion,
+            'user_id'        => auth()->id(),
+            'estado'         => 'pendiente',
+            'created_at'     => now(),
+            'updated_at'     => now(),
+        ]);
 
-    return response()->json(['success' => true]);
-}
-
-
-
+        return response()->json(['success' => true]);
+    }
 
     // ======================================================
-    // VISTA DE MULTIMEDIA
+    // VISTA MULTIMEDIA
     // ======================================================
     public function multimedia()
     {
@@ -190,55 +187,63 @@ public function storeMultimedia(Request $request)
             ->select('id_semillero','nombre')
             ->get();
 
-        return view('admin.recursos.multimedia', compact('semilleros'));
+        // ★★ IMPORTANTE: vista correcta según tu estructura ★★
+        return view('admin.recursos.multimedia.multimedia', compact('semilleros'));
     }
+
+    // ======================================================
+    // LISTAR MULTIMEDIA (AJAX)
+    // ======================================================
     public function obtenerMultimedia()
-{
-    $recursos = DB::table('recursos')
-        ->orderBy('created_at', 'desc')
-        ->get();
+    {
+        $recursos = DB::table('recursos')
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-    return response()->json($recursos);
-}
-public function deleteMultimedia($id)
-{
-    $recurso = DB::table('recursos')->where('id', $id)->first();
-
-    if (!$recurso) {
-        return response()->json(['success' => false, 'message' => 'No encontrado'], 404);
+        return response()->json($recursos);
     }
 
-    // BORRAR ARCHIVO FÍSICO
-    if ($recurso->archivo && Storage::disk('public')->exists($recurso->archivo)) {
-        Storage::disk('public')->delete($recurso->archivo);
+    // ======================================================
+    // ELIMINAR MULTIMEDIA
+    // ======================================================
+    public function deleteMultimedia($id)
+    {
+        $recurso = DB::table('recursos')->where('id', $id)->first();
+
+        if (!$recurso) {
+            return response()->json(['success' => false, 'message' => 'No encontrado'], 404);
+        }
+
+        if ($recurso->archivo && Storage::disk('public')->exists($recurso->archivo)) {
+            Storage::disk('public')->delete($recurso->archivo);
+        }
+
+        DB::table('recursos')->where('id', $id)->delete();
+
+        return response()->json(['success' => true]);
     }
 
-    // BORRAR REGISTRO
-    DB::table('recursos')->where('id', $id)->delete();
+    // ======================================================
+    // OBTENER LÍDER
+    // ======================================================
+    public function liderDeSemillero($id)
+    {
+        $lider = DB::table('semilleros as s')
+            ->leftJoin('lideres_semillero as ls', 'ls.id_lider_semi', '=', 's.id_lider_semi')
+            ->leftJoin('users as u', 'u.id', '=', 'ls.id_usuario')
+            ->where('s.id_semillero', $id)
+            ->select(
+                'u.id',
+                DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''),' ',COALESCE(u.apellidos,''))) as nombre_completo")
+            )
+            ->first();
 
-    return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+            'lider' => $lider ? [
+                'id' => $lider->id,
+                'nombre_completo' => $lider->nombre_completo,
+            ] : null,
+        ]);
+    }
 }
-public function liderDeSemillero($id)
-{
-    $lider = DB::table('semilleros as s')
-        ->leftJoin('lideres_semillero as ls', 'ls.id_lider_semi', '=', 's.id_lider_semi')
-        ->leftJoin('users as u', 'u.id', '=', 'ls.id_usuario')
-        ->where('s.id_semillero', $id)
-        ->select(
-            'u.id',
-            DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''),' ',COALESCE(u.apellidos,''))) as nombre_completo")
-        )
-        ->first();
-
-    return response()->json([
-        'success' => true,
-        'lider' => $lider ? [
-            'id' => $lider->id,
-            'nombre_completo' => $lider->nombre_completo,
-        ] : null,
-    ]);
-}
-
-
-
-} // FIN DEL CONTROLADOR

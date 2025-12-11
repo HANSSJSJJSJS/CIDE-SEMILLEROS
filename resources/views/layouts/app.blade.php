@@ -16,6 +16,7 @@
   {{-- Bootstrap y estilos --}}
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{{ asset('css/common/loader.css') }}?v={{ time() }}" rel="stylesheet">
 
   {{-- Estilos generales del panel --}}
   <style>
@@ -88,6 +89,17 @@
   @stack('styles')
 </head>
 <body>
+  {{-- Loader Overlay --}}
+  <div id="pageLoader" class="page-loader" aria-hidden="true" role="status">
+    <div class="loader">
+      <div class="orbe" style="--index:0"></div>
+      <div class="orbe" style="--index:1"></div>
+      <div class="orbe" style="--index:2"></div>
+      <div class="orbe" style="--index:3"></div>
+      <div class="orbe" style="--index:4"></div>
+    </div>
+    <div class="loader-text">Cargando...</div>
+  </div>
   <div class="container-xxl mt-3">
     {{-- 🔝 Barra superior --}}
     <div class="topbar d-flex align-items-center justify-content-between">
@@ -150,6 +162,21 @@
 
   {{-- Scripts --}}
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  {{-- Loader JS: ocultar al terminar carga --}}
+  <script>
+    (function(){
+      const hide = () => {
+        const el = document.getElementById('pageLoader');
+        if (!el) return;
+        el.classList.add('hidden');
+        setTimeout(()=>{ try{ el.remove(); }catch(e){} }, 400);
+      };
+      if (document.readyState === 'complete') hide();
+      window.addEventListener('load', hide);
+    })();
+  </script>
+
   @stack('scripts')
 
   {{-- 🔒 Script para evitar volver al dashboard tras el logout --}}

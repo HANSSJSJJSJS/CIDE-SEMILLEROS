@@ -9,18 +9,29 @@
 .cal-admin #weekView,
 .cal-admin #dayView { display: none; }
 
-.cal-admin .header { background: transparent; margin: 16px 0 10px; }
-.cal-admin .header-top { display:flex; align-items:center; justify-content:space-between; gap:16px; }
-.cal-admin .header-top h1 { margin:0; color: var(--cal-blue); font-weight: 800; letter-spacing:.2px; }
+.cal-admin .header { background: transparent; margin: 12px 0 10px; }
+.cal-admin .header-top { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.cal-admin .header-title { display:flex; align-items:center; gap:12px; }
+.cal-admin .header-title .title-icon { width:50px; height:50px; border-radius:10px; background: linear-gradient(135deg, var(--cal-green), var(--cal-green-dark)); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow: 0 6px 12px rgba(0,0,0,.12); }
+.cal-admin .header-title .title-text .title { margin:0; color: var(--cal-blue); font-weight: 800; letter-spacing:.2px; }
+.cal-admin .header-title .title-text .subtitle { color:#6b7280; margin-top:2px; font-weight:600; }
 
 .cal-admin .view-switcher { display:flex; gap:8px; align-items:center; }
 .cal-admin .view-btn { appearance:none; border:1px solid var(--cal-border); background: var(--cal-white); color: var(--cal-blue); font-weight:600; padding:8px 14px; border-radius:20px; box-shadow: var(--cal-shadow); transition: all .15s ease; }
 .cal-admin .view-btn:hover { transform: translateY(-1px); }
 .cal-admin .view-btn.active { border-color: transparent; color: var(--cal-white); background: linear-gradient(135deg, var(--cal-green), var(--cal-green-dark)); }
 
-.cal-admin .header-controls { display:flex; align-items:center; justify-content:space-between; margin-top:12px; }
+.cal-admin .header-controls { display:grid; grid-template-columns: 1fr auto 1fr; align-items:center; gap:12px; margin-top:10px; }
+.cal-admin .header-controls .view-switcher { justify-self:start; }
+.cal-admin .header-controls .nav-controls { justify-self:center; }
+.cal-admin .header-controls .current-period { justify-self:end; }
 .cal-admin .nav-controls { display:flex; gap:8px; align-items:center; }
-.cal-admin .nav-btn, .cal-admin .today-btn { border:1px solid var(--cal-border); background: var(--cal-white); color: var(--cal-blue); font-weight:600; padding:8px 12px; border-radius:10px; box-shadow: var(--cal-shadow); }
+.cal-admin .nav-controls { display:flex; gap:8px; align-items:center; }
+.cal-admin .nav-btn, .cal-admin .today-btn { border:1px solid var(--cal-border); background: var(--cal-white); color: var(--cal-blue); font-weight:700; padding:8px 12px; border-radius:10px; box-shadow: var(--cal-shadow); }
+.cal-admin .today-btn { color:#065f46; background:#E8FFF2; border-color:#b7f7cf; }
+.cal-admin .nav-btn { background:#FFFFFF; }
+.cal-admin .nav-btn:first-child::before { content:"\2039"; margin-right:6px; }
+.cal-admin .nav-btn:last-child::after { content:"\203A"; margin-left:6px; }
 .cal-admin .today-btn { color: var(--cal-white); background: linear-gradient(135deg, var(--cal-green), var(--cal-green-dark)); border-color: transparent; }
 .cal-admin #currentPeriod, .cal-admin #current-period { color: var(--cal-blue); font-weight:700; font-size:20px; }
 
@@ -35,10 +46,10 @@
 .cal-admin .days-grid > *:nth-child(7n) { border-right:none; }
 
 /* Resaltado de festivos (Mes) */
-.cal-admin .day-cell.festivo { background-color: #ffe9a8 !important; border-left: 4px solid #f59e0b; }
-.cal-admin .day-cell.festivo.disabled { background-color: #ffe9a8 !important; }
-.cal-admin .day-cell.festivo .day-number { background: #fde68a; color: #7c2d12; border-radius:6px; padding:2px 6px; }
-.cal-admin .day-cell.festivo::after { content: 'Festivo'; position:absolute; top:8px; right:8px; font-size:10px; font-weight:800; color:#7c2d12; background:#ffd166; padding:2px 6px; border-radius:6px; box-shadow: var(--cal-shadow); }
+.cal-admin .day-cell.festivo { background-color: #F7FAFF !important; border-left: 4px solid #E6F0FF; }
+.cal-admin .day-cell.festivo.disabled { background-color: #F7FAFF !important; }
+.cal-admin .day-cell.festivo .day-number { background: #EAF2FF; color: var(--cal-blue); border-radius:6px; padding:2px 6px; }
+.cal-admin .day-cell.festivo::after { content: 'Festivo'; position:absolute; top:8px; right:8px; font-size:10px; font-weight:800; color: var(--cal-blue); background:#E6F0FF; padding:2px 6px; border-radius:6px; box-shadow: var(--cal-shadow); }
 
 /* Fecha en celda (si el render la incluye) */
 .cal-admin .day-number, .cal-admin .cell-date, .cal-admin .day-label { position:absolute; top:8px; left:10px; font-weight:700; color:#41566b; }
@@ -47,19 +58,27 @@
 /* Evento (chips) para todas las vistas conocidas */
 .cal-admin .event-chip,
 .cal-admin .week-event,
-.cal-admin .day-event { background: linear-gradient(135deg, var(--cal-green), var(--cal-green-dark)); color: var(--cal-white); border-radius:10px; padding:8px 10px; font-size:12px; font-weight:700; box-shadow: 0 2px 8px rgba(0,0,0,.08); border:1px solid rgba(0,0,0,.04); }
+.cal-admin .day-event { background: linear-gradient(135deg, var(--cal-green), var(--cal-green-dark)); color: var(--cal-white); border-radius:14px; padding:8px 12px; font-size:12px; font-weight:700; box-shadow: 0 4px 12px rgba(0,0,0,.14); border:1px solid rgba(0,0,0,.04); }
+.cal-admin .week-event .we-time { display:inline-block; background: rgba(255,255,255,.18); color:#ffffff; border:1px solid rgba(255,255,255,.28); padding:2px 8px; border-radius:8px; font-weight:800; font-size:11px; margin-bottom:4px; letter-spacing:.02em; }
+.cal-admin .week-event .we-title { font-size:12px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 /* Estado con evento */
 .cal-admin .has-event { background: #F3FFF6; }
 
 /* Vista Semana */
-.cal-admin .week-header { display:grid; grid-template-columns: 90px repeat(7, 1fr); align-items:center; background: var(--cal-blue); color: var(--cal-white); border-radius:12px 12px 0 0; overflow:hidden; }
+.cal-admin .week-header { display:grid; grid-template-columns: 90px repeat(7, 1fr); align-items:center; background: #0D3B55; color: var(--cal-white); border-radius:12px 12px 0 0; overflow:hidden; }
 .cal-admin .week-time-label { padding:12px; font-weight:700; text-align:center; border-right:1px solid rgba(255,255,255,.12); }
 .cal-admin .week-day-header { padding:12px; text-align:center; font-weight:700; }
+.cal-admin .week-day-header .week-day-name { color:#e6f0f6; font-weight:700; text-transform:capitalize; letter-spacing:.02em; }
+.cal-admin .week-day-header .week-day-number { color:#ffffff; font-weight:800; opacity:.95; }
+.cal-admin .week-day-header .week-day-pill { display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:12px 20px; border-radius:12px; background: linear-gradient(135deg, #0D6A60, #0B4C62); color:#ffffff; margin:6px auto; min-width:120px; box-shadow: 0 8px 22px rgba(0,0,0,.24); }
+.cal-admin .week-day-header .week-day-pill .wd-name { font-weight:800; letter-spacing:.02em; }
+.cal-admin .week-day-header .week-day-pill .wd-day { font-weight:800; font-size:20px; }
 
 /* Resaltado de festivos (Semana) */
-.cal-admin .week-day-header.festivo { background-color: #ffe9a8; color: var(--cal-blue); }
-.cal-admin .week-day-header.festivo .week-day-number { color: #a16207; }
+.cal-admin .week-day-header.festivo { background-color: #F7FAFF; color: var(--cal-blue); border: 2px solid #0B4C62; border-radius: 10px; margin: 6px; box-shadow: 0 4px 10px rgba(11,76,98,.12); }
+.cal-admin .week-day-header.festivo .week-day-name { color: var(--cal-blue); }
+.cal-admin .week-day-header.festivo .week-day-number { color: var(--cal-blue); }
 .cal-admin .week-day-header.festivo::after { content:'Festivo'; display:inline-block; margin-left:8px; font-size:11px; font-weight:800; color:#7c2d12; background:#ffd166; padding:2px 6px; border-radius:6px; }
 .cal-admin .week-body { display:grid; grid-template-columns: 90px repeat(7, 1fr); background: var(--cal-white); border:1px solid var(--cal-border); border-top:none; }
 .cal-admin .week-time-row { display:contents; }
@@ -144,26 +163,60 @@
 
 /* Vista Semana (estructura Admin) */
 .cal-admin #weekHeader { display:grid; grid-template-columns: 90px repeat(7, 1fr); align-items:center; background: var(--cal-blue); color: var(--cal-white); border-radius:12px 12px 0 0; overflow:hidden; }
-.cal-admin #weekGrid { display:grid; grid-template-columns: 90px repeat(7, 1fr); background: var(--cal-white); border:1px solid var(--cal-border); border-top:none; }
+.cal-admin #weekGrid { display:grid; grid-template-columns: 90px repeat(7, 1fr); background: var(--cal-white); border:1px solid var(--cal-border); border-top:none; border-radius: 0 0 12px 12px; overflow:hidden; }
 .cal-admin .week-times { display:flex; flex-direction:column; }
-.cal-admin .time-slot-label { padding:12px; font-weight:600; color: var(--cal-muted); border-right:1px solid var(--cal-border); border-bottom:1px solid var(--cal-border); background:#FAFCFF; }
+.cal-admin .time-slot-label { height:60px; display:flex; align-items:center; justify-content:flex-end; padding:12px; font-weight:600; color: var(--cal-muted); border-right:1px solid var(--cal-border); border-bottom:1px solid var(--cal-border); background:#FAFCFF; }
 .cal-admin .week-day-column { position:relative; border-right:1px solid var(--cal-border); }
+.cal-admin .week-day-column.active { background:#F2FBF6; box-shadow: inset 1px 0 0 rgba(16,128,96,.08), inset -1px 0 0 rgba(16,128,96,.08), inset 0 0 0 9999px rgba(16,128,96,.03); }
+.cal-admin .week-day-column.active .week-time-slot:not(.disabled):not(.lunch) { background:#F9FDFB; }
 .cal-admin .week-day-column:last-child { border-right:none; }
 .cal-admin .week-time-slot { height:60px; border-bottom:1px solid var(--cal-border); cursor:pointer; }
+.cal-admin .week-time-slot { position:relative; }
+.cal-admin .week-time-slot::after { content:""; position:absolute; left:0; right:0; top:50%; border-top:1px dashed var(--cal-border); }
 .cal-admin .week-time-slot.disabled { background:#F2F5F7; opacity:.7; cursor:not-allowed; }
+.cal-admin .week-time-slot.lunch { position:relative; background: #F7FAFF; }
+.cal-admin .week-time-slot.lunch::after { content:'ALMUERZO'; position:absolute; inset:auto 0 0 0; top:50%; transform: translateY(-50%); text-align:center; font-weight:800; font-size:12px; color:#8a96a3; letter-spacing:.12em; }
+.cal-admin .week-time-slot.lunch::after { border-top:none; }
+.cal-admin .week-times .time-slot-label.lunch { background:#F7FAFF; }
 
 /* Columna del día festivo en Semana */
-.cal-admin .week-day-column.festivo .week-time-slot { background-color: #fff6d1; }
-.cal-admin .week-day-column.festivo .week-time-slot.disabled { background-color: #fff6d1; opacity:.85; }
+.cal-admin .week-day-column.festivo { box-shadow: inset 3px 0 0 #0B4C62; }
+.cal-admin .week-day-column.festivo .week-time-slot { background-color: #F7FAFF; }
+.cal-admin .week-day-column.festivo .week-time-slot.disabled { background-color: #F7FAFF; opacity:.9; }
 .cal-admin .week-event, .cal-admin .day-event { position:absolute; left:6px; right:6px; }
+
+/* Hoy en encabezado de semana */
+.cal-admin .week-day-header.today { background: linear-gradient(135deg, rgba(53,169,0,.18), rgba(0,120,50,.18)); color: #ffffff; border: 2px solid rgba(16,128,96,.35); border-radius: 10px; }
+.cal-admin .week-day-column.today { background: #F3FFF8; box-shadow: inset 3px 0 0 rgba(16,128,96,.25); }
+.cal-admin .week-day-column.today .week-time-slot:not(.disabled):not(.lunch) { background: #F9FFFC; }
 
 /* Vista Día (estructura Admin) */
 .cal-admin #dayHeader { display:flex; align-items:center; gap:12px; background: var(--cal-blue); color: var(--cal-white); padding:12px 16px; border-radius:12px 12px 0 0; }
+.cal-admin #dayHeader { justify-content: center; }
+.cal-admin .day-header-card { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; }
+.cal-admin #dayHeader .dh-week { font-weight:800; letter-spacing:.12em; text-transform:uppercase; color: var(--cal-white); font-size:12px; }
+.cal-admin #dayHeader .dh-day { width:56px; height:56px; border-radius:999px; background: var(--cal-white); color: var(--cal-green); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:22px; box-shadow: 0 4px 10px rgba(0,0,0,.12); }
+.cal-admin #dayHeader .badge-festivo { margin-left:10px; background:#ffd166; color:#7c2d12; border-radius:8px; font-weight:800; font-size:11px; padding:4px 8px; align-self:center; }
 .cal-admin #dayGrid { display:grid; grid-template-columns: 90px 1fr; background: var(--cal-white); border:1px solid var(--cal-border); border-top:none; }
-.cal-admin .day-times .day-time-label { padding:12px; font-weight:600; color: var(--cal-muted); border-right:1px solid var(--cal-border); border-bottom:1px solid var(--cal-border); background:#FAFCFF; }
+.cal-admin .day-times { display:flex; flex-direction:column; }
+.cal-admin .day-times .day-time-label { position:relative; height:80px; display:flex; align-items:center; justify-content:flex-end; padding:12px; font-weight:600; color: var(--cal-muted); border-right:1px solid var(--cal-border); border-bottom:1px solid var(--cal-border); background:#FAFCFF; }
+.cal-admin .day-times .day-time-label::after { content:""; position:absolute; left:0; right:0; top:50%; border-top:1px dashed var(--cal-border); }
+.cal-admin .day-times.festivo .day-time-label { background:#F7FAFF; }
+.cal-admin .day-times.today .day-time-label { background:#F8FFFB; }
 .cal-admin .day-slots { position:relative; }
-.cal-admin .day-time-slot { height:80px; border-bottom:1px solid var(--cal-border); }
+.cal-admin .day-time-slot { position:relative; height:80px; border-bottom:1px solid var(--cal-border); }
+.cal-admin .day-time-slot::after { content:""; position:absolute; left:0; right:0; top:50%; border-top:1px dashed var(--cal-border); }
 .cal-admin .day-time-slot.disabled { background:#F2F5F7; opacity:.7; }
+.cal-admin .day-slots.festivo { box-shadow: inset 3px 0 0 #0B4C62; }
+.cal-admin .day-slots.festivo .day-time-slot { background:#F7FAFF; }
+.cal-admin .day-slots.festivo .day-time-slot.disabled { background:#F7FAFF; opacity:.9; }
+.cal-admin .day-slots.today { box-shadow: inset 3px 0 0 rgba(16,128,96,.25); }
+.cal-admin .day-slots.today .day-time-slot { background:#F9FFFC; }
+.cal-admin .day-time-slot.lunch { background:#F7FAFF; }
+.cal-admin .day-times .day-time-label.lunch { background:#F7FAFF; }
+
+/* Indicador de hora actual (vista Día) */
+.cal-admin .day-current-time { position:absolute; left:0; right:0; height:2px; background:#ef4444; z-index:2; }
 
 /* Drawer de Detalle (estilo similar a Líder Semillero) */
 .cal-admin .drawer-overlay { position: fixed; inset: 0; background: rgba(0,16,26,.45); backdrop-filter: blur(2px); display:none; z-index: 1050; }
@@ -198,3 +251,47 @@
 /* Lista de nombres de participantes en el detalle */
 .cal-admin .participants-names { list-style:none; padding-left:0; display:flex; flex-direction:column; gap:8px; }
 .cal-admin .participants-names li { border:1px solid var(--cal-border); background:#F9FCFE; border-radius:10px; padding:8px 10px; }
+
+.cal-admin{
+  position: relative;
+  min-height: clamp(720px, 86vh, 1200px);
+  padding-bottom: 56px;
+  z-index: 0;
+}
+
+.cal-admin::before{
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  margin-top: 80px;
+  background-image: url("/images/fondo_page.png");
+  background-repeat: no-repeat;
+  background-position: calc(50% + 140px) top;
+  background-size: clamp(980px, 60vw, 1400px) auto;
+  pointer-events: none;
+}
+
+@media (max-width: 991.98px){
+  .cal-admin::before{ background-position: center top; }
+}
+
+
+.cal-admin .days-grid,
+.cal-admin #weekGrid,
+.cal-admin #dayGrid{
+  background: rgba(255,255,255,.82);
+  backdrop-filter: blur(2px);
+}
+
+.cal-admin .days-grid > *{
+  background: transparent;
+}
+
+.adm-page:has(.cal-admin)::before{
+  background-image: none !important;
+}
+
+
+
+/* Se usa el fondo global del layout (.adm-page::before) para mantener tamaño estable */

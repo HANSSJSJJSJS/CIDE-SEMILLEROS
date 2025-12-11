@@ -22,7 +22,8 @@
 </script>
 
 {{-- MODAL DE SUBIR MULTIMEDIA --}}
-@include('admin.recursos._modal_multimedia', ['semilleros' => $semilleros])
+@include('admin.recursos.multimedia._modal_multimedia', ['semilleros' => $semilleros])
+
 
 <div class="container-fluid mt-4 px-4">
 

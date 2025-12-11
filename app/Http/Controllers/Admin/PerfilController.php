@@ -17,10 +17,9 @@ class PerfilController extends Controller
     {
         $user = $request->user();
         $request->validate([
-            'name'  => ['required','string','max:255'],
             'email' => ['required','email','max:255','unique:users,email,'.$user->id],
         ]);
-        $user->update($request->only('name','email'));
+        $user->update(['email' => $request->email]);
         return back()->with('status', 'Información actualizada correctamente.');
     }
 

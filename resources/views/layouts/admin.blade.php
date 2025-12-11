@@ -12,11 +12,15 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 
 
   {{-- Estilos del sistema (archivos en public/css/admin) --}}
   <link href="{{ asset('css/admin/admin-layout.css') }}?v={{ time() }}" rel="stylesheet">
   <link href="{{ asset('css/admin/admin-views.css') }}?v={{ time() }}" rel="stylesheet">
+
+  {{-- Loader CSS global --}}
+  <link href="{{ asset('css/common/loader.css') }}?v={{ time() }}" rel="stylesheet">
 
 
   @stack('styles')
@@ -24,6 +28,17 @@
 </head>
 
 <body class="adm-body">
+  {{-- Loader Overlay --}}
+  <div id="pageLoader" class="page-loader" aria-hidden="true" role="status">
+    <div class="loader">
+      <div class="orbe" style="--index:0"></div>
+      <div class="orbe" style="--index:1"></div>
+      <div class="orbe" style="--index:2"></div>
+      <div class="orbe" style="--index:3"></div>
+      <div class="orbe" style="--index:4"></div>
+    </div>
+    <div class="loader-text">Cargando...</div>
+  </div>
 @php
     $authUser = Auth::user();
 
@@ -44,7 +59,7 @@
 
     {{-- ========================= SIDEBAR ========================= --}}
     <aside id="admSidebar" class="adm-sidebar">
-      <div class="adm-brand brand-large">
+      <div class="adm-brand brand-large animate__animated animate__flipInX">
         <img src="{{ asset('images/logo-sena.png') }}" alt="Logo SENA" class="brand-logo-lg">
         <div class="brand-system-lg">Sistema de Gestión Semillero</div>
       </div>
@@ -204,6 +219,21 @@
   {{-- Inyección de scripts personalizados --}}
   @stack('scripts')
   @yield('scripts')
+
+  {{-- Loader JS: ocultar al terminar carga --}}
+  <script>
+    (function(){
+      const hide = () => {
+        const el = document.getElementById('pageLoader');
+        if (!el) return;
+        el.classList.add('hidden');
+        setTimeout(()=>{ try{ el.remove(); }catch(e){} }, 400);
+      };
+      // Si el documento ya está listo, oculta rápido
+      if (document.readyState === 'complete') hide();
+      window.addEventListener('load', hide);
+    })();
+  </script>
 
 
 @if(session('success'))

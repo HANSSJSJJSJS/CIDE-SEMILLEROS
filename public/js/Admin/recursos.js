@@ -222,11 +222,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const liderNombre = document.getElementById("lider_nombre");
     const liderId = document.getElementById("lider_id");
 
-    /* Abrir desde botón general */
     const btnCrear = document.getElementById("btnAbrirModalActividad");
     if (btnCrear) btnCrear.addEventListener("click", () => abrirModalUniversal(null));
 
-    /* Abrir desde tarjeta de semillero */
     document.querySelectorAll(".btn-crear-actividad-card").forEach(btn => {
         btn.addEventListener("click", () => abrirModalUniversal(btn.dataset.semilleroId));
     });
@@ -284,10 +282,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function cargarProyectos(id) {
+
         selProyecto.disabled = true;
         selProyecto.innerHTML = `<option>Cargando…</option>`;
 
-        fetch(`/admin/recursos/proyectos/${id}`)
+        const url = buildUrl(window.URL_PROYECTOS_SEMILLERO, id);
+
+        fetch(url)
         .then(r => r.json())
         .then(list => {
             selProyecto.innerHTML = `

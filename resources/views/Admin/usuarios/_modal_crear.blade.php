@@ -283,13 +283,12 @@
                   <div id="apr-sena">
                     <div class="row g-3">
                       <div class="col-md-4">
-                        <label class="form-label">Nivel académico</label>
+                        <label class="form-label">Nivel de Formación</label>
                         <select name="nivel_educativo" class="form-select">
                           <option value="">Seleccionar…</option>
                           <option value="ARTICULACION_MEDIA_10_11">
                             Articulación con la media – Décimo / Once
                           </option>
-                          <option value="TECNOACADEMIA_7_9">
                             Tecnoacademia – Séptimo / Octavo / Noveno
                           </option>
                           <option value="TECNICO">Técnico</option>

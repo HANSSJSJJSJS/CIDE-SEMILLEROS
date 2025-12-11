@@ -228,9 +228,11 @@ class ProyectoController extends Controller
             }
             $created = $d->fecha_subida ?? ($d->created_at ?? null);
             return (object) [
+                'id_documento' => $d->id_documento ?? null,
                 'nombre' => $d->documento ?? 'Evidencia',
                 'estado' => $estado,
                 'created_at' => $created ? (new \Carbon\Carbon($created)) : null,
+                'has_file' => isset($d->ruta_archivo) && trim((string)$d->ruta_archivo) !== '',
                 // El autor lo resolverá la vista con $ev->autor opcional, aquí lo dejamos nulo
                 'autor' => null,
             ];

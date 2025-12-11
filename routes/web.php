@@ -154,19 +154,18 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // ======================================================
-//          RUTAS ADMIN/ LIDER GENERAL / LÍDER INVESTIGACIÓN
+//     RUTAS ADMIN / LÍDER GENERAL / LÍDER INVESTIGACIÓN
 // ======================================================
 Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
 
-        Route::get('/rutas-prueba', function () {
-            return "Grupo admin cargado OK";
-        });
-        Route::get('/test-multimedia', function () {
-    return route('admin.recursos.multimedia.store');
-});
+        // ==========================
+        //         TEST
+        // ==========================
+        Route::get('/rutas-prueba', fn() => "Grupo admin cargado OK");
+        Route::get('/test-multimedia', fn() => route('admin.recursos.multimedia.store'));
 
         // ==========================
         //         DASHBOARD
@@ -175,30 +174,24 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
         Route::get('/dashboard/stats',  [DashboardController::class, 'stats'])->name('dashboard.stats');
         Route::get('/dashboard/charts', [DashboardController::class, 'charts'])->name('dashboard.charts');
 
-       // ==========================
+        // ==========================
         //         USUARIOS
         // ==========================
         Route::resource('usuarios', AdminUsuarioController::class);
 
-        // Editar por AJAX
         Route::get('usuarios/{id}/edit-ajax', [AdminUsuarioController::class, 'editAjax'])
-            ->whereNumber('id')
-            ->name('usuarios.edit.ajax');
+            ->whereNumber('id')->name('usuarios.edit.ajax');
 
-        // Crear por AJAX
         Route::post('usuarios/ajax/store', [AdminUsuarioController::class, 'storeAjax'])
             ->name('usuarios.store.ajax');
 
-        // Toggle permisos líder investigación
         Route::post('usuarios/{usuario}/toggle-permisos-investigacion',
             [AdminUsuarioController::class, 'togglePermisosInvestigacion']
         )->name('usuarios.togglePermisosInvestigacion');
 
-        // Detalle por AJAX
         Route::get('usuarios/{usuario}/detalle-ajax',
             [AdminUsuarioController::class, 'showAjax']
         )->name('usuarios.detalle.ajax');
-
 
         // ==========================
         //         FUNCIONES ADMIN
@@ -206,38 +199,30 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
         Route::get('/funciones', [AdminController::class, 'index'])->name('functions');
         Route::get('/crear', fn () => view('admin.crear'))->name('crear');
 
+        // ======================================================
+        //                    SEMILLEROS
+        // ======================================================
+        Route::get('semilleros/lideres-disponibles', [SemilleroController::class, 'lideresDisponibles'])
+            ->name('semilleros.lideresDisponibles');
 
-            // ==========================
-            //         SEMILLEROS
-            // ==========================
-            // 🔹 Ruta AJAX para líderes disponibles
-            Route::get('semilleros/lideres-disponibles', [SemilleroController::class, 'lideresDisponibles'])
-                ->name('semilleros.lideresDisponibles');
+        Route::resource('semilleros', SemilleroController::class)->except(['show']);
 
-            // 🔹 Resource semilleros (sin show)
-            Route::resource('semilleros', SemilleroController::class)->except(['show']);
+        Route::get('semilleros/{id}/edit-ajax', [SemilleroController::class, 'editAjax'])
+            ->whereNumber('id')->name('semilleros.edit.ajax');
 
-            // 🔹 Editar vía AJAX
-            Route::get('semilleros/{id}/edit-ajax', [SemilleroController::class, 'editAjax'])
-                ->whereNumber('id')
-                ->name('semilleros.edit.ajax');
-            
-            // 🔹 NUEVA: obtener líder de un semillero en JSON
-            Route::get('semilleros/{semillero}/lider', [SemilleroController::class, 'liderJson'])
-                ->name('semilleros.liderJson');
-            
-             Route::get('semilleros/{semillero}/recursos', [RecursoController::class, 'porSemillero'])
-            ->whereNumber('semillero')
-            ->name('semilleros.recursos');
+        Route::get('semilleros/{semillero}/lider', [SemilleroController::class, 'liderJson'])
+            ->name('semilleros.liderJson');
 
+        Route::get('semilleros/{semillero}/recursos',
+            [RecursoController::class, 'porSemillero']
+        )->whereNumber('semillero')->name('semilleros.recursos');
 
-        // ==========================
-        //   PROYECTOS POR SEMILLERO
-        // ==========================
+        // ======================================================
+        //             PROYECTOS POR SEMILLERO
+        // ======================================================
         Route::prefix('semilleros')->name('semilleros.')->group(function () {
 
-            // Listar + crear
-            Route::get('{semillero}/proyectos',  [ProyectoSemilleroController::class, 'index'])
+            Route::get('{semillero}/proyectos', [ProyectoSemilleroController::class, 'index'])
                 ->name('proyectos.index');
 
             Route::post('{semillero}/proyectos', [ProyectoSemilleroController::class, 'store'])
@@ -261,93 +246,84 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
                     [ProyectoSemilleroController::class, 'destroy']
                 )->name('proyectos.destroy');
 
-                // Descargar documento
                 Route::get('{semillero}/proyectos/{proyecto}/docs/{doc}',
                     [ProyectoSemilleroController::class, 'download']
                 )->name('proyectos.docs.download');
             });
+
+            Route::post('{semillero}/proyectos/{proyecto}/observaciones',
+                [ProyectoSemilleroController::class, 'guardarObservaciones']
+            )->name('proyectos.observaciones');
         });
-        // cometnarios de los proyectos
-                Route::post(
-            'semilleros/{semillero}/proyectos/{proyecto}/observaciones',
-            [ProyectoSemilleroController::class, 'guardarObservaciones']
-        )->name('semilleros.proyectos.observaciones');
 
-
-        // ==========================
-        //        REUNIONES LÍDERES
-        // ==========================
+        // ======================================================
+        //                 REUNIONES LÍDERES
+        // ======================================================
         Route::get('/reuniones-lideres', [ReunionesLideresController::class, 'index'])
             ->name('reuniones-lideres.index');
 
         Route::prefix('reuniones-lideres')->as('reuniones-lideres.')->group(function () {
-            Route::get('obtener',    [ReunionesLideresController::class, 'obtener'])->name('obtener');
+            Route::get('obtener', [ReunionesLideresController::class, 'obtener'])->name('obtener');
             Route::get('semilleros', [ReunionesLideresController::class, 'semilleros'])->name('semilleros');
-            Route::get('lideres',    [ReunionesLideresController::class, 'lideres'])->name('lideres');
-            Route::post('',          [ReunionesLideresController::class, 'store'])->name('store');
-            Route::put('{id}',       [ReunionesLideresController::class, 'update'])->whereNumber('id')->name('update');
-            Route::delete('{id}',    [ReunionesLideresController::class, 'destroy'])->whereNumber('id')->name('destroy');
-            Route::post('{id}/generar-enlace', [ReunionesLideresController::class, 'generarEnlace'])
-                ->whereNumber('id')->name('generar-enlace');
+            Route::get('lideres', [ReunionesLideresController::class, 'lideres'])->name('lideres');
+            Route::post('', [ReunionesLideresController::class, 'store'])->name('store');
+            Route::put('{id}', [ReunionesLideresController::class, 'update'])->name('update');
+            Route::delete('{id}', [ReunionesLideresController::class, 'destroy'])->name('destroy');
+            Route::post('{id}/generar-enlace', [ReunionesLideresController::class, 'generarEnlace'])->name('generar-enlace');
         });
 
-               // ==========================
-            //       RECURSOS
-            // ==========================
-            Route::prefix('recursos')->as('recursos.')->group(function () {
+        // ======================================================
+        //                        RECURSOS
+        // ======================================================
+        Route::prefix('recursos')->as('recursos.')->group(function () {
 
-                // Recursos normales
-                Route::get('/', [RecursoController::class, 'index'])->name('index');
-                Route::get('/listar', [RecursoController::class, 'listar'])->name('listar');
-                Route::post('/', [RecursoController::class, 'store'])->name('store');
-                Route::get('/{recurso}/dl', [RecursoController::class, 'download'])->name('download');
-                Route::delete('/{recurso}', [RecursoController::class, 'destroy'])->name('destroy');
+            // CRUD básico
+            Route::get('/', [RecursoController::class, 'index'])->name('index');
+            Route::get('/listar', [RecursoController::class, 'listar'])->name('listar');
+            Route::post('/', [RecursoController::class, 'store'])->name('store');
+            Route::get('/{recurso}/dl', [RecursoController::class, 'download'])->name('download');
+            Route::delete('/{recurso}', [RecursoController::class, 'destroy'])->name('destroy');
 
-                // Semilleros
-                Route::get('/semillero/{semillero}', [RecursoController::class, 'porSemillero'])->name('porSemillero');
-                Route::post('/semillero', [RecursoController::class, 'storeActividad'])->name('semillero.store');
-                Route::put('/semillero/{recurso}/estado', [RecursoController::class, 'actualizarEstadoActividad'])->name('semillero.estado');
-                Route::get('/semillero/{id}/lider', [RecursoController::class, 'liderDeSemillero'])->name('semillero.lider');
+            // Recursos asignados
+            Route::get('/semillero/{semillero}', [RecursoController::class, 'porSemillero'])
+                ->whereNumber('semillero')->name('porSemillero');
 
-                // Proyectos
-                Route::get('/proyectos/{id}', [RecursoController::class, 'getProyectos'])->name('proyectos');
+            Route::post('/semillero', [RecursoController::class, 'storeActividad'])
+                ->name('semillero.store');
 
-                // MULTIMEDIA
-                Route::get('/multimedia', [RecursoController::class, 'multimedia'])
-                    ->name('multimedia');
+            Route::put('/semillero/{recurso}/estado', [RecursoController::class, 'actualizarEstadoActividad'])
+                ->name('semillero.estado');
 
-                Route::post('/multimedia/store', [RecursoController::class, 'storeMultimedia'])
-                    ->name('multimedia.store');
+            Route::get('/semillero/{id}/lider', [RecursoController::class, 'liderDeSemillero'])
+                ->name('semillero.lider');
 
-                // ✔ ESTA ES LA CORRECTA
-                Route::get('/multimedia/list', [RecursoController::class, 'obtenerMultimedia'])
-                    ->name('multimedia.list');
-                    Route::delete('/multimedia/{id}', [RecursoController::class, 'deleteMultimedia'])
-                    ->name('multimedia.delete');
+            // Proyectos vinculados
+            Route::get('/proyectos/{id}', [RecursoController::class, 'getProyectos'])
+                ->name('proyectos');
 
-});
+            // Multimedia
+            Route::get('/multimedia', [RecursoController::class, 'multimedia'])->name('multimedia');
+            Route::post('/multimedia/store', [RecursoController::class, 'storeMultimedia'])->name('multimedia.store');
+            Route::get('/multimedia/list', [RecursoController::class, 'obtenerMultimedia'])->name('multimedia.list');
+            Route::delete('/multimedia/{id}', [RecursoController::class, 'deleteMultimedia'])->name('multimedia.delete');
+        });
 
-
-
-
-
-        // ==========================
-        //            PERFIL ADMIN
-        // ==========================
+        // ======================================================
+        //                      PERFIL ADMIN
+        // ======================================================
         Route::prefix('perfil')->as('perfil.')->group(function () {
-            Route::get('/',         [AdminPerfilController::class, 'edit'])->name('edit');
-            Route::put('/',         [AdminPerfilController::class, 'update'])->name('update');
+            Route::get('/', [AdminPerfilController::class, 'edit'])->name('edit');
+            Route::put('/', [AdminPerfilController::class, 'update'])->name('update');
             Route::put('/password', [AdminPerfilController::class, 'updatePassword'])->name('password.update');
         });
 
-
-        // ==========================
-        //          NOTIFICACIONES
-        // ==========================
+        // ======================================================
+        //                    NOTIFICACIONES
+        // ======================================================
         Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');
         Route::post('/notifications/read-all', [AdminNotificationController::class, 'readAll'])->name('notifications.read_all');
-
     });
+
 
 /*
 |--------------------------------------------------------------------------
@@ -468,7 +444,6 @@ Route::middleware(['auth', 'role:LIDER_SEMILLERO'])
                 ->whereNumber('id')
                 ->name('destroy');
         });
-
 
 
         
@@ -602,22 +577,54 @@ Route::middleware(['auth', 'role:APRENDIZ'])
                 }
             } catch (\Throwable $e) { $evidencias = 0; }
 
-            // Reuniones próximas (dependiente del esquema)
+            // Reuniones próximas (usar fecha_hora y pivote evento_participantes)
             try {
                 if (\Illuminate\Support\Facades\Schema::hasTable('eventos')) {
-                    $hoy = now()->startOfDay()->toDateString();
-                    $colFecha = \Illuminate\Support\Facades\Schema::hasColumn('eventos','fecha') ? 'fecha'
-                              : (\Illuminate\Support\Facades\Schema::hasColumn('eventos','fecha_inicio') ? 'fecha_inicio' : null);
-                    if ($colFecha) {
-                        $rq = \Illuminate\Support\Facades\DB::table('eventos')
-                            ->whereDate($colFecha, '>=', $hoy);
-                        if (\Illuminate\Support\Facades\Schema::hasColumn('eventos','id_aprendiz')) {
-                            $rq->where('id_aprendiz', $aprId ?? -1);
-                        } elseif (\Illuminate\Support\Facades\Schema::hasColumn('eventos','id_usuario')) {
-                            $rq->where('id_usuario', (int)$user->id);
-                        }
-                        $reuniones = (int) $rq->count();
+                    $hoy = now()->startOfDay();
+                    $rq = \Illuminate\Support\Facades\DB::table('eventos');
+                    // Fecha columna principal
+                    if (\Illuminate\Support\Facades\Schema::hasColumn('eventos','fecha_hora')) {
+                        $rq->where('fecha_hora', '>=', $hoy);
+                    } elseif (\Illuminate\Support\Facades\Schema::hasColumn('eventos','fecha')) {
+                        $rq->whereDate('fecha', '>=', $hoy->toDateString());
+                    } elseif (\Illuminate\Support\Facades\Schema::hasColumn('eventos','fecha_inicio')) {
+                        $rq->whereDate('fecha_inicio', '>=', $hoy->toDateString());
+                    } else {
+                        throw new \Exception('Sin columna de fecha en eventos');
                     }
+
+                    // Excluir canceladas si existe estado
+                    if (\Illuminate\Support\Facades\Schema::hasColumn('eventos','estado')) {
+                        $rq->where(function($q){ $q->whereNull('estado')->orWhere('estado','<>','cancelado'); });
+                    }
+
+                    // Resolver id_aprendiz real para pivote
+                    $aprIdCount = null;
+                    if (\Illuminate\Support\Facades\Schema::hasTable('aprendices')) {
+                        $aprPk = \Illuminate\Support\Facades\Schema::hasColumn('aprendices','id_aprendiz') ? 'id_aprendiz' : (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','id') ? 'id' : null);
+                        $aprUserCol = \Illuminate\Support\Facades\Schema::hasColumn('aprendices','id_usuario') ? 'id_usuario' : (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','user_id') ? 'user_id' : null);
+                        if ($aprPk && $aprUserCol) {
+                            $aprIdCount = \Illuminate\Support\Facades\DB::table('aprendices')->where($aprUserCol, $user->id)->value($aprPk);
+                        } elseif (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','email')) {
+                            $email = (string)($user->email ?? '');
+                            if ($email !== '') {
+                                $aprPk = $aprPk ?: (\Illuminate\Support\Facades\Schema::hasColumn('aprendices','id_aprendiz') ? 'id_aprendiz' : 'id');
+                                $aprIdCount = \Illuminate\Support\Facades\DB::table('aprendices')->where('email', $email)->value($aprPk);
+                            }
+                        }
+                    }
+
+                    if (\Illuminate\Support\Facades\Schema::hasTable('evento_participantes') && !is_null($aprIdCount)) {
+                        $rq->join('evento_participantes as ep','ep.id_evento','=','eventos.id_evento')
+                           ->where('ep.id_aprendiz', (int)$aprIdCount);
+                    } elseif (\Illuminate\Support\Facades\Schema::hasColumn('eventos','id_usuario')) {
+                        $rq->where('id_usuario', (int)$user->id);
+                    } else {
+                        // Sin forma de relacionar: no contar
+                        $rq->whereRaw('1=0');
+                    }
+
+                    $reuniones = (int) $rq->count();
                 }
             } catch (\Throwable $e) { $reuniones = 0; }
 

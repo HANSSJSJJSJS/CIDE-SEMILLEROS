@@ -2,14 +2,10 @@
    GESTIÓN DE SEMILLEROS – Look & feel
    ========================================================== */
 
-/* Fondo general (mismo logo que antes) */
+/* Fondo general */
 .semilleros-wrapper {
     position: relative;
     padding-bottom: 2rem;
-    background-position: center center;
-    background-repeat: no-repeat;
-    background-size: 550px auto;
-    background-image: url("../../images/logo_semillero.png");
 }
 
 /* ================================

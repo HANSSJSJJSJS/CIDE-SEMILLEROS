@@ -16,30 +16,24 @@
     $canCreate = $user->canManageModule('recursos','create');
 @endphp
 
-{{-- ========================== --}}
-{{-- VARIABLES JS GLOBALES --}}
-{{-- ========================== --}}
 <script>
     window.ACT_CAN_CREATE = {{ $canCreate ? 'true' : 'false' }};
 
-    // URLs dinámicas correctas (se usan con buildUrl() en JS)
-    window.ACT_ACTIVIDADES_POR_SEMILLERO_URL = "/admin/recursos/semillero/:id";
-    window.ACT_SEMILLERO_LIDER_URL = "/admin/recursos/semillero/:id/lider";
+    // RUTAS CORRECTAS
+    window.ACT_ACTIVIDADES_POR_SEMILLERO_URL = "{{ route('admin.recursos.porSemillero', ':id') }}";
+    window.ACT_STORE_URL = "{{ route('admin.recursos.semillero.store') }}";
+    window.ACT_SEMILLERO_LIDER_URL = "{{ route('admin.recursos.semillero.lider', ':id') }}";
+    window.URL_PROYECTOS_SEMILLERO = "{{ route('admin.recursos.proyectos', ':id') }}";
 
-    // URLs base (para concatenar manualmente)
-   window.ACT_STORE_URL = "{{ route('admin.recursos.semillero.store') }}";
-    window.URL_PROYECTOS_SEMILLERO = "/admin/recursos/proyectos"; 
     window.URL_MULTIMEDIA = "{{ route('admin.recursos.multimedia') }}";
 </script>
 
-{{-- Contenedor de Notificaciones --}}
 <div class="notification-container" id="notificationContainer"></div>
 
 <div class="container-fluid mt-4 px-4">
 
     {{-- HEADER --}}
     <div class="d-flex justify-content-between align-items-center mb-4 documentos-header">
-
         <div>
             <h2>Gestión de Recursos para Líderes</h2>
             <p>Asigna y revisa recursos destinados a los líderes de cada semillero</p>
@@ -53,14 +47,16 @@
             </button>
             @endif
 
-            <a href="{{ route('admin.recursos.multimedia') }}" class="btn-multimedia">
+            {{-- BOTÓN MULTIMEDIA --}}
+          <a href="{{ route('admin.recursos.multimedia') }}" class="btn-multimedia">
+
                 <i class="bi bi-collection-play"></i> Multimedia
             </a>
 
         </div>
     </div>
 
-    {{-- ALERTA PENDIENTES --}}
+    {{-- ALERTA DE PENDIENTES --}}
     @php
         $totalPendientes = $semilleros->sum('actividades_pendientes');
     @endphp
@@ -68,26 +64,22 @@
     @if($totalPendientes > 0)
     <div class="alert alerta-pendientes">
         <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
-        <strong>Tienes {{ $totalPendientes }} recurso(s) pendiente(s) de seguimiento</strong>
+        <strong>Tienes {{ $totalPendientes }} recurso(s) pendiente(s)</strong>
     </div>
     @endif
 
-    {{-- LISTADO DE SEMILLEROS --}}
+    {{-- LISTA DE SEMILLEROS --}}
     <div class="mb-5">
         <h4 class="seccion-titulo">Semilleros</h4>
 
         <div class="row g-4" id="semillerosContainer">
-            @forelse($semilleros as $semillero)
+
+            @foreach($semilleros as $semillero)
                 @include('admin.recursos._card_semillero')
-            @empty
-                <div class="col-12 text-center estado-vacio">
-                    <i class="bi bi-folder-x"></i>
-                    <p>No hay semilleros registrados</p>
-                </div>
-            @endforelse
+            @endforeach
+
         </div>
     </div>
-
 </div>
 
 {{-- MODALES --}}
