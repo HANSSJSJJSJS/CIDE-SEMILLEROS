@@ -7,101 +7,60 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Schema;
 
 class RecursosController extends Controller
 {
+    /**
+     * Mostrar recursos del líder + info del semillero.
+     */
     public function index(Request $request)
     {
         $userId = Auth::id();
-        // Construir query de proyectos de forma compatible con distintos esquemas
-        $qb = DB::table('proyectos as p');
-        $joinedSemilleros = false;
-        if (Schema::hasTable('semilleros') && Schema::hasColumn('proyectos','id_semillero')) {
-            $qb->join('semilleros as s', 's.id_semillero', '=', 'p.id_semillero');
-            $joinedSemilleros = true;
-            if (Schema::hasColumn('semilleros','id_lider_usuario')) {
-                $qb->where('s.id_lider_usuario', $userId);
-            } elseif (Schema::hasColumn('semilleros','id_lider_semi')) {
-                $qb->where('s.id_lider_semi', $userId);
-            }
-        }
-        // Si no se pudo filtrar por semilleros, intentar en proyectos directamente
-        if (!$joinedSemilleros) {
-            if (Schema::hasColumn('proyectos','id_lider_usuario')) {
-                $qb->where('p.id_lider_usuario', $userId);
-            } elseif (Schema::hasColumn('proyectos','id_lider_semi')) {
-                $qb->where('p.id_lider_semi', $userId);
-            }
-        }
 
-        $proyectos = $qb
-            ->select('p.id_proyecto','p.nombre_proyecto','p.estado','p.descripcion')
-            ->when(true, function($q){
-                // Determinar columna de ordenamiento disponible
-                if (Schema::hasColumn('proyectos','creado_en')) {
-                    return $q->orderByDesc('p.creado_en');
-                }
-                if (Schema::hasColumn('proyectos','created_at')) {
-                    return $q->orderByDesc('p.created_at');
-                }
-                if (Schema::hasColumn('proyectos','id_proyecto')) {
-                    return $q->orderByDesc('p.id_proyecto');
-                }
-                return $q; // sin orden
-            })
+        // ================================
+        // OBTENER SEMILLERO ASIGNADO
+        // ================================
+        $semillero = DB::table('semilleros')
+            ->where('id_lider_semi', $userId)
+            ->first();
+
+        // ================================
+        // OBTENER RECURSOS SUBIDOS POR EL LÍDER
+        // ================================
+        $recursos = DB::table('recursos')
+            ->where('user_id', $userId)
+            ->orderBy('created_at', 'DESC')
             ->get();
 
-        $ids = $proyectos->pluck('id_proyecto');
-        $total = collect();
-        $pend  = collect();
-        $aprob = collect();
-        if ($ids->isNotEmpty() && Schema::hasTable('archivos')) {
-            $total = DB::table('archivos')
-                ->select('proyecto_id', DB::raw('COUNT(*) as c'))
-                ->whereIn('proyecto_id', $ids)
-                ->groupBy('proyecto_id')
-                ->pluck('c','proyecto_id');
-            $pend = DB::table('archivos')
-                ->select('proyecto_id', DB::raw("SUM(CASE WHEN estado='pendiente' THEN 1 ELSE 0 END) as c"))
-                ->whereIn('proyecto_id', $ids)
-                ->groupBy('proyecto_id')
-                ->pluck('c','proyecto_id');
-            $aprob = DB::table('archivos')
-                ->select('proyecto_id', DB::raw("SUM(CASE WHEN estado='aprobado' THEN 1 ELSE 0 END) as c"))
-                ->whereIn('proyecto_id', $ids)
-                ->groupBy('proyecto_id')
-                ->pluck('c','proyecto_id');
-        }
-
-        $rows = $proyectos->map(function($p) use ($total,$pend,$aprob){
-            $pid = $p->id_proyecto;
-            return [
-                'id' => $pid,
-                'nombre' => $p->nombre_proyecto,
-                'estado' => strtoupper((string)$p->estado),
-                'descripcion' => $p->descripcion,
-                'entregas' => (int)($total[$pid] ?? 0),
-                'pendientes' => (int)($pend[$pid] ?? 0),
-                'aprobadas' => (int)($aprob[$pid] ?? 0),
-            ];
-        });
-
-        $activos = $rows->filter(fn($r)=> $r['estado'] === 'ACTIVO');
-        $completados = $rows->filter(fn($r)=> in_array($r['estado'], ['COMPLETADO','COMPLETADA','FINALIZADO','FINALIZADA']));
-
-        return view('lider_semi.recursos', compact('activos','completados'));
+        // Mostrar vista correcta
+        return view('lider_semi.recursos.index', [
+            'semillero' => $semillero,
+            'recursos'  => $recursos,
+        ]);
     }
 
+    /**
+     * Vista para subir un recurso.
+     */
     public function create()
     {
-        // Usamos una sola vista combinada
-        return redirect()->route('lider_semi.recursos.index');
+        $userId = Auth::id();
+
+        // Obtener el semillero
+        $semillero = DB::table('semilleros')
+            ->where('id_lider_semi', $userId)
+            ->first();
+
+        return view('lider_semi.recursos.create', compact('semillero'));
     }
 
+    /**
+     * Guardar un recurso en la base de datos.
+     */
     public function store(Request $request)
     {
         $userId = Auth::id();
+
         $request->validate([
             'nombre_archivo' => 'nullable|string|max:255',
             'archivo'        => 'required|file|max:20480|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,png,jpg,jpeg',
@@ -109,49 +68,75 @@ class RecursosController extends Controller
             'descripcion'    => 'nullable|string',
         ]);
 
+        // Subida y renombre del archivo
         $file     = $request->file('archivo');
         $original = $file->getClientOriginalName();
-        $putName  = time().'_'.$userId.'_'.$original;
-        $path     = $file->storeAs('recursos', $putName, 'public');
+        $filename = time() . '_' . $userId . '_' . $original;
+
+        $path = $file->storeAs('recursos', $filename, 'public');
 
         DB::table('recursos')->insert([
-            'nombre_archivo' => $request->input('nombre_archivo') ?: $original,
+            'nombre_archivo' => $request->nombre_archivo ?: $original,
             'archivo'        => $path,
-            'categoria'      => $request->input('categoria'),
-            'descripcion'    => $request->input('descripcion'),
+            'categoria'      => $request->categoria,
+            'descripcion'    => $request->descripcion,
             'user_id'        => $userId,
+            'estado'         => 'pendiente',
             'created_at'     => now(),
             'updated_at'     => now(),
         ]);
 
-        return redirect()->route('lider_semi.recursos.index')->with('success', 'Recurso subido correctamente');
+        return redirect()
+            ->route('lider_semi.recursos.index')
+            ->with('success', 'Recurso subido correctamente.');
     }
 
+    /**
+     * Descargar un recurso si pertenece al líder.
+     */
     public function download($id)
     {
         $userId = Auth::id();
-        $rec = DB::table('recursos')->where('id', $id)->where('user_id', $userId)->first();
-        if (!$rec) return back()->with('error', 'Recurso no encontrado');
 
-        if (!Storage::disk('public')->exists($rec->archivo)) {
-            return back()->with('error', 'Archivo no existe');
-        }
+        $rec = DB::table('recursos')
+            ->where('id', $id)
+            ->where('user_id', $userId)
+            ->first();
 
-        $abs = storage_path('app/public/'.$rec->archivo);
-        return response()->download($abs, basename($rec->archivo));
+        if (!$rec)
+            return back()->with('error', 'Recurso no encontrado.');
+
+        if (!Storage::disk('public')->exists($rec->archivo))
+            return back()->with('error', 'Archivo no disponible.');
+
+        return response()->download(storage_path('app/public/' . $rec->archivo));
     }
 
+    /**
+     * Eliminar un recurso solo si está pendiente.
+     */
     public function destroy($id)
     {
         $userId = Auth::id();
-        $rec = DB::table('recursos')->where('id', $id)->where('user_id', $userId)->first();
-        if (!$rec) return back()->with('error', 'Recurso no encontrado');
 
-        if ($rec->archivo && Storage::disk('public')->exists($rec->archivo)) {
+        $rec = DB::table('recursos')
+            ->where('id', $id)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$rec)
+            return back()->with('error', 'Recurso no encontrado.');
+
+        if ($rec->estado !== 'pendiente')
+            return back()->with('error', 'Solo se pueden eliminar recursos pendientes.');
+
+        if (Storage::disk('public')->exists($rec->archivo)) {
             Storage::disk('public')->delete($rec->archivo);
         }
+
         DB::table('recursos')->where('id', $id)->delete();
 
-        return back()->with('success', 'Recurso eliminado');
+        return back()->with('success', 'Recurso eliminado correctamente.');
     }
+
 }
