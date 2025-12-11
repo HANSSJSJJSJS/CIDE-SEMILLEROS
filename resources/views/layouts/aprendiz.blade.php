@@ -82,7 +82,7 @@
 
     <div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
 
-    <div class="adm-content">
+    <div class="adm-content dash-admin">
       <header class="adm-topbar">
         <div class="d-flex align-items-center gap-2">
           <button id="sidebarToggle" class="btn btn-outline-light d-lg-none">
@@ -97,20 +97,29 @@
               <i class="bi bi-bell fs-5"></i>
               <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display:none;">0</span>
             </button>
-            <div id="notifDropdown" class="card shadow" style="position:absolute; right:0; top:110%; min-width: 260px; display:none; z-index: 1100;">
-              <div class="card-header py-2 px-3">Notificaciones</div>
+            <div id="notifDropdown" class="card notif-card shadow" style="position:absolute; right:0; top:110%; min-width: 280px; display:none; z-index: 1100;">
+              <div class="notif-header py-2 px-3">Notificaciones</div>
               <div class="list-group list-group-flush">
-                <a href="{{ route('aprendiz.documentos.index') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" id="notifItemEvidencias">
-                  <span>Evidencias nuevas</span>
-                  <span id="notifEvidencias" class="badge bg-success">0</span>
+                <a href="{{ route('aprendiz.documentos.index') }}" class="list-group-item notif-item list-group-item-action d-flex justify-content-between align-items-center" id="notifItemEvidencias">
+                  <span class="ni-left d-flex align-items-center gap-2">
+                    <span class="ni-icon bg-green"><i class="bi bi-cloud-arrow-up"></i></span>
+                    <span>Evidencias nuevas</span>
+                  </span>
+                  <span id="notifEvidencias" class="badge notif-badge bg-success">0</span>
                 </a>
-                <a href="{{ route('aprendiz.calendario.index') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" id="notifItemReuniones">
-                  <span>Reuniones próximas</span>
-                  <span id="notifReuniones" class="badge bg-primary">0</span>
+                <a href="{{ route('aprendiz.calendario.index') }}" class="list-group-item notif-item list-group-item-action d-flex justify-content-between align-items-center" id="notifItemReuniones">
+                  <span class="ni-left d-flex align-items-center gap-2">
+                    <span class="ni-icon bg-blue"><i class="bi bi-calendar-event"></i></span>
+                    <span>Reuniones próximas</span>
+                  </span>
+                  <span id="notifReuniones" class="badge notif-badge bg-primary">0</span>
                 </a>
-                <a href="{{ route('aprendiz.documentos.index') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" id="notifItemRespuestas">
-                  <span>Respuestas del líder</span>
-                  <span id="notifRespuestas" class="badge bg-info text-dark">0</span>
+                <a href="{{ route('aprendiz.documentos.index') }}" class="list-group-item notif-item list-group-item-action d-flex justify-content-between align-items-center" id="notifItemRespuestas">
+                  <span class="ni-left d-flex align-items-center gap-2">
+                    <span class="ni-icon bg-cyan"><i class="bi bi-chat-dots"></i></span>
+                    <span>Respuestas del líder</span>
+                  </span>
+                  <span id="notifRespuestas" class="badge notif-badge bg-info text-dark">0</span>
                 </a>
               </div>
             </div>

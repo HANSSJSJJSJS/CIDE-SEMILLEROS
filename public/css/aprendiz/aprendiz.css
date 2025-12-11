@@ -2,6 +2,46 @@
 .main-bg {
     background-image: none;
 }
+.evidencias-box{
+  background: rgba(255,255,255,0.65) !important;
+  border-radius:20px !important;
+  border:1px solid rgba(0,0,0,0.10) !important;
+  -webkit-backdrop-filter: blur(3px) !important;
+  backdrop-filter: blur(3px) !important;
+  box-shadow:0 8px 24px rgba(16,24,40,.08) !important;
+}
+.evidencias-head{
+  padding: .75rem 1rem;
+  background: rgba(0,48,77,0.92);
+  color:#fff;
+  border-top-left-radius:20px;
+  border-top-right-radius:20px;
+  border-bottom: 1px solid rgba(255,255,255,.12);
+}
+.evidencias-head i{ font-size:1.1rem; }
+.evidencias-head h5{ color:#fff; font-weight:800; }
+.count-badge{ background:#e9f7ec; color:#1a7f37; font-weight:800; border-radius:999px; }
+
+.filter-controls .form-label{ font-weight:700; color:#0f172a; }
+.filter-controls .form-control.pill{ border:2px solid #e5e7eb; border-radius:999px; padding:.55rem .85rem; }
+.filter-controls .form-control.pill:focus{ border-color:#374151; box-shadow:0 0 0 0.12rem rgba(55,65,81,.12); }
+.filter-controls .btn.btn-success.btn-pill{ background:#2BB673; border:0; box-shadow:0 4px 12px rgba(0,0,0,.12) }
+.filter-controls .btn.btn-outline-secondary.btn-pill{ border:2px solid #6b7280; color:#374151; }
+
+.evid-table thead th{ font-size:.9rem; text-transform:uppercase; letter-spacing:.3px; color:#6b7280; border-bottom:1px solid #e5e7eb; }
+.evid-table tbody td{ vertical-align: middle; }
+.evid-table tbody tr:hover{ background: rgba(67,160,71,0.04); }
+
+/* Section headers inside glass cards (e.g., Compañeros asignados) */
+.section-head{
+  padding: .80rem 1rem; /* aire interno */
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  border-bottom: 1px solid rgba(0,0,0,.06);
+}
+.section-head h5{ margin: 0; font-weight: 800; color:#0f172a; }
+.section-head-green{ background: rgba(67,160,71,0.10); }
+
 
 /* Header */
 .header-bar {
@@ -51,6 +91,40 @@
 .side-link:hover{box-shadow:0 4px 12px rgba(0,0,0,.06);color:var(--sena-green-dark);background:#e9f7ec}
 .side-link.active{background:var(--sena-green);color:#fff;border-color:var(--sena-green)}
 .side-link.active i{color:#fff}
+
+/* ====== Notificaciones (campana) ====== */
+.notif-card{
+  border: 1px solid rgba(0,0,0,.08) !important;
+  border-radius: 14px !important;
+  background: rgba(255,255,255,0.75) !important;
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
+  overflow: hidden;
+}
+.notif-card .notif-header{
+  font-weight: 800;
+  background: rgba(0,48,77,0.82) !important;
+  color: #fff;
+}
+.notif-item{
+  background: transparent !important;
+  border: 0 !important;
+  padding: .6rem .75rem !important;
+}
+.notif-item + .notif-item{ border-top: 1px solid rgba(0,0,0,.06) !important; }
+.notif-item:hover{
+  background: rgba(67,160,71,0.10) !important;
+}
+.ni-icon{
+  width: 28px; height: 28px; border-radius: 10px; display:grid; place-items:center;
+  color:#fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,.12);
+}
+.ni-icon i{ font-size: 1rem; line-height: 1; }
+.ni-icon.bg-green{ background:#2BB673; }
+.ni-icon.bg-blue{ background:#1a73e8; }
+.ni-icon.bg-cyan{ background:#16b5c7; color:#083344; }
+.notif-badge{ font-weight:800; border-radius: 999px; min-width: 28px; }
 
 /* Contenido principal */
 .content-wrapper{
@@ -294,6 +368,26 @@ main {
 .admin-modal .modal-footer .btn-outline-secondary{border-color:var(--sena-navy);color:var(--sena-navy)}
 .admin-modal .modal-footer .btn-outline-secondary:hover{background:#eef4f8}
 
+/* Transparencia sutil (glass) para el modal de "Preguntar al líder" */
+.admin-modal .modal-content{
+  background: rgba(255,255,255,0.88) !important;
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(0,0,0,0.08);
+}
+.admin-modal .modal-header{
+  background: rgba(0,48,77,0.92) !important; /* var(--sena-navy) con transparencia */
+}
+.admin-modal .modal-body{
+  background: transparent !important;
+}
+.admin-modal textarea.form-control{
+  background: rgba(255,255,255,0.65) !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(0,0,0,0.12) !important;
+}
+.modal-backdrop.show{ opacity: .35; }
+
 /* ===== Watermark grande SOLO para Aprendiz =====
    Sobrescribe el watermark del layout para usar la ilustración grande
    y que se vea completa detrás del contenido */
@@ -306,5 +400,11 @@ main {
   background: url("../../images/logo_semillero.png") no-repeat calc(50% - var(--wm-shift-x)) calc(var(--wm-offset) - 112px) / var(--wm-size) auto !important;
   opacity: .45 !important;
   filter: brightness(0.25) contrast(0.90);
+}
+
+/* Si el contenedor usa dash-admin, anulamos su pseudo-fondo para evitar doble watermark */
+.dash-admin::before{
+  content: none !important;
+  background: none !important;
 }
 

@@ -508,6 +508,7 @@ Route::middleware(['auth', 'role:APRENDIZ'])
         Route::post('/documentos/{id}/preguntar', [DocumentoController::class, 'preguntar'])->whereNumber('id')->name('documentos.preguntar');
         Route::put('/documentos/{id}/respuesta-leida', [DocumentoController::class, 'marcarRespuestaLeida'])->whereNumber('id')->name('documentos.respuesta_leida');
         Route::get('/documentos/{id}/download', [DocumentoController::class, 'download'])->whereNumber('id')->name('documentos.download');
+        Route::get('/documentos/{id}/view', [DocumentoController::class, 'view'])->whereNumber('id')->name('documentos.view');
         Route::put('/documentos/{id}', [DocumentoController::class, 'update'])->whereNumber('id')->name('documentos.update');
         Route::delete('/documentos/{id}', [DocumentoController::class, 'destroy'])->whereNumber('id')->name('documentos.destroy');
 

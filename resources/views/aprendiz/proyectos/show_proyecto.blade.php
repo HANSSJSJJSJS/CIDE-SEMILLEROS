@@ -29,7 +29,7 @@
 
                     <div class="row g-3 mb-4">
                         <div class="col-md-4">
-                            <div class="card h-100">
+                            <div class="card glass-box h-100">
                                 <div class="card-body">
                                     <div class="fw-semibold text-secondary mb-2">Fechas</div>
                                     <div class="small text-muted">Inicio: {{ $proyecto->fecha_inicio ? date('d/m/Y', strtotime($proyecto->fecha_inicio)) : '—' }}</div>
@@ -39,12 +39,12 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card h-100">
+                            <div class="card glass-box h-100">
                                 <div class="card-body">
                                     <div class="fw-semibold text-secondary mb-2">Semillero</div>
                                     <div class="mb-1"><strong>Nombre:</strong> {{ $proyecto->semillero->nombre ?? 'No asignado' }}</div>
                                     @if(isset($lider))
-                                        <div class="mb-1"><strong>Líder:</strong> {{ $lider->nombre_completo ?? ($lider->user->name ?? '—') }}</div>
+                                        <div class="mb-1"><strong>Líder:</strong> {{ $lider->nombre_completo ?? (trim((($lider->user->nombre ?? '') . ' ' . ($lider->user->apellidos ?? ''))) ?: ($lider->user->name ?? '—')) }}</div>
                                         <div class="small text-muted"><strong>Correo:</strong> {{ $lider->user->email ?? $lider->correo_institucional ?? '—' }}</div>
                                     @else
                                         <div class="small text-muted">Líder no asignado</div>
@@ -53,7 +53,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card h-100">
+                            <div class="card glass-box h-100">
                                 <div class="card-body">
                                     <div class="fw-semibold text-secondary mb-2">Tipo de Proyecto</div>
                                     <div class="small">{{ $proyecto->tipoProyecto->nombre ?? 'Sin tipo' }}</div>
@@ -62,8 +62,8 @@
                         </div>
                     </div>
 
-                    <div id="evidencias" class="card mb-4">
-                        <div class="card-header bg-success text-white">
+                    <div id="evidencias" class="card evidencias-box mb-4">
+                        <div class="section-head section-head-green">
                             <h5 class="m-0">Compañeros asignados</h5>
                         </div>
                         <div class="card-body p-0">
@@ -84,24 +84,27 @@
                         </div>
                     </div>
 
-                    <div class="card mb-4">
-                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                            <h5 class="m-0">Evidencias del proyecto</h5>
-                            <span class="badge bg-light text-primary">{{ $evidencias->count() }} registro(s)</span>
+                    <div class="card evidencias-box mb-4">
+                        <div class="evidencias-head d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-folder2-open"></i>
+                                <h5 class="m-0">Evidencias del proyecto</h5>
+                            </div>
+                            <span class="badge count-badge">{{ $evidencias->count() }} registro(s)</span>
                         </div>
                         <div class="card-body">
-                            <form method="GET" action="{{ url()->current() }}#evidencias" class="row g-2 mb-3">
+                            <form method="GET" action="{{ url()->current() }}#evidencias" class="row g-3 mb-3 filter-controls">
                                 <div class="col-md-4">
                                     <label for="fecha" class="form-label">Fecha de carga</label>
-                                    <input type="date" id="fecha" name="fecha" value="{{ $fecha }}" class="form-control">
+                                    <input type="date" id="fecha" name="fecha" value="{{ $fecha }}" class="form-control pill">
                                 </div>
                                 <div class="col-md-5">
                                     <label for="nombre" class="form-label">Nombre del compañero</label>
-                                    <input type="text" id="nombre" name="nombre" value="{{ $nombre }}" class="form-control" placeholder="Ej: Juan Pérez">
+                                    <input type="text" id="nombre" name="nombre" value="{{ $nombre }}" class="form-control pill" placeholder="Ej: Juan Pérez">
                                 </div>
-                                <div class="col-md-3 d-flex align-items-end">
-                                    <button type="submit" class="btn btn-primary me-2">Filtrar</button>
-                                    <a href="{{ url()->current() }}" class="btn btn-outline-secondary">Limpiar</a>
+                                <div class="col-md-3 d-flex align-items-end gap-2">
+                                    <button type="submit" class="btn btn-success btn-pill">Filtrar</button>
+                                    <a href="{{ url()->current() }}" class="btn btn-outline-secondary btn-pill">Limpiar</a>
                                 </div>
                             </form>
                             @if(!empty($nombreError))
@@ -114,7 +117,7 @@
                                 <div class="p-4 text-muted">Aún no hay evidencias cargadas para este proyecto.</div>
                             @else
                                 <div class="table-responsive mb-0">
-                                    <table class="table table-hover mb-0">
+                                    <table class="table table-hover align-middle evid-table mb-0">
                                         <thead>
                                             <tr>
                                                 <th>Título</th>
@@ -146,7 +149,7 @@
                                                         @if($fileId)
                                                             <a href="{{ route('aprendiz.archivos.show', $fileId) }}" target="_blank" class="btn btn-sm btn-outline-primary">Ver</a>
                                                         @elseif(!empty($ev->id_documento) && !empty($ev->has_file))
-                                                            <a href="{{ route('aprendiz.documentos.download', $ev->id_documento) }}" target="_blank" class="btn btn-sm btn-outline-primary">Ver</a>
+                                                            <a href="{{ route('aprendiz.documentos.view', $ev->id_documento) }}" target="_blank" class="btn btn-sm btn-outline-primary">Ver</a>
                                                         @else
                                                             <button class="btn btn-sm btn-outline-secondary" disabled>Sin archivo</button>
                                                         @endif

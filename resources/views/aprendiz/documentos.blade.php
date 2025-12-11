@@ -596,44 +596,111 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   });
 
-  // Preguntar al líder sobre una evidencia pendiente
-  document.querySelectorAll('.btn-preguntar-evid').forEach(function(btn){
-    btn.addEventListener('click', async function(e){
-      e.preventDefault();
-      const evidId = this.getAttribute('data-evid');
-      if (!evidId) return;
-      const pregunta = prompt('Escribe tu pregunta para el líder sobre esta evidencia:');
-      if (!pregunta || String(pregunta).trim().length < 3) return;
-      try {
-        const resp = await fetch(`/aprendiz/documentos/${evidId}/preguntar`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-          },
-          body: JSON.stringify({ pregunta })
-        });
-        const data = await resp.json();
-        if (resp.ok && data?.ok) {
-          alert('Tu pregunta fue enviada al líder.');
-          // Marcar visualmente
-          const parent = this.closest('.pend-card');
-          if (parent && !parent.querySelector('.badge.bg-secondary')){
-            const span = document.createElement('span');
-            span.className = 'badge bg-secondary ms-2';
-            span.textContent = 'Pregunta enviada';
-            this.parentElement.appendChild(span);
+  // Modal elegante para "Preguntar al líder"
+  (function(){
+    let modalEl, modal, txtArea, btnOk, btnCancel, counterEl, currentEvidId = null;
+
+    function ensureModal(){
+      if (modalEl) return;
+      modalEl = document.createElement('div');
+      modalEl.className = 'modal fade admin-modal';
+      modalEl.id = 'askLeaderModal';
+      modalEl.tabIndex = -1;
+      modalEl.setAttribute('aria-hidden','true');
+      modalEl.innerHTML = `
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="bi bi-question-circle me-2"></i> Preguntar al líder</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <label class="form-label fw-semibold mb-2">Escribe tu pregunta para el líder sobre esta evidencia:</label>
+              <textarea class="form-control" id="askLeaderText" rows="4" maxlength="1000" placeholder="Escribe tu pregunta..." style="border-radius:12px"></textarea>
+              <div class="d-flex justify-content-between align-items-center mt-2 small">
+                <span class="text-muted">Mínimo 3 caracteres</span>
+                <span id="askCounter" class="text-muted">0 / 1000</span>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-success" data-bs-dismiss="modal">Cancelar</button>
+              <button type="button" class="btn btn-success" id="askLeaderSubmit">Aceptar</button>
+            </div>
+          </div>
+        </div>`;
+      document.body.appendChild(modalEl);
+      modal = new bootstrap.Modal(modalEl);
+      txtArea = modalEl.querySelector('#askLeaderText');
+      btnOk = modalEl.querySelector('#askLeaderSubmit');
+      btnCancel = modalEl.querySelector('[data-bs-dismiss="modal"]');
+      counterEl = modalEl.querySelector('#askCounter');
+
+      txtArea.addEventListener('input', ()=>{
+        const v = txtArea.value || '';
+        counterEl.textContent = `${v.length} / 1000`;
+        if (v.trim().length >= 3){ btnOk.removeAttribute('disabled'); }
+        else { btnOk.setAttribute('disabled','disabled'); }
+      });
+
+      modalEl.addEventListener('shown.bs.modal', ()=>{ txtArea.focus(); txtArea.select(); });
+      modalEl.addEventListener('hidden.bs.modal', ()=>{ currentEvidId = null; txtArea.value=''; counterEl.textContent = '0 / 1000'; btnOk.setAttribute('disabled','disabled'); });
+
+      btnOk.addEventListener('click', async ()=>{
+        const pregunta = (txtArea.value||'').trim();
+        if (!currentEvidId || pregunta.length < 3) return;
+        btnOk.disabled = true; btnOk.dataset._label = btnOk.innerHTML; btnOk.innerHTML = 'Enviando...';
+        try{
+          const resp = await fetch(`/aprendiz/documentos/${currentEvidId}/preguntar`,{
+            method:'POST',
+            headers:{
+              'Content-Type':'application/json',
+              'X-Requested-With':'XMLHttpRequest',
+              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ pregunta })
+          });
+          const data = await resp.json().catch(()=>({}));
+          if (resp.ok && data?.ok){
+            modal.hide();
+            // Marcar visualmente en la tarjeta correspondiente
+            const trigger = document.querySelector(`.btn-preguntar-evid[data-evid="${currentEvidId}"]`);
+            if (trigger){
+              const parent = trigger.closest('.pend-card');
+              if (parent && !parent.querySelector('.badge.bg-secondary')){
+                const span = document.createElement('span');
+                span.className = 'badge bg-secondary ms-2';
+                span.textContent = 'Pregunta enviada';
+                trigger.parentElement.appendChild(span);
+              }
+            }
+          } else {
+            alert(data?.message || 'No se pudo enviar la pregunta.');
           }
-        } else {
-          alert(data?.message || 'No se pudo enviar la pregunta.');
+        }catch(err){
+          console.error(err);
+          alert('Error de conexión. Intenta nuevamente.');
+        } finally {
+          btnOk.disabled = false; if (btnOk.dataset._label) btnOk.innerHTML = btnOk.dataset._label;
         }
-      } catch (err) {
-        console.error(err);
-        alert('Error de conexión. Intenta nuevamente.');
-      }
+      });
+    }
+
+    function openAskModal(evidId){
+      ensureModal();
+      currentEvidId = evidId;
+      modal.show();
+    }
+
+    // Reemplazar prompt por modal
+    document.querySelectorAll('.btn-preguntar-evid').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.preventDefault();
+        const evidId = this.getAttribute('data-evid');
+        if (!evidId) return;
+        openAskModal(evidId);
+      });
     });
-  });
+  })();
   // Toggle panel de pregunta/respuesta (aprendiz)
   window.toggleQA_apr = function(id){
     const panel = document.getElementById('qa_apr_' + id);

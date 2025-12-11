@@ -359,6 +359,7 @@ class DocumentoController extends Controller
                     'tamanio_kb'   => round(($doc->tamanio ?? 0) / 1024, 2),
                     'fecha'        => $fecha,
                     'download_url' => route('aprendiz.documentos.download', $doc->id_documento),
+                    'view_url'     => route('aprendiz.documentos.view', $doc->id_documento),
                     'delete_url'   => route('aprendiz.documentos.destroy', $doc->id_documento),
                 ],
             ]);
@@ -654,6 +655,43 @@ class DocumentoController extends Controller
             return back()->with('error', 'El archivo no existe en el servidor');
         }
         return response()->download($absPath, basename($documento->ruta_archivo));
+    }
+
+    /**
+     * Ver un documento inline (ideal para PDF en navegador)
+     */
+    public function view($id)
+    {
+        $userId = Auth::id();
+        $aprendiz = $this->getAprendizByUserId($userId);
+        if (!$aprendiz) { abort(404); }
+
+        $docAprCol = $this->getDocumentoAprendizColumn();
+        $aprId = $this->getAprendizId($aprendiz);
+        $documento = DB::table('documentos')
+            ->where('id_documento', $id)
+            ->where($docAprCol, $aprId)
+            ->first();
+
+        if (!$documento) { abort(404); }
+        if (empty($documento->ruta_archivo)) { abort(404); }
+
+        // Enlace externo: redirigir
+        if (filter_var($documento->ruta_archivo, FILTER_VALIDATE_URL)) {
+            return redirect()->away($documento->ruta_archivo);
+        }
+
+        if (!Storage::disk('public')->exists($documento->ruta_archivo)) { abort(404); }
+
+        $absPath = storage_path('app/public/'.$documento->ruta_archivo);
+        if (!file_exists($absPath)) { abort(404); }
+
+        $mime = Storage::disk('public')->mimeType($documento->ruta_archivo) ?: 'application/pdf';
+        $filename = basename($documento->ruta_archivo);
+        return response()->file($absPath, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'inline; filename="'.$filename.'"'
+        ]);
     }
 
     /**

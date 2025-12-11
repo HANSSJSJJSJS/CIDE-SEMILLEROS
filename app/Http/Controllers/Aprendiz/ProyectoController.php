@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Aprendiz;
 
 use App\Http\Controllers\Controller;
 use App\Models\Proyecto;
+use App\Models\User;
 use App\Models\LiderSemillero;
 use App\Models\Evidencia;
 use App\Models\Archivo;
@@ -133,20 +134,48 @@ class ProyectoController extends Controller
             }
         }
 
-        // Líder del semillero (tolerante a columnas id_lider_semi o id_lider_usuario)
+        // Líder del semillero (tolerante a variaciones de columnas)
         $lider = null;
         if ($proyecto->semillero) {
-            $idLiderSemi = $proyecto->semillero->id_lider_semi ?? null;
-            $idLiderUsuario = $proyecto->semillero->id_lider_usuario ?? null;
-            if (!empty($idLiderSemi)) {
-                $lider = LiderSemillero::with('user')->where('id_lider_semi', $idLiderSemi)->first();
-            } elseif (!empty($idLiderUsuario)) {
-                // Algunos esquemas guardan el id de usuario directamente
-                $lider = LiderSemillero::with('user')->where('id_lider_semi', $idLiderUsuario)->first();
-                if (!$lider) {
-                    // Fallback adicional: si existiera columna id_usuario en la tabla lideres_semillero
-                    $lider = LiderSemillero::with('user')->where('id_usuario', $idLiderUsuario)->first();
+            // Detectar posibles columnas que apunten al líder
+            $sem = $proyecto->semillero;
+            $leaderCandidates = [
+                $sem->id_lider_semi ?? null,
+                $sem->id_lider_usuario ?? null,
+                $sem->id_lider ?? null,
+                $sem->id_usuario ?? null,
+                $sem->lider_id ?? null,
+            ];
+            $leaderId = collect($leaderCandidates)->filter(fn($v)=> !empty($v))->first();
+
+            if ($leaderId) {
+                // 1) Intentar por PK de lideres_semillero (id_lider_semi)
+                $lider = LiderSemillero::with('user')->where('id_lider_semi', $leaderId)->first();
+                // 2) Intentar por columna alternativa id_usuario en lideres_semillero
+                if (!$lider && \Illuminate\Support\Facades\Schema::hasColumn('lideres_semillero','id_usuario')) {
+                    $lider = LiderSemillero::with('user')->where('id_usuario', $leaderId)->first();
                 }
+                // 3) Fallback: construir desde Users si existe ese id
+                if (!$lider && class_exists(User::class)) {
+                    $u = User::find($leaderId);
+                    if ($u) {
+                        $nombre = trim(($u->nombre ?? '').' '.($u->apellidos ?? '')) ?: ($u->name ?? null);
+                        $lidObj = new \stdClass();
+                        $lidObj->nombre_completo = $nombre ?: null;
+                        $lidObj->correo_institucional = $u->email ?? null;
+                        $userObj = new \stdClass();
+                        $userObj->email = $u->email ?? null;
+                        $lidObj->user = $userObj;
+                        $lider = $lidObj;
+                    }
+                }
+            }
+            // Fallback adicional: si el semillero no guarda el id del líder, buscar en lideres_semillero por id_semillero
+            if (!$lider && isset($sem->id_semillero)) {
+                $lider = LiderSemillero::with('user')
+                    ->where('id_semillero', $sem->id_semillero)
+                    ->orderByDesc(\Illuminate\Support\Facades\Schema::hasColumn('lideres_semillero','actualizado_en') ? 'actualizado_en' : 'id_lider_semi')
+                    ->first();
             }
         }
 
