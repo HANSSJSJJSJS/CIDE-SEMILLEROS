@@ -1,44 +1,38 @@
-/* ============================================
-   PALETA DE COLORES (ROOT)
-   ============================================ */
+/* ==========================================================
+   🎨 PALETA DE COLORES
+=========================================================== */
+:root {
+    --brand-primary: #39A900;
+    --brand-secondary: #007832;
+    --brand-navy: #00304D;
 
-:root{
-  --brand-primary:#39A900;     /* Verde institucional */
-  --brand-secondary:#007832;   /* Verde secundario */
-  --brand-navy:#00304D;        /* Azul institucional */
-  --gray-900:#111827; 
-  --gray-700:#374151; 
-  --gray-300:#E5E7EB; 
-  --gray-100:#F3F4F6;
+    --gray-900:#111827;
+    --gray-700:#374151;
+    --gray-300:#E5E7EB; 
+    --gray-100:#F3F4F6;
 }
 
-/* ============================================
-   HEADER PRINCIPAL
-   ============================================ */
+/* ==========================================================
+   🧩 HEADER PRINCIPAL
+=========================================================== */
+
 .documentos-header {
-    background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-primary) 100%);
+    background: linear-gradient(135deg, var(--brand-navy), var(--brand-primary));
     padding: 30px;
     border-radius: 12px;
-    color: #fff;
+    color: white;
 }
 
-.documentos-header h2 {
-    font-weight: 700;
-    margin-bottom: 8px;
-}
+.documentos-header h2 { font-weight: 700; margin-bottom: 8px; }
+.documentos-header p { opacity: .75; margin: 0; }
 
-.documentos-header p {
-    margin-bottom: 0;
-    opacity: 0.75;
-}
-
-/* Botón “Crear Recurso” */
+/* Botón Crear Recurso */
 .btn-crear-proyecto {
-    padding: 12px 24px;
-    border-radius: 8px;
+    background: var(--brand-primary);
+    color: white;
     font-weight: 600;
-    background-color: var(--brand-primary);
-    color: #fff;
+    padding: 12px 22px;
+    border-radius: 8px;
     border: none;
     transition: .2s;
 }
@@ -47,343 +41,212 @@
     filter: brightness(.92);
 }
 
-.documentos-header .btn-crear-proyecto {
-    margin-right: 10px;
-}
-
-/* ============================================
-   BOTÓN MULTIMEDIA (YA UNIFICADO)
-   ============================================ */
-
+/* ============================================================== 
+   🎬 BOTÓN MULTIMEDIA 
+============================================================== */
 .btn-multimedia {
-    background-color: var(--brand-navy);
-    color: #fff;
+    background: var(--brand-primary);
+    color: white;
     padding: 10px 18px;
-    border-radius: 8px;
-    border: none;
-    font-weight: 600;
+    border-radius: 10px;
+    font-weight: 700;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    transition: all .2s ease-in-out;
+    gap: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+    transition: .25s;
 }
 
 .btn-multimedia:hover {
-    background-color: var(--brand-secondary);
+    background: var(--brand-secondary);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
 }
 
-.btn-multimedia i {
-    margin-right: 6px;
-}
-
-/* ============================================
-   TARJETAS DE SEMILLEROS
-   ============================================ */
+/* ============================================================== 
+   📦 TARJETAS DE SEMILLEROS
+============================================================== */
 
 .proyecto-card {
     border: none;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    height: 100%;
-    transition: transform .2s, box-shadow .2s;
+    box-shadow: 0 2px 10px rgba(0,0,0,.1);
+    transition: .25s;
 }
 
-/* HOVER PROFESIONAL (NO OSCURECE EL CONTENIDO) */
 .proyecto-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.18);
-}
-
-.proyecto-card .card-body {
-    padding: 1.5rem;
+    box-shadow: 0 6px 18px rgba(0,0,0,.20);
 }
 
 .proyecto-titulo {
     color: var(--brand-secondary);
     font-weight: 700;
     font-size: 1.1rem;
-    margin-bottom: 0;
 }
 
 /* Badges */
-.badge-activo {
-    background-color: var(--brand-primary);
-    color: white;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-weight: 600;
-}
-
+.badge-activo,
 .badge-completado {
-    background-color: var(--gray-700);
-    color: white;
     padding: 6px 12px;
     border-radius: 20px;
     font-weight: 600;
 }
 
-.proyecto-descripcion {
-    color: var(--gray-700);
-    font-size: .875rem;
-    margin-bottom: 1.5rem;
-}
+.badge-activo { background: var(--brand-primary); color: white; }
+.badge-completado { background: var(--gray-700); color: white; }
 
-/* Estadísticas */
+/* ============================================================== 
+   📊 ESTADISTICAS
+============================================================== */
+
 .estadistica-numero {
     font-size: 28px;
     font-weight: 700;
     color: var(--brand-primary);
 }
 
-.estadistica-label {
-    color: var(--gray-700);
-    font-size: .75rem;
-}
+/* ============================================================== 
+   🎯 BOTONES DE TARJETA
+============================================================== */
 
-/* Botón Ver Recursos */
 .btn-ver-entregas {
     background-color: var(--brand-primary);
     color: white;
-    border-radius: 8px;
-    border: none;
     font-weight: 600;
     padding: 10px;
-    transition: .2s;
+    border-radius: 8px;
+    border: none;
 }
 
-.btn-ver-entregas:hover {
-    filter: brightness(.92);
-}
+.btn-ver-entregas:hover { filter: brightness(.92); }
 
-/* Botón Crear recurso directo */
 .btn-editar-proyecto {
     border: 2px solid var(--brand-navy);
     color: var(--brand-navy);
-    background: transparent;
-    border-radius: 8px;
     font-weight: 600;
     padding: 10px;
+    border-radius: 8px;
     transition: .2s;
 }
 
 .btn-editar-proyecto:hover {
-    background-color: var(--brand-navy);
+    background: var(--brand-navy);
     color: white;
 }
 
-/* ============================================
-   TARJETAS MULTIMEDIA
-   ============================================ */
+/* ==========================================================
+   🖼️ MULTIMEDIA CARDS
+=========================================================== */
 
 .card-recurso {
+    background: white;
     border-radius: 12px;
-    overflow: hidden;
-    background: #fff;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-    transition: transform .2s ease, box-shadow .2s ease;
+    border: 2px solid var(--gray-300);
+    padding: 16px;
+    box-shadow: 0 3px 10px rgba(0,0,0,.08);
+    transition: .25s;
 }
 
 .card-recurso:hover {
     transform: translateY(-3px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-}
-
-.card-recurso .btn {
-    z-index: 3;
-}
-
-/* ============================================
-   MODALES (EVIDENCIA Y ENTREGAS)
-   ============================================ */
-
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0,0,0,.5);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-}
-
-.modal-overlay.active {
-    display: flex;
-}
-
-.modal-evidencia,
-.modal-entregas {
-    background-color: white;
-    border-radius: 16px;
-    padding: 40px;
-    max-width: 900px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-    animation: modalSlideIn .3s ease-out;
-}
-
-/* Título de modales */
-.modal-evidencia h2,
-.modal-entregas h2 {
-    color: var(--brand-navy);
-    font-weight: 700;
-}
-
-/* Inputs */
-.form-control-evidencia,
-.form-select-evidencia {
-    width: 100%;
-    padding: 12px 16px;
-    border: 2px solid var(--gray-300);
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: .2s;
-}
-
-.form-control-evidencia:focus,
-.form-select-evidencia:focus {
+    box-shadow: 0 8px 18px rgba(0,0,0,.16);
     border-color: var(--brand-primary);
-    box-shadow: 0 0 0 3px rgba(57,169,0,0.15);
 }
 
-/* Botones modales */
-.btn-cancelar-modal {
-    flex: 1;
-    padding: 14px;
-    border: 2px solid var(--brand-navy);
-    background: transparent;
+/* ==========================================================
+   🎬 MODAL DE RECURSOS (VER RECURSOS)
+=========================================================== */
+
+.modal-recursos {
+    border-radius: 16px;
+    background: #fff;
+    padding: 10px;
+    box-shadow: 0 4px 25px rgba(0,0,0,.15);
+}
+
+.recurso-item {
+    background: white;
+    border-radius: 14px;
+    border: 1px solid rgba(0,0,0,0.08);
+    padding: 18px;
+    margin-bottom: 15px;
+    transition: .2s;
+}
+
+.recurso-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+}
+
+/* TITULO */
+.recurso-item h5 {
     color: var(--brand-navy);
-    border-radius: 8px;
-    font-weight: bold;
-    transition: .2s;
-}
-
-.btn-cancelar-modal:hover {
-    background-color: var(--gray-100);
-}
-
-.btn-guardar-modal {
-    flex: 1;
-    padding: 14px;
-    background-color: var(--brand-primary);
-    border-radius: 8px;
-    color: #fff;
-    font-weight: bold;
-    border: none;
-    transition: .2s;
-}
-
-.btn-guardar-modal:hover {
-    filter: brightness(.92);
-}
-/* ===========================================================
-   BOTONES INSTITUCIONALES - MÓDULO MULTIMEDIA
-   =========================================================== */
-
-/* Botón principal (Subir multimedia) */
-.btn-multimedia {
-    background-color: var(--brand-primary);
-    color: #fff;
-    padding: 12px 22px;
-    border-radius: 10px;
-    border: none;
     font-weight: 700;
-    font-size: 1rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-    transition: all 0.25s ease;
+    margin: 0;
 }
 
-.btn-multimedia:hover {
-    background-color: var(--brand-secondary);
-    transform: translateY(-3px);
-    box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+/* BADGES UNIFICADOS */
+.badge-pendiente,
+.badge-respondido,
+.badge-aprobado,
+.badge-rechazado {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 700 !important;
+    font-size: 0.8rem;
 }
 
-/* Botones dentro de cada tarjeta multimedia */
-.btn-recurso {
-    width: 100%;
-    padding: 10px 14px;
+.badge-pendiente { background: #ffc107; color: #000; }
+.badge-respondido { background: #0d6efd; color: white; }
+.badge-aprobado { background: #28a745; color: white; }
+.badge-rechazado { background: #dc3545; color: white; }
+
+/* DESCARGAR ARCHIVO */
+.btn-descargar {
+    background: #0b2e4d;
+    color: white;
+    padding: 8px 16px;
     border-radius: 8px;
     font-weight: 600;
-    transition: all 0.2s ease-in-out;
 }
 
-/* Ver archivo */
-.btn-ver-archivo {
-    background-color: var(--brand-navy);
-    color: #fff;
-    border: none;
-}
+.btn-descargar:hover { background: #09263d; }
 
-.btn-ver-archivo:hover {
-    background-color: var(--brand-secondary);
-    color: #fff;
-}
+/* ==========================================================
+   🔘 BOTONES APROBAR / RECHAZAR
+=========================================================== */
 
-/* Eliminar archivo */
-.btn-eliminar-archivo {
-    background-color: transparent;
-    border: 2px solid var(--brand-primary);
-    color: var(--brand-primary);
-}
-
-.btn-eliminar-archivo:hover {
-    background-color: var(--brand-primary);
-    color: #fff;
-}
-
-/* Tarjeta multimedia */
-.card-recurso {
-    border-radius: 12px;
-    padding: 16px;
-    border: 2px solid var(--gray-300);
-    box-shadow: 0 3px 8px rgba(0,0,0,0.08);
-    transition: all 0.25s ease;
-    background-color: #fff;
-}
-
-.card-recurso:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-    border-color: var(--brand-primary);
-}
-
-.card-recurso h6 {
-    color: var(--brand-navy);
+.btn-aprobar-recurso {
+    background: var(--brand-primary);
+    color: white;
     font-weight: 700;
-    margin-bottom: 12px;
-}
-/* Botón Cerrar (X) en modales universales */
-.modal-evidencia .btn-cerrar-modal {
-    position: absolute;
-    top: 18px;
-    right: 22px;
-    background: none;
     border: none;
-    font-size: 1.8rem;
-    color: var(--gray-700);
-    cursor: pointer;
-    padding: 0;
-    line-height: 1;
-    transition: all 0.2s ease-in-out;
-    font-weight: 700;
+    padding: 10px;
+    border-radius: 8px;
 }
 
-.modal-evidencia .btn-cerrar-modal:hover {
-    color: var(--brand-navy);
-    transform: scale(1.15);
+.btn-aprobar-recurso:hover { background: var(--brand-secondary); }
+
+.btn-rechazar-recurso {
+    background: #b81e1e;
+    color: white;
+    font-weight: 700;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
 }
-/* ================================
-   NOTIFICACIONES INSTITUCIONALES
-   ================================ */
+
+.btn-rechazar-recurso:hover { background: #8c1616; }
+
+/* Caja de rechazo */
+#box-rechazo textarea {
+    resize: none;
+}
+
+/* ==========================================================
+   📢 NOTIFICACIONES
+=========================================================== */
 
 .notification-container {
     position: fixed;
@@ -393,126 +256,84 @@
     z-index: 99999;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    width: auto;
-    max-width: 90%;
+    gap: 10px;
 }
 
-/* Caja de notificación */
 .notification {
+    background: #fff;
+    border-left: 6px solid var(--brand-primary);
+    padding: 16px 24px;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.15);
     display: flex;
     align-items: center;
     gap: 14px;
-    background: #fff;
-    padding: 16px 26px;
-    border-radius: 12px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
-    min-width: 300px;
-    max-width: 420px;
-    border-left: 6px solid var(--brand-primary);
-    opacity: 1;
-    transform: translateY(-10px);
-    transition: all 0.3s ease;
-    animation: slideDown 0.25s ease-out;
+    animation: slideDown .3s ease;
 }
 
-/* Iconos */
-.notification-icon i {
-    font-size: 1.7rem;
-}
-
-/* Colores por tipo */
-.notification.success { border-left-color: var(--brand-primary); }
-.notification.error   { border-left-color: #c62828; }
-.notification.warning { border-left-color: #ffb300; }
-
-/* Texto */
-.notification-title {
-    font-weight: bold;
-    color: var(--gray-900);
-}
-
-.notification-message {
-    font-size: 0.92rem;
-    color: var(--gray-700);
-}
-
-/* Botón cerrar */
-.notification-close {
-    background: none;
-    border: none;
-    color: #666;
-    font-size: 1.2rem;
-    cursor: pointer;
-}
-
-.notification-close:hover {
-    color: var(--brand-navy);
-}
-
-/* Animaciones */
+/* Animación */
 @keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-20px) translateX(-50%);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) translateX(-50%);
-    }
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-/* Evento al cerrar */
-.notification.hiding {
-    opacity: 0;
-    transform: translateY(-25px);
+/* ==========================================================
+   🟢 BOTONES OVALADOS INSTITUCIONALES
+=========================================================== */
+
+/* Botón primario (Ej: Editar) */
+.btn-oval-primary {
+    background-color: var(--brand-navy);
+    color: #fff;
+    padding: 10px 22px;
+    font-weight: 600;
+    border: none;
+    border-radius: 40px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: .25s ease;
 }
 
-.recursos-admin{
-  position: relative;
-  min-height: calc(100vh - 200px);
-  padding-bottom: 56px;
-  z-index: 0;
+.btn-oval-primary:hover {
+    background-color: var(--brand-secondary);
+    transform: translateY(-2px);
 }
 
-.recursos-admin::before{
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  margin-top: 80px;
-  background-image: url("/images/fondo_page.png");
-  background-repeat: no-repeat;
-  background-position: calc(50% + 140px) top;
-  background-size: clamp(980px, 60vw, 1400px) auto;
-  pointer-events: none;
+/* Botón peligro (Eliminar) */
+.btn-oval-danger {
+    background-color: #c0392b;  /* rojo institucional */
+    color: #fff;
+    padding: 10px 22px;
+    font-weight: 600;
+    border: none;
+    border-radius: 40px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: .25s ease;
 }
 
-@media (max-width: 991.98px){
-  .recursos-admin::before{ background-position: center top; }
+.btn-oval-danger:hover {
+    background-color: #962d22;
+    transform: translateY(-2px);
 }
 
-.recursos-admin{
-  position: relative;
-  min-height: calc(100vh - 200px);
-  padding-bottom: 56px;
-  z-index: 0;
+/* Botón secundario (Ver datos) */
+.btn-oval-outline {
+    background-color: #fff;
+    color: var(--brand-navy);
+    padding: 10px 22px;
+    font-weight: 600;
+    border: 2px solid var(--brand-navy);
+    border-radius: 40px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: .25s ease;
 }
 
-.recursos-admin::before{
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  margin-top: 80px;
-  background-image: url("/images/fondo_page.png");
-  background-repeat: no-repeat;
-  background-position: calc(50% + 140px) top;
-  background-size: clamp(980px, 60vw, 1400px) auto;
-  pointer-events: none;
-}
-
-@media (max-width: 991.98px){
-  .recursos-admin::before{ background-position: center top; }
+.btn-oval-outline:hover {
+    background-color: var(--gray-100);
+    transform: translateY(-2px);
 }
