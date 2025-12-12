@@ -43,6 +43,38 @@
 .section-head-green{ background: rgba(67,160,71,0.10); }
 /* Variante azul para headers de sección */
 .section-head-blue{ background: rgba(0,48,77,0.92); color:#fff; }
+.section-head-blue h5{ color:#fff !important; }
+
+/* === Botón: Preguntar al líder === */
+.btn-preguntar-evid{
+  --apr-blue:#002f6c; /* azul del header/menu */
+  color: var(--apr-blue) !important;
+  border: 2px solid var(--apr-blue) !important; /* un solo borde marcado */
+  background-color: rgba(0,47,108,0.10) !important; /* fondo más claro por defecto */
+  box-shadow: none !important;
+}
+.btn-preguntar-evid i{ color: var(--apr-blue) !important; }
+.btn-preguntar-evid:hover{
+  color: var(--apr-blue) !important;
+  background-color: rgba(0,47,108,0.18) !important; /* un poco más oscuro al hover, aún claro */
+  border-color: var(--apr-blue) !important;
+}
+.btn-preguntar-evid:active{
+  color: #fff !important;
+  background-color: var(--apr-blue) !important; /* sólido al hacer clic */
+  border-color: var(--apr-blue) !important;
+}
+.btn-preguntar-evid:focus,
+.btn-preguntar-evid:focus-visible{
+  outline: none !important;
+  box-shadow: none !important; /* evitar doble contorno */
+}
+
+/* Tooltip azul institucional para el botón Preguntar (Bootstrap 5 custom class) */
+.apr-tooltip-blue{
+  --bs-tooltip-bg: #002f6c;
+  --bs-tooltip-color: #ffffff;
+}
 
 
 /* Header */

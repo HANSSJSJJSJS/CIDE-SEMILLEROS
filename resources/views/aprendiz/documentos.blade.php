@@ -1,8 +1,8 @@
 @extends('layouts.aprendiz')
-
 @section('title', 'Mis Documentos')
 @section('module-title','Mis Documentos')
 @section('module-subtitle','Gestión y subida de archivos')
+
 
 @section('content')
 <div class="container-fluid py-4 documentos-page">
@@ -55,7 +55,7 @@
                         <div class="mb-3">
                             <label for="evidencia_asignada" class="form-label">Evidencia asignada (opcional)</label>
                             <select id="evidencia_asignada" class="form-select">
-                                <option value="">— Selecciona la evidencia a subir —</option>
+                                <option value="">— Selecciona la evidencia que subira —</option>
                                 @foreach($pendientesAsignadas->sortBy('fecha_limite') as $pend)
                                     @php
                                         $t = strtolower(trim((string)($pend->tipo_documento ?? $pend->tipo_archivo ?? '')));
@@ -228,12 +228,12 @@
                                             @endif
                                         </div>
                                         <div class="mt-2 d-flex align-items-center" style="gap:8px;">
-                                            <button type="button" class="btn btn-sm btn-outline-primary btn-preguntar-evid" data-evid="{{ $pendiente->id_documento }}">
+                                            <button type="button" class="btn btn-sm btn-outline-primary btn-preguntar-evid" data-evid="{{ $pendiente->id_documento }}" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="apr-tooltip-blue" title="Usa este botón para enviar dudas al líder sobre esta evidencia">
                                                 <i class="bi bi-question-circle"></i> Preguntar al líder
                                             </button>
                                             @if(!empty($pendiente->respuesta_lider))
                                                 <button type="button" class="btn btn-sm btn-light" onclick="toggleQA_apr({{ $pendiente->id_documento }})" title="Ver respuesta del líder" style="border:1px solid #e0e0e0;">
-                                                    <i class="bi bi-chat-dots-fill" style="color:#0d6efd"></i>
+                                                    <i class="bi bi-chat-dots-fill" style="color:#002f6c"></i>
                                                 </button>
                                             @endif
                                         </div>
@@ -392,6 +392,11 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function(){
+  // Inicializar tooltips Bootstrap para elementos con data-bs-toggle="tooltip"
+  try{
+    const tooltipTriggerList = Array.prototype.slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(function (el) { try{ new bootstrap.Tooltip(el); }catch(_e){} });
+  }catch(_e){}
   const form = document.getElementById('formUploadDoc');
   if (!form) return;
   const dz = form.querySelector('.dropzone-box');
