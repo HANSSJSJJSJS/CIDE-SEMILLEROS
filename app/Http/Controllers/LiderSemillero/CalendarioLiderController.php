@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Aprendiz;
+namespace App\Http\Controllers\LiderSemillero;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -9,9 +9,46 @@ use App\Models\Aprendiz;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use App\Models\Proyecto;
 
-class CalendarioController extends Controller
+class CalendarioLiderController extends Controller
 {
+    public function calendario()
+    {
+        $user = Auth::user();
+        $uid  = $user ? (int)$user->id : null;
+        $proyectos = collect();
+        $aprendices = collect();
+
+        // Proyectos asociados al/los semilleros del líder
+        if (Schema::hasTable('proyectos')) {
+            $semilleroIds = [];
+            if ($uid && Schema::hasTable('lideres_semillero')) {
+                $semilleroIds = DB::table('lideres_semillero')
+                    ->where('id_lider_semi', $uid)
+                    ->pluck('id_semillero')
+                    ->filter()->values()->all();
+            }
+            $pq = Proyecto::query();
+            if (!empty($semilleroIds)) { $pq->whereIn('id_semillero', $semilleroIds); }
+            else { $pq->whereRaw('1=0'); }
+            $proyectos = $pq->with(['aprendices:id_aprendiz'])->get();
+        }
+
+        // Catálogo de aprendices (para listado/filtrado del modal)
+        if (Schema::hasTable('aprendices')) {
+            $cols = [];
+            if (Schema::hasColumn('aprendices','id_aprendiz')) { $cols[] = 'id_aprendiz'; }
+            elseif (Schema::hasColumn('aprendices','id')) { $cols[] = DB::raw('id as id_aprendiz'); }
+            foreach (['nombre_completo','nombres','apellidos','tipo_documento','documento'] as $c) {
+                if (Schema::hasColumn('aprendices', $c)) { $cols[] = $c; }
+            }
+            $aprendices = DB::table('aprendices')->select($cols ?: ['*'])->get();
+        }
+
+        return view('lider_semi.calendario_scml', compact('proyectos','aprendices'));
+    }
     public function index()
     {
         $user = Auth::user();
@@ -218,6 +255,164 @@ class CalendarioController extends Controller
         })->values();
 
         return response()->json($events);
+    }
+
+    public function obtenerEventos(Request $request)
+    {
+        $mes  = (int) $request->query('mes');
+        $anio = (int) $request->query('anio');
+        if (!$mes || !$anio) {
+            $now = now();
+            $mes  = $mes  ?: (int) $now->format('m');
+            $anio = $anio ?: (int) $now->format('Y');
+        }
+
+        $q = Evento::query();
+        if (Schema::hasColumn('eventos','fecha_hora')) {
+            $q->whereMonth('fecha_hora', $mes)->whereYear('fecha_hora', $anio);
+        } elseif (Schema::hasColumn('eventos','fecha')) {
+            $start = Carbon::create($anio, $mes, 1)->startOfDay();
+            $end   = (clone $start)->endOfMonth();
+            $q->whereBetween('fecha', [$start->toDateString(), $end->toDateString()]);
+        }
+
+        $uid = Auth::id();
+        $q->where(function ($w) use ($uid) {
+            if (Schema::hasColumn('eventos','id_lider')) { $w->orWhere('id_lider', $uid); }
+            if (Schema::hasColumn('eventos','id_lider_usuario')) { $w->orWhere('id_lider_usuario', $uid); }
+            if (Schema::hasColumn('eventos','id_usuario')) { $w->orWhere('id_usuario', $uid); }
+        });
+
+        if (Schema::hasColumn('eventos','estado')) {
+            $q->where(function ($w) {
+                $w->whereNull('estado')->orWhere('estado','<>','cancelado');
+            });
+        }
+
+        $eventos = $q->get();
+        return response()->json(['eventos' => $eventos]);
+    }
+
+    public function crearEvento(Request $request)
+    {
+        $data = $request->validate([
+            'titulo' => 'required|string|max:255',
+            'descripcion' => 'nullable|string',
+            'fecha_hora' => 'required|date',
+            'duracion' => 'required|integer|min:15',
+            'ubicacion' => 'nullable|string|max:255',
+            'link_virtual' => 'nullable|url',
+            'id_proyecto' => 'nullable|integer',
+            'tipo' => 'nullable|string|max:50',
+            'linea_investigacion' => 'nullable|string|max:255',
+            'recordatorio' => 'nullable|string|max:50',
+            'participantes' => 'nullable|array',
+            'participantes.*' => 'integer',
+        ]);
+        $uid = Auth::id();
+        if (Schema::hasColumn('eventos','id_lider')) { $data['id_lider'] = $uid; }
+        elseif (Schema::hasColumn('eventos','id_lider_usuario')) { $data['id_lider_usuario'] = $uid; }
+        elseif (Schema::hasColumn('eventos','id_usuario')) { $data['id_usuario'] = $uid; }
+        // Normalizar fecha a 'Y-m-d H:i:s' (evita problemas de parsing con 'T')
+        try {
+            if (!empty($data['fecha_hora'])) {
+                $dt = Carbon::parse($data['fecha_hora']);
+                $data['fecha_hora'] = $dt->format('Y-m-d H:i:s');
+            }
+        } catch (\Throwable $e) {}
+        $evento = Evento::create($data);
+        try {
+            if (!empty($data['participantes']) && method_exists($evento,'participantes')) {
+                $evento->participantes()->sync($data['participantes']);
+            }
+        } catch (\Throwable $e) {}
+        return response()->json(['success' => true, 'evento' => $evento]);
+    }
+
+    public function actualizarEvento(Request $request, $evento)
+    {
+        $ev = Evento::findOrFail($evento);
+        $data = $request->validate([
+            'titulo' => 'sometimes|required|string|max:255',
+            'descripcion' => 'sometimes|nullable|string',
+            'fecha_hora' => 'sometimes|required|date',
+            'duracion' => 'sometimes|required|integer|min:15',
+            'ubicacion' => 'sometimes|nullable|string|max:255',
+            'link_virtual' => 'sometimes|nullable|url',
+            'id_proyecto' => 'sometimes|nullable|integer',
+            'tipo' => 'sometimes|nullable|string|max:50',
+            'linea_investigacion' => 'sometimes|nullable|string|max:255',
+            'recordatorio' => 'sometimes|nullable|string|max:50',
+            'participantes' => 'sometimes|array',
+            'participantes.*' => 'integer',
+        ]);
+        // Normalizar y redirigir la fecha a la columna vigente
+        if (array_key_exists('fecha_hora', $data)) {
+            try {
+                $dt = Carbon::parse($data['fecha_hora']);
+                $norm = $dt->format('Y-m-d H:i:s');
+                if (Schema::hasColumn('eventos','fecha_hora')) {
+                    $data['fecha_hora'] = $norm;
+                } elseif (Schema::hasColumn('eventos','fecha')) {
+                    $data['fecha'] = $dt->toDateString();
+                    unset($data['fecha_hora']);
+                } elseif (Schema::hasColumn('eventos','fecha_inicio')) {
+                    $data['fecha_inicio'] = $norm;
+                    unset($data['fecha_hora']);
+                }
+            } catch (\Throwable $e) {}
+        }
+        $ev->update($data);
+        try {
+            if ($request->has('participantes') && method_exists($ev,'participantes')) {
+                $ev->participantes()->sync($request->input('participantes', []));
+            }
+        } catch (\Throwable $e) {}
+        $ev->refresh();
+        return response()->json(['success' => true, 'evento' => $ev]);
+    }
+
+    public function eliminarEvento($evento)
+    {
+        $ev = Evento::findOrFail($evento);
+        $ev->delete();
+        return response()->json(['success' => true]);
+    }
+
+    public function generarEnlace($evento)
+    {
+        $ev = Evento::findOrFail($evento);
+        $ev->link_virtual = 'https://teams.microsoft.com/l/meeting/'.uniqid();
+        $ev->save();
+        return response()->json(['link' => $ev->link_virtual]);
+    }
+
+    public function getInfoReunion($evento)
+    {
+        $ev = Evento::with(['proyecto:id_proyecto,nombre_proyecto','lider:id,name'])->findOrFail($evento);
+        return response()->json(['evento' => $ev]);
+    }
+
+    public function actualizarAsistencia($evento, $aprendiz, Request $request)
+    {
+        $data = $request->validate([
+            'asistencia' => 'required|string|in:pendiente,asistio,no_asistio',
+        ]);
+        if (!Schema::hasTable('evento_participantes')) {
+            return response()->json(['ok' => false, 'message' => 'pivot missing'], 200);
+        }
+        $pivotCol = Schema::hasColumn('evento_participantes','id_aprendiz') ? 'id_aprendiz' : (Schema::hasColumn('evento_participantes','aprendiz_id') ? 'aprendiz_id' : null);
+        if (!$pivotCol) { return response()->json(['ok' => false, 'message' => 'pivot col missing'], 200); }
+        $payload = ['asistencia' => $data['asistencia']];
+        try {
+            DB::table('evento_participantes')->updateOrInsert([
+                'id_evento' => (int)$evento,
+                $pivotCol   => (int)$aprendiz,
+            ], $payload);
+            return response()->json(['ok' => true]);
+        } catch (\Throwable $e) {
+            return response()->json(['ok' => false], 200);
+        }
     }
 
     private function proyectoIdsUsuario(int $userId): array

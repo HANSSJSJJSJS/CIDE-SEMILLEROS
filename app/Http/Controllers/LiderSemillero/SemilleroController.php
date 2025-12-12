@@ -452,6 +452,10 @@ class SemilleroController extends Controller
             $semillero->save();
         }
 
+        if ($request->expectsJson() || $request->wantsJson() || $request->ajax()) {
+            return response()->json(['ok' => true]);
+        }
+
         return redirect()->route('lider_semi.semilleros')->with('status','Aprendices actualizados');
     }
 
@@ -803,6 +807,11 @@ class SemilleroController extends Controller
             }
         }
         if (!empty($insert)) DB::table($pivot['table'])->insert($insert);
+
+        if ($request->expectsJson() || $request->wantsJson() || $request->ajax()) {
+            return response()->json(['ok' => true]);
+        }
+
         return redirect()->route('lider_semi.semilleros')->with('status','Aprendices del proyecto actualizados');
     }
 

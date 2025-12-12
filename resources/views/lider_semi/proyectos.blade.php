@@ -196,9 +196,8 @@
                                 @endforeach
                             </div>
                         </div>
-                        <form id="form-sync-{{ $loop->index }}" class="d-none" method="POST" action="#">
+                        <form id="form-sync-{{ $loop->index }}" class="d-none" method="POST" action="javascript:void(0)" onsubmit="return false;">
                             @csrf
-                            @method('PUT')
                         </form>
                     </div>
                     <div class="modal-footer d-flex justify-content-between">
@@ -509,15 +508,24 @@
             if (btnGuardar) btnGuardar.addEventListener('click', function(e){
                 e.preventDefault();
                 const ids = Array.from(lista.querySelectorAll('[data-id]')).map(n=> parseInt(n.dataset.id,10)).filter(Boolean);
-                // Resolver URL de actualización de forma robusta
-                const tentative = route('update');
                 const REF = (window['refId'+idx] ?? refId);
                 const isSemDyn = (window['isSem'+idx] ?? isSem);
                 const fallbackUrl = isSemDyn
                     ? `/lider_semi/semilleros/${REF}/aprendices`
                     : `/lider_semi/proyectos/${REF}/aprendices`;
-                const updateUrl = (tentative && tentative !== '#' && !tentative.includes('__ID__')) ? tentative : fallbackUrl;
-                apiFetch(updateUrl, { method:'PUT', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ aprendices_ids: ids }) })
+                const refNum = parseInt(REF, 10);
+                if (!Number.isInteger(refNum) || refNum <= 0) {
+                    console.error('[Guardar Aprendices] REF inválido:', REF, '| idx:', idx, '| isSem:', isSemDyn);
+                    notify('No se pudo guardar: ID inválido (recarga la página).', 'danger');
+                    return;
+                }
+                if (!/\/aprendices(\/|$)/.test(fallbackUrl)) {
+                    console.error('[Guardar Aprendices] URL inválida:', fallbackUrl);
+                    notify('No se pudo guardar: URL inválida (recarga la página).', 'danger');
+                    return;
+                }
+                console.log('[Guardar Aprendices] PUT', fallbackUrl, { idsCount: ids.length, idx, isSem: isSemDyn, refId: refNum });
+                apiFetch(fallbackUrl, { method:'PUT', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ aprendices_ids: ids }) })
                     .then(async r=>{ let data; try{ data = await r.json(); }catch(_){ data=null; } return {ok:r.ok,status:r.status,data}; })
                     .then(({ok,status,data})=>{
                         if(ok && data && data.ok){

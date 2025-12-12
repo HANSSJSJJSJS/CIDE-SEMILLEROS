@@ -5,28 +5,37 @@
 <link rel="stylesheet" href="{{ asset('css/common/calendario.css') }}?v={{ $v }}">
 <link rel="stylesheet" href="{{ asset('css/common/calendario-views.css') }}?v={{ $v }}">
 <link rel="stylesheet" href="{{ asset('css/common/calendar-month.css') }}?v={{ $v }}">
+<link rel="stylesheet" href="{{ asset('css/lider_semi/calendario-lider.css') }}?v={{ $v }}">
 @endpush
 
 @section('content')
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<div class="container calendar-scml">
-    <div class="cal-hero">
-        <h2>Calendario de Actividades</h2>
-        <p>Programa y gestiona reuniones y eventos con tus semilleros</p>
-    </div>
+<div class="cal-lider">
     <div class="header">
         <div class="header-top">
+            <div class="header-title">
+                <div class="title-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar-week" viewBox="0 0 16 16">
+                        <path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-5 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z"/>
+                        <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
+                    </svg>
+                </div>
+                <div class="title-text">
+                    <h1 class="title">Calendario SCML</h1>
+                    <div class="subtitle">Gestiona reuniones y eventos con tus semilleros</div>
+                </div>
+            </div>
+        </div>
+        <div class="header-controls">
             <div class="view-switcher">
                 <button class="view-btn active" data-view="month">Mes</button>
                 <button class="view-btn" data-view="week">Semana</button>
                 <button class="view-btn" data-view="day">Día</button>
             </div>
-        </div>
-        <div class="header-controls">
             <div class="nav-controls">
-                <button class="nav-btn" id="prevBtn">← Anterior</button>
+                <button class="nav-btn" id="prevBtn">&#x2039; Anterior</button>
                 <button class="today-btn" id="todayBtn">Hoy</button>
-                <button class="nav-btn" id="nextBtn">Siguiente →</button>
+                <button class="nav-btn" id="nextBtn">Siguiente &#x203A;</button>
             </div>
             <div class="current-period" id="currentPeriod"></div>
         </div>
@@ -57,7 +66,7 @@
         <div class="day-header" id="dayHeader"></div>
         <div class="day-grid" id="dayGrid"></div>
     </div>
-</div>
+
 
 <!-- Modal para agregar/editar eventos - Wizard paso a paso -->
 <div class="modal-calendario" id="event-modal">
@@ -72,7 +81,23 @@
                     <p class="modal-subtitle">Completa los siguientes pasos para programar tu reunión</p>
                 </div>
             </div>
-            <button class="close-modal-calendario" id="close-modal">&times;</button>
+            <button title="Add New" class="close-modal-calendario" id="close-modal">
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="50px"
+                    height="50px"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    focusable="false"
+                >
+                    <path
+                        d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z"
+                        stroke-width="1.5"
+                    ></path>
+                    <path d="M8 12H16" stroke-width="1.5"></path>
+                    <path d="M12 16V8" stroke-width="1.5"></path>
+                </svg>
+            </button>
         </div>
 
         <!-- Indicador de pasos -->
@@ -380,6 +405,8 @@
 <!-- Toasts de Calendario -->
 <div id="cal-toast-container" class="cal-toast-container" aria-live="polite" aria-atomic="true"></div>
 
+</div>
+
 <script>
 // Estado
 let currentDate = new Date();
@@ -388,6 +415,30 @@ let events = [];
 let selectedDate = null;
 let editingEventId = null;
 let draggedEvent = null;
+
+let dayNowTimer = null;
+function clearDayNowTimer(){
+  if(dayNowTimer){
+    clearInterval(dayNowTimer);
+    dayNowTimer = null;
+  }
+}
+function updateDayNowIndicator(dateStr, slotsCol){
+  if(!slotsCol) return;
+  const existing = slotsCol.querySelector('.day-current-time');
+  if(existing) existing.remove();
+  const todayStr = formatDate(new Date());
+  if(dateStr !== todayStr) return;
+  const now = new Date();
+  const startHour = workHours.length ? Math.min(...workHours) : 8;
+  const minutesFromStart = (now.getHours()*60 + now.getMinutes()) - (startHour*60);
+  const totalHeight = workHours.length * 80;
+  const top = Math.max(0, Math.min(totalHeight, (minutesFromStart/60) * 80));
+  const line = document.createElement('div');
+  line.className = 'day-current-time';
+  line.style.top = `${top}px`;
+  slotsCol.appendChild(line);
+}
 
 // Helper: formatea 'YYYY-MM-DD' en largo, evitando new Date('YYYY-MM-DD') (UTC)
 if (typeof formatDateLongLocalFromYMD !== 'function') {
@@ -411,7 +462,7 @@ const CURRENT_USER_ID = {{ Auth::id() }};
 const PARTICIPANTS_MAP = @json(isset($aprendices) ? $aprendices->pluck('nombre_completo','id_aprendiz') : []);
 
 // Horario permitido: 08:00 a 16:50 (sin almuerzo 12:00-13:55)
-const workHours = Array.from({ length: 9 }, (_, i) => i + 8); // 8..16
+const workHours = Array.from({ length: 10 }, (_, i) => i + 8); // 8..17
 let HOLIDAYS = @json(config('app.feriados', []));
 
 const HOLIDAYS_LOADED = new Set();
@@ -599,22 +650,45 @@ async function loadEventsForCurrentPeriod(){
     const data = await res.json();
     const list = data.eventos || [];
     events = list.map(ev => {
-      const raw = String(ev.fecha_hora||'');
-      let datePart = '', timePart = '';
-      if (raw.includes('T')){
-        const parts = raw.split('T');
-        datePart = parts[0];
-        timePart = (parts[1]||'').slice(0,5);
-      } else if (raw.includes(' ')){
-        const parts = raw.split(' ');
-        datePart = parts[0];
-        timePart = (parts[1]||'').slice(0,5);
-      } else {
-        // fallback: usar Date pero sin toISOString
-        const d = new Date(raw);
-        datePart = formatDateLocal(d);
-        timePart = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-      }
+      const raw = String(ev.fecha_hora || ev.fecha_inicio || ev.fecha || '');
+      const parseBackendDateTime = (value)=>{
+        const s = String(value||'').trim();
+        if(!s) return { datePart:'', timePart:'' };
+        // Si Laravel serializa como ISO UTC (termina en 'Z') o con offset, convertir a hora local
+        const tzAware = /[zZ]$/.test(s) || /[+-]\d{2}:\d{2}$/.test(s);
+        if (tzAware) {
+          const d = new Date(s);
+          if (!Number.isNaN(d.getTime())) {
+            return {
+              datePart: formatDateLocal(d),
+              timePart: `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+            };
+          }
+        }
+        // Sin timezone: parseo estable (evita problemas de Safari con 'YYYY-MM-DD HH:mm:ss')
+        if (s.includes('T')){
+          const parts = s.split('T');
+          const datePart = parts[0];
+          const t = (parts[1]||'').replace('Z','');
+          const timePart = t.slice(0,5);
+          return { datePart, timePart };
+        }
+        if (s.includes(' ')){
+          const parts = s.split(' ');
+          const datePart = parts[0];
+          const timePart = (parts[1]||'').slice(0,5);
+          return { datePart, timePart };
+        }
+        const d = new Date(s);
+        if (!Number.isNaN(d.getTime())) {
+          return {
+            datePart: formatDateLocal(d),
+            timePart: `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+          };
+        }
+        return { datePart:'', timePart:'' };
+      };
+      const { datePart, timePart } = parseBackendDateTime(raw);
       // Participantes: aceptar varios formatos desde backend (incluyendo asistencia)
       let participantsIds = [];
       let participantsNames = [];
@@ -647,7 +721,7 @@ async function loadEventsForCurrentPeriod(){
       const creatorId = ev.leader_id ?? ev.id_lider ?? ev.id_usuario ?? null;
       const estado = ev.estado ?? 'programada';
       return {
-        id: ev.id,
+        id: ev.id_evento ?? ev.id ?? ev.idEvento,
         date: datePart,
         time: timePart||'09:00',
         title: ev.titulo,
@@ -670,7 +744,12 @@ async function loadEventsForCurrentPeriod(){
 function renderCalendar(){ if(currentView==='month') renderMonthView(); else if(currentView==='week') renderWeekView(); else renderDayView(); updatePeriodDisplay(); }
 
 function renderMonthView(){
-  monthView.style.display='block'; weekView.classList.remove('active'); dayView.classList.remove('active');
+  clearDayNowTimer();
+  monthView.style.display='block';
+  weekView.style.display='none';
+  dayView.style.display='none';
+  weekView.classList.remove('active');
+  dayView.classList.remove('active');
   const year = currentDate.getFullYear(); const month = currentDate.getMonth();
   const firstDay = new Date(year, month, 1); const lastDay = new Date(year, month+1, 0); const prevLastDay = new Date(year, month, 0);
   const firstDayIndex = firstDay.getDay(); const lastDayIndex = lastDay.getDay(); const nextDays = 7 - lastDayIndex - 1;
@@ -700,16 +779,43 @@ function createDayCell(date, otherMonth){
 }
 
 function renderWeekView(){
-  monthView.style.display='none'; weekView.classList.add('active'); dayView.classList.remove('active');
+  clearDayNowTimer();
+  monthView.style.display='none';
+  weekView.style.display='block';
+  dayView.style.display='none';
+  weekView.classList.add('active');
+  dayView.classList.remove('active');
   const weekStart=getWeekStart(currentDate); const weekDays=Array.from({length:7},(_,i)=>{ const d=new Date(weekStart); d.setDate(weekStart.getDate()+i); return d; });
+  const activeDateStr = formatDate(currentDate);
   const weekHeader=document.getElementById('weekHeader'); weekHeader.innerHTML='<div class="week-time-label">Hora</div>';
-  weekDays.forEach(date=>{ const header=document.createElement('div'); header.className='week-day-header'; if(isToday(date)) header.classList.add('today'); if (HOLIDAYS.includes(formatDate(date))) header.classList.add('festivo'); header.innerHTML=`<div class="week-day-name">${getDayName(date)}</div><div class="week-day-number">${date.getDate()}</div>`; weekHeader.appendChild(header); });
+  weekDays.forEach(date=>{
+    const header=document.createElement('div');
+    header.className='week-day-header';
+    const dateStr = formatDate(date);
+    if(isToday(date)) header.classList.add('today');
+    if (HOLIDAYS.includes(dateStr)) header.classList.add('festivo');
+    if (dateStr === activeDateStr) header.classList.add('active');
+    header.innerHTML = (dateStr === activeDateStr)
+      ? `<div class="week-day-pill"><div class="wd-name">${getDayName(date)}</div><div class="wd-day">${date.getDate()}</div></div>`
+      : `<div class="week-day-name">${getDayName(date)}</div><div class="week-day-number">${date.getDate()}</div>`;
+    weekHeader.appendChild(header);
+  });
   const weekGrid=document.getElementById('weekGrid'); weekGrid.innerHTML=''; const timesCol=document.createElement('div'); timesCol.className='week-times';
-  workHours.forEach(hour=>{ const tl=document.createElement('div'); tl.className='time-slot-label'; tl.textContent=formatHour(hour); timesCol.appendChild(tl); }); weekGrid.appendChild(timesCol);
-  weekDays.forEach(date=>{ const dayCol=document.createElement('div'); dayCol.className='week-day-column'; const dateStr=formatDate(date); if (HOLIDAYS.includes(dateStr)) dayCol.classList.add('festivo');
+  workHours.forEach(hour=>{
+    const tl=document.createElement('div');
+    tl.className='time-slot-label';
+    const hm = hour*100;
+    const isLunch = hm>=1200 && hm<=1355;
+    if (isLunch) tl.classList.add('lunch');
+    tl.textContent=formatHour(hour);
+    timesCol.appendChild(tl);
+  });
+  weekGrid.appendChild(timesCol);
+
+  weekDays.forEach(date=>{ const dayCol=document.createElement('div'); dayCol.className='week-day-column'; const dateStr=formatDate(date); if (HOLIDAYS.includes(dateStr)) dayCol.classList.add('festivo'); if(dateStr===activeDateStr) dayCol.classList.add('active');
     const isWeekend = date.getDay()===0 || date.getDay()===6; const isHoliday = HOLIDAYS.includes(dateStr);
     workHours.forEach(hour=>{ const slot=document.createElement('div'); slot.className='week-time-slot'; slot.dataset.date=dateStr; slot.dataset.hour=hour;
-      const hm = hour*100; const isLunch = hm>=1200 && hm<=1355; const slotDt = new Date(`${dateStr}T${String(hour).padStart(2,'0')}:00`); const allowed = !isWeekend && !isHoliday && hm>=800 && hm<=1650 && !isLunch && !isInPast(slotDt);
+      const hm = hour*100; const isLunch = hm>=1200 && hm<=1355; if(isLunch) slot.classList.add('lunch'); const slotDt = new Date(`${dateStr}T${String(hour).padStart(2,'0')}:00`); const allowed = !isWeekend && !isHoliday && hm>=800 && hm<=1650 && !isLunch && !isInPast(slotDt);
       const occupied = isHourOccupied(dateStr, hour);
       if (!allowed || occupied) { slot.classList.add('disabled'); if (occupied) slot.classList.add('occupied'); }
       else {
@@ -724,13 +830,24 @@ function renderWeekView(){
 }
 
 function renderDayView(){
-  monthView.style.display='none'; weekView.classList.remove('active'); dayView.classList.add('active'); const dateStr=formatDate(currentDate);
-  const dayHeader=document.getElementById('dayHeader'); dayHeader.innerHTML=`<div></div><div class="day-header-info"><div class="day-header-name">${getDayName(currentDate)}</div><div class="day-header-date">${currentDate.getDate()}</div></div>`;
+  monthView.style.display='none';
+  weekView.style.display='none';
+  dayView.style.display='block';
+  weekView.classList.remove('active');
+  dayView.classList.add('active');
+  const dateStr=formatDate(currentDate);
+  const isWeekend = currentDate.getDay()===0 || currentDate.getDay()===6; const isHoliday = HOLIDAYS.includes(dateStr);
+  const dayHeader=document.getElementById('dayHeader');
+  dayHeader.innerHTML=`<div class="day-header-card"><div class="dh-week">${getDayName(currentDate)}</div><div class="dh-day">${currentDate.getDate()}</div></div>${isHoliday ? '<span class="badge-festivo">Festivo</span>' : ''}`;
   const dayGrid=document.getElementById('dayGrid'); dayGrid.innerHTML=''; const timesCol=document.createElement('div'); timesCol.className='day-times';
-  workHours.forEach(hour=>{ const tl=document.createElement('div'); tl.className='day-time-label'; tl.textContent=formatHour(hour); timesCol.appendChild(tl); }); dayGrid.appendChild(timesCol);
-  const slotsCol=document.createElement('div'); slotsCol.className='day-slots';  const isWeekend = currentDate.getDay()===0 || currentDate.getDay()===6; const isHoliday = HOLIDAYS.includes(dateStr);
+  if(isHoliday) timesCol.classList.add('festivo');
+  if(isToday(currentDate)) timesCol.classList.add('today');
+  workHours.forEach(hour=>{ const tl=document.createElement('div'); tl.className='day-time-label'; const hm=hour*100; const isLunch = hm>=1200 && hm<=1355; if(isLunch) tl.classList.add('lunch'); tl.textContent=formatHour(hour); timesCol.appendChild(tl); }); dayGrid.appendChild(timesCol);
+  const slotsCol=document.createElement('div'); slotsCol.className='day-slots';
+  if(isHoliday) slotsCol.classList.add('festivo');
+  if(isToday(currentDate)) slotsCol.classList.add('today');
   workHours.forEach(hour=>{ const slot=document.createElement('div'); slot.className='day-time-slot'; slot.dataset.date=dateStr; slot.dataset.hour=hour;
-    const hm = hour*100; const isLunch = hm>=1200 && hm<=1355; const slotDt = new Date(`${dateStr}T${String(hour).padStart(2,'0')}:00`); const allowed = !isWeekend && !isHoliday && hm>=800 && hm<=1650 && !isLunch && !isInPast(slotDt);
+    const hm = hour*100; const isLunch = hm>=1200 && hm<=1355; if(isLunch) slot.classList.add('lunch'); const slotDt = new Date(`${dateStr}T${String(hour).padStart(2,'0')}:00`); const allowed = !isWeekend && !isHoliday && hm>=800 && hm<=1650 && !isLunch && !isInPast(slotDt);
     const occupied = isHourOccupied(dateStr, hour);
     if (!allowed || occupied) { slot.classList.add('disabled'); if (occupied) slot.classList.add('occupied'); }
     else {
@@ -738,7 +855,16 @@ function renderDayView(){
       slot.addEventListener('dragover', handleDragOver); slot.addEventListener('drop',(e)=>{ const eventDate=new Date(currentDate); eventDate.setHours(hour,0,0,0); handleDrop(e,eventDate); }); slot.addEventListener('dragleave', handleDragLeave);
     }
     slotsCol.appendChild(slot); });
-  events.filter(e=>e.date===dateStr).forEach(event=>{ slotsCol.appendChild(createDayEventElement(event)); }); dayGrid.appendChild(slotsCol);
+  events.filter(e=>e.date===dateStr).forEach(event=>{ slotsCol.appendChild(createDayEventElement(event)); });
+  dayGrid.appendChild(slotsCol);
+  clearDayNowTimer();
+  updateDayNowIndicator(dateStr, slotsCol);
+  dayNowTimer = setInterval(()=>{
+    if(currentView!=='day') return;
+    const dc = document.querySelector('#dayGrid .day-slots');
+    if(!dc) return;
+    updateDayNowIndicator(formatDate(currentDate), dc);
+  }, 60000);
 }
 
 function createEventElement(event){
@@ -829,10 +955,47 @@ function handleDragOver(e){ e.preventDefault(); e.dataTransfer.dropEffect='move'
   }
 }
 function handleDragLeave(e){ e.currentTarget.classList.remove('drag-over'); hideDragIndicator(); if(e.currentTarget.dataset) delete e.currentTarget.dataset.hoverHour; }
-async function handleDrop(e,newDate){ e.preventDefault(); e.currentTarget.classList.remove('drag-over'); hideDragIndicator(); if(!draggedEvent) return; const idx=events.findIndex(ev=>ev.id===draggedEvent.id); if(idx===-1) return; const newDateStr=formatDate(newDate); let newTime=events[idx].time; const hAttr = (e.currentTarget.dataset && (e.currentTarget.dataset.hoverHour||e.currentTarget.dataset.hour)) || null; if(hAttr){ const hour=parseInt(hAttr,10); newTime=`${String(hour).padStart(2,'0')}:00`; }
-  const candidate = new Date(`${newDateStr}T${newTime}:00`); if(!isAllowedDateTime(candidate)) { showToast('No puedes mover el evento a un horario no permitido o en el pasado.','warning'); return; } if(hasClientConflict(candidate, events[idx].duration, draggedEvent.id)) { showToast('Ese horario ya está ocupado.','warning'); return; }
+async function handleDrop(e,newDate){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  hideDragIndicator();
+  if(!draggedEvent) return;
+  const idx=events.findIndex(ev=>ev.id===draggedEvent.id);
+  if(idx===-1) return;
+
+  const newDateStr=formatDate(newDate);
+  let newTime=events[idx].time;
+  const hAttr = (e.currentTarget.dataset && (e.currentTarget.dataset.hoverHour||e.currentTarget.dataset.hour)) || null;
+  if(hAttr){
+    const hour=parseInt(hAttr,10);
+    newTime=`${String(hour).padStart(2,'0')}:00`;
+  }
+
+  const buildCandidate = (ds, ts)=> new Date(`${ds}T${ts}:00`);
+  let candidate = buildCandidate(newDateStr, newTime);
+
+  if(!hAttr){
+    const okSame = isAllowedDateTime(candidate) && !crossesLunch(candidate, events[idx].duration) && !hasClientConflict(candidate, events[idx].duration, draggedEvent.id);
+    if(!okSame){
+      const firstHour = getFirstAvailableHour(newDateStr);
+      if (firstHour === null){
+        showToast('Este día no tiene más horarios disponibles para agendar.','warning');
+        return;
+      }
+      newTime = `${String(firstHour).padStart(2,'0')}:00`;
+      candidate = buildCandidate(newDateStr, newTime);
+    }
+  }
+
+  if(!isAllowedDateTime(candidate)) { showToast('No puedes mover el evento a un horario no permitido o en el pasado.','warning'); return; }
+  if(hasClientConflict(candidate, events[idx].duration, draggedEvent.id)) { showToast('Ese horario ya está ocupado.','warning'); return; }
   if(crossesLunch(candidate, events[idx].duration)) { showToast('No puedes mover la reunión cruzando el horario de almuerzo (12:00 a 13:55).','warning'); return; }
-  await updateEventOnServer(events[idx].id,newDateStr,newTime); await loadEventsForCurrentPeriod(); renderCalendar(); }
+
+  const ok = await updateEventOnServer(events[idx].id,newDateStr,newTime);
+  if(!ok) return;
+  await loadEventsForCurrentPeriod();
+  renderCalendar();
+}
 
 function openEventModal(date){
   // Antes de abrir, validar si el día tiene todavía horas disponibles entre 8am y 4pm (sin almuerzo)
@@ -1233,7 +1396,7 @@ function formatDateLocal(date){
 function formatDate(date){ return formatDateLocal(date); }
 function formatDateLong(date){ const days=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']; const months=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']; return `${days[date.getDay()]}, ${date.getDate()} de ${months[date.getMonth()]} ${date.getFullYear()}`; }
 function getDayName(date){ const days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']; return days[date.getDay()]; }
-function formatHour(hour){ const period = hour>=12? 'PM':'AM'; const displayHour = hour>12? hour-12: hour; return `${displayHour}:00 ${period}`; }
+function formatHour(hour){ return `${String(hour).padStart(2,'0')}:00`; }
 function isToday(date){ const t=new Date(); return date.getDate()===t.getDate() && date.getMonth()===t.getMonth() && date.getFullYear()===t.getFullYear(); }
 function isAllowedDateTime(dt){ const d=dt.getDay(); if(d===0||d===6) return false; const dateStr=formatDate(dt); if(HOLIDAYS.includes(dateStr)) return false; const now=new Date(); if(dt.getTime() < now.getTime()) return false; const hm=dt.getHours()*100 + dt.getMinutes(); if(hm<800 || hm>1650) return false; if(hm>=1200 && hm<=1355) return false; return true; }
 function isPastDate(date){ const today = new Date(); const d = new Date(date.getFullYear(), date.getMonth(), date.getDate()); const t = new Date(today.getFullYear(), today.getMonth(), today.getDate()); return d.getTime() < t.getTime(); }
