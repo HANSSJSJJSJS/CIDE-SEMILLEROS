@@ -1,75 +1,82 @@
-{{-- MODAL UNIVERSAL PARA SUBIR RECURSO --}}
-<div class="modal-overlay" id="modalSubirRecurso">
-    <div class="modal-evidencia">
-        
-        {{-- TÍTULO --}}
-        <h2 id="tituloModalRecurso">Subir Recurso</h2>
+<!-- MODAL CREAR RECURSO (BOOTSTRAP) -->
+<div class="modal fade" id="modalSubirRecurso" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content modal-evidencia">
 
-        <form id="formSubirRecurso">
-            @csrf
-
-            {{-- SEMILLERO --}}
-            <div class="mb-3">
-                <label class="form-label-evidencia">Semillero</label>
-
-                <select class="form-select-evidencia" id="semillero_id" name="semillero_id">
-                    <option value="">Selecciona el semillero...</option>
-                    @foreach($semilleros ?? [] as $sem)
-                        <option value="{{ $sem->id_semillero }}">{{ $sem->nombre }}</option>
-                    @endforeach
-                </select>
-
-                {{-- input hidden si viene desde tarjeta --}}
-                <input type="hidden" id="semillero_id_fijo">
+            <div class="modal-header border-0">
+                <h4 class="modal-title fw-bold text-primary" id="tituloModalRecurso">
+                    Crear Recurso
+                </h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
-            {{-- PROYECTO --}}
-            <div class="mb-3">
-                <label class="form-label-evidencia">Proyecto del Semillero</label>
+            <div class="modal-body">
 
-                <select class="form-select-evidencia" id="proyecto_id" name="proyecto_id" required disabled>
-                    <option value="">Selecciona el semillero primero…</option>
-                </select>
+                <form id="formSubirRecurso">
+                    @csrf
+
+                    <!-- SEMILLERO -->
+                    <div class="mb-3">
+                        <label class="form-label">Semillero</label>
+                        <select class="form-select" id="semillero_id" name="semillero_id">
+                            <option value="">Selecciona…</option>
+                            @foreach($semilleros ?? [] as $sem)
+                                <option value="{{ $sem->id_semillero }}">{{ $sem->nombre }}</option>
+                            @endforeach
+                        </select>
+
+                        <!-- SE USA CUANDO EL BOTÓN ES DE UNA TARJETA -->
+                        <input type="hidden" id="semillero_id_fijo">
+                    </div>
+
+                    <!-- PROYECTO -->
+                    <div class="mb-3">
+                        <label class="form-label">Proyecto</label>
+                        <select class="form-select" id="proyecto_id" name="proyecto_id" disabled required>
+                            <option value="">Seleccione un semillero…</option>
+                        </select>
+                    </div>
+
+                    <!-- LÍDER -->
+                    <div class="mb-3">
+                        <label class="form-label">Líder del Semillero</label>
+                        <input type="text" class="form-control" id="lider_nombre" readonly>
+                        <input type="hidden" id="lider_id" name="lider_id">
+                    </div>
+
+                    <!-- TÍTULO -->
+                    <div class="mb-3">
+                        <label class="form-label">Título</label>
+                        <input type="text" class="form-control" name="titulo" required>
+                    </div>
+
+                    <!-- DESCRIPCIÓN -->
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea class="form-control" name="descripcion" required></textarea>
+                    </div>
+
+                    <!-- FECHA LÍMITE -->
+                    <div class="mb-3">
+                        <label class="form-label">Fecha Límite</label>
+                        <input type="date" class="form-control" name="fecha_limite" required>
+                    </div>
+
+                    <!-- BOTONES -->
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">
+                            Cancelar
+                        </button>
+
+                        <button type="submit" class="btn btn-success rounded-pill">
+                            Guardar Recurso
+                        </button>
+                    </div>
+
+                </form>
+
             </div>
 
-            {{-- LÍDER --}}
-            <div class="mb-3">
-                <label class="form-label-evidencia">Líder del Semillero</label>
-
-                <input type="text" class="form-control-evidencia" id="lider_nombre" readonly>
-                <input type="hidden" id="lider_id" name="lider_id">
-            </div>
-
-            {{-- TÍTULO --}}
-            <div class="mb-3">
-                <label class="form-label-evidencia">Título del Recurso</label>
-                <input type="text" class="form-control-evidencia" name="titulo" required>
-            </div>
-
-            {{-- DESCRIPCIÓN --}}
-            <div class="mb-3">
-                <label class="form-label-evidencia">Descripción</label>
-                <textarea class="form-control-evidencia" name="descripcion" required></textarea>
-            </div>
-
-            {{-- FECHA LÍMITE --}}
-            <div class="mb-3">
-                <label class="form-label-evidencia">Fecha límite</label>
-                <input type="date" class="form-control-evidencia" name="fecha_limite" required>
-            </div>
-
-            {{-- BOTONES --}}
-            <div class="modal-botones">
-                <button type="button" class="btn-cancelar-modal" id="btnCancelarRecurso">
-                    Cancelar
-                </button>
-
-                <button type="submit" class="btn-guardar-modal">
-                    <i class="bi bi-check-circle me-1"></i>
-                    Guardar Recurso
-                </button>
-            </div>
-
-        </form>
+        </div>
     </div>
 </div>

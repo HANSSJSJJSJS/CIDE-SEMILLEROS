@@ -25,6 +25,8 @@
     <link href="{{ asset('css/lider_semi/lider.css') }}?v={{ time() }}" rel="stylesheet">
     {{-- Loader CSS global --}}
     <link href="{{ asset('css/common/loader.css') }}?v={{ time() }}" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     @stack('styles')
     @yield('styles')
 </head>
@@ -320,6 +322,8 @@
       window.addEventListener('load', hide);
     })();
   </script>
+@stack('scripts')
+
 </body>
 
 </html>

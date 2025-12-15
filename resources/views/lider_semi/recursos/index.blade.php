@@ -1,98 +1,167 @@
+{{-- resources/views/lider_semi/recursos/index.blade.php --}}
 @extends('layouts.lider_semi')
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/lider_semi/recursos.css') }}">
+<link rel="stylesheet" href="{{ asset('css/admin/recursos.css') }}">
 @endpush
 
 @section('content')
-<div class="container py-4">
+
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
+<div class="container-fluid mt-4 px-4">
 
     {{-- TÍTULO PRINCIPAL --}}
-    <h2 class="mb-4 fw-bold text-primary">Recursos asignados a mi Semillero</h2>
+    <div class="documentos-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>Recursos para Líder de Semillero</h2>
+            <p>Consulta y responde los recursos asignados a los líderes del semillero.</p>
+        </div>
 
-    {{-- DATOS DEL SEMILLERO --}}
-    <div class="card shadow-sm mb-4">
-        <div class="card-body">
-            <strong>Semillero:</strong> {{ $semillero->nombre }} <br>
-            <strong>Líder:</strong> {{ Auth::user()->name }}
+        <div class="d-flex gap-2">
+            <a href="{{ route('lider_semi.recursos.multimedia') }}" class="btn-multimedia">
+                <i class="bi bi-collection-play"></i> Multimedia
+            </a>
         </div>
     </div>
 
-    {{-- SI NO HAY RECURSOS --}}
-    @if ($recursos->isEmpty())
-        <div class="estado-vacio text-center py-5">
-            <i class="bi bi-inbox" style="font-size: 3rem; opacity: .3;"></i>
-            <p class="mt-3 text-muted">No tienes recursos asignados aún.</p>
-        </div>
-    @endif
+    {{-- PROYECTOS DEL LÍDER --}}
+    <div class="mb-5">
+        <h4 class="seccion-titulo">Tus Proyectos</h4>
 
-    {{-- LISTA DE RECURSOS --}}
-    <div class="row">
-        @foreach($recursos as $r)
-        <div class="col-md-6 mb-4">
-            <div class="proyecto-card">
-
-                <div class="card-body">
-
-                    {{-- TÍTULO --}}
-                    <h5 class="proyecto-titulo">{{ $r->titulo }}</h5>
-
-                    {{-- ESTADO --}}
-                    <p class="proyecto-descripcion">
-                        @if($r->estado == 'pendiente')
-                            <span class="badge badge-pendiente">Pendiente</span>
-                        @elseif($r->estado == 'aprobado')
-                            <span class="badge badge-aprobado">Aprobado</span>
-                        @else
-                            <span class="badge badge-rechazado">Rechazado</span>
-                        @endif
-                    </p>
-
-                    {{-- DESCRIPCIÓN --}}
-                    <p class="text-muted small">{{ $r->descripcion ?? 'Sin descripción.' }}</p>
-
-                    {{-- ARCHIVO DEL LÍDER GENERAL --}}
-                    <p class="mb-2">
-                        <strong>Documento entregado:</strong><br>
-                        <a href="{{ route('lider_semi.recursos.download', $r->id) }}"
-                           class="btn-ver-documento mt-1">
-                            <i class="bi bi-file-earmark-arrow-down"></i> Descargar
-                        </a>
-                    </p>
-
-                    <hr>
-
-                    {{-- RESPUESTA DEL LÍDER DE SEMILLERO --}}
-                    <div class="entrega-acciones">
-
-                        {{-- SUBIR/EDITAR RESPUESTA --}}
-                        @if($r->estado == 'pendiente')
-                            <a href="{{ route('lider_semi.recursos.responder', $r->id) }}"
-                               class="btn-aprobar w-100">
-                                <i class="bi bi-upload"></i> Enviar evidencia
-                            </a>
-                        @endif
-
-                        {{-- VER OBSERVACIONES --}}
-                        @if($r->estado == 'rechazado')
-                            <p class="mt-3 text-danger fw-semibold">
-                                <i class="bi bi-x-circle"></i> Rechazado: {{ $r->comentarios }}
-                            </p>
-                        @endif
-
-                        @if($r->estado == 'aprobado')
-                            <p class="mt-3 text-success fw-semibold">
-                                <i class="bi bi-check-circle"></i> Recurso aprobado ✔
-                            </p>
-                        @endif
-
-                    </div>
-
-                </div>
-
+        @if($proyectos->isEmpty())
+            <p class="text-muted">No tienes proyectos asignados aún.</p>
+        @else
+            <div class="row g-4">
+                @foreach($proyectos as $proyecto)
+                    @include('lider_semi.recursos._card_proyecto')
+                @endforeach
             </div>
-        </div>
-        @endforeach
+        @endif
     </div>
+
+    {{-- RECURSOS DIRIGIDOS AL LÍDER --}}
+    <div class="mt-4">
+        <h4 class="seccion-titulo">Recursos disponibles</h4>
+
+        @if($recursos->isEmpty())
+            <p class="text-muted">No hay recursos disponibles para ti.</p>
+        @else
+
+            <div class="table-responsive mt-3">
+                <table class="table table-hover align-middle tabla-semilleros">
+                    <thead>
+                        <tr>
+                            <th class="px-4 py-3">Nombre</th>
+                            <th class="py-3">Categoría</th>
+                            <th class="py-3">Fecha límite</th>
+                            <th class="py-3">Estado</th>
+                            <th class="py-3 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach($recursos as $r)
+                        <tr>
+                            <td class="px-4">
+                                <strong>{{ $r->nombre_archivo }}</strong><br>
+                                <small class="text-muted">{{ $r->descripcion ?: 'Sin descripción' }}</small>
+                            </td>
+
+                            <td>{{ ucfirst($r->categoria) }}</td>
+
+                            <td>
+                                {{ $r->fecha_vencimiento ? $r->fecha_vencimiento : '—' }}
+                            </td>
+
+                            <td>
+                                <span class="badge bg-info text-dark">
+                                    {{ ucfirst($r->estado) }}
+                                </span>
+                            </td>
+
+                            <td class="text-center">
+                                <div class="acciones-semilleros">
+
+                                    {{-- DESCARGAR --}}
+                                    <a href="{{ asset('storage/'.$r->archivo) }}" 
+                                       class="btn btn-accion-ver" 
+                                       download>
+                                        <i class="bi bi-download"></i> Descargar
+                                    </a>
+
+                                    {{-- RESPONDER --}}
+                                    <button class="btn btn-accion-editar"
+                                            data-id="{{ $r->id }}"
+                                            data-nombre="{{ $r->nombre_archivo }}"
+                                            onclick="abrirResponder(this)">
+                                        <i class="bi bi-chat-dots"></i> Responder
+                                    </button>
+
+                                </div>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+
+                </table>
+            </div>
+
+        @endif
+    </div>
+
 </div>
+
+{{-- MODAL --}}
+@include('lider_semi.recursos.modal-responder-recurso')
+
 @endsection
+
+
+{{-- ======================== SCRIPTS LIMPIOS ======================== --}}
+@push('scripts')
+@push('scripts')
+<script>
+
+window.abrirResponder = function (btn) {
+    const id = btn.dataset.id;
+    const nombre = btn.dataset.nombre;
+
+    document.getElementById("modalRecursoTitulo").textContent = nombre;
+    document.getElementById("responder_id_recurso").value = id;
+
+    let modal = new bootstrap.Modal(document.getElementById("modalResponderRecurso"));
+    modal.show();
+};
+
+window.enviarRespuesta = function () {
+
+    let form = document.getElementById("formResponderRecurso");
+    let formData = new FormData(form);
+
+    fetch("{{ route('lider_semi.recursos.responder') }}", {
+        method: "POST",
+        headers: {
+            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire("¡Listo!", "Respuesta enviada correctamente.", "success")
+                .then(() => location.reload());
+        } else {
+            Swal.fire("Error", "No se pudo enviar la respuesta.", "error");
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        Swal.fire("Error", "Hubo un problema al enviar la respuesta.", "error");
+    });
+};
+
+</script>
+@endpush
+
+@endpush
