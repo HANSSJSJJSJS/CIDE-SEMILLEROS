@@ -131,7 +131,10 @@
 .cal-lider .day-time-content.drag-over { outline:2px dashed var(--cal-green-dark); outline-offset:-4px; }
 
 /* Modal / Drawer */
-.cal-lider .modal-calendario { position: fixed; inset: 0; display:none; align-items:center; justify-content:center; padding:24px; background: rgba(0, 16, 26, .50); backdrop-filter: blur(2px); z-index: 1050; }
+.cal-lider .modal-calendario { position: fixed; inset: 0; display:none; align-items:center; justify-content:center; padding:24px; background: rgba(0, 16, 26, .50); z-index: 1050; }
+@supports ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  .cal-lider .modal-calendario { -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+}
 .cal-lider .modal-calendario.active { display:flex; }
 .cal-lider .modal-content-calendario { width: 720px; max-width: 100%; max-height: calc(100vh - 96px); overflow: auto; background: var(--cal-white); border:1px solid var(--cal-border); border-radius: 16px; box-shadow: 0 24px 80px rgba(0,0,0,.25); }
 .cal-lider .modal-header-calendario { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 18px; border-bottom:1px solid #EEF3F6; position: sticky; top:0; background: var(--cal-white); z-index:1; }
@@ -316,7 +319,10 @@
 
 .cal-lider .day-current-time { position:absolute; left:0; right:0; height:2px; background:#ef4444; z-index:2; }
 
-.cal-lider .drawer-overlay { position: fixed; inset: 0; background: rgba(0,16,26,.45); backdrop-filter: blur(2px); display:none; z-index: 1050; }
+.cal-lider .drawer-overlay { position: fixed; inset: 0; background: rgba(0,16,26,.45); display:none; z-index: 1050; }
+@supports ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  .cal-lider .drawer-overlay { -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+}
 .cal-lider .drawer { position: fixed; top:0; right:0; width: 520px; max-width: 100%; height: 100%; background: var(--cal-white); border-left: 1px solid var(--cal-border); box-shadow: -24px 0 80px rgba(0,0,0,.25); display:none; z-index: 1051; }
 .cal-lider .drawer[aria-hidden="false"] { display:block; }
 .cal-lider .drawer-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 18px; border-bottom:1px solid #EEF3F6; }
@@ -376,7 +382,11 @@
 .cal-lider #weekGrid,
 .cal-lider #dayGrid{
   background: rgba(255,255,255,.82);
-  backdrop-filter: blur(2px);
+}
+@supports ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  .cal-lider .days-grid,
+  .cal-lider #weekGrid,
+  .cal-lider #dayGrid{ -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
 }
 
 .cal-lider .days-grid > *{

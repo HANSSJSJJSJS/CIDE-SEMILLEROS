@@ -63,12 +63,15 @@
   box-shadow:0 4px 14px rgba(0,0,0,0.08);
   overflow:hidden;
   border:1px solid rgba(0,0,0,0.06);
-  backdrop-filter:blur(4px);
   min-width:0;
   transition:transform 0.2s ease, box-shadow 0.2s ease;
   height:100%;
   display:flex;
   flex-direction:column;
+}
+
+@supports ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
+  .card-project{ -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
 }
 
 .card-project:hover{
