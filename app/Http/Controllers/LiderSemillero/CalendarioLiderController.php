@@ -14,6 +14,40 @@ use App\Models\Proyecto;
 
 class CalendarioLiderController extends Controller
 {
+    private const EVENTO_TIPOS = ['REUNION','CAPACITACION','SEGUIMIENTO','ENTREGA','OTRO'];
+
+    private function validarFinJornada(?Carbon $inicio, int $duracionMin): ?array
+    {
+        if (!$inicio) {
+            return null;
+        }
+        if ($duracionMin <= 0) {
+            return null;
+        }
+
+        $limite = $inicio->copy()->setTime(17, 0, 0);
+        if ($inicio->gte($limite)) {
+            return [
+                'message' => 'No se puede agendar una reunión a las 5:00 PM o después.',
+                'errors' => [
+                    'fecha_hora' => ['No se puede agendar una reunión a las 5:00 PM o después.'],
+                ],
+            ];
+        }
+
+        $fin = $inicio->copy()->addMinutes($duracionMin);
+        if ($fin->gt($limite)) {
+            return [
+                'message' => 'La reunión no puede terminar después de las 5:00 PM.',
+                'errors' => [
+                    'duracion' => ['La duración seleccionada hace que la reunión termine después de las 5:00 PM.'],
+                ],
+            ];
+        }
+
+        return null;
+    }
+
     public function calendario()
     {
         $user = Auth::user();
@@ -283,7 +317,23 @@ class CalendarioLiderController extends Controller
             $anio = $anio ?: (int) $now->format('Y');
         }
 
-        $q = Evento::query();
+        $q = Evento::query()->with(['participantes' => function ($p) {
+            $p->select('aprendices.id_aprendiz', 'aprendices.user_id', 'aprendices.nombres', 'aprendices.apellidos');
+            if (Schema::hasColumn('aprendices', 'id_aprendiz')) {
+                $p->addSelect('aprendices.id_aprendiz');
+            }
+            $p->withPivot(['asistencia', 'created_at', 'updated_at']);
+            // Cargar usuario para usar sus nombres si el aprendiz no los tiene
+            $userCols = ['id'];
+            foreach (['nombre','apellidos','name','email'] as $col) {
+                if (Schema::hasColumn('users', $col)) {
+                    $userCols[] = $col;
+                }
+            }
+            $p->with(['user' => function ($u) use ($userCols) {
+                $u->select(array_values(array_unique($userCols)));
+            }]);
+        }]);
         if (Schema::hasColumn('eventos','fecha_hora')) {
             $q->whereMonth('fecha_hora', $mes)->whereYear('fecha_hora', $anio);
         } elseif (Schema::hasColumn('eventos','fecha')) {
@@ -332,11 +382,22 @@ class CalendarioLiderController extends Controller
         try {
             $eventoIds = $eventos->pluck('id_evento')->filter()->values();
             if ($eventoIds->isNotEmpty() && Schema::hasTable('evento_participantes')) {
+                $userCols = [];
+                if (Schema::hasTable('users')) {
+                    if (Schema::hasColumn('users', 'name')) { $userCols[] = 'u.name'; }
+                    if (Schema::hasColumn('users', 'nombre')) { $userCols[] = 'u.nombre'; }
+                    if (Schema::hasColumn('users', 'apellidos')) { $userCols[] = 'u.apellidos'; }
+                    if (Schema::hasColumn('users', 'email')) { $userCols[] = 'u.email'; }
+                }
+                if (empty($userCols)) {
+                    $userCols = ['u.email'];
+                }
+
                 $rows = DB::table('evento_participantes as ep')
                     ->leftJoin('aprendices as a', 'a.id_aprendiz', '=', 'ep.id_aprendiz')
                     ->leftJoin('users as u', 'u.id', '=', 'a.user_id')
                     ->whereIn('ep.id_evento', $eventoIds)
-                    ->select('ep.id_evento', 'ep.id_aprendiz', 'ep.asistencia', 'u.name', 'u.nombre', 'u.apellidos', 'u.email')
+                    ->select(array_merge(['ep.id_evento', 'ep.id_aprendiz', 'ep.asistencia', 'a.nombres', 'a.apellidos'], $userCols))
                     ->get()
                     ->groupBy('id_evento');
 
@@ -349,7 +410,7 @@ class CalendarioLiderController extends Controller
                             ->leftJoin('aprendices as a', 'a.id_aprendiz', '=', 'ap.id_aprendiz')
                             ->leftJoin('users as u', 'u.id', '=', 'a.user_id')
                             ->whereIn('ap.id_proyecto', $proyectoIds)
-                            ->select('ap.id_proyecto', 'ap.id_aprendiz', 'u.name', 'u.nombre', 'u.apellidos', 'u.email')
+                            ->select(array_merge(['ap.id_proyecto', 'ap.id_aprendiz', 'a.nombres', 'a.apellidos'], $userCols))
                             ->get()
                             ->groupBy('id_proyecto');
                     }
@@ -402,7 +463,10 @@ class CalendarioLiderController extends Controller
                     }
 
                     $ev->participantes = $grp->map(function ($r) {
-                        $full = trim(((string)($r->nombre ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
+                        $full = trim(((string)($r->nombres ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
+                        if ($full === '') {
+                            $full = trim(((string)($r->nombre ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
+                        }
                         $name = $full !== '' ? $full : (trim((string)($r->name ?? '')) !== '' ? (string)$r->name : (string)($r->email ?? ''));
                         if ($name === '') { $name = 'Aprendiz #' . (string)($r->id_aprendiz ?? ''); }
 
@@ -422,6 +486,111 @@ class CalendarioLiderController extends Controller
             // noop
         }
 
+        // Combinar relación cargada (si existe) con lo obtenido por consulta directa a pivote, sin perder entradas
+        $eventos = $eventos->map(function ($ev) {
+            if ($ev->relationLoaded('participantes') && $ev->participantes->count()) {
+                $fromRelation = $ev->participantes->map(function ($p) {
+                    $full = trim(((string)($p->nombres ?? '')) . ' ' . ((string)($p->apellidos ?? '')));
+                    if ($full === '' && $p->user) {
+                        $userName = trim(((string)($p->user->nombre ?? '')) . ' ' . ((string)($p->user->apellidos ?? '')));
+                        if ($userName === '' && isset($p->user->name)) {
+                            $userName = trim((string)$p->user->name);
+                        }
+                        if ($userName === '' && isset($p->user->email)) {
+                            $userName = trim((string)$p->user->email);
+                        }
+                        $full = $userName;
+                    }
+                    if ($full === '') {
+                        $full = 'Aprendiz #' . (string)($p->id_aprendiz ?? '');
+                    }
+                    $st = strtoupper(trim((string)($p->pivot->asistencia ?? 'PENDIENTE')));
+                    $asistencia = $st === 'ASISTIO' ? 'asistio' : ($st === 'NO_ASISTIO' ? 'no_asistio' : 'pendiente');
+                    return [
+                        'id_aprendiz' => (int)($p->id_aprendiz ?? 0),
+                        'nombre' => $full,
+                        'asistencia' => $asistencia,
+                    ];
+                })->values()->all();
+
+                // Unir con los ya calculados (si los hay) sin perder elementos
+                $existing = collect($ev->participantes ?? [])->map(function ($p) {
+                    return is_array($p) ? $p : (array)$p;
+                });
+                $merged = $existing->concat($fromRelation)->filter(function ($p) {
+                    return isset($p['id_aprendiz']) && (int)$p['id_aprendiz'] > 0;
+                })->unique('id_aprendiz')->values();
+                $ev->participantes = $merged;
+            }
+            return $ev;
+        });
+
+        // Asegurar que el payload JSON incluya los participantes en múltiples claves para el front
+        $eventos = $eventos->map(function ($ev) {
+            $parts = collect($ev->participantes ?? [])->map(function ($p) {
+                return is_array($p) ? $p : (array)$p;
+            })->values()->all();
+            $ev->participantes = $parts;
+            // Claves alternas para compatibilidad con el JS del calendario
+            $ev->participantes_detalle = $parts;
+            $ev->participantes_detalles = $parts;
+            $ev->aprendices_asignados = $parts;
+            return $ev;
+        });
+
+        // Fallback defensivo: si algún evento llegó sin participantes y tiene id_proyecto,
+        // cargarlos directo desde aprendiz_proyecto para mostrarlos en el detalle.
+        $eventos = $eventos->map(function ($ev) {
+            if (isset($ev->participantes) && is_iterable($ev->participantes) && count($ev->participantes)) {
+                return $ev;
+            }
+            $list = collect();
+            try {
+                if (!empty($ev->id_proyecto) && Schema::hasTable('aprendiz_proyecto') && Schema::hasTable('aprendices')) {
+                    $userCols = [];
+                    if (Schema::hasTable('users')) {
+                        if (Schema::hasColumn('users','name')) { $userCols[] = 'u.name'; }
+                        if (Schema::hasColumn('users','nombre')) { $userCols[] = 'u.nombre'; }
+                        if (Schema::hasColumn('users','apellidos')) { $userCols[] = 'u.apellidos'; }
+                        if (Schema::hasColumn('users','email')) { $userCols[] = 'u.email'; }
+                    }
+                    if (empty($userCols)) { $userCols[] = 'u.email'; }
+
+                    $rows = DB::table('aprendiz_proyecto as ap')
+                        ->leftJoin('aprendices as a', 'a.id_aprendiz', '=', 'ap.id_aprendiz')
+                        ->leftJoin('users as u', 'u.id', '=', 'a.user_id')
+                        ->where('ap.id_proyecto', $ev->id_proyecto)
+                        ->select(array_merge(['a.id_aprendiz', 'a.nombres', 'a.apellidos'], $userCols))
+                        ->get();
+                    $list = $rows->map(function ($r) {
+                        $name = trim(((string)($r->nombres ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
+                        if ($name === '') {
+                            $userName = trim(((string)($r->nombre ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
+                            if ($userName === '' && isset($r->name)) {
+                                $userName = trim((string)$r->name);
+                            }
+                            if ($userName === '' && isset($r->email)) {
+                                $userName = trim((string)$r->email);
+                            }
+                            $name = $userName;
+                        }
+                        if ($name === '') { $name = 'Aprendiz #' . (string)($r->id_aprendiz ?? ''); }
+                        return [
+                            'id_aprendiz' => (int)($r->id_aprendiz ?? 0),
+                            'nombre' => $name,
+                            'asistencia' => 'pendiente',
+                        ];
+                    })->filter(function ($p) {
+                        return ($p['id_aprendiz'] ?? 0) > 0;
+                    })->values();
+                }
+            } catch (\Throwable $e) {
+                // noop
+            }
+            $ev->participantes = $list;
+            return $ev;
+        });
+
         return response()->json(['eventos' => $eventos]);
     }
 
@@ -435,30 +604,55 @@ class CalendarioLiderController extends Controller
             'ubicacion' => 'nullable|string|max:255',
             'link_virtual' => 'nullable|url',
             'id_proyecto' => 'nullable|integer',
-            'tipo' => 'nullable|string|max:50',
+            'tipo' => 'nullable|string|in:REUNION,CAPACITACION,SEGUIMIENTO,ENTREGA,OTRO',
             'linea_investigacion' => 'nullable|string|max:255',
             'recordatorio' => 'nullable|string|max:50',
             'participantes' => 'nullable|array',
             'participantes.*' => 'integer',
         ]);
+
+        if (empty($data['tipo'])) {
+            $data['tipo'] = 'REUNION';
+        }
+
         $uid = Auth::id();
         if (Schema::hasColumn('eventos','id_lider_semi')) { $data['id_lider_semi'] = $uid; }
         elseif (Schema::hasColumn('eventos','id_lider')) { $data['id_lider'] = $uid; }
         elseif (Schema::hasColumn('eventos','id_lider_usuario')) { $data['id_lider_usuario'] = $uid; }
         elseif (Schema::hasColumn('eventos','id_usuario')) { $data['id_usuario'] = $uid; }
         // Normalizar fecha a 'Y-m-d H:i:s' (evita problemas de parsing con 'T')
+        $inicio = null;
         try {
             if (!empty($data['fecha_hora'])) {
-                $dt = Carbon::parse($data['fecha_hora']);
-                $data['fecha_hora'] = $dt->format('Y-m-d H:i:s');
+                $inicio = Carbon::parse($data['fecha_hora']);
+                $data['fecha_hora'] = $inicio->format('Y-m-d H:i:s');
             }
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+            $inicio = null;
+        }
+
+        $duracionMin = (int)($data['duracion'] ?? 0);
+        $err = $this->validarFinJornada($inicio, $duracionMin);
+        if ($err) {
+            return response()->json($err, 422);
+        }
+
         $evento = Evento::create($data);
         try {
-            if (!empty($data['participantes']) && method_exists($evento,'participantes')) {
-                $evento->participantes()->sync($data['participantes']);
+            $incomingParticipants = $request->exists('participantes') ? $request->input('participantes') : null;
+            if (is_array($incomingParticipants) && method_exists($evento,'participantes')) {
+                $participants = collect($incomingParticipants)
+                    ->map(fn($v)=> (int)$v)
+                    ->filter(fn($v)=> $v>0)
+                    ->unique()
+                    ->values()
+                    ->all();
+                $evento->participantes()->sync($participants);
             }
         } catch (\Throwable $e) {}
+
+        // Recargar participantes para que el payload de respuesta ya los incluya
+        $evento = $this->cargarParticipantesConNombres($evento);
         return response()->json(['success' => true, 'evento' => $evento]);
     }
 
@@ -473,16 +667,23 @@ class CalendarioLiderController extends Controller
             'ubicacion' => 'sometimes|nullable|string|max:255',
             'link_virtual' => 'sometimes|nullable|url',
             'id_proyecto' => 'sometimes|nullable|integer',
-            'tipo' => 'sometimes|nullable|string|max:50',
+            'tipo' => 'sometimes|nullable|string|in:REUNION,CAPACITACION,SEGUIMIENTO,ENTREGA,OTRO',
             'linea_investigacion' => 'sometimes|nullable|string|max:255',
             'recordatorio' => 'sometimes|nullable|string|max:50',
             'participantes' => 'sometimes|array',
             'participantes.*' => 'integer',
         ]);
+
+        if (array_key_exists('tipo', $data) && empty($data['tipo'])) {
+            $data['tipo'] = 'REUNION';
+        }
+
         // Normalizar y redirigir la fecha a la columna vigente
+        $inicio = null;
         if (array_key_exists('fecha_hora', $data)) {
             try {
                 $dt = Carbon::parse($data['fecha_hora']);
+                $inicio = $dt->copy();
                 $norm = $dt->format('Y-m-d H:i:s');
                 if (Schema::hasColumn('eventos','fecha_hora')) {
                     $data['fecha_hora'] = $norm;
@@ -495,14 +696,98 @@ class CalendarioLiderController extends Controller
                 }
             } catch (\Throwable $e) {}
         }
+
+        if (!$inicio) {
+            try {
+                $current = $ev->getAttribute('fecha_hora') ?? $ev->getAttribute('fecha_inicio') ?? $ev->getAttribute('fecha') ?? null;
+                if ($current) {
+                    $inicio = Carbon::parse($current);
+                }
+            } catch (\Throwable $e) {
+                $inicio = null;
+            }
+        }
+
+        $duracionMin = array_key_exists('duracion', $data) ? (int)$data['duracion'] : (int)($ev->duracion ?? 0);
+        $err = $this->validarFinJornada($inicio, $duracionMin);
+        if ($err) {
+            return response()->json($err, 422);
+        }
+
         $ev->update($data);
         try {
-            if ($request->has('participantes') && method_exists($ev,'participantes')) {
-                $ev->participantes()->sync($request->input('participantes', []));
+            // Usar exists() para JSON:has() puede fallar con arreglos vacíos
+            $incomingParticipants = $request->exists('participantes') ? $request->input('participantes') : null;
+            if (is_array($incomingParticipants) && method_exists($ev,'participantes')) {
+                $participants = collect($incomingParticipants)
+                    ->map(fn($v)=> (int)$v)
+                    ->filter(fn($v)=> $v>0)
+                    ->unique()
+                    ->values()
+                    ->all();
+                $ev->participantes()->sync($participants);
             }
         } catch (\Throwable $e) {}
-        $ev->refresh();
+        $ev = $this->cargarParticipantesConNombres($ev->fresh());
         return response()->json(['success' => true, 'evento' => $ev]);
+    }
+
+    /**
+     * Recarga la relación participantes con nombres y asistencia normalizados,
+     * devolviendo el modelo con claves alternativas para el front.
+     */
+    private function cargarParticipantesConNombres(Evento $evento): Evento
+    {
+        try {
+            $evento->load(['participantes' => function ($p) {
+                $p->select('aprendices.id_aprendiz', 'aprendices.user_id', 'aprendices.nombres', 'aprendices.apellidos')
+                  ->withPivot(['asistencia', 'created_at', 'updated_at']);
+                $userCols = ['id'];
+                foreach (['nombre','apellidos','name','email'] as $col) {
+                    if (Schema::hasColumn('users', $col)) {
+                        $userCols[] = $col;
+                    }
+                }
+                $p->with(['user' => function ($u) use ($userCols) {
+                    $u->select(array_values(array_unique($userCols)));
+                }]);
+            }]);
+
+            if ($evento->relationLoaded('participantes') && $evento->participantes->count()) {
+                $parts = $evento->participantes->map(function ($p) {
+                    $full = trim(((string)($p->nombres ?? '')) . ' ' . ((string)($p->apellidos ?? '')));
+                    if ($full === '' && $p->user) {
+                        $userName = trim(((string)($p->user->nombre ?? '')) . ' ' . ((string)($p->user->apellidos ?? '')));
+                        if ($userName === '' && isset($p->user->name)) {
+                            $userName = trim((string)$p->user->name);
+                        }
+                        if ($userName === '' && isset($p->user->email)) {
+                            $userName = trim((string)$p->user->email);
+                        }
+                        $full = $userName;
+                    }
+                    if ($full === '') {
+                        $full = 'Aprendiz #' . (string)($p->id_aprendiz ?? '');
+                    }
+                    $st = strtoupper(trim((string)($p->pivot->asistencia ?? 'PENDIENTE')));
+                    $asistencia = $st === 'ASISTIO' ? 'asistio' : ($st === 'NO_ASISTIO' ? 'no_asistio' : 'pendiente');
+                    return [
+                        'id_aprendiz' => (int)($p->id_aprendiz ?? 0),
+                        'nombre' => $full,
+                        'asistencia' => $asistencia,
+                    ];
+                })->values()->all();
+
+                $evento->setAttribute('participantes', $parts);
+                $evento->setAttribute('participantes_detalle', $parts);
+                $evento->setAttribute('participantes_detalles', $parts);
+                $evento->setAttribute('aprendices_asignados', $parts);
+            }
+        } catch (\Throwable $e) {
+            // noop
+        }
+
+        return $evento;
     }
 
     public function eliminarEvento($evento)
