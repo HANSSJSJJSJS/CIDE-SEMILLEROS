@@ -98,6 +98,13 @@ class Aprendiz extends Model
 
         // Si no tiene nombres ni apellidos, intentar obtener del usuario
         if (empty(trim($nombres . ' ' . $apellidos)) && $this->user) {
+            $uNombre = $this->user->nombre ?? null;
+            $uApellidos = $this->user->apellidos ?? null;
+            $full = trim(((string)($uNombre ?? '')) . ' ' . ((string)($uApellidos ?? '')));
+            if ($full !== '') {
+                return $full;
+            }
+            // Compatibilidad (si alguna instalación usa users.name)
             return $this->user->name ?? '';
         }
 

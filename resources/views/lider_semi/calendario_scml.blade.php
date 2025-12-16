@@ -214,13 +214,13 @@
 
                     <div class="participants-container-modal" id="participants-list">
                         @foreach($aprendices as $aprendiz)
-                        @php($fullName = trim(($aprendiz->nombres ?? '').' '.($aprendiz->apellidos ?? '')))
-                        <div class="participant-item-modal" data-aprendiz-id="{{ $aprendiz->id_aprendiz }}" data-aprendiz-name="{{ strtolower($fullName ?: ($aprendiz->nombre_completo ?? '')) }}" data-doc-type="{{ strtolower($aprendiz->tipo_documento ?? '') }}" data-doc="{{ strtolower($aprendiz->documento ?? '') }}">
+                        @php($displayName = trim((string)($aprendiz->nombre_completo ?? '')) !== '' ? (string)($aprendiz->nombre_completo ?? '') : ('Aprendiz #'.(string)($aprendiz->id_aprendiz ?? '')))
+                        <div class="participant-item-modal" data-aprendiz-id="{{ $aprendiz->id_aprendiz }}" data-aprendiz-name="{{ strtolower($displayName) }}" data-doc-type="{{ strtolower($aprendiz->tipo_documento ?? '') }}" data-doc="{{ strtolower($aprendiz->documento ?? '') }}">
                             <input type="checkbox" id="participant-{{ $aprendiz->id_aprendiz }}"
                                    class="participant-checkbox-modal"
                                    value="{{ $aprendiz->id_aprendiz }}">
                             <label for="participant-{{ $aprendiz->id_aprendiz }}" class="participant-info-modal">
-                                <div class="participant-name-modal">{{ $fullName ?: ($aprendiz->nombre_completo ?? 'Aprendiz') }}</div>
+                                <div class="participant-name-modal">{{ $displayName }}</div>
                                 <div class="participant-role-modal">Aprendiz - Semillero</div>
                             </label>
                         </div>
@@ -391,12 +391,14 @@
             <div id="detail-asistencia-list" class="attendance-list"></div>
             <div id="detail-asistencia-summary" class="attendance-summary" style="margin-top:16px; display:none;"></div>
         </section>
-        <section class="drawer-section">
+        <section class="drawer-section" id="detail-descripcion-section">
             <h4 class="drawer-section-title">Descripción</h4>
             <div id="detail-descripcion" class="drawer-description">--</div>
         </section>
         <div class="drawer-actions">
             <button type="button" class="btn-calendario btn-secondary-calendario" id="drawer-close-cta">Cerrar</button>
+            <button type="button" class="btn-calendario btn-primary-calendario" id="drawer-edit-cta" style="display:none;">Editar</button>
+            <button type="button" class="btn-calendario btn-secondary-calendario" id="drawer-delete-cta" style="display:none;">Cancelar reunión</button>
         </div>
     </div>
 
@@ -506,6 +508,8 @@ const wizardNextBtn = document.getElementById('btn-next-step');
 const wizardPrevBtn = document.getElementById('btn-prev-step');
 const wizardSubmitBtn = document.getElementById('btn-submit');
 const drawerCloseCta = document.getElementById('drawer-close-cta');
+const drawerEditCta = document.getElementById('drawer-edit-cta');
+const drawerDeleteCta = document.getElementById('drawer-delete-cta');
 const deleteBtn = document.getElementById('deleteBtn');
 const selectedDateDisplay = document.getElementById('selectedDateDisplay');
 const modalTitle = document.getElementById('modal-title');
@@ -524,6 +528,8 @@ todayBtn.addEventListener('click', async () => { goToToday(); await ensureHolida
 if (closeModal) closeModal.addEventListener('click', closeEventModal);
 drawerCloseBtn.addEventListener('click', closeDetailDrawer);
 drawerCloseCta.addEventListener('click', closeDetailDrawer);
+if (drawerEditCta) drawerEditCta.addEventListener('click', editFromDetail);
+if (drawerDeleteCta) drawerDeleteCta.addEventListener('click', deleteEvent);
 if (cancelBtn) cancelBtn.addEventListener('click', closeEventModal);
 if (wizardCancelBtn) wizardCancelBtn.addEventListener('click', closeEventModal);
 if (wizardNextBtn) wizardNextBtn.addEventListener('click', ()=> goToStep(currentWizardStep+1));
@@ -613,7 +619,11 @@ if (proyectoSelect){
       const ids = JSON.parse(opt?.getAttribute('data-aprendices')||'[]');
       currentProjectIds = Array.isArray(ids) && ids.length ? new Set(ids.map(n=>parseInt(n))) : null;
       const boxes = participantsList.querySelectorAll('.participant-checkbox-modal');
-      boxes.forEach(b=> b.checked = currentProjectIds ? currentProjectIds.has(parseInt(b.value)) : false);
+      boxes.forEach(b=> {
+        b.checked = currentProjectIds ? currentProjectIds.has(parseInt(b.value)) : false;
+        const parent = b.closest('.participant-item-modal');
+        if (parent) parent.classList.toggle('selected', b.checked);
+      });
       applyParticipantsFilters();
       updateSelectedCount();
     }catch(_){ /* ignore */ }
@@ -694,20 +704,47 @@ async function loadEventsForCurrentPeriod(){
       let participantsNames = [];
       let participantsDetails = [];
       try{
-        const p = ev.participantes ?? ev.aprendices ?? ev.aprendices_asignados ?? [];
+        let p = ev.participantes ?? ev.aprendices ?? ev.aprendices_asignados ?? ev.participantes_detalle ?? ev.participantes_detalles ?? [];
+        // Normalizar a arreglo si viene como objeto (Resource: {data:[]}, o objeto indexado)
+        if (p && typeof p === 'object' && !Array.isArray(p)) {
+          if (Array.isArray(p.data)) p = p.data;
+          else p = Object.values(p);
+        }
+
         if (Array.isArray(p)){
           if (p.length && typeof p[0] === 'number') {
             participantsIds = p;
           } else if (p.length && typeof p[0] === 'string') {
             participantsIds = p.map(x=>parseInt(x)).filter(n=>!Number.isNaN(n));
           } else if (p.length && typeof p[0] === 'object') {
-            participantsIds = p.map(o=> parseInt(o.id_aprendiz ?? o.id ?? o.aprendiz_id ?? o.user_id)).filter(n=>!Number.isNaN(n));
-            participantsNames = p.map(o=> String(o.nombre_completo ?? o.nombre ?? o.name ?? '').trim()).filter(Boolean);
-            participantsDetails = p.map(o=> ({
-              id: parseInt(o.id_aprendiz ?? o.id ?? o.aprendiz_id ?? o.user_id),
-              nombre: String(o.nombre_completo ?? o.nombre ?? o.name ?? '').trim() || `Aprendiz #${o.id_aprendiz ?? o.id ?? ''}`,
-              asistencia: String(o.asistencia ?? 'pendiente')
-            })).filter(x=>!Number.isNaN(x.id));
+            const getId = (o)=>{
+              const rawId = o?.id_aprendiz ?? o?.idAprendiz ?? o?.aprendiz_id ?? o?.id_aprendices ?? o?.id ?? o?.user_id ?? o?.aprendiz?.id_aprendiz;
+              const idNum = parseInt(rawId);
+              return Number.isNaN(idNum) ? null : idNum;
+            };
+            const getName = (o)=>{
+              const n = String(o?.nombre_completo ?? '').trim();
+              if (n) return n;
+              const nombre = String(o?.nombre ?? o?.name ?? '').trim();
+              const ap = String(o?.apellidos ?? '').trim();
+              const full = `${nombre}${(nombre && ap) ? ' ' : ''}${ap}`.trim();
+              return full;
+            };
+            const getAsistencia = (o)=>{
+              return String(o?.asistencia ?? o?.pivot?.asistencia ?? o?.estado_asistencia ?? 'pendiente');
+            };
+
+            participantsIds = p.map(o=> getId(o)).filter(n=>n !== null);
+            participantsNames = p.map(o=> getName(o)).filter(Boolean);
+            participantsDetails = p.map(o=> {
+              const id = getId(o);
+              if (id === null) return null;
+              return {
+                id,
+                nombre: getName(o) || `Aprendiz #${id}`,
+                asistencia: getAsistencia(o)
+              };
+            }).filter(Boolean);
           }
         } else if (typeof p === 'string' && p.length){
           try{ const arr = JSON.parse(p); if(Array.isArray(arr)) participantsIds = arr.map(x=>parseInt(x)).filter(n=>!Number.isNaN(n)); }
@@ -717,8 +754,17 @@ async function loadEventsForCurrentPeriod(){
       if (!participantsNames.length && participantsIds.length){
         participantsNames = participantsIds.map(id => PARTICIPANTS_MAP?.[id] || `Aprendiz #${id}`);
       }
+
+      // Si backend no envía detalles de asistencia, construirlos por defecto
+      if ((!Array.isArray(participantsDetails) || !participantsDetails.length) && participantsIds.length) {
+        participantsDetails = participantsIds.map((id, idx) => ({
+          id,
+          nombre: participantsNames?.[idx] || PARTICIPANTS_MAP?.[id] || `Aprendiz #${id}`,
+          asistencia: 'pendiente'
+        }));
+      }
       // incluir identificador de creador y estado para manejar permisos/estilos
-      const creatorId = ev.leader_id ?? ev.id_lider ?? ev.id_usuario ?? null;
+      const creatorId = ev.leader_id ?? ev.id_lider_semi ?? ev.id_lider ?? ev.id_lider_usuario ?? ev.id_usuario ?? null;
       const estado = ev.estado ?? 'programada';
       return {
         id: ev.id_evento ?? ev.id ?? ev.idEvento,
@@ -731,6 +777,7 @@ async function loadEventsForCurrentPeriod(){
         description: ev.descripcion||'',
         researchLine: ev.linea_investigacion || '',
         link: ev.link_virtual || '',
+        projectId: ev.id_proyecto ?? null,
         participantsIds,
         participantsNames,
         participantsDetails,
@@ -1112,6 +1159,18 @@ function updateSummary(){
 
 function showEventDetails(event){
   editingEventId = event.id;
+
+  // Solo el creador puede editar/cancelar desde este panel
+  const canEdit = (event.creatorId !== null && event.creatorId !== undefined)
+    ? (parseInt(event.creatorId, 10) === parseInt(CURRENT_USER_ID, 10))
+    : false;
+  if (drawerEditCta) drawerEditCta.style.display = canEdit ? 'inline-flex' : 'none';
+  if (drawerDeleteCta) drawerDeleteCta.style.display = canEdit ? 'inline-flex' : 'none';
+
+  const showParticipantsInsteadOfDescription = !!canEdit;
+  const descSection = document.getElementById('detail-descripcion-section');
+  if (descSection) descSection.style.display = showParticipantsInsteadOfDescription ? 'none' : 'block';
+
   document.getElementById('detail-titulo').textContent = event.title || '--';
   document.getElementById('detail-tipo').textContent = event.type || '--';
   // Evitar usar new Date('YYYY-MM-DD') (interpreta UTC). Formatear con helper local.
@@ -1129,7 +1188,7 @@ function showEventDetails(event){
   const saveBtn = document.getElementById('detail-save-link');
   const cancelBtnEdit = document.getElementById('detail-cancel-edit');
   // Si es presencial (no virtual), ocultar completamente la sección de enlace
-  const isVirtualMeeting = String(event.location||'').toLowerCase()==='virtual';
+  const isVirtualMeeting = String(event.location||'').toLowerCase().includes('virtual');
   if (linkField) linkField.style.display = isVirtualMeeting ? 'block' : 'none';
   if (isVirtualMeeting){
     const hasUrl = !!(event.link && String(event.link).startsWith('http'));
@@ -1162,7 +1221,91 @@ function showEventDetails(event){
   const asistenciaList = document.getElementById('detail-asistencia-list');
   const asistenciaSummary = document.getElementById('detail-asistencia-summary');
   if (asistenciaSection && asistenciaList && asistenciaSummary) {
-    if (isVirtualMeeting && Array.isArray(event.participantsDetails) && event.participantsDetails.length) {
+    const hint = asistenciaSection.querySelector('.text-muted');
+    if (hint) {
+      hint.textContent = isVirtualMeeting
+        ? 'Marca si el participante asistió o no a la reunión virtual.'
+        : 'Marca si el participante asistió o no a la reunión.';
+    }
+    if (showParticipantsInsteadOfDescription) {
+      asistenciaSection.style.display = 'block';
+      asistenciaList.innerHTML = '';
+      const details = Array.isArray(event.participantsDetails) ? event.participantsDetails : [];
+      if (!details.length) {
+        asistenciaList.innerHTML = '<div class="text-muted" style="font-size:12px;">No hay participantes asignados a esta reunión.</div>';
+        asistenciaSummary.innerHTML = '';
+        asistenciaSummary.style.display = 'none';
+        openDetailDrawer();
+        return;
+      }
+
+      details.forEach(p => {
+        const row = document.createElement('div');
+        row.className = 'attendance-item-card';
+        row.innerHTML = `
+          <div class="attendance-card-header">
+            <div class="attendance-name">${p.nombre}</div>
+          </div>
+          <div class="attendance-card-body">
+            <div class="attendance-label">Asistencia</div>
+            <p class="attendance-help">Marca si el participante asistió o no a la reunión virtual.</p>
+            <div class="attendance-options">
+              <label class="attendance-option">
+                <input type="radio" name="asistencia-${event.id}-${p.id}" value="pendiente"> Pendiente
+              </label>
+              <label class="attendance-option">
+                <input type="radio" name="asistencia-${event.id}-${p.id}" value="asistio"> Asistió
+              </label>
+              <label class="attendance-option">
+                <input type="radio" name="asistencia-${event.id}-${p.id}" value="no_asistio"> No asistió
+              </label>
+            </div>
+          </div>`;
+        const cardHelp = row.querySelector('.attendance-help');
+        if (cardHelp) {
+          cardHelp.textContent = isVirtualMeeting
+            ? 'Marca si el participante asistió o no a la reunión virtual.'
+            : 'Marca si el participante asistió o no a la reunión.';
+        }
+        const radios = row.querySelectorAll('input[type="radio"]');
+        radios.forEach(r => {
+          if (r.value === (p.asistencia || 'pendiente')) {
+            r.checked = true;
+          }
+          r.addEventListener('change', async () => {
+            try {
+              const url = ROUTES.asistenciaTemplate
+                .replace('__EID__', String(event.id))
+                .replace('__AID__', String(p.id));
+              const res = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRF-TOKEN': CSRF,
+                  'Accept': 'application/json',
+                  'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ asistencia: r.value })
+              });
+              if (!res.ok) {
+                console.error('Error al actualizar asistencia', res.status, await res.text());
+                showToast('No se pudo actualizar la asistencia','error');
+              } else {
+                showToast('Asistencia actualizada','success');
+                p.asistencia = r.value;
+                updateAttendanceSummary(event, asistenciaSummary);
+              }
+            } catch (err) {
+              console.error('Error al actualizar asistencia', err);
+              showToast('Error de red al actualizar asistencia','error');
+            }
+          });
+        });
+        asistenciaList.appendChild(row);
+      });
+      updateAttendanceSummary(event, asistenciaSummary);
+      asistenciaSummary.style.display = 'block';
+    } else if (isVirtualMeeting && Array.isArray(event.participantsDetails) && event.participantsDetails.length) {
       asistenciaSection.style.display = 'block';
       asistenciaList.innerHTML = '';
       event.participantsDetails.forEach(p => {
@@ -1300,21 +1443,73 @@ function updateAttendanceSummary(event, summaryEl){
   `;
 }
 
-function openDetailDrawer(){ detailOverlay.style.display='block'; detailDrawer.style.display='block'; }
-function closeDetailDrawer(){ detailOverlay.style.display='none'; detailDrawer.style.display='none'; }
+function openDetailDrawer(){
+  if (detailOverlay) detailOverlay.style.display='block';
+  if (detailDrawer) {
+    detailDrawer.style.display='block';
+    detailDrawer.setAttribute('aria-hidden','false');
+  }
+}
+function closeDetailDrawer(){
+  if (detailOverlay) detailOverlay.style.display='none';
+  if (detailDrawer) {
+    detailDrawer.style.display='none';
+    detailDrawer.setAttribute('aria-hidden','true');
+  }
+}
 
 function editEvent(event){
   selectedDate=new Date(event.date+'T'+event.time); editingEventId=event.id; modalTitle.textContent='Editar Reunión'; if (deleteBtn) deleteBtn.style.display='block';
   const dateInput = document.getElementById('event-date');
   const timeInput = document.getElementById('event-time');
   const titleInput = document.getElementById('event-title');
+  const typeSelect = document.getElementById('event-type');
   const durationInput = document.getElementById('event-duration');
+  const locationSel = document.getElementById('event-location');
+  const linkInput = document.getElementById('event-virtual-link');
+  const projSelect = document.getElementById('event-proyecto');
   const descInput = document.getElementById('event-description');
   if (dateInput) dateInput.value = event.date;
   if (timeInput) timeInput.value = event.time;
   if (titleInput) titleInput.value = event.title;
+  if (typeSelect) typeSelect.value = event.type || typeSelect.value;
   if (durationInput) durationInput.value = event.duration;
   if (descInput) descInput.value = event.description||'';
+
+  // Proyecto
+  if (projSelect) {
+    const pid = event.projectId ? String(event.projectId) : '';
+    if (pid && Array.from(projSelect.options).some(o => String(o.value) === pid)) {
+      projSelect.value = pid;
+    } else {
+      projSelect.value = '';
+    }
+    try { projSelect.dispatchEvent(new Event('change')); } catch(_){ /* noop */ }
+  }
+
+  // Ubicación / link virtual
+  if (locationSel) {
+    locationSel.value = (event.location || '').toLowerCase().includes('virtual') ? 'virtual' : (locationSel.value || 'presencial');
+    try { locationSel.dispatchEvent(new Event('change')); } catch(_){ /* noop */ }
+  }
+  if (linkInput) {
+    linkInput.value = event.link || '';
+  }
+
+  // Participantes
+  if (participantsList) {
+    const ids = new Set((event.participantsIds || []).map(n => parseInt(n, 10)).filter(n => !Number.isNaN(n)));
+    participantsList.querySelectorAll('.participant-checkbox-modal').forEach(b => {
+      b.checked = ids.has(parseInt(b.value, 10));
+      const parent = b.closest('.participant-item-modal');
+      if (parent) parent.classList.toggle('selected', b.checked);
+    });
+    applyParticipantsFilters();
+    updateSelectedCount();
+  }
+
+  enforceDurationOptions();
+  currentWizardStep = 1; goToStep(1);
   if (eventModal) eventModal.classList.add('active');
 }
 

@@ -21,6 +21,13 @@
 
 .cal-lider > *{ width: 100% !important; }
 
+/* No forzar ancho completo en overlays/toasts (evita alertas gigantes) */
+.cal-lider > .cal-toast-container{ width: auto !important; }
+.cal-lider .cal-toast{ max-width: 420px; }
+
+/* No forzar ancho completo en el drawer (debe ser lateral, no pantalla completa) */
+.cal-lider > #event-detail-drawer{ width: 520px !important; }
+
 .cal-lider .calendar-month,
 .cal-lider .calendar-week,
 .cal-lider .calendar-day{ width: 100%; }
@@ -137,7 +144,7 @@
 }
 .cal-lider .modal-calendario.active { display:flex; }
 .cal-lider .modal-content-calendario { width: 720px; max-width: 100%; max-height: calc(100vh - 96px); overflow: auto; background: var(--cal-white); border:1px solid var(--cal-border); border-radius: 16px; box-shadow: 0 24px 80px rgba(0,0,0,.25); }
-.cal-lider .modal-header-calendario { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 18px; border-bottom:1px solid #EEF3F6; position: sticky; top:0; background: var(--cal-white); z-index:1; }
+.cal-lider .modal-header-calendario { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 18px; border-bottom:1px solid #EEF3F6; position: sticky; top:0; background: var(--cal-white); z-index:1051; }
 .cal-lider .modal-title-calendario { display:flex; align-items:center; gap:12px; margin:0; font-weight:800; color: var(--cal-blue); }
 .cal-lider .modal-title-calendario::before { content: "\f067"; font-family: "Font Awesome 6 Free"; font-weight: 900; width:28px; height:28px; border-radius:999px; background: linear-gradient(135deg, var(--cal-green), var(--cal-green-dark)); color: var(--cal-white); display:inline-flex; align-items:center; justify-content:center; font-size:14px; }
 .cal-lider .close-modal-calendario { appearance:none; border:1px solid var(--cal-border); background:#F2F5F7; color:#394b59; width:34px; height:34px; border-radius:8px; line-height:0; display:inline-flex; align-items:center; justify-content:center; font-size:20px; }
@@ -157,7 +164,7 @@
 }
 .cal-lider .modal-header-calendario .close-modal-calendario:hover{ transform: rotate(90deg); }
 .cal-lider .modal-header-calendario .close-modal-calendario:focus-visible{
-  box-shadow: 0 0 0 3px rgba(53,169,0,.22);
+  box-shadow: 0 0 0 3px rgba(53 ,169,0,.22);
 }
 .cal-lider .modal-header-calendario .close-modal-calendario svg{
   width: 50px;

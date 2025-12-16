@@ -8,7 +8,7 @@ class Evento extends Model
 {
     protected $table = 'eventos';
     protected $primaryKey = 'id_evento';
-    public $incrementing = false;
+    public $incrementing = true;
     protected $keyType = 'int';
 
     protected $fillable = [
