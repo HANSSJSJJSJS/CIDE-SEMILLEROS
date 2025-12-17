@@ -181,11 +181,13 @@ class SemilleroController extends Controller
                                 : ($usrNameCol
                                     ? "COALESCE(COALESCE(u.`$usrNameCol`, ue.`$usrNameCol`),'')"
                                     : ($usrLastCol ? "COALESCE(COALESCE(u.`$usrLastCol`, ue.`$usrLastCol`),'')" : "''")));
-                        $nameExpr = "COALESCE(NULLIF(TRIM($baseConcat),'') , COALESCE(aprendices.correo_institucional, u.email, ue.email, ''))";
                         $willJoinUser = !($aprHasNombres && $aprHasApellidos) && Schema::hasTable('users') && Schema::hasColumn('aprendices','user_id');
                         $joinByEmail  = Schema::hasTable('users') && Schema::hasColumn('users','email_lc') && Schema::hasColumn('aprendices','correo_institucional');
+                        $uEmailExpr  = $willJoinUser ? 'u.email' : "''";
+                        $ueEmailExpr = $joinByEmail ? 'ue.email' : "''";
+                        $nameExpr = "COALESCE(NULLIF(TRIM($baseConcat),'') , COALESCE(aprendices.correo_institucional, $uEmailExpr, $ueEmailExpr, ''))";
                         $emailExpr = $willJoinUser || $joinByEmail
-                            ? 'COALESCE(aprendices.correo_institucional, u.email, ue.email, "")'
+                            ? "COALESCE(aprendices.correo_institucional, $uEmailExpr, $ueEmailExpr, '')"
                             : 'COALESCE(aprendices.correo_institucional, "")';
 
                         $rows = DB::table($pivot['table'])
