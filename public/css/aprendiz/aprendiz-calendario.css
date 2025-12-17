@@ -62,19 +62,17 @@ body{background:var(--cal-bg)}
 /* Vista mes celdas */
 .fc a{ text-decoration:none }
 .fc .fc-theme-standard td, .fc .fc-theme-standard th{border-color:var(--cal-border)}
-/* Encabezado de días: fondo claro y texto azul oscuro */
+/* Encabezado de días: barra azul oscuro redondeada con texto blanco */
 .fc .fc-col-header{
-  background: rgba(238,242,247,0.85);
-  -webkit-backdrop-filter: blur(1px);
-  backdrop-filter: blur(1px);
+  background: var(--cal-navy);
   border-top-left-radius:12px;
   border-top-right-radius:12px;
   overflow:hidden;
 }
-.fc .fc-col-header-cell{border-bottom:none; background:transparent; color:var(--cal-navy)}
+.fc .fc-col-header-cell{border-bottom:none; background:transparent; color:#fff}
 .fc .fc-col-header-cell-cushion{padding:.7rem 0 !important;}
 .fc .fc-col-header-cell-cushion, .fc .fc-daygrid-day-number{ text-decoration:none }
-.fc .fc-col-header-cell-cushion{font-weight:800; color:var(--cal-navy); text-transform:uppercase; letter-spacing:.6px}
+.fc .fc-col-header-cell-cushion{font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:.6px}
 .fc .fc-daygrid-day{transition: .2s ease; border-bottom: none}
 .fc .fc-daygrid-day:hover{background:#f3f4f6}
 .fc .fc-daygrid-day-top{align-items:center;padding:.35rem}
@@ -130,3 +128,59 @@ body{background:var(--cal-bg)}
 .sidebar{background:var(--cal-card); border:1px solid var(--cal-border); border-radius:14px; padding:16px}
 .list-group-item{border:none; border-radius:10px; margin-bottom:6px}
 .list-group-item.active{background:var(--cal-primary); border-color:var(--cal-primary)}
+
+/* ===== Vista Semana: Banda de almuerzo 12:00–14:00 con etiqueta ===== */
+.fc .fc-timeGridWeek-view tr.fc-timegrid-slot[data-time="12:00:00"] td.fc-timegrid-slot-lane,
+.fc .fc-timeGridWeek-view tr.fc-timegrid-slot[data-time="13:00:00"] td.fc-timegrid-slot-lane{
+  position: relative;
+  background: rgba(2, 6, 23, 0.02);
+}
+.fc .fc-timeGridWeek-view tr.fc-timegrid-slot[data-time="12:00:00"] td.fc-timegrid-slot-lane::after,
+.fc .fc-timeGridWeek-view tr.fc-timegrid-slot[data-time="13:00:00"] td.fc-timegrid-slot-lane::after{
+  content: 'ALMUERZO';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: rgba(2, 6, 23, 0.28);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+/* ===== Vista Semana (timeGridWeek) - encabezado personalizado estilo líder ===== */
+/* Ocultar encabezado nativo SOLO en vista semana */
+.fc .fc-timeGridWeek-view .fc-col-header{ display:none; }
+
+/* Contenedor del encabezado personalizado */
+.apr-week-header{
+  display:grid;
+  grid-template-columns: 100px repeat(7, 1fr);
+  background: var(--cal-navy);
+  color:#fff;
+  border-top-left-radius:12px;
+  border-top-right-radius:12px;
+  padding:10px 12px;
+  gap:8px;
+  align-items:center;
+  margin-bottom:0;
+}
+.apr-week-header.d-none{ display:none; }
+.apr-week-header .wk-hora{ font-weight:800; text-transform:uppercase; letter-spacing:.4px }
+.apr-week-header .wk-day{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-weight:700 }
+.apr-week-header .wk-name{ opacity:.95 }
+.apr-week-header .wk-num{ opacity:.95 }
+.apr-week-header .wk-day.today .wk-name,
+.apr-week-header .wk-day.today .wk-num{ color:#fff }
+.apr-week-header .wk-pill{
+  display:flex; align-items:center; gap:10px;
+  background: linear-gradient(180deg, #1bb55c 0%, #169e50 100%);
+  color:#fff; border-radius:12px; padding:8px 14px;
+  box-shadow: 0 6px 14px rgba(0,0,0,.16);
+}
+.apr-week-header .wk-pill .wk-name{ font-weight:800 }
+.apr-week-header .wk-pill .wk-num{ font-weight:800 }
+
+/* Ajuste del grid para acoplar con el header personalizado en Semana */
+.fc .fc-timeGridWeek-view .fc-scrollgrid{ border-top:none; border-top-left-radius:0; border-top-right-radius:0 }
