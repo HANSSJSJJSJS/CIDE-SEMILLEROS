@@ -363,14 +363,64 @@
       const data = await fetchJSON(url.toString());
       const list = data.eventos || [];
       events = list.map(ev => {
-        const d   = new Date(ev.fecha_hora);
-        const yyyy= d.toISOString().split('T')[0];
-        const hh  = String(d.getHours()).padStart(2,'0');
-        const mm  = String(d.getMinutes()).padStart(2,'0');
+        const raw = String(ev.fecha_hora || ev.fecha_inicio || ev.fecha || '').trim();
+        const parseBackendDateTime = (value) => {
+          const s = String(value || '').trim();
+          if (!s) return { datePart: '', timePart: '' };
+          const tzAware = /[zZ]$/.test(s) || /[+-]\d{2}:\d{2}$/.test(s);
+          if (tzAware) {
+            const d = new Date(s);
+            if (!Number.isNaN(d.getTime())) {
+              return {
+                datePart: formatDate(d),
+                timePart: `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+              };
+            }
+          }
+          if (s.includes('T')) {
+            const parts = s.split('T');
+            const datePart = parts[0];
+            const t = (parts[1] || '').replace('Z', '');
+            const timePart = t.slice(0, 5);
+            return { datePart, timePart };
+          }
+          if (s.includes(' ')) {
+            const parts = s.split(' ');
+            const datePart = parts[0];
+            const timePart = (parts[1] || '').slice(0, 5);
+            return { datePart, timePart };
+          }
+          const d = new Date(s);
+          if (!Number.isNaN(d.getTime())) {
+            return {
+              datePart: formatDate(d),
+              timePart: `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+            };
+          }
+          return { datePart: '', timePart: '' };
+        };
+
+        const { datePart, timePart } = parseBackendDateTime(raw);
+
+        let participantsIds = [];
+        try {
+          const p = ev.participantes ?? [];
+          if (Array.isArray(p)) {
+            participantsIds = p.map(x => parseInt(x)).filter(n => !Number.isNaN(n));
+          } else if (typeof p === 'string' && p.length) {
+            try {
+              const arr = JSON.parse(p);
+              if (Array.isArray(arr)) participantsIds = arr.map(x => parseInt(x)).filter(n => !Number.isNaN(n));
+            } catch (_) {
+              participantsIds = p.split(',').map(x => parseInt(x)).filter(n => !Number.isNaN(n));
+            }
+          }
+        } catch (_) {}
+
         return {
           id: ev.id_evento,
-          date: yyyy,
-          time: `${hh}:${mm}`,
+          date: datePart,
+          time: timePart || '09:00',
           title: ev.titulo,
           duration: ev.duracion || 60,
           type: ev.tipo || 'general',
@@ -378,7 +428,8 @@
           description: ev.descripcion || '',
           id_proyecto: ev.id_proyecto || null,
           researchLine: ev.linea_investigacion || '',
-          link: ev.link_virtual || ''
+          link: ev.link_virtual || '',
+          participantsIds,
         };
       });
     } catch (e) {
@@ -775,6 +826,16 @@
 
     eventForm?.reset();
 
+    // Limpiar selección de participantes y refrescar UI
+    {
+      const selParts = document.getElementById('event-participants');
+      if (selParts) {
+        Array.from(selParts.options).forEach(o => { o.selected = false; });
+        updateParticipantsUIFromSelect();
+        rebuildChips();
+      }
+    }
+
     // Controles de fecha/hora
     const dateInput = document.getElementById('event-date');
     const timeInput = document.getElementById('event-time');
@@ -914,9 +975,9 @@
     const titleInput = document.getElementById('event-title');
     const durationInput = document.getElementById('event-duration');
     const descInput  = document.getElementById('event-description');
-    const locSelect  = document.getElementById('event-location');
     const projSelect = document.getElementById('event-proyecto');
-    const partsSelect= document.getElementById('event-participants');
+    const partsSelect = document.getElementById('event-participants');
+    const locSelect  = document.getElementById('event-location');
 
     const dateStr = dateInput ? dateInput.value : formatDate(selectedDate);
     const pad = n => String(n).padStart(2,'0');
@@ -963,25 +1024,26 @@
     document.getElementById('detail-hora').textContent   = event.time || '--';
     document.getElementById('detail-duracion').textContent = `${event.duration || 60} minutos`;
     document.getElementById('detail-ubicacion').textContent = event.location || '--';
-    // Participantes (nombres): por ahora, mostrar líderes del semillero vinculado si existe
+    // Participantes (nombres): usar IDs asignados desde backend (evento_asignaciones)
     const namesList = document.getElementById('detail-participants-names');
     if (namesList) {
       namesList.innerHTML = '';
       try {
-        if (event.id_proyecto && ROUTES.lideres) {
-          const url = new URL(ROUTES.lideres, window.location.origin);
-          url.searchParams.set('semillero_id', event.id_proyecto);
-          const { data } = await fetchJSON(url.toString());
-          const items = Array.isArray(data) ? data : [];
-          if (items.length) {
-            items.forEach(p => {
-              const li = document.createElement('li');
-              li.innerHTML = `<div style="font-weight:800;color:#0f172a;">${escapeHtml(p.nombre||'')}</div><div class="drawer-label">${escapeHtml(p.email||'')}</div>`;
-              namesList.appendChild(li);
-            });
-          } else {
-            namesList.innerHTML = '<li>--</li>';
-          }
+        const parts = Array.isArray(event.participantsIds) ? event.participantsIds : [];
+        const sel = document.getElementById('event-participants');
+        const optById = new Map(
+          sel ? Array.from(sel.options).map(o => [String(o.value), o]) : []
+        );
+        if (parts.length) {
+          parts.forEach(pid => {
+            const opt = optById.get(String(pid));
+            const label = opt ? (opt.textContent || '') : `Líder #${pid}`;
+            const name = label.split(' — ')[0] || label;
+            const email = label.split(' — ')[1] || '';
+            const li = document.createElement('li');
+            li.innerHTML = `<div style="font-weight:800;color:#0f172a;">${escapeHtml(name)}</div><div class="drawer-label">${escapeHtml(email)}</div>`;
+            namesList.appendChild(li);
+          });
         } else {
           namesList.innerHTML = '<li>--</li>';
         }
@@ -1125,6 +1187,8 @@
     const titleInput = document.getElementById('event-title');
     const durationInput = document.getElementById('event-duration');
     const descInput  = document.getElementById('event-description');
+    const projSelect = document.getElementById('event-proyecto');
+    const partsSelect = document.getElementById('event-participants');
 
     if (dateInput)  { dateInput.setAttribute('min', formatDate(new Date())); dateInput.value = event.date; }
     if (dateInput && dateInput.value) { updateDateBanner(dateInput.value); }
@@ -1132,6 +1196,17 @@
     if (titleInput) titleInput.value = event.title;
     if (durationInput) durationInput.value = event.duration;
     if (descInput)  descInput.value  = event.description || '';
+
+    if (projSelect && event.id_proyecto) {
+      projSelect.value = String(event.id_proyecto);
+    }
+
+    if (partsSelect) {
+      const ids = new Set((event.participantsIds || []).map(x => String(x)));
+      Array.from(partsSelect.options).forEach(o => { o.selected = ids.has(String(o.value)); });
+      updateParticipantsUIFromSelect();
+      rebuildChips();
+    }
 
     eventModal?.classList.add('active');
   }

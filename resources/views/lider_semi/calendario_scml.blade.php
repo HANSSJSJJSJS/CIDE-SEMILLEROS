@@ -1,7 +1,7 @@
 @extends('layouts.lider_semi')
 
 @push('styles')
-@php($v = time())
+@php $v = time(); @endphp
 <link rel="stylesheet" href="{{ asset('css/common/calendario.css') }}?v={{ $v }}">
 <link rel="stylesheet" href="{{ asset('css/common/calendario-views.css') }}?v={{ $v }}">
 <link rel="stylesheet" href="{{ asset('css/common/calendar-month.css') }}?v={{ $v }}">
@@ -138,12 +138,11 @@
                     <label for="event-type">Tipo de reunión <span class="required">*</span></label>
                     <select id="event-type" name="tipo" class="form-control-calendario" required>
                         <option value="">Seleccione el tipo</option>
-                        <option value="planificacion">Planificación de proyecto</option>
-                        <option value="seguimiento">Seguimiento proyecto</option>
-                        <option value="revision">Revisión de avances</option>
-                        <option value="entrega">Entrega de proyecto</option>
-                        <option value="capacitacion">Capacitación técnica</option>
-                        <option value="general">Reunión general</option>
+                        <option value="REUNION">Reunión</option>
+                        <option value="SEGUIMIENTO">Seguimiento</option>
+                        <option value="CAPACITACION">Capacitación</option>
+                        <option value="ENTREGA">Entrega</option>
+                        <option value="OTRO">Otro</option>
                     </select>
                 </div>
 
@@ -214,13 +213,30 @@
 
                     <div class="participants-container-modal" id="participants-list">
                         @foreach($aprendices as $aprendiz)
-                        @php($fullName = trim(($aprendiz->nombres ?? '').' '.($aprendiz->apellidos ?? '')))
-                        <div class="participant-item-modal" data-aprendiz-id="{{ $aprendiz->id_aprendiz }}" data-aprendiz-name="{{ strtolower($fullName ?: ($aprendiz->nombre_completo ?? '')) }}" data-doc-type="{{ strtolower($aprendiz->tipo_documento ?? '') }}" data-doc="{{ strtolower($aprendiz->documento ?? '') }}">
+                        @php
+                            $nameParts = trim(((string)($aprendiz->nombres ?? '')) . ' ' . ((string)($aprendiz->apellidos ?? '')));
+                            if ($nameParts === '' && !empty($aprendiz->nombre_completo ?? '')) {
+                                $nameParts = (string) $aprendiz->nombre_completo;
+                            }
+                            if ($nameParts === '' && isset($aprendiz->user)) {
+                                $userFirst = trim((string)($aprendiz->user->nombre ?? $aprendiz->user->name ?? ''));
+                                $userLast  = trim((string)($aprendiz->user->apellidos ?? ''));
+                                $nameParts  = trim($userFirst . ' ' . $userLast);
+                                if ($nameParts === '') {
+                                    $nameParts = trim((string)($aprendiz->user->email ?? ''));
+                                }
+                            }
+                            if ($nameParts === '') {
+                                $nameParts = 'Aprendiz #' . (string)($aprendiz->id_aprendiz ?? '');
+                            }
+                            $displayName = $nameParts;
+                        @endphp
+                        <div class="participant-item-modal" data-aprendiz-id="{{ $aprendiz->id_aprendiz }}" data-aprendiz-name="{{ strtolower($displayName) }}" data-doc-type="{{ strtolower($aprendiz->tipo_documento ?? '') }}" data-doc="{{ strtolower($aprendiz->documento ?? '') }}">
                             <input type="checkbox" id="participant-{{ $aprendiz->id_aprendiz }}"
                                    class="participant-checkbox-modal"
                                    value="{{ $aprendiz->id_aprendiz }}">
                             <label for="participant-{{ $aprendiz->id_aprendiz }}" class="participant-info-modal">
-                                <div class="participant-name-modal">{{ $fullName ?: ($aprendiz->nombre_completo ?? 'Aprendiz') }}</div>
+                                <div class="participant-name-modal">{{ $displayName }}</div>
                                 <div class="participant-role-modal">Aprendiz - Semillero</div>
                             </label>
                         </div>
@@ -391,12 +407,14 @@
             <div id="detail-asistencia-list" class="attendance-list"></div>
             <div id="detail-asistencia-summary" class="attendance-summary" style="margin-top:16px; display:none;"></div>
         </section>
-        <section class="drawer-section">
+        <section class="drawer-section" id="detail-descripcion-section">
             <h4 class="drawer-section-title">Descripción</h4>
             <div id="detail-descripcion" class="drawer-description">--</div>
         </section>
         <div class="drawer-actions">
             <button type="button" class="btn-calendario btn-secondary-calendario" id="drawer-close-cta">Cerrar</button>
+            <button type="button" class="btn-calendario btn-primary-calendario" id="drawer-edit-cta" style="display:none;">Editar</button>
+            <button type="button" class="btn-calendario btn-secondary-calendario" id="drawer-delete-cta" style="display:none;">Cancelar reunión</button>
         </div>
     </div>
 
@@ -459,10 +477,29 @@ const ROUTES = {
 const CSRF = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 const CURRENT_USER_ID = {{ Auth::id() }};
 // Mapa id->nombre de aprendices para mostrar participantes en el detalle
-const PARTICIPANTS_MAP = @json(isset($aprendices) ? $aprendices->pluck('nombre_completo','id_aprendiz') : []);
+const PARTICIPANTS_MAP = @json(isset($aprendices)
+    ? $aprendices->mapWithKeys(function($a){
+        $full = trim(((string)($a->nombres ?? '')) . ' ' . ((string)($a->apellidos ?? '')));
+        if ($full === '' && !empty($a->nombre_completo ?? '')) {
+            $full = (string) $a->nombre_completo;
+        }
+        if ($full === '' && isset($a->user)) {
+            $uf = trim((string)($a->user->nombre ?? $a->user->name ?? ''));
+            $ul = trim((string)($a->user->apellidos ?? ''));
+            $full = trim($uf . ' ' . $ul);
+            if ($full === '') {
+                $full = trim((string)($a->user->email ?? ''));
+            }
+        }
+        if ($full === '') {
+            $full = 'Aprendiz #' . (string)($a->id_aprendiz ?? '');
+        }
+        return [$a->id_aprendiz => $full];
+    })
+    : []);
 
 // Horario permitido: 08:00 a 16:50 (sin almuerzo 12:00-13:55)
-const workHours = Array.from({ length: 10 }, (_, i) => i + 8); // 8..17
+const workHours = Array.from({ length: 9 }, (_, i) => i + 8); // 8..16
 let HOLIDAYS = @json(config('app.feriados', []));
 
 const HOLIDAYS_LOADED = new Set();
@@ -473,7 +510,8 @@ async function fetchHolidaysYear(year){
     const res = await fetch(url.toString(), { headers: { 'Accept':'application/json' } });
     if (!res.ok) return [];
     const data = await res.json();
-    return Array.isArray(data?.dates) ? data.dates : [];
+    const list = data.dates || [];
+    return Array.isArray(list) ? list : [];
   }catch(_){ return []; }
 }
 async function ensureHolidaysForYear(year){
@@ -506,6 +544,8 @@ const wizardNextBtn = document.getElementById('btn-next-step');
 const wizardPrevBtn = document.getElementById('btn-prev-step');
 const wizardSubmitBtn = document.getElementById('btn-submit');
 const drawerCloseCta = document.getElementById('drawer-close-cta');
+const drawerEditCta = document.getElementById('drawer-edit-cta');
+const drawerDeleteCta = document.getElementById('drawer-delete-cta');
 const deleteBtn = document.getElementById('deleteBtn');
 const selectedDateDisplay = document.getElementById('selectedDateDisplay');
 const modalTitle = document.getElementById('modal-title');
@@ -524,6 +564,8 @@ todayBtn.addEventListener('click', async () => { goToToday(); await ensureHolida
 if (closeModal) closeModal.addEventListener('click', closeEventModal);
 drawerCloseBtn.addEventListener('click', closeDetailDrawer);
 drawerCloseCta.addEventListener('click', closeDetailDrawer);
+if (drawerEditCta) drawerEditCta.addEventListener('click', editFromDetail);
+if (drawerDeleteCta) drawerDeleteCta.addEventListener('click', deleteEvent);
 if (cancelBtn) cancelBtn.addEventListener('click', closeEventModal);
 if (wizardCancelBtn) wizardCancelBtn.addEventListener('click', closeEventModal);
 if (wizardNextBtn) wizardNextBtn.addEventListener('click', ()=> goToStep(currentWizardStep+1));
@@ -613,7 +655,11 @@ if (proyectoSelect){
       const ids = JSON.parse(opt?.getAttribute('data-aprendices')||'[]');
       currentProjectIds = Array.isArray(ids) && ids.length ? new Set(ids.map(n=>parseInt(n))) : null;
       const boxes = participantsList.querySelectorAll('.participant-checkbox-modal');
-      boxes.forEach(b=> b.checked = currentProjectIds ? currentProjectIds.has(parseInt(b.value)) : false);
+      boxes.forEach(b=> {
+        b.checked = currentProjectIds ? currentProjectIds.has(parseInt(b.value)) : false;
+        const parent = b.closest('.participant-item-modal');
+        if (parent) parent.classList.toggle('selected', b.checked);
+      });
       applyParticipantsFilters();
       updateSelectedCount();
     }catch(_){ /* ignore */ }
@@ -639,6 +685,15 @@ if (locationSelect){
     const isVirtual = locationSelect.value === 'virtual';
     if (virtualGroup) virtualGroup.style.display = isVirtual ? 'block' : 'none';
   });
+}
+
+function normalizeAttendanceStatus(raw){
+  const base = String(raw || 'pendiente').toLowerCase();
+  if (base === 'asistio' || base === 'asistió') return 'asistio';
+  const compact = base.replace(/[\s_-]+/g, '');
+  if (compact === 'noasistio') return 'no_asistio';
+  if (compact === 'asistio') return 'asistio';
+  return 'pendiente';
 }
 
 async function loadEventsForCurrentPeriod(){
@@ -694,20 +749,56 @@ async function loadEventsForCurrentPeriod(){
       let participantsNames = [];
       let participantsDetails = [];
       try{
-        const p = ev.participantes ?? ev.aprendices ?? ev.aprendices_asignados ?? [];
+        let p = ev.participantes ?? ev.aprendices ?? ev.aprendices_asignados ?? ev.participantes_detalle ?? ev.participantes_detalles ?? [];
+        // Normalizar a arreglo si viene como objeto (Resource: {data:[]}, o objeto indexado)
+        if (p && typeof p === 'object' && !Array.isArray(p)) {
+          if (Array.isArray(p.data)) p = p.data;
+          else p = Object.values(p);
+        }
+
         if (Array.isArray(p)){
           if (p.length && typeof p[0] === 'number') {
             participantsIds = p;
           } else if (p.length && typeof p[0] === 'string') {
             participantsIds = p.map(x=>parseInt(x)).filter(n=>!Number.isNaN(n));
           } else if (p.length && typeof p[0] === 'object') {
-            participantsIds = p.map(o=> parseInt(o.id_aprendiz ?? o.id ?? o.aprendiz_id ?? o.user_id)).filter(n=>!Number.isNaN(n));
-            participantsNames = p.map(o=> String(o.nombre_completo ?? o.nombre ?? o.name ?? '').trim()).filter(Boolean);
-            participantsDetails = p.map(o=> ({
-              id: parseInt(o.id_aprendiz ?? o.id ?? o.aprendiz_id ?? o.user_id),
-              nombre: String(o.nombre_completo ?? o.nombre ?? o.name ?? '').trim() || `Aprendiz #${o.id_aprendiz ?? o.id ?? ''}`,
-              asistencia: String(o.asistencia ?? 'pendiente')
-            })).filter(x=>!Number.isNaN(x.id));
+            const getId = (o)=>{
+              const rawId = o?.id_aprendiz
+                ?? o?.idAprendiz
+                ?? o?.aprendiz_id
+                ?? o?.id_aprendices
+                ?? o?.pivot?.id_aprendiz
+                ?? o?.id
+                ?? o?.user_id
+                ?? o?.aprendiz?.id_aprendiz;
+              const idNum = parseInt(rawId);
+              return Number.isNaN(idNum) ? null : idNum;
+            };
+            const getName = (o)=>{
+              const n = String(o?.nombre_completo ?? '').trim();
+              if (n) return n;
+              const nombre = String(o?.nombre ?? o?.nombres ?? o?.name ?? o?.user?.nombre ?? o?.user?.name ?? '').trim();
+              const ap = String(o?.apellidos ?? o?.user?.apellidos ?? '').trim();
+              const full = `${nombre}${(nombre && ap) ? ' ' : ''}${ap}`.trim();
+              if (full) return full;
+              const email = String(o?.email ?? o?.user?.email ?? '').trim();
+              return email;
+            };
+            const getAsistencia = (o)=>{
+              return normalizeAttendanceStatus(o?.asistencia ?? o?.pivot?.asistencia ?? o?.estado_asistencia ?? 'pendiente');
+            };
+
+            participantsIds = p.map(o=> getId(o)).filter(n=>n !== null);
+            participantsNames = p.map(o=> getName(o)).filter(Boolean);
+            participantsDetails = p.map(o=> {
+              const id = getId(o);
+              if (id === null) return null;
+              return {
+                id,
+                nombre: getName(o) || `Aprendiz #${id}`,
+                asistencia: getAsistencia(o)
+              };
+            }).filter(Boolean);
           }
         } else if (typeof p === 'string' && p.length){
           try{ const arr = JSON.parse(p); if(Array.isArray(arr)) participantsIds = arr.map(x=>parseInt(x)).filter(n=>!Number.isNaN(n)); }
@@ -717,8 +808,21 @@ async function loadEventsForCurrentPeriod(){
       if (!participantsNames.length && participantsIds.length){
         participantsNames = participantsIds.map(id => PARTICIPANTS_MAP?.[id] || `Aprendiz #${id}`);
       }
+
+      // Si backend no envía detalles de asistencia, construirlos por defecto
+      if ((!Array.isArray(participantsDetails) || !participantsDetails.length) && participantsIds.length) {
+        participantsDetails = participantsIds.map((id, idx) => ({
+          id,
+          nombre: participantsNames?.[idx] || PARTICIPANTS_MAP?.[id] || `Aprendiz #${id}`,
+          asistencia: 'pendiente'
+        }));
+      }
+      participantsDetails = participantsDetails.map(p => ({
+        ...p,
+        asistencia: normalizeAttendanceStatus(p.asistencia)
+      }));
       // incluir identificador de creador y estado para manejar permisos/estilos
-      const creatorId = ev.leader_id ?? ev.id_lider ?? ev.id_usuario ?? null;
+      const creatorId = ev.leader_id ?? ev.id_lider_semi ?? ev.id_lider ?? ev.id_lider_usuario ?? ev.id_usuario ?? null;
       const estado = ev.estado ?? 'programada';
       return {
         id: ev.id_evento ?? ev.id ?? ev.idEvento,
@@ -726,11 +830,12 @@ async function loadEventsForCurrentPeriod(){
         time: timePart||'09:00',
         title: ev.titulo,
         duration: ev.duracion||60,
-        type: ev.tipo||'general',
+        type: ev.tipo||'REUNION',
         location: ev.ubicacion||'',
         description: ev.descripcion||'',
         researchLine: ev.linea_investigacion || '',
         link: ev.link_virtual || '',
+        projectId: ev.id_proyecto ?? null,
         participantsIds,
         participantsNames,
         participantsDetails,
@@ -801,6 +906,8 @@ function renderWeekView(){
     weekHeader.appendChild(header);
   });
   const weekGrid=document.getElementById('weekGrid'); weekGrid.innerHTML=''; const timesCol=document.createElement('div'); timesCol.className='week-times';
+  if (HOLIDAYS.includes(formatDate(currentDate))) timesCol.classList.add('festivo');
+  if (isToday(currentDate)) timesCol.classList.add('today');
   workHours.forEach(hour=>{
     const tl=document.createElement('div');
     tl.className='time-slot-label';
@@ -813,9 +920,10 @@ function renderWeekView(){
   weekGrid.appendChild(timesCol);
 
   weekDays.forEach(date=>{ const dayCol=document.createElement('div'); dayCol.className='week-day-column'; const dateStr=formatDate(date); if (HOLIDAYS.includes(dateStr)) dayCol.classList.add('festivo'); if(dateStr===activeDateStr) dayCol.classList.add('active');
-    const isWeekend = date.getDay()===0 || date.getDay()===6; const isHoliday = HOLIDAYS.includes(dateStr);
+    const isWeekend = date.getDay()===0 || date.getDay()===6;
+    const isHoliday = HOLIDAYS.includes(dateStr);
     workHours.forEach(hour=>{ const slot=document.createElement('div'); slot.className='week-time-slot'; slot.dataset.date=dateStr; slot.dataset.hour=hour;
-      const hm = hour*100; const isLunch = hm>=1200 && hm<=1355; if(isLunch) slot.classList.add('lunch'); const slotDt = new Date(`${dateStr}T${String(hour).padStart(2,'0')}:00`); const allowed = !isWeekend && !isHoliday && hm>=800 && hm<=1650 && !isLunch && !isInPast(slotDt);
+      const hm = hour*100; const isLunch = hm>=1200 && hm<=1355; if(isLunch) slot.classList.add('lunch'); const slotDt = new Date(`${dateStr}T${String(hour).padStart(2,'0')}:00`); const allowed = !isWeekend && !isHoliday && hm>=800 && hm<1700 && !isLunch && !isInPast(slotDt);
       const occupied = isHourOccupied(dateStr, hour);
       if (!allowed || occupied) { slot.classList.add('disabled'); if (occupied) slot.classList.add('occupied'); }
       else {
@@ -840,14 +948,14 @@ function renderDayView(){
   const dayHeader=document.getElementById('dayHeader');
   dayHeader.innerHTML=`<div class="day-header-card"><div class="dh-week">${getDayName(currentDate)}</div><div class="dh-day">${currentDate.getDate()}</div></div>${isHoliday ? '<span class="badge-festivo">Festivo</span>' : ''}`;
   const dayGrid=document.getElementById('dayGrid'); dayGrid.innerHTML=''; const timesCol=document.createElement('div'); timesCol.className='day-times';
-  if(isHoliday) timesCol.classList.add('festivo');
-  if(isToday(currentDate)) timesCol.classList.add('today');
+  if (isHoliday) timesCol.classList.add('festivo');
+  if (isToday(currentDate)) timesCol.classList.add('today');
   workHours.forEach(hour=>{ const tl=document.createElement('div'); tl.className='day-time-label'; const hm=hour*100; const isLunch = hm>=1200 && hm<=1355; if(isLunch) tl.classList.add('lunch'); tl.textContent=formatHour(hour); timesCol.appendChild(tl); }); dayGrid.appendChild(timesCol);
   const slotsCol=document.createElement('div'); slotsCol.className='day-slots';
-  if(isHoliday) slotsCol.classList.add('festivo');
-  if(isToday(currentDate)) slotsCol.classList.add('today');
+  if (isHoliday) slotsCol.classList.add('festivo');
+  if (isToday(currentDate)) slotsCol.classList.add('today');
   workHours.forEach(hour=>{ const slot=document.createElement('div'); slot.className='day-time-slot'; slot.dataset.date=dateStr; slot.dataset.hour=hour;
-    const hm = hour*100; const isLunch = hm>=1200 && hm<=1355; if(isLunch) slot.classList.add('lunch'); const slotDt = new Date(`${dateStr}T${String(hour).padStart(2,'0')}:00`); const allowed = !isWeekend && !isHoliday && hm>=800 && hm<=1650 && !isLunch && !isInPast(slotDt);
+    const hm = hour*100; const isLunch = hm>=1200 && hm<=1355; if(isLunch) slot.classList.add('lunch'); const slotDt = new Date(`${dateStr}T${String(hour).padStart(2,'0')}:00`); const allowed = !isWeekend && !isHoliday && hm>=800 && hm<1700 && !isLunch && !isInPast(slotDt);
     const occupied = isHourOccupied(dateStr, hour);
     if (!allowed || occupied) { slot.classList.add('disabled'); if (occupied) slot.classList.add('occupied'); }
     else {
@@ -990,6 +1098,7 @@ async function handleDrop(e,newDate){
   if(!isAllowedDateTime(candidate)) { showToast('No puedes mover el evento a un horario no permitido o en el pasado.','warning'); return; }
   if(hasClientConflict(candidate, events[idx].duration, draggedEvent.id)) { showToast('Ese horario ya está ocupado.','warning'); return; }
   if(crossesLunch(candidate, events[idx].duration)) { showToast('No puedes mover la reunión cruzando el horario de almuerzo (12:00 a 13:55).','warning'); return; }
+  if(endsAfterWorkdayEnd(candidate, events[idx].duration)) { showToast('No puedes mover la reunión para que termine después de las 5:00 PM.','warning'); return; }
 
   const ok = await updateEventOnServer(events[idx].id,newDateStr,newTime);
   if(!ok) return;
@@ -1042,6 +1151,7 @@ async function saveEvent(e){
   const startDt = new Date(payload.fecha_hora);
   if(!isAllowedDateTime(startDt)) { showToast('Horario no permitido o en el pasado.','error'); return; }
   if(crossesLunch(startDt, payload.duracion)) { showToast('La reunión no puede cruzar el horario de almuerzo (12:00 a 13:55).','warning'); return; }
+  if(endsAfterWorkdayEnd(startDt, payload.duracion)) { showToast('La reunión no puede terminar después de las 5:00 PM.','warning'); return; }
   if(hasClientConflict(startDt, payload.duracion, editingEventId)) { showToast('El horario seleccionado ya está ocupado.','warning'); return; }
   try{
     let res;
@@ -1050,7 +1160,22 @@ async function saveEvent(e){
     } else {
       res = await fetch(ROUTES.baseEventos,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},body:JSON.stringify(payload)});
     }
-    if(!res.ok){ const txt = await res.text(); console.error('Error respuesta servidor', res.status, txt); showToast('No se pudo guardar el evento. Revisa la consola para detalles.','error'); return; }
+    if(!res.ok){
+      const ct = res.headers.get('content-type')||'';
+      let msg = 'No se pudo guardar el evento.';
+      let bodyTxt = '';
+      let data = null;
+      if (ct.includes('application/json')) {
+        try { data = await res.json(); } catch(_){ data = null; }
+        msg = (data && (data.message || data.error)) ? (data.message || data.error) : msg;
+      } else {
+        try { bodyTxt = await res.text(); } catch(_){ bodyTxt=''; }
+        if (bodyTxt) msg = bodyTxt;
+      }
+      console.error('Error respuesta servidor', res.status, data || bodyTxt);
+      showToast(msg,'error');
+      return;
+    }
     closeEventModal(); await loadEventsForCurrentPeriod(); renderCalendar(); showToast('Evento guardado correctamente','success');
   }catch(err){ console.error('Error guardando evento',err); showToast('Error guardando evento (red).','error'); }
 }
@@ -1075,7 +1200,7 @@ function buildEventPayload(){
   const recordatorio = (document.querySelector('input[name="reminder"]:checked')?.value)||'none';
   return {
     titulo: titleInput ? titleInput.value : '',
-    tipo: typeSelect ? (typeSelect.value||'general') : 'general',
+    tipo: typeSelect ? (typeSelect.value||'REUNION') : 'REUNION',
     linea_investigacion: '',
     descripcion: descInput ? (descInput.value||null) : null,
     fecha_hora: fechaHora,
@@ -1100,7 +1225,7 @@ function updateSummary(){
   const parts = participantsList ? Array.from(participantsList.querySelectorAll('.participant-checkbox-modal:checked')).length : 0;
   const dt = new Date(`${dateStr}T${timeStr}:00`);
   const months=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const hours = dt.getHours(); const period = hours>=12? 'PM':'AM'; const hh = hours>12? hours-12: hours; const pretty = `${dt.getDate()} de ${months[dt.getMonth()]} ${dt.getFullYear()}, ${String(hh).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')} ${period}`;
+  const hours = dt.getHours(); const period = hours>=12? 'PM':'AM'; const hh = hours>12? hours-12 : hours; const pretty = `${dt.getDate()} de ${months[dt.getMonth()]} ${dt.getFullYear()}, ${String(hh).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')} ${period}`;
   const set = (id,val)=>{ const el=document.getElementById(id); if(el) el.textContent = val; };
   set('summary-title', title);
   set('summary-type', type);
@@ -1112,6 +1237,18 @@ function updateSummary(){
 
 function showEventDetails(event){
   editingEventId = event.id;
+
+  // Solo el creador puede editar/cancelar desde este panel
+  const canEdit = (event.creatorId !== null && event.creatorId !== undefined)
+    ? (parseInt(event.creatorId, 10) === parseInt(CURRENT_USER_ID, 10))
+    : false;
+  if (drawerEditCta) drawerEditCta.style.display = canEdit ? 'inline-flex' : 'none';
+  if (drawerDeleteCta) drawerDeleteCta.style.display = canEdit ? 'inline-flex' : 'none';
+
+  const showParticipantsInsteadOfDescription = !!canEdit;
+  const descSection = document.getElementById('detail-descripcion-section');
+  if (descSection) descSection.style.display = showParticipantsInsteadOfDescription ? 'none' : 'block';
+
   document.getElementById('detail-titulo').textContent = event.title || '--';
   document.getElementById('detail-tipo').textContent = event.type || '--';
   // Evitar usar new Date('YYYY-MM-DD') (interpreta UTC). Formatear con helper local.
@@ -1129,7 +1266,7 @@ function showEventDetails(event){
   const saveBtn = document.getElementById('detail-save-link');
   const cancelBtnEdit = document.getElementById('detail-cancel-edit');
   // Si es presencial (no virtual), ocultar completamente la sección de enlace
-  const isVirtualMeeting = String(event.location||'').toLowerCase()==='virtual';
+  const isVirtualMeeting = String(event.location||'').toLowerCase().includes('virtual');
   if (linkField) linkField.style.display = isVirtualMeeting ? 'block' : 'none';
   if (isVirtualMeeting){
     const hasUrl = !!(event.link && String(event.link).startsWith('http'));
@@ -1162,10 +1299,98 @@ function showEventDetails(event){
   const asistenciaList = document.getElementById('detail-asistencia-list');
   const asistenciaSummary = document.getElementById('detail-asistencia-summary');
   if (asistenciaSection && asistenciaList && asistenciaSummary) {
-    if (isVirtualMeeting && Array.isArray(event.participantsDetails) && event.participantsDetails.length) {
+    const hint = asistenciaSection.querySelector('.text-muted');
+    if (hint) {
+      hint.textContent = isVirtualMeeting
+        ? 'Marca si el participante asistió o no a la reunión virtual.'
+        : 'Marca si el participante asistió o no a la reunión.';
+    }
+    if (showParticipantsInsteadOfDescription) {
+      asistenciaSection.style.display = 'block';
+      asistenciaList.innerHTML = '';
+      const details = Array.isArray(event.participantsDetails) ? event.participantsDetails : [];
+      if (!details.length) {
+        asistenciaList.innerHTML = '<div class="text-muted" style="font-size:12px;">No hay participantes asignados a esta reunión.</div>';
+        asistenciaSummary.innerHTML = '';
+        asistenciaSummary.style.display = 'none';
+        openDetailDrawer();
+        return;
+      }
+
+      details.forEach(p => {
+        const currentStatus = normalizeAttendanceStatus(p.asistencia);
+        p.asistencia = currentStatus;
+        const row = document.createElement('div');
+        row.className = 'attendance-item-card';
+        row.innerHTML = `
+          <div class="attendance-card-header">
+            <div class="attendance-name">${p.nombre}</div>
+          </div>
+          <div class="attendance-card-body">
+            <div class="attendance-label">Asistencia</div>
+            <p class="attendance-help">Marca si el participante asistió o no a la reunión virtual.</p>
+            <div class="attendance-options">
+              <label class="attendance-option">
+                <input type="radio" name="asistencia-${event.id}-${p.id}" value="pendiente"> Pendiente
+              </label>
+              <label class="attendance-option">
+                <input type="radio" name="asistencia-${event.id}-${p.id}" value="asistio"> Asistió
+              </label>
+              <label class="attendance-option">
+                <input type="radio" name="asistencia-${event.id}-${p.id}" value="no_asistio"> No asistió
+              </label>
+            </div>
+          </div>`;
+        const cardHelp = row.querySelector('.attendance-help');
+        if (cardHelp) {
+          cardHelp.textContent = isVirtualMeeting
+            ? 'Marca si el participante asistió o no a la reunión virtual.'
+            : 'Marca si el participante asistió o no a la reunión.';
+        }
+        const radios = row.querySelectorAll('input[type="radio"]');
+        radios.forEach(r => {
+          if (r.value === currentStatus) {
+            r.checked = true;
+          }
+          r.addEventListener('change', async () => {
+            try {
+              const url = ROUTES.asistenciaTemplate
+                .replace('__EID__', String(event.id))
+                .replace('__AID__', String(p.id));
+              const res = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRF-TOKEN': CSRF,
+                  'Accept': 'application/json',
+                  'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ asistencia: r.value })
+              });
+              if (!res.ok) {
+                console.error('Error al actualizar asistencia', res.status, await res.text());
+                showToast('No se pudo actualizar la asistencia','error');
+              } else {
+                showToast('Asistencia actualizada','success');
+                p.asistencia = r.value;
+                updateAttendanceSummary(event, asistenciaSummary);
+              }
+            } catch (err) {
+              console.error('Error al actualizar asistencia', err);
+              showToast('Error de red al actualizar asistencia','error');
+            }
+          });
+        });
+        asistenciaList.appendChild(row);
+      });
+      updateAttendanceSummary(event, asistenciaSummary);
+      asistenciaSummary.style.display = 'block';
+    } else if (Array.isArray(event.participantsDetails) && event.participantsDetails.length) {
       asistenciaSection.style.display = 'block';
       asistenciaList.innerHTML = '';
       event.participantsDetails.forEach(p => {
+        const currentStatus = normalizeAttendanceStatus(p.asistencia);
+        p.asistencia = currentStatus;
         const row = document.createElement('div');
         row.className = 'attendance-item-card';
         row.innerHTML = `
@@ -1191,6 +1416,10 @@ function showEventDetails(event){
         radios.forEach(r => {
           if (r.value === (p.asistencia || 'pendiente')) {
             r.checked = true;
+          }
+          if (!canEdit) {
+            r.disabled = true;
+            return;
           }
           r.addEventListener('change', async () => {
             try {
@@ -1300,21 +1529,77 @@ function updateAttendanceSummary(event, summaryEl){
   `;
 }
 
-function openDetailDrawer(){ detailOverlay.style.display='block'; detailDrawer.style.display='block'; }
-function closeDetailDrawer(){ detailOverlay.style.display='none'; detailDrawer.style.display='none'; }
+function openDetailDrawer(){
+  if (detailOverlay) detailOverlay.style.display='block';
+  if (detailDrawer) {
+    detailDrawer.style.display='block';
+    detailDrawer.setAttribute('aria-hidden','false');
+  }
+}
+function closeDetailDrawer(){
+  if (detailOverlay) detailOverlay.style.display='none';
+  if (detailDrawer) {
+    detailDrawer.style.display='none';
+    detailDrawer.setAttribute('aria-hidden','true');
+  }
+}
 
 function editEvent(event){
   selectedDate=new Date(event.date+'T'+event.time); editingEventId=event.id; modalTitle.textContent='Editar Reunión'; if (deleteBtn) deleteBtn.style.display='block';
   const dateInput = document.getElementById('event-date');
   const timeInput = document.getElementById('event-time');
   const titleInput = document.getElementById('event-title');
+  const typeSelect = document.getElementById('event-type');
   const durationInput = document.getElementById('event-duration');
+  const locationSel = document.getElementById('event-location');
+  const linkInput = document.getElementById('event-virtual-link');
+  const projSelect = document.getElementById('event-proyecto');
   const descInput = document.getElementById('event-description');
   if (dateInput) dateInput.value = event.date;
   if (timeInput) timeInput.value = event.time;
   if (titleInput) titleInput.value = event.title;
+  if (typeSelect) typeSelect.value = event.type || typeSelect.value;
   if (durationInput) durationInput.value = event.duration;
   if (descInput) descInput.value = event.description||'';
+
+  // Proyecto
+  if (projSelect) {
+    const pid = event.projectId ? String(event.projectId) : '';
+    if (pid && Array.from(projSelect.options).some(o => String(o.value) === pid)) {
+      projSelect.value = pid;
+    } else {
+      projSelect.value = '';
+    }
+    try { projSelect.dispatchEvent(new Event('change')); } catch(_){ /* noop */ }
+  }
+
+  // Ubicación / link virtual
+  if (locationSel) {
+    locationSel.value = (event.location || '').toLowerCase().includes('virtual') ? 'virtual' : (locationSel.value || 'presencial');
+    try { locationSel.dispatchEvent(new Event('change')); } catch(_){ /* noop */ }
+  }
+  if (linkInput) {
+    linkInput.value = event.link || '';
+  }
+
+  // Participantes
+  if (participantsList) {
+    // Tomar ids desde participantsIds o, como respaldo, desde participantsDetails/participantes
+    const rawIds = (event.participantsIds && event.participantsIds.length)
+      ? event.participantsIds
+      : (Array.isArray(event.participantsDetails) ? event.participantsDetails.map(p => p.id || p.id_aprendiz || p.idAprendiz) : []);
+    const ids = new Set(rawIds.map(n => parseInt(n, 10)).filter(n => !Number.isNaN(n)));
+    participantsList.querySelectorAll('.participant-checkbox-modal').forEach(b => {
+      b.checked = ids.has(parseInt(b.value, 10));
+      const parent = b.closest('.participant-item-modal');
+      if (parent) parent.classList.toggle('selected', b.checked);
+    });
+    applyParticipantsFilters();
+    updateSelectedCount();
+  }
+
+  enforceDurationOptions();
+  currentWizardStep = 1; goToStep(1);
   if (eventModal) eventModal.classList.add('active');
 }
 
@@ -1328,7 +1613,7 @@ async function deleteEvent(){
       headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}
     });
     let data = null;
-    try{ data = await res.json(); }catch(_){ /* puede no venir JSON */ }
+    try{ data = await res.json(); }catch(_){ data = null; }
     const okFlag = data && (data.success === true || data.ok === true);
     if(!res.ok || okFlag === false){
       const msg = (data && data.message) ? data.message : 'No se pudo cancelar la reunión.';
@@ -1398,7 +1683,7 @@ function formatDateLong(date){ const days=['Domingo','Lunes','Martes','Miércole
 function getDayName(date){ const days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']; return days[date.getDay()]; }
 function formatHour(hour){ return `${String(hour).padStart(2,'0')}:00`; }
 function isToday(date){ const t=new Date(); return date.getDate()===t.getDate() && date.getMonth()===t.getMonth() && date.getFullYear()===t.getFullYear(); }
-function isAllowedDateTime(dt){ const d=dt.getDay(); if(d===0||d===6) return false; const dateStr=formatDate(dt); if(HOLIDAYS.includes(dateStr)) return false; const now=new Date(); if(dt.getTime() < now.getTime()) return false; const hm=dt.getHours()*100 + dt.getMinutes(); if(hm<800 || hm>1650) return false; if(hm>=1200 && hm<=1355) return false; return true; }
+function isAllowedDateTime(dt){ const d=dt.getDay(); if(d===0||d===6) return false; const dateStr=formatDate(dt); if(HOLIDAYS.includes(dateStr)) return false; const now=new Date(); if(dt.getTime() < now.getTime()) return false; const hm=dt.getHours()*100 + dt.getMinutes(); if(hm<800 || hm>=1700) return false; if(hm>=1200 && hm<=1355) return false; return true; }
 function isPastDate(date){ const today = new Date(); const d = new Date(date.getFullYear(), date.getMonth(), date.getDate()); const t = new Date(today.getFullYear(), today.getMonth(), today.getDate()); return d.getTime() < t.getTime(); }
 function isInPast(dt){ const now = new Date(); return dt.getTime() < now.getTime(); }
 
@@ -1410,10 +1695,21 @@ function crossesLunch(startDt, durationMinutes){
   const lunchEnd = new Date(`${ymd}T13:55:00`);
   return (startDt < lunchEnd) && (end > lunchStart);
 }
+function endsAfterWorkdayEnd(startDt, durationMinutes){
+  const m = parseInt(durationMinutes||0,10); if(!m) return false; const end = new Date(startDt.getTime() + m*60000);
+  const ymd = formatDate(startDt);
+  const limit = new Date(`${ymd}T17:00:00`);
+  return end > limit;
+}
 function enforceDurationOptions(){
   const dInput = document.getElementById('event-date'); const tInput = document.getElementById('event-time'); const durSel = document.getElementById('event-duration');
   if(!dInput || !tInput || !durSel) return; const ds=dInput.value; const ts=tInput.value; if(!ds || !ts) return; const start = new Date(`${ds}T${ts}:00`);
-  Array.from(durSel.options).forEach(opt=>{ const val=parseInt(opt.value||0,10); if(!val) return; opt.disabled = crossesLunch(start, val); });
+  Array.from(durSel.options).forEach(opt=>{ const val=parseInt(opt.value||0,10); if(!val) return; opt.disabled = crossesLunch(start, val) || endsAfterWorkdayEnd(start, val); });
+  const selected = durSel.selectedOptions && durSel.selectedOptions[0] ? durSel.selectedOptions[0] : null;
+  if (selected && selected.disabled) {
+    const firstOk = Array.from(durSel.options).find(o => !o.disabled && parseInt(o.value||0,10) > 0);
+    if (firstOk) durSel.value = firstOk.value;
+  }
 }
 function formatDurationMinutes(min){ const m = parseInt(min||0,10); const h = Math.floor(m/60); const rest = m % 60; if(h<=0) return `${m} min`; if(rest===0) return h===1? '1 hora' : `${h} horas`; return `${h} h ${rest} min`; }
 function isHourOccupied(dateStr, hour){
@@ -1421,7 +1717,6 @@ function isHourOccupied(dateStr, hour){
   // cualquier evento existente en ese día se cruza con ese intervalo.
   const slotStart = new Date(`${dateStr}T${String(hour).padStart(2,'0')}:00:00`).getTime();
   const slotEnd = slotStart + 60*60000; // 1 hora
-
   return events.some(ev => {
     if (ev.date !== dateStr) return false;
     const [h,m] = (ev.time||'09:00').split(':').map(Number);
@@ -1451,7 +1746,7 @@ function getFirstAvailableHour(dateStr){
     if (h < minHour) continue;
     const hm = h*100; const isLunch = hm>=1200 && hm<=1355; const weekendOrHoliday = (()=>{ const d = new Date(`${dateStr}T00:00:00`); return d.getDay()===0||d.getDay()===6||HOLIDAYS.includes(dateStr); })();
     if (weekendOrHoliday) return null;
-    const allowed = hm>=800 && hm<=1650 && !isLunch;
+    const allowed = hm>=800 && hm<1700 && !isLunch;
     const slotDt = new Date(`${dateStr}T${String(h).padStart(2,'0')}:00`);
     if(allowed && !isHourOccupied(dateStr,h) && !isInPast(slotDt)) return h;
   }
@@ -1467,7 +1762,7 @@ function isDayFullyBooked(dateStr){
   for (const h of workHours){
     const hm = h*100;
     const isLunch = hm>=1200 && hm<=1355;
-    const allowed = hm>=800 && hm<=1650 && !isLunch;
+    const allowed = hm>=800 && hm<1700 && !isLunch;
     if (!allowed) continue;
     // Si hay al menos una hora permitida sin ocupar, el día no está lleno
     if (!isHourOccupied(dateStr, h)){

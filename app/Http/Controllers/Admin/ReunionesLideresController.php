@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\Semillero;
 use App\Models\LiderSemillero;
@@ -48,6 +49,16 @@ class ReunionesLideresController extends Controller
     {
         $sid = (int) $request->query('semillero_id');
 
+        $investigacion = DB::table('lideres_investigacion as li')
+            ->join('users as u', 'u.id', '=', 'li.user_id')
+            ->select(
+                'u.id as id',
+                DB::raw("CONCAT(u.nombre, ' ', u.apellidos) as nombre"),
+                'u.email',
+                'u.role'
+            )
+            ->orderBy('u.nombre');
+
         if (!$sid) {
             // Todos los líderes con su nombre y correo (desde users)
             $rows = DB::table('lideres_semillero as l')
@@ -55,12 +66,17 @@ class ReunionesLideresController extends Controller
                 ->select(
                     'l.id_lider_semi as id',
                     DB::raw("CONCAT(u.nombre, ' ', u.apellidos) as nombre"),
-                    'u.email'
+                    'u.email',
+                    'u.role'
                 )
                 ->orderBy('u.nombre')
                 ->get();
 
-            return response()->json(['data' => $rows]);
+            $inv = $investigacion->get();
+
+            $all = $rows->merge($inv)->unique('id')->values();
+
+            return response()->json(['data' => $all]);
         }
 
         // Líder del semillero seleccionado
@@ -69,12 +85,17 @@ class ReunionesLideresController extends Controller
             ->select(
                 'l.id_lider_semi as id',
                 DB::raw("CONCAT(u.nombre, ' ', u.apellidos) as nombre"),
-                'u.email'
+                'u.email',
+                'u.role'
             )
             ->where('l.id_semillero', $sid)
             ->first();
 
-        return response()->json(['data' => $lider ? [ $lider ] : []]);
+        $base = $lider ? collect([ $lider ]) : collect();
+        $inv = $investigacion->get();
+        $all = $base->merge($inv)->unique('id')->values();
+
+        return response()->json(['data' => $all]);
     }
 
     /**
@@ -94,9 +115,37 @@ class ReunionesLideresController extends Controller
             $anio = $anio ?: (int) $now->format('Y');
         }
 
-        $eventos = Evento::whereMonth('fecha_hora', $mes)
-            ->whereYear('fecha_hora', $anio)
-            ->get();
+        $baseQuery = Evento::query()
+            ->whereMonth('fecha_hora', $mes)
+            ->whereYear('fecha_hora', $anio);
+
+        $user = Auth::user();
+        if ($user && $user->role === 'LIDER_INVESTIGACION') {
+            $ids = DB::table('evento_asignaciones')
+                ->where('tipo_destino', 'LIDER_INVESTIGACION')
+                ->where('destino_id', $user->id)
+                ->pluck('evento_id');
+
+            $baseQuery->whereIn('id_evento', $ids);
+        }
+
+        $eventos = $baseQuery->get();
+
+        $eventoIds = $eventos->pluck('id_evento')->filter()->values();
+        $asignaciones = $eventoIds->isEmpty()
+            ? collect()
+            : DB::table('evento_asignaciones')
+                ->whereIn('evento_id', $eventoIds)
+                ->whereIn('tipo_destino', ['LIDER_SEMILLERO', 'LIDER_INVESTIGACION'])
+                ->select('evento_id', 'destino_id')
+                ->get()
+                ->groupBy('evento_id');
+
+        $eventos = $eventos->map(function ($ev) use ($asignaciones) {
+            $parts = $asignaciones->get($ev->id_evento, collect())->pluck('destino_id')->values();
+            $ev->participantes = $parts;
+            return $ev;
+        });
 
         return response()->json(['eventos' => $eventos]);
     }
@@ -125,10 +174,39 @@ class ReunionesLideresController extends Controller
             'recordatorio'    => 'nullable|string|max:50',
         ]);
 
-        $evento = Evento::create($data);
+        $participantes = $data['participantes'] ?? [];
+        unset($data['participantes']);
 
-        // Si luego agregas tabla pivote evento_participante, aquí haces attach.
-        // if (!empty($data['participantes'])) { $evento->participantes()->sync($data['participantes']); }
+        $evento = null;
+        DB::transaction(function () use ($data, $participantes, &$evento) {
+            $evento = Evento::create($data);
+
+            $uids = collect($participantes)->filter()->unique()->values();
+            if ($uids->isNotEmpty()) {
+                $roles = DB::table('users')->whereIn('id', $uids)->pluck('role', 'id');
+                $rows = [];
+                foreach ($uids as $uid) {
+                    $role = (string) ($roles[$uid] ?? '');
+                    if ($role === 'LIDER_SEMILLERO') {
+                        $tipo = 'LIDER_SEMILLERO';
+                    } elseif ($role === 'LIDER_INVESTIGACION') {
+                        $tipo = 'LIDER_INVESTIGACION';
+                    } else {
+                        continue;
+                    }
+                    $rows[] = [
+                        'evento_id' => $evento->id_evento,
+                        'tipo_destino' => $tipo,
+                        'destino_id' => (int) $uid,
+                        'asignado_por' => Auth::id(),
+                        'created_at' => now(),
+                    ];
+                }
+                if (!empty($rows)) {
+                    DB::table('evento_asignaciones')->insert($rows);
+                }
+            }
+        });
 
         return response()->json([
             'success' => true,
@@ -152,17 +230,55 @@ class ReunionesLideresController extends Controller
             'ubicacion'       => 'sometimes|nullable|string|max:255',
             'link_virtual'    => 'sometimes|nullable|url',
             'id_proyecto'     => 'sometimes|nullable|integer',
+            'participantes'   => 'sometimes|nullable|array',
+            'participantes.*' => 'integer',
             'tipo'            => 'sometimes|nullable|string|max:50',
             'linea_investigacion' => 'sometimes|nullable|string|max:255',
             'recordatorio'    => 'sometimes|nullable|string|max:50',
         ]);
 
-        $evento->update($data);
+        $participantes = null;
+        if (array_key_exists('participantes', $data)) {
+            $participantes = $data['participantes'] ?? [];
+            unset($data['participantes']);
+        }
 
-        // Participantes si aplica:
-        // if ($request->has('participantes')) {
-        //     $evento->participantes()->sync($request->input('participantes', []));
-        // }
+        DB::transaction(function () use ($evento, $data, $participantes) {
+            $evento->update($data);
+
+            if ($participantes !== null) {
+                DB::table('evento_asignaciones')
+                    ->where('evento_id', $evento->id_evento)
+                    ->whereIn('tipo_destino', ['LIDER_SEMILLERO', 'LIDER_INVESTIGACION'])
+                    ->delete();
+
+                $uids = collect($participantes)->filter()->unique()->values();
+                if ($uids->isNotEmpty()) {
+                    $roles = DB::table('users')->whereIn('id', $uids)->pluck('role', 'id');
+                    $rows = [];
+                    foreach ($uids as $uid) {
+                        $role = (string) ($roles[$uid] ?? '');
+                        if ($role === 'LIDER_SEMILLERO') {
+                            $tipo = 'LIDER_SEMILLERO';
+                        } elseif ($role === 'LIDER_INVESTIGACION') {
+                            $tipo = 'LIDER_INVESTIGACION';
+                        } else {
+                            continue;
+                        }
+                        $rows[] = [
+                            'evento_id' => $evento->id_evento,
+                            'tipo_destino' => $tipo,
+                            'destino_id' => (int) $uid,
+                            'asignado_por' => Auth::id(),
+                            'created_at' => now(),
+                        ];
+                    }
+                    if (!empty($rows)) {
+                        DB::table('evento_asignaciones')->insert($rows);
+                    }
+                }
+            }
+        });
 
         return response()->json([
             'success' => true,
@@ -177,7 +293,11 @@ class ReunionesLideresController extends Controller
     public function destroy($id)
     {
         $evento = Evento::findOrFail($id);
-        $evento->delete();
+
+        DB::transaction(function () use ($evento) {
+            DB::table('evento_asignaciones')->where('evento_id', $evento->id_evento)->delete();
+            $evento->delete();
+        });
 
         return response()->json(['success' => true]);
     }
