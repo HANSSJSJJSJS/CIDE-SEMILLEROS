@@ -45,15 +45,23 @@ window.buildUrl = function (base, id) {
 ====================================================== */
 let modalCrear = null;
 let modalVer = null;
+let modalEditar = null;
+let semilleroActualId = null;
+ 
 
 document.addEventListener("DOMContentLoaded", () => {
 
     modalCrear = new bootstrap.Modal(document.getElementById("modalSubirRecurso"));
     modalVer = new bootstrap.Modal(document.getElementById("modalActividades"));
+    const modalEditarEl = document.getElementById("modalEditarRecurso");
+    if (modalEditarEl) {
+        modalEditar = new bootstrap.Modal(modalEditarEl);
+    }
 
     initBotonesCrear();
     initBotonesVerRecursos();
     initFormularioCrear();
+    initFormularioEditar();
 });
 
 
@@ -128,6 +136,7 @@ function abrirModalVerRecursos(id, nombre) {
     document.getElementById("tituloModalActividades").textContent =
         `Recursos - ${nombre}`;
 
+    semilleroActualId = id;
     cargarRecursos(id);
 
     modalVer.show();
@@ -180,49 +189,79 @@ function renderRecursos(lista) {
     }
 
     cont.innerHTML = lista
-        .map(r => `
-            <div class="recurso-item p-3 mb-3 rounded shadow-sm bg-white">
+        .map(r => {
+            const estado = (r.estado ?? "pendiente").toString().toLowerCase();
+            const puedeEditar = estado !== "aprobado";
+            const puedeAprobarRechazar = estado === "pendiente";
+            const titulo = r.titulo ?? "";
+            const fecha = r.fecha_limite ?? "—";
+            const lider = r.lider_nombre ?? "N/A";
+            const descripcion = r.descripcion ?? "";
+            const archivo = r.archivo ?? null;
+            const tipoDocumento = r.tipo_documento ?? "";
+            const badgeText = estado.toUpperCase();
 
-                <div class="d-flex justify-content-between">
-                    <h5 class="fw-bold text-primary">${r.titulo}</h5>
-                    <span class="badge badge-${r.estado}">${r.estado.toUpperCase()}</span>
+            const btnArchivo = archivo
+                ? `<a class="btn btn-recurso-file" href="/storage/${archivo}" download>
+                        <i class="bi bi-file-earmark-text"></i>
+                        Descargar
+                   </a>`
+                : `<button type="button" class="btn btn-recurso-file" disabled>
+                        <i class="bi bi-file-earmark"></i>
+                        Sin Archivo
+                   </button>`;
+
+            const accion = `<button type="button" class="recurso-action btn-editar-recurso"
+                                data-id="${r.id}"
+                                data-estado="${estado}"
+                                data-lider="${encodeURIComponent(lider)}"
+                                data-titulo="${encodeURIComponent(titulo)}"
+                                data-fecha="${encodeURIComponent(fecha)}"
+                                data-descripcion="${encodeURIComponent(descripcion)}"
+                                data-tipo-documento="${encodeURIComponent(tipoDocumento)}"
+                                data-archivo="${encodeURIComponent(archivo ?? '')}"
+                                ${!puedeEditar ? "disabled" : ""}
+                                aria-label="Editar recurso">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>`;
+
+            return `
+                <div class="recurso-item">
+
+                    <div class="recurso-top">
+                        <div class="recurso-lider">${lider}</div>
+
+                        <div class="recurso-top-right">
+                            <span class="badge badge-${estado} recurso-badge">${badgeText}</span>
+                            ${accion}
+                        </div>
+                    </div>
+
+                    <div class="recurso-sub">${titulo} &middot; ${fecha}</div>
+                    <div class="recurso-desc">${descripcion}</div>
+
+                    <div class="recurso-actions">
+                        ${btnArchivo}
+
+                        <button class="btn btn-recurso-approve btn-aprobar" data-id="${r.id}" ${!puedeAprobarRechazar ? "disabled" : ""}>
+                            Aprobar
+                        </button>
+
+                        <button class="btn btn-recurso-reject btn-rechazar" data-id="${r.id}" ${!puedeAprobarRechazar ? "disabled" : ""}>
+                            Rechazar
+                        </button>
+                    </div>
+
+                    <div id="rechazo-${r.id}" class="recurso-rechazo d-none">
+                        <textarea class="form-control" placeholder="Escribe el motivo..."></textarea>
+                        <button class="btn btn-danger btn-sm mt-2 btn-confirmar" data-id="${r.id}">
+                            Confirmar rechazo
+                        </button>
+                    </div>
+
                 </div>
-
-                <div class="small text-muted mb-2">
-                    <strong>Líder:</strong> ${r.lider_nombre ?? "N/A"} <br>
-                    <strong>Fecha límite:</strong> ${r.fecha_limite}
-                </div>
-
-                <p>${r.descripcion}</p>
-
-                ${r.archivo ? `
-                    <a href="/storage/${r.archivo}" download class="btn btn-dark rounded-pill mb-3">
-                        <i class="bi bi-download"></i> Descargar archivo
-                    </a>` 
-                : `<span class="text-muted fst-italic">Sin archivo</span>`}
-
-                <div class="d-flex gap-2 mt-2">
-                    <button class="btn btn-success rounded-pill flex-fill btn-aprobar" data-id="${r.id}"
-                        ${r.estado !== "pendiente" ? "disabled" : ""}>
-                        Aprobar
-                    </button>
-
-                    <button class="btn btn-danger rounded-pill flex-fill btn-rechazar"
-                        data-id="${r.id}"
-                        ${r.estado !== "pendiente" ? "disabled" : ""}>
-                        Rechazar
-                    </button>
-                </div>
-
-                <div id="rechazo-${r.id}" class="mt-3 d-none">
-                    <textarea class="form-control" placeholder="Escribe el motivo..."></textarea>
-                    <button class="btn btn-danger btn-sm mt-2 btn-confirmar" data-id="${r.id}">
-                        Confirmar rechazo
-                    </button>
-                </div>
-
-            </div>
-        `)
+            `;
+        })
         .join("");
 
     activarBotonesEstados();
@@ -260,6 +299,94 @@ function activarBotonesEstados() {
             actualizarEstado(id, "rechazado", comentario);
         });
     });
+
+    document.querySelectorAll(".btn-editar-recurso").forEach(btn => {
+        btn.addEventListener("click", () => {
+            abrirModalEditar(btn);
+        });
+    });
+}
+
+
+function initFormularioEditar() {
+    const form = document.getElementById("formEditarRecurso");
+    if (!form) return;
+
+    form.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        const id = document.getElementById("edit_recurso_id").value;
+        const tipoDocumento = document.getElementById("edit_tipo_documento").value;
+        const fechaLimite = document.getElementById("edit_fecha_limite").value;
+        const descripcion = document.getElementById("edit_descripcion").value;
+
+        const url = buildUrl(window.ACT_UPDATE_RECURSO_URL, id);
+
+        fetch(url, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": CSRF_TOKEN,
+            },
+            body: JSON.stringify({
+                tipo_documento: tipoDocumento,
+                fecha_limite: fechaLimite,
+                descripcion,
+            })
+        })
+            .then(async (r) => {
+                const data = await r.json().catch(() => ({}));
+                return { ok: r.ok, data };
+            })
+            .then(({ ok, data }) => {
+                if (!ok) {
+                    showNotification("Error", data.message ?? "No se pudo actualizar el recurso", "error");
+                    return;
+                }
+
+                showNotification("Actualizado", "Recurso actualizado correctamente", "success");
+                modalEditar?.hide();
+                if (semilleroActualId) {
+                    cargarRecursos(semilleroActualId);
+                }
+            })
+            .catch(() => {
+                showNotification("Error", "No se pudo actualizar el recurso", "error");
+            });
+    });
+}
+
+
+function abrirModalEditar(btn) {
+    if (!modalEditar) return;
+
+    const estado = (btn.dataset.estado ?? "").toLowerCase();
+    if (estado === "aprobado") {
+        showNotification("No permitido", "No puedes editar un recurso aprobado", "error");
+        return;
+    }
+
+    const decode = (v) => {
+        try { return decodeURIComponent(v ?? ""); } catch { return v ?? ""; }
+    };
+
+    const id = btn.dataset.id;
+    const lider = decode(btn.dataset.lider);
+    const titulo = decode(btn.dataset.titulo);
+    const fecha = decode(btn.dataset.fecha);
+    const descripcion = decode(btn.dataset.descripcion);
+    const tipoDocumento = decode(btn.dataset.tipoDocumento);
+    const archivo = decode(btn.dataset.archivo);
+
+    document.getElementById("edit_recurso_id").value = id;
+    document.getElementById("edit_lider").value = lider;
+    document.getElementById("edit_estado").value = estado.toUpperCase();
+    document.getElementById("edit_titulo").value = titulo;
+    document.getElementById("edit_tipo_documento").value = tipoDocumento;
+    document.getElementById("edit_fecha_limite").value = fecha === "—" ? "" : fecha;
+    document.getElementById("edit_descripcion").value = descripcion;
+
+    modalEditar.show();
 }
 
 
@@ -276,7 +403,9 @@ function actualizarEstado(id, estado, comentario) {
         .then(r => r.json())
         .then(() => {
             showNotification("Actualizado", "El estado se modificó correctamente", "success");
-            setTimeout(() => location.reload(), 800);
+            if (semilleroActualId) {
+                cargarRecursos(semilleroActualId);
+            }
         });
 }
 

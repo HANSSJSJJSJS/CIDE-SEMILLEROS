@@ -7,6 +7,7 @@ use App\Models\Recurso;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class RecursoController extends Controller
@@ -62,35 +63,144 @@ class RecursoController extends Controller
     // ======================================================
     public function porSemillero($semilleroId)
     {
-        $recursos = DB::table('recursos as r')
-            ->leftJoin('users as u', 'u.id', '=', 'r.user_id')
-            ->where('r.semillero_id', $semilleroId)
-            ->where('r.dirigido_a', 'lideres')
-            ->select(
-                'r.id',
-                'r.nombre_archivo as titulo',
-                'r.descripcion',
-                'r.estado',
-                'r.archivo',
-                DB::raw('DATE(r.fecha_vencimiento) as fecha_limite'),
-                DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''),' ',COALESCE(u.apellidos,''))) as lider_nombre")
-            )
-            ->orderBy('r.fecha_vencimiento', 'desc')
-            ->get()
-            ->map(function ($r) {
+        if (!Schema::hasTable('recursos')) {
+            return response()->json(['actividades' => []]);
+        }
 
-                $hoy = now()->toDateString();
-
-                if ($r->estado === 'pendiente' && $r->fecha_limite < $hoy) {
-                    $r->estado = 'vencido';
+        $cols = Schema::getColumnListing('recursos');
+        $idCol = null;
+        foreach (['id', 'id_recurso', 'id_recursos', 'id_recurso_lider', 'id_recurso_semillero'] as $cand) {
+            if (in_array($cand, $cols, true)) {
+                $idCol = $cand;
+                break;
+            }
+        }
+        if (!$idCol) {
+            foreach ($cols as $c) {
+                if ($c === 'id' || str_starts_with($c, 'id_')) {
+                    $idCol = $c;
+                    break;
                 }
+            }
+        }
+        if (!$idCol) {
+            $idCol = $cols[0] ?? null;
+        }
 
-                return $r;
-            });
+        $q = DB::table('recursos as r');
 
-        return response()->json([
-            'actividades' => $recursos
-        ]);
+        // Join users (tolerante a diferentes nombres de columnas)
+        $hasUserId = Schema::hasColumn('recursos', 'user_id');
+        $hasUsersTable = Schema::hasTable('users');
+        $nombreCol = null;
+        $apellidoCol = null;
+        if ($hasUsersTable) {
+            $nombreCol = Schema::hasColumn('users', 'nombre') ? 'nombre' : (Schema::hasColumn('users', 'name') ? 'name' : null);
+            $apellidoCol = Schema::hasColumn('users', 'apellidos') ? 'apellidos' : (Schema::hasColumn('users', 'apellido') ? 'apellido' : null);
+        }
+
+        if ($hasUserId && $hasUsersTable) {
+            $q->leftJoin('users as u', 'u.id', '=', 'r.user_id');
+        }
+
+        // Filtros (tolerante)
+        if (Schema::hasColumn('recursos', 'semillero_id')) {
+            $q->where('r.semillero_id', $semilleroId);
+        } elseif (Schema::hasColumn('recursos', 'id_semillero')) {
+            $q->where('r.id_semillero', $semilleroId);
+        }
+
+        if (Schema::hasColumn('recursos', 'dirigido_a')) {
+            $q->where('r.dirigido_a', 'lideres');
+        }
+
+        // SELECT (tolerante)
+        $select = [];
+        if ($idCol) {
+            $select[] = DB::raw("r.$idCol as id");
+        } else {
+            $select[] = DB::raw('NULL as id');
+        }
+
+        if (Schema::hasColumn('recursos', 'nombre_archivo')) {
+            $select[] = DB::raw('r.nombre_archivo as titulo');
+        } elseif (Schema::hasColumn('recursos', 'titulo')) {
+            $select[] = DB::raw('r.titulo as titulo');
+        } else {
+            $select[] = DB::raw("'' as titulo");
+        }
+
+        if (Schema::hasColumn('recursos', 'descripcion')) {
+            $select[] = 'r.descripcion';
+        } else {
+            $select[] = DB::raw("'' as descripcion");
+        }
+
+        if (Schema::hasColumn('recursos', 'tipo_documento')) {
+            $select[] = 'r.tipo_documento';
+        } elseif (Schema::hasColumn('recursos', 'tipo_recurso')) {
+            $select[] = DB::raw('r.tipo_recurso as tipo_documento');
+        } else {
+            $select[] = DB::raw("'' as tipo_documento");
+        }
+
+        if (Schema::hasColumn('recursos', 'estado')) {
+            $select[] = 'r.estado';
+        } else {
+            $select[] = DB::raw("'pendiente' as estado");
+        }
+
+        if (Schema::hasColumn('recursos', 'archivo')) {
+            $select[] = 'r.archivo';
+        } else {
+            $select[] = DB::raw('NULL as archivo');
+        }
+
+        if (Schema::hasColumn('recursos', 'fecha_vencimiento')) {
+            $select[] = DB::raw('DATE(r.fecha_vencimiento) as fecha_limite');
+        } elseif (Schema::hasColumn('recursos', 'fecha_limite')) {
+            $select[] = DB::raw('DATE(r.fecha_limite) as fecha_limite');
+        } else {
+            $select[] = DB::raw('NULL as fecha_limite');
+        }
+
+        if ($hasUserId && $hasUsersTable && $nombreCol) {
+            $apellidoExpr = $apellidoCol ? "COALESCE(u.$apellidoCol, '')" : "''";
+            $select[] = DB::raw("TRIM(CONCAT(COALESCE(u.$nombreCol,''),' ',{$apellidoExpr})) as lider_nombre");
+        } else {
+            $select[] = DB::raw("'N/A' as lider_nombre");
+        }
+
+        $q->select($select);
+
+        // Orden
+        if (Schema::hasColumn('recursos', 'fecha_vencimiento')) {
+            $q->orderBy('r.fecha_vencimiento', 'desc');
+        } elseif (Schema::hasColumn('recursos', 'created_at')) {
+            $q->orderBy('r.created_at', 'desc');
+        } elseif ($idCol) {
+            $q->orderBy('r.' . $idCol, 'desc');
+        }
+
+        $recursos = $q->get()->map(function ($r) {
+            $hoy = now()->toDateString();
+
+            $r->estado = strtolower($r->estado ?? 'pendiente');
+            $r->fecha_limite = $r->fecha_limite ?: '—';
+
+            // Evitar que el front intente descargar un placeholder
+            if (isset($r->archivo) && ($r->archivo === 'sin_archivo' || $r->archivo === '')) {
+                $r->archivo = null;
+            }
+
+            if ($r->estado === 'pendiente' && $r->fecha_limite !== '—' && $r->fecha_limite < $hoy) {
+                $r->estado = 'vencido';
+            }
+
+            return $r;
+        });
+
+        return response()->json(['actividades' => $recursos]);
     }
 
     // ======================================================
@@ -101,15 +211,27 @@ class RecursoController extends Controller
         $request->validate([
             'semillero_id' => 'required|exists:semilleros,id_semillero',
             'proyecto_id'  => 'required|exists:proyectos,id_proyecto',
+            'categoria'    => 'required|in:plantillas,manuales,otros',
+            'tipo_documento' => 'required|in:pdf,enlace,documento,presentacion,video,imagen,otro',
             'titulo'       => 'required|string|max:255',
             'descripcion'  => 'required|string',
             'fecha_limite' => 'required|date|after_or_equal:today'
         ]);
 
-        Recurso::create([
+        try {
+            if (Schema::hasTable('recursos') && !Schema::hasColumn('recursos', 'tipo_documento')) {
+                Schema::table('recursos', function ($table) {
+                    $table->string('tipo_documento', 50)->nullable()->after('categoria');
+                });
+            }
+        } catch (\Throwable $e) {
+            // continuar sin alterar esquema
+        }
+
+        $data = [
             'nombre_archivo'    => $request->titulo,
             'archivo'           => 'sin_archivo',
-            'categoria'         => 'otros',
+            'categoria'         => $request->categoria,
             'dirigido_a'        => 'lideres',
             'estado'            => 'pendiente',
             'semillero_id'      => $request->semillero_id,
@@ -117,7 +239,13 @@ class RecursoController extends Controller
             'fecha_vencimiento' => $request->fecha_limite,
             'descripcion'       => $request->descripcion,
             'user_id'           => Auth::id(),
-        ]);
+        ];
+
+        if (Schema::hasTable('recursos') && Schema::hasColumn('recursos', 'tipo_documento')) {
+            $data['tipo_documento'] = $request->tipo_documento;
+        }
+
+        Recurso::create($data);
 
         return response()->json(['success' => true]);
     }
@@ -125,23 +253,131 @@ class RecursoController extends Controller
     // ======================================================
     // ACTUALIZAR ESTADO DEL RECURSO
     // ======================================================
-    public function actualizarEstadoActividad(Request $request, Recurso $recurso)
+    public function actualizarEstadoActividad(Request $request, $recurso)
     {
         $request->validate([
             'estado'      => 'required|in:pendiente,aprobado,rechazado',
             'comentarios' => 'nullable|string|max:500',
         ]);
 
-        if ($recurso->dirigido_a !== 'lideres') {
-            return response()->json([
-                'success' => false,
-                'message' => 'No es un recurso de líder',
-            ], 400);
+        if (!Schema::hasTable('recursos')) {
+            return response()->json(['success' => false, 'message' => 'Tabla recursos no encontrada'], 404);
         }
 
-        $recurso->estado      = $request->estado;
-        $recurso->comentarios = $request->comentarios;
-        $recurso->save();
+        $cols = Schema::getColumnListing('recursos');
+        $idCol = null;
+        foreach (['id', 'id_recurso', 'id_recursos', 'id_recurso_lider', 'id_recurso_semillero'] as $cand) {
+            if (in_array($cand, $cols, true)) {
+                $idCol = $cand;
+                break;
+            }
+        }
+        if (!$idCol) {
+            foreach ($cols as $c) {
+                if ($c === 'id' || str_starts_with($c, 'id_')) {
+                    $idCol = $c;
+                    break;
+                }
+            }
+        }
+        if (!$idCol) {
+            return response()->json(['success' => false, 'message' => 'No se pudo determinar la llave del recurso'], 500);
+        }
+
+        $row = DB::table('recursos')->where($idCol, $recurso)->first();
+        if (!$row) {
+            return response()->json(['success' => false, 'message' => 'Recurso no encontrado'], 404);
+        }
+
+        if (Schema::hasColumn('recursos', 'dirigido_a') && (($row->dirigido_a ?? null) !== 'lideres')) {
+            return response()->json(['success' => false, 'message' => 'No es un recurso de líder'], 400);
+        }
+
+        $update = [];
+        if (Schema::hasColumn('recursos', 'estado')) {
+            $update['estado'] = $request->estado;
+        }
+        if (Schema::hasColumn('recursos', 'comentarios')) {
+            $update['comentarios'] = $request->comentarios;
+        }
+
+        if (empty($update)) {
+            return response()->json(['success' => false, 'message' => 'No hay columnas actualizables'], 400);
+        }
+
+        DB::table('recursos')->where($idCol, $recurso)->update($update);
+
+        return response()->json(['success' => true]);
+    }
+
+    // ======================================================
+    // EDITAR RECURSO (SOLO SI NO ESTÁ APROBADO)
+    // ======================================================
+    public function actualizarRecurso(Request $request, $recurso)
+    {
+        $request->validate([
+            'tipo_documento' => 'required|in:pdf,enlace,documento,presentacion,video,imagen,otro',
+            'fecha_limite'   => 'required|date',
+            'descripcion'    => 'required|string',
+        ]);
+
+        if (!Schema::hasTable('recursos')) {
+            return response()->json(['success' => false, 'message' => 'Tabla recursos no encontrada'], 404);
+        }
+
+        $cols = Schema::getColumnListing('recursos');
+        $idCol = null;
+        foreach (['id', 'id_recurso', 'id_recursos', 'id_recurso_lider', 'id_recurso_semillero'] as $cand) {
+            if (in_array($cand, $cols, true)) {
+                $idCol = $cand;
+                break;
+            }
+        }
+        if (!$idCol) {
+            foreach ($cols as $c) {
+                if ($c === 'id' || str_starts_with($c, 'id_')) {
+                    $idCol = $c;
+                    break;
+                }
+            }
+        }
+        if (!$idCol) {
+            return response()->json(['success' => false, 'message' => 'No se pudo determinar la llave del recurso'], 500);
+        }
+
+        $row = DB::table('recursos')->where($idCol, $recurso)->first();
+        if (!$row) {
+            return response()->json(['success' => false, 'message' => 'Recurso no encontrado'], 404);
+        }
+
+        $estado = strtolower((string)($row->estado ?? ''));
+        if ($estado === 'aprobado') {
+            return response()->json(['success' => false, 'message' => 'No puedes editar un recurso aprobado'], 403);
+        }
+
+        $update = [];
+
+        if (Schema::hasColumn('recursos', 'tipo_documento')) {
+            $update['tipo_documento'] = $request->tipo_documento;
+        } elseif (Schema::hasColumn('recursos', 'tipo_recurso')) {
+            $update['tipo_recurso'] = $request->tipo_documento;
+        }
+
+        if (Schema::hasColumn('recursos', 'fecha_vencimiento')) {
+            $update['fecha_vencimiento'] = $request->fecha_limite;
+        } elseif (Schema::hasColumn('recursos', 'fecha_limite')) {
+            $update['fecha_limite'] = $request->fecha_limite;
+        }
+
+        if (Schema::hasColumn('recursos', 'descripcion')) {
+            $update['descripcion'] = $request->descripcion;
+        }
+
+        if (empty($update)) {
+            return response()->json(['success' => false, 'message' => 'No hay columnas editables'], 400);
+        }
+
+        DB::table('recursos')->where($idCol, $recurso)->update($update);
 
         return response()->json(['success' => true]);
     }

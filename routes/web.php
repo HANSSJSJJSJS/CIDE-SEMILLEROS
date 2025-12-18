@@ -308,6 +308,7 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
                     Route::get('/semillero/{semillero}', [AdminRecursoController::class, 'porSemillero'])->name('porSemillero');
                     Route::post('/semillero', [AdminRecursoController::class, 'storeActividad'])->name('semillero.store');
                     Route::put('/semillero/{recurso}/estado', [AdminRecursoController::class, 'actualizarEstadoActividad'])->name('semillero.estado');
+                    Route::put('/semillero/{recurso}', [AdminRecursoController::class, 'actualizarRecurso'])->name('semillero.update');
 
                     // Obtener líder del semillero
                     Route::get('/semillero/{id}/lider', [AdminRecursoController::class, 'liderDeSemillero'])->name('semillero.lider');

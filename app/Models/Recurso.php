@@ -14,6 +14,7 @@ class Recurso extends Model
         'nombre_archivo',
         'archivo',
         'categoria',
+        'tipo_documento',
         'dirigido_a',
         'estado',
         'fecha_vencimiento',
@@ -21,6 +22,7 @@ class Recurso extends Model
         'comentarios',
         'user_id',
         'semillero_id',
+        'proyecto_id',
     ];
 
     protected $casts = [
