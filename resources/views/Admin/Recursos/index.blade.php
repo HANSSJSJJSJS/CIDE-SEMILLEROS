@@ -22,6 +22,7 @@
     // RUTAS CORRECTAS
     window.ACT_ACTIVIDADES_POR_SEMILLERO_URL = "{{ route('admin.recursos.porSemillero', ':id') }}";
     window.ACT_STORE_URL = "{{ route('admin.recursos.semillero.store') }}";
+    window.ACT_UPDATE_RECURSO_URL = "{{ route('admin.recursos.semillero.update', ':id') }}";
     window.ACT_SEMILLERO_LIDER_URL = "{{ route('admin.recursos.semillero.lider', ':id') }}";
     window.URL_PROYECTOS_SEMILLERO = "{{ route('admin.recursos.proyectos', ':id') }}";
 

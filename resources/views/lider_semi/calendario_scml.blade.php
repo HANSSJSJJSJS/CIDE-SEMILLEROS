@@ -177,6 +177,12 @@
                         <option value="otra">Otra ubicación</option>
                     </select>
                 </div>
+
+                <div class="form-group-calendario" id="virtual-link-group" style="display:none;">
+                    <label for="event-virtual-link">Enlace de reunión</label>
+                    <input type="url" id="event-virtual-link" class="form-control-calendario" placeholder="https://..." />
+                    <small class="form-help">Este enlace se mostrará en el detalle de la reunión (solo si la ubicación es virtual).</small>
+                </div>
             </div>
 
             <!-- PASO 2: Configuración -->
@@ -209,6 +215,15 @@
 
                     <div class="participants-filter">
                         <input type="text" id="search-participants" class="form-control-calendario" placeholder="Buscar aprendiz...">
+                        <select id="search-doc-type" class="form-control-calendario">
+                            <option value="">Tipo documento (Todos)</option>
+                            <option value="cc">CC</option>
+                            <option value="ti">TI</option>
+                            <option value="ce">CE</option>
+                            <option value="pas">PAS</option>
+                            <option value="pep">PEP</option>
+                            <option value="rc">RC</option>
+                        </select>
                     </div>
 
                     <div class="participants-container-modal" id="participants-list">
@@ -231,7 +246,21 @@
                             }
                             $displayName = $nameParts;
                         @endphp
-                        <div class="participant-item-modal" data-aprendiz-id="{{ $aprendiz->id_aprendiz }}" data-aprendiz-name="{{ strtolower($displayName) }}" data-doc-type="{{ strtolower($aprendiz->tipo_documento ?? '') }}" data-doc="{{ strtolower($aprendiz->documento ?? '') }}">
+                        @php
+                            $docType = '';
+                            $docNum  = '';
+                            if (isset($aprendiz->user)) {
+                                $docType = (string)($aprendiz->user->tipo_documento ?? '');
+                                $docNum  = (string)($aprendiz->user->documento ?? '');
+                            }
+                            if ($docType === '' && isset($aprendiz->tipo_documento)) {
+                                $docType = (string)($aprendiz->tipo_documento ?? '');
+                            }
+                            if ($docNum === '' && isset($aprendiz->documento)) {
+                                $docNum = (string)($aprendiz->documento ?? '');
+                            }
+                        @endphp
+                        <div class="participant-item-modal" data-aprendiz-id="{{ $aprendiz->id_aprendiz }}" data-aprendiz-name="{{ strtolower($displayName) }}" data-doc-type="{{ strtolower($docType) }}" data-doc="{{ strtolower($docNum) }}">
                             <input type="checkbox" id="participant-{{ $aprendiz->id_aprendiz }}"
                                    class="participant-checkbox-modal"
                                    value="{{ $aprendiz->id_aprendiz }}">
@@ -412,7 +441,6 @@
             <div id="detail-descripcion" class="drawer-description">--</div>
         </section>
         <div class="drawer-actions">
-            <button type="button" class="btn-calendario btn-secondary-calendario" id="drawer-close-cta">Cerrar</button>
             <button type="button" class="btn-calendario btn-primary-calendario" id="drawer-edit-cta" style="display:none;">Editar</button>
             <button type="button" class="btn-calendario btn-secondary-calendario" id="drawer-delete-cta" style="display:none;">Cancelar reunión</button>
         </div>
@@ -422,6 +450,22 @@
 
 <!-- Toasts de Calendario -->
 <div id="cal-toast-container" class="cal-toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<div id="cal-confirm-overlay" class="cal-confirm-overlay" style="display:none;"></div>
+<div id="cal-confirm-modal" class="cal-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="cal-confirm-title" aria-describedby="cal-confirm-message" style="display:none;">
+    <div class="cal-confirm-header">
+        <div class="cal-confirm-icon" aria-hidden="true">!</div>
+        <div class="cal-confirm-text">
+            <div id="cal-confirm-title" class="cal-confirm-title">Confirmación</div>
+            <div id="cal-confirm-message" class="cal-confirm-message">¿Deseas continuar?</div>
+        </div>
+        <button type="button" class="cal-confirm-close" id="cal-confirm-close" aria-label="Cerrar">×</button>
+    </div>
+    <div class="cal-confirm-actions">
+        <button type="button" class="cal-confirm-btn cal-confirm-cancel" id="cal-confirm-cancel">Volver</button>
+        <button type="button" class="cal-confirm-btn cal-confirm-accept" id="cal-confirm-accept">Confirmar</button>
+    </div>
+</div>
 
 </div>
 
@@ -550,6 +594,14 @@ const deleteBtn = document.getElementById('deleteBtn');
 const selectedDateDisplay = document.getElementById('selectedDateDisplay');
 const modalTitle = document.getElementById('modal-title');
 
+const confirmOverlay = document.getElementById('cal-confirm-overlay');
+const confirmModal = document.getElementById('cal-confirm-modal');
+const confirmTitleEl = document.getElementById('cal-confirm-title');
+const confirmMessageEl = document.getElementById('cal-confirm-message');
+const confirmCloseBtn = document.getElementById('cal-confirm-close');
+const confirmCancelBtn = document.getElementById('cal-confirm-cancel');
+const confirmAcceptBtn = document.getElementById('cal-confirm-accept');
+
 const monthView = document.getElementById('monthView');
 const weekView = document.getElementById('weekView');
 const dayView = document.getElementById('dayView');
@@ -563,7 +615,7 @@ nextBtn.addEventListener('click', async () => { navigatePeriod(1); await ensureH
 todayBtn.addEventListener('click', async () => { goToToday(); await ensureHolidaysForYear(currentDate.getFullYear()); await loadEventsForCurrentPeriod(); renderCalendar(); });
 if (closeModal) closeModal.addEventListener('click', closeEventModal);
 drawerCloseBtn.addEventListener('click', closeDetailDrawer);
-drawerCloseCta.addEventListener('click', closeDetailDrawer);
+if (drawerCloseCta) drawerCloseCta.addEventListener('click', closeDetailDrawer);
 if (drawerEditCta) drawerEditCta.addEventListener('click', editFromDetail);
 if (drawerDeleteCta) drawerDeleteCta.addEventListener('click', deleteEvent);
 if (cancelBtn) cancelBtn.addEventListener('click', closeEventModal);
@@ -609,20 +661,27 @@ function goToStep(step){
 // Participants filtering and select all
 const participantsList = document.getElementById('participants-list');
 const participantsSearch = document.getElementById('search-participants');
+const docTypeSelect = document.getElementById('search-doc-type');
 const selectAllBtn = document.getElementById('select-all-participants');
 let currentProjectIds = null; // Set<number> | null
 function applyParticipantsFilters(){
   const q = (participantsSearch?.value || '').trim().toLowerCase();
+  const dt = (docTypeSelect?.value || '').trim().toLowerCase();
   participantsList.querySelectorAll('.participant-item-modal').forEach(item=>{
     const id = parseInt(item.getAttribute('data-aprendiz-id'));
     const name = (item.dataset.aprendizName || '');
+    const docType = (item.dataset.docType || '').toLowerCase();
     const byProject = !currentProjectIds || currentProjectIds.has(id);
     const bySearch = !q || name.includes(q);
-    item.style.display = (byProject && bySearch) ? '' : 'none';
+    const byDocType = !dt || docType === dt;
+    item.style.display = (byProject && bySearch && byDocType) ? '' : 'none';
   });
 }
 if (participantsSearch){
   participantsSearch.addEventListener('input', applyParticipantsFilters);
+}
+if (docTypeSelect){
+  docTypeSelect.addEventListener('change', applyParticipantsFilters);
 }
 if (selectAllBtn){
   selectAllBtn.addEventListener('click', ()=>{
@@ -760,7 +819,8 @@ async function loadEventsForCurrentPeriod(){
           if (p.length && typeof p[0] === 'number') {
             participantsIds = p;
           } else if (p.length && typeof p[0] === 'string') {
-            participantsIds = p.map(x=>parseInt(x)).filter(n=>!Number.isNaN(n));
+            participantsNames = p.map(x=>String(x).trim()).filter(Boolean);
+            participantsIds = p.map(x=>parseInt(String(x).trim(), 10)).filter(n=>!Number.isNaN(n));
           } else if (p.length && typeof p[0] === 'object') {
             const getId = (o)=>{
               const rawId = o?.id_aprendiz
@@ -814,6 +874,12 @@ async function loadEventsForCurrentPeriod(){
         participantsDetails = participantsIds.map((id, idx) => ({
           id,
           nombre: participantsNames?.[idx] || PARTICIPANTS_MAP?.[id] || `Aprendiz #${id}`,
+          asistencia: 'pendiente'
+        }));
+      } else if ((!Array.isArray(participantsDetails) || !participantsDetails.length) && participantsNames.length) {
+        participantsDetails = participantsNames.map((name, idx) => ({
+          id: Number.isFinite(participantsIds[idx]) ? participantsIds[idx] : (idx+1),
+          nombre: name,
           asistencia: 'pendiente'
         }));
       }
@@ -1148,6 +1214,12 @@ async function saveEvent(e){
     try{ goToStep(1); titleEl?.focus(); }catch(_){/* noop */}
     return;
   }
+  // Participantes requeridos: si está vacío, no permitir guardar
+  if (!Array.isArray(payload.participantes) || payload.participantes.length === 0) {
+    showToast('Debes seleccionar al menos 1 participante.','warning');
+    try{ goToStep(2); }catch(_){/* noop */}
+    return;
+  }
   const startDt = new Date(payload.fecha_hora);
   if(!isAllowedDateTime(startDt)) { showToast('Horario no permitido o en el pasado.','error'); return; }
   if(crossesLunch(startDt, payload.duracion)) { showToast('La reunión no puede cruzar el horario de almuerzo (12:00 a 13:55).','warning'); return; }
@@ -1464,35 +1536,62 @@ function showEventDetails(event){
   if (genBtn) genBtn.onclick = async () => {
     try {
       const res = await fetch(`${ROUTES.baseEventos}/${event.id}/generar-enlace`, { method:'POST', headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json','X-Requested-With':'XMLHttpRequest','Content-Type':'application/json'}, body: JSON.stringify({ plataforma: 'teams' }) });
-      if(!res.ok){ const t = await res.text(); console.error('No se pudo generar enlace', t); alert('No se pudo generar el enlace.'); return; }
+      if(!res.ok){ const t = await res.text(); console.error('No se pudo generar enlace', t); showToast('No se pudo generar el enlace.','error'); return; }
       const data = await res.json();
       const url = data.link || data.enlace || data.url || null;
-      if(url){ if (linkA) { linkA.href = url; linkA.style.display='inline-block'; } if (delBtn) delBtn.style.display='inline-block'; if (editorBox) editorBox.style.display='none'; }
-    }catch(err){ console.error(err); alert('Error generando enlace'); }
+      if(url){
+        if (linkA) { linkA.href = url; linkA.style.display='inline-block'; }
+        if (delBtn) delBtn.style.display='inline-block';
+        if (editorBox) editorBox.style.display='none';
+        showToast('Enlace generado','success');
+        await loadEventsForCurrentPeriod();
+        renderCalendar();
+        showEventDetails(events.find(e=>e.id===event.id) || event);
+      }
+    }catch(err){ console.error(err); showToast('Error generando enlace','error'); }
   };
+
+  if (delBtn) delBtn.onclick = async () => {
+    const ok = await openConfirmModal({
+      title: 'Eliminar enlace',
+      message: '¿Eliminar el enlace de la reunión?',
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Volver',
+      variant: 'danger'
+    });
+    if(!ok) return;
+    try{
+      const res = await fetch(`${ROUTES.baseEventos}/${event.id}`, {
+        method:'PUT',
+        headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},
+        body: JSON.stringify({ link_virtual: null })
+      });
+      if(!res.ok){ const t = await res.text(); console.error('No se pudo eliminar enlace', t); showToast('No se pudo eliminar el enlace.','error'); return; }
+      showToast('Enlace eliminado','success');
+      await loadEventsForCurrentPeriod();
+      renderCalendar();
+      showEventDetails(events.find(e=>e.id===event.id) || event);
+    }catch(err){ console.error(err); showToast('Error de red al eliminar el enlace.','error'); }
+  };
+
   if (saveBtn) saveBtn.onclick = async () => {
-    const url = editorInput.value.trim();
-    if(!url){ alert('Ingresa un enlace válido'); return; }
+    const url = editorInput ? editorInput.value.trim() : '';
+    if(!url){ showToast('Ingresa un enlace válido','warning'); return; }
     try{
       const res = await fetch(`${ROUTES.baseEventos}/${event.id}`, { method:'PUT', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}, body: JSON.stringify({ link_virtual: url }) });
-      if(!res.ok){ const t = await res.text(); console.error('No se pudo guardar enlace', t); alert('No se pudo guardar el enlace.'); return; }
+      if(!res.ok){ const t = await res.text(); console.error('No se pudo guardar enlace', t); showToast('No se pudo guardar el enlace.','error'); return; }
       if (linkA) { linkA.href = url; linkA.style.display='inline-block'; }
       if (delBtn) delBtn.style.display='inline-block';
       if (editorBox) editorBox.style.display='none';
-    }catch(err){ console.error(err); alert('Error guardando enlace'); }
+      showToast('Enlace guardado','success');
+      await loadEventsForCurrentPeriod();
+      renderCalendar();
+      showEventDetails(events.find(e=>e.id===event.id) || event);
+    }catch(err){ console.error(err); showToast('Error de red al guardar el enlace.','error'); }
   };
+
   if (cancelBtnEdit) cancelBtnEdit.onclick = () => { if (editorBox) editorBox.style.display='none'; };
-  if (delBtn) delBtn.onclick = async () => {
-    if(!confirm('¿Eliminar el enlace de la reunión?')) return;
-    try{
-      const res = await fetch(`${ROUTES.baseEventos}/${event.id}`, { method:'PUT', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}, body: JSON.stringify({ link_virtual: null }) });
-      if(!res.ok){ const t = await res.text(); console.error('No se pudo eliminar enlace', t); alert('No se pudo eliminar el enlace.'); return; }
-      if (linkA) linkA.style.display='none';
-      if (delBtn) delBtn.style.display='none';
-      if (editorBox) editorBox.style.display='block';
-      if (editorInput) editorInput.value='';
-    }catch(err){ console.error(err); alert('Error eliminando enlace'); }
-  };
+
   openDetailDrawer();
 }
 
@@ -1606,7 +1705,15 @@ function editEvent(event){
 function editFromDetail(){ const event=events.find(e=>e.id===editingEventId); if(event){ closeDetailDrawer(); editEvent(event); } }
 
 async function deleteEvent(){
-  if(!editingEventId) return; if(!confirm('¿Estás seguro de que quieres cancelar esta reunión?')) return;
+  if(!editingEventId) return;
+  const ok = await openConfirmModal({
+    title: 'Cancelar reunión',
+    message: '¿Estás seguro de que quieres cancelar esta reunión?',
+    confirmText: 'Sí, cancelar',
+    cancelText: 'Volver',
+    variant: 'danger'
+  });
+  if(!ok) return;
   try{
     const res = await fetch(`${ROUTES.baseEventos}/${editingEventId}`,{
       method:'DELETE',
@@ -1792,5 +1899,71 @@ function showToast(message, type='info'){
     setTimeout(close, 4000);
   }catch(e){ console.error('showToast error', e); }
 }
+
+let confirmResolver = null;
+let confirmPrevFocus = null;
+function closeConfirmModal(result=false){
+  if (confirmOverlay) confirmOverlay.style.display='none';
+  if (confirmModal) confirmModal.style.display='none';
+  try{ document.body.classList.remove('cal-confirm-open'); }catch(_){/* noop */}
+  try{ confirmModal?.classList.remove('danger','info'); }catch(_){/* noop */}
+  const r = confirmResolver;
+  confirmResolver = null;
+  if (confirmPrevFocus && typeof confirmPrevFocus.focus === 'function') {
+    try{ confirmPrevFocus.focus(); }catch(_){/* noop */}
+  }
+  confirmPrevFocus = null;
+  if (typeof r === 'function') r(!!result);
+}
+
+function openConfirmModal(opts={}){
+  const title = String(opts.title || 'Confirmación');
+  const message = String(opts.message || '¿Deseas continuar?');
+  const confirmText = String(opts.confirmText || 'Confirmar');
+  const cancelText = String(opts.cancelText || 'Volver');
+  const variant = String(opts.variant || 'info');
+
+  if (!confirmOverlay || !confirmModal || !confirmTitleEl || !confirmMessageEl || !confirmCancelBtn || !confirmAcceptBtn) {
+    return Promise.resolve(window.confirm(message));
+  }
+
+  confirmPrevFocus = document.activeElement;
+  confirmTitleEl.textContent = title;
+  confirmMessageEl.textContent = message;
+  confirmAcceptBtn.textContent = confirmText;
+  confirmCancelBtn.textContent = cancelText;
+
+  confirmModal.classList.remove('danger','info');
+  confirmModal.classList.add(variant === 'danger' ? 'danger' : 'info');
+  confirmOverlay.style.display='block';
+  confirmModal.style.display='block';
+  try{ document.body.classList.add('cal-confirm-open'); }catch(_){/* noop */}
+
+  setTimeout(()=>{
+    try{ confirmAcceptBtn.focus(); }catch(_){/* noop */}
+  }, 0);
+
+  return new Promise((resolve)=>{
+    confirmResolver = resolve;
+  });
+}
+
+confirmOverlay?.addEventListener('click', ()=> closeConfirmModal(false));
+confirmCloseBtn?.addEventListener('click', ()=> closeConfirmModal(false));
+confirmCancelBtn?.addEventListener('click', ()=> closeConfirmModal(false));
+confirmAcceptBtn?.addEventListener('click', ()=> closeConfirmModal(true));
+document.addEventListener('keydown', (e)=>{
+  if (!confirmModal || confirmModal.style.display !== 'block') return;
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    closeConfirmModal(false);
+  }
+  if (e.key === 'Enter') {
+    const tag = (document.activeElement && document.activeElement.tagName) ? String(document.activeElement.tagName).toLowerCase() : '';
+    if (tag === 'textarea') return;
+    e.preventDefault();
+    closeConfirmModal(true);
+  }
+});
 </script>
 @endsection

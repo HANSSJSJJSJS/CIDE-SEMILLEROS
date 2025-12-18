@@ -78,6 +78,9 @@ class CalendarioLiderController extends Controller
                     foreach (['nombre','apellidos','name','email'] as $c) {
                         if (Schema::hasColumn('users', $c)) { $userCols[] = $c; }
                     }
+                    foreach (['tipo_documento','documento'] as $c) {
+                        if (Schema::hasColumn('users', $c)) { $userCols[] = $c; }
+                    }
                 }
 
                 $aq = Aprendiz::query()->with(['user' => function ($q) use ($userCols) {
@@ -317,23 +320,12 @@ class CalendarioLiderController extends Controller
             $anio = $anio ?: (int) $now->format('Y');
         }
 
-        $q = Evento::query()->with(['participantes' => function ($p) {
-            $p->select('aprendices.id_aprendiz', 'aprendices.user_id', 'aprendices.nombres', 'aprendices.apellidos');
-            if (Schema::hasColumn('aprendices', 'id_aprendiz')) {
-                $p->addSelect('aprendices.id_aprendiz');
-            }
-            $p->withPivot(['asistencia', 'created_at', 'updated_at']);
-            // Cargar usuario para usar sus nombres si el aprendiz no los tiene
-            $userCols = ['id'];
-            foreach (['nombre','apellidos','name','email'] as $col) {
-                if (Schema::hasColumn('users', $col)) {
-                    $userCols[] = $col;
-                }
-            }
-            $p->with(['user' => function ($u) use ($userCols) {
-                $u->select(array_values(array_unique($userCols)));
-            }]);
-        }]);
+        // IMPORTANTE:
+        // No eager-load de la relación `participantes` aquí.
+        // Si se carga la relación (aunque venga vacía), Eloquent la serializa como relación y
+        // SOBREESCRIBE cualquier atributo dinámico `participantes` que construyamos después,
+        // provocando que siempre llegue [] al frontend.
+        $q = Evento::query();
         if (Schema::hasColumn('eventos','fecha_hora')) {
             $q->whereMonth('fecha_hora', $mes)->whereYear('fecha_hora', $anio);
         } elseif (Schema::hasColumn('eventos','fecha')) {
@@ -378,26 +370,52 @@ class CalendarioLiderController extends Controller
 
         $eventos = $q->get();
 
+        // Resolver participantes de forma robusta (pivote o aprendices del proyecto)
+        $participantesPorEvento = $this->obtenerParticipantesPorEvento($eventos);
+        // Refuerzo inmediato: inyectar mapa si está disponible
+        if ($participantesPorEvento instanceof \Illuminate\Support\Collection && $participantesPorEvento->isNotEmpty()) {
+            $eventos = $eventos->map(function ($ev) use ($participantesPorEvento) {
+                $eid = $ev->id_evento ?? null;
+                if ($eid && $participantesPorEvento->has($eid)) {
+                    $parts = $participantesPorEvento->get($eid);
+                    if ($parts instanceof \Illuminate\Support\Collection) { $parts = $parts->values()->all(); }
+                    // Solo usar este mapa si aún no tenemos participantes estructurados con id_aprendiz
+                    $existing = collect($ev->participantes ?? [])->map(function ($p) {
+                        return is_array($p) ? $p : (array)$p;
+                    });
+                    $hasStructured = $existing->contains(function ($p) {
+                        return isset($p['id_aprendiz']) && (int)$p['id_aprendiz'] > 0;
+                    });
+                    $isStructuredParts = false;
+                    if (is_array($parts) && !empty($parts)) {
+                        $first = $parts[0];
+                        $isStructuredParts = is_array($first) && (isset($first['id_aprendiz']) || isset($first['id']));
+                    }
+                    if (is_array($parts) && $isStructuredParts && !$hasStructured && $existing->isEmpty()) {
+                        $ev->participantes = $parts;
+                        $ev->participantes_detalle = $parts;
+                        $ev->participantes_detalles = $parts;
+                        $ev->aprendices_asignados = $parts;
+                    }
+                }
+                return $ev;
+            });
+        }
         // Adjuntar participantes con asistencia (para el drawer)
         try {
             $eventoIds = $eventos->pluck('id_evento')->filter()->values();
             if ($eventoIds->isNotEmpty() && Schema::hasTable('evento_participantes')) {
-                $userCols = [];
-                if (Schema::hasTable('users')) {
-                    if (Schema::hasColumn('users', 'name')) { $userCols[] = 'u.name'; }
-                    if (Schema::hasColumn('users', 'nombre')) { $userCols[] = 'u.nombre'; }
-                    if (Schema::hasColumn('users', 'apellidos')) { $userCols[] = 'u.apellidos'; }
-                    if (Schema::hasColumn('users', 'email')) { $userCols[] = 'u.email'; }
-                }
-                if (empty($userCols)) {
-                    $userCols = ['u.email'];
+                $aprCols = [];
+                if (Schema::hasTable('aprendices')) {
+                    if (Schema::hasColumn('aprendices', 'nombres')) { $aprCols[] = 'a.nombres'; }
+                    if (Schema::hasColumn('aprendices', 'apellidos')) { $aprCols[] = 'a.apellidos'; }
+                    if (Schema::hasColumn('aprendices', 'correo_institucional')) { $aprCols[] = 'a.correo_institucional'; }
                 }
 
                 $rows = DB::table('evento_participantes as ep')
                     ->leftJoin('aprendices as a', 'a.id_aprendiz', '=', 'ep.id_aprendiz')
-                    ->leftJoin('users as u', 'u.id', '=', 'a.user_id')
                     ->whereIn('ep.id_evento', $eventoIds)
-                    ->select(array_merge(['ep.id_evento', 'ep.id_aprendiz', 'ep.asistencia', 'a.nombres', 'a.apellidos'], $userCols))
+                    ->select(array_merge(['ep.id_evento', 'ep.id_aprendiz', 'ep.asistencia'], $aprCols))
                     ->get()
                     ->groupBy('id_evento');
 
@@ -408,9 +426,8 @@ class CalendarioLiderController extends Controller
                     if ($proyectoIds->isNotEmpty()) {
                         $projRows = DB::table('aprendiz_proyecto as ap')
                             ->leftJoin('aprendices as a', 'a.id_aprendiz', '=', 'ap.id_aprendiz')
-                            ->leftJoin('users as u', 'u.id', '=', 'a.user_id')
                             ->whereIn('ap.id_proyecto', $proyectoIds)
-                            ->select(array_merge(['ap.id_proyecto', 'ap.id_aprendiz', 'a.nombres', 'a.apellidos'], $userCols))
+                            ->select(array_merge(['ap.id_proyecto', 'ap.id_aprendiz'], $aprCols))
                             ->get()
                             ->groupBy('id_proyecto');
                     }
@@ -427,10 +444,9 @@ class CalendarioLiderController extends Controller
                             return (object)[
                                 'id_aprendiz' => $r->id_aprendiz,
                                 'asistencia' => 'PENDIENTE',
-                                'name' => $r->name,
-                                'nombre' => $r->nombre,
-                                'apellidos' => $r->apellidos,
-                                'email' => $r->email,
+                                'nombres' => $r->nombres ?? null,
+                                'apellidos' => $r->apellidos ?? null,
+                                'correo_institucional' => $r->correo_institucional ?? null,
                             ];
                         });
                     }
@@ -445,11 +461,10 @@ class CalendarioLiderController extends Controller
                                 $b = $byApr->get($aid);
                                 $b->asistencia = $r->asistencia ?? $b->asistencia;
                                 // Si el pivote trae mejor nombre, reemplazar
-                                if (isset($r->nombre) || isset($r->apellidos) || isset($r->name) || isset($r->email)) {
-                                    $b->name = $r->name ?? $b->name;
-                                    $b->nombre = $r->nombre ?? $b->nombre;
+                                if (isset($r->nombres) || isset($r->apellidos) || isset($r->correo_institucional)) {
+                                    $b->nombres = $r->nombres ?? $b->nombres;
                                     $b->apellidos = $r->apellidos ?? $b->apellidos;
-                                    $b->email = $r->email ?? $b->email;
+                                    $b->correo_institucional = $r->correo_institucional ?? $b->correo_institucional;
                                 }
                                 $byApr->put($aid, $b);
                             } else {
@@ -462,12 +477,9 @@ class CalendarioLiderController extends Controller
                         $grp = collect();
                     }
 
-                    $ev->participantes = $grp->map(function ($r) {
+                    $partsCalc = $grp->map(function ($r) {
                         $full = trim(((string)($r->nombres ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
-                        if ($full === '') {
-                            $full = trim(((string)($r->nombre ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
-                        }
-                        $name = $full !== '' ? $full : (trim((string)($r->name ?? '')) !== '' ? (string)$r->name : (string)($r->email ?? ''));
+                        $name = $full !== '' ? $full : (string)($r->correo_institucional ?? '');
                         if ($name === '') { $name = 'Aprendiz #' . (string)($r->id_aprendiz ?? ''); }
 
                         $st = strtoupper(trim((string)($r->asistencia ?? 'PENDIENTE')));
@@ -478,7 +490,8 @@ class CalendarioLiderController extends Controller
                             'nombre' => $name,
                             'asistencia' => $asistencia,
                         ];
-                    })->values();
+                    })->values()->all();
+                    $ev->setAttribute('participantes', $partsCalc);
                     return $ev;
                 });
             }
@@ -488,8 +501,22 @@ class CalendarioLiderController extends Controller
 
         // Combinar relación cargada (si existe) con lo obtenido por consulta directa a pivote, sin perder entradas
         $eventos = $eventos->map(function ($ev) {
-            if ($ev->relationLoaded('participantes') && $ev->participantes->count()) {
-                $fromRelation = $ev->participantes->map(function ($p) {
+            $rel = null;
+            try {
+                if (method_exists($ev, 'getRelation')) {
+                    $rel = $ev->getRelation('participantes');
+                }
+            } catch (\Throwable $e) {
+                $rel = null;
+            }
+
+            if ($rel instanceof \Illuminate\Database\Eloquent\Collection && $rel->count()) {
+                $first = $rel->first();
+                if (!is_object($first)) {
+                    return $ev;
+                }
+
+                $fromRelation = $rel->map(function ($p) {
                     $full = trim(((string)($p->nombres ?? '')) . ' ' . ((string)($p->apellidos ?? '')));
                     if ($full === '' && $p->user) {
                         $userName = trim(((string)($p->user->nombre ?? '')) . ' ' . ((string)($p->user->apellidos ?? '')));
@@ -520,7 +547,7 @@ class CalendarioLiderController extends Controller
                 $merged = $existing->concat($fromRelation)->filter(function ($p) {
                     return isset($p['id_aprendiz']) && (int)$p['id_aprendiz'] > 0;
                 })->unique('id_aprendiz')->values();
-                $ev->participantes = $merged;
+                $ev->setAttribute('participantes', $merged->all());
             }
             return $ev;
         });
@@ -530,11 +557,43 @@ class CalendarioLiderController extends Controller
             $parts = collect($ev->participantes ?? [])->map(function ($p) {
                 return is_array($p) ? $p : (array)$p;
             })->values()->all();
+            // Si todavía no hay participantes, intentar con mapa global (pivote/proyecto)
+            if (empty($parts)) {
+                // noop aquí; se sobreescribe más abajo con $this->obtenerParticipantesPorEvento
+            }
             $ev->participantes = $parts;
             // Claves alternas para compatibilidad con el JS del calendario
             $ev->participantes_detalle = $parts;
             $ev->participantes_detalles = $parts;
             $ev->aprendices_asignados = $parts;
+            return $ev;
+        });
+
+        // Refuerzo final: si algún evento sigue sin participantes, tomar del helper unificado
+        $eventos = $eventos->map(function ($ev) use ($participantesPorEvento) {
+            $eid = $ev->id_evento ?? null;
+            if ($eid && isset($participantesPorEvento) && $participantesPorEvento->has($eid)) {
+                $parts = $participantesPorEvento->get($eid, collect());
+                if ($parts instanceof \Illuminate\Support\Collection) { $parts = $parts->values()->all(); }
+                // No sobrescribir participantes estructurados (con id_aprendiz) usados por el front al editar
+                $existing = collect($ev->participantes ?? [])->map(function ($p) {
+                    return is_array($p) ? $p : (array)$p;
+                });
+                $hasStructured = $existing->contains(function ($p) {
+                    return isset($p['id_aprendiz']) && (int)$p['id_aprendiz'] > 0;
+                });
+                $isStructuredParts = false;
+                if (is_array($parts) && !empty($parts)) {
+                    $first = $parts[0];
+                    $isStructuredParts = is_array($first) && (isset($first['id_aprendiz']) || isset($first['id']));
+                }
+                if (is_array($parts) && !empty($parts) && $isStructuredParts && !$hasStructured && $existing->isEmpty()) {
+                    $ev->participantes = $parts;
+                    $ev->participantes_detalle = $parts;
+                    $ev->participantes_detalles = $parts;
+                    $ev->aprendices_asignados = $parts;
+                }
+            }
             return $ev;
         });
 
@@ -547,32 +606,19 @@ class CalendarioLiderController extends Controller
             $list = collect();
             try {
                 if (!empty($ev->id_proyecto) && Schema::hasTable('aprendiz_proyecto') && Schema::hasTable('aprendices')) {
-                    $userCols = [];
-                    if (Schema::hasTable('users')) {
-                        if (Schema::hasColumn('users','name')) { $userCols[] = 'u.name'; }
-                        if (Schema::hasColumn('users','nombre')) { $userCols[] = 'u.nombre'; }
-                        if (Schema::hasColumn('users','apellidos')) { $userCols[] = 'u.apellidos'; }
-                        if (Schema::hasColumn('users','email')) { $userCols[] = 'u.email'; }
-                    }
-                    if (empty($userCols)) { $userCols[] = 'u.email'; }
-
+                    $aprCols = [];
+                    if (Schema::hasColumn('aprendices', 'nombres')) { $aprCols[] = 'a.nombres'; }
+                    if (Schema::hasColumn('aprendices', 'apellidos')) { $aprCols[] = 'a.apellidos'; }
+                    if (Schema::hasColumn('aprendices', 'correo_institucional')) { $aprCols[] = 'a.correo_institucional'; }
                     $rows = DB::table('aprendiz_proyecto as ap')
                         ->leftJoin('aprendices as a', 'a.id_aprendiz', '=', 'ap.id_aprendiz')
-                        ->leftJoin('users as u', 'u.id', '=', 'a.user_id')
                         ->where('ap.id_proyecto', $ev->id_proyecto)
-                        ->select(array_merge(['a.id_aprendiz', 'a.nombres', 'a.apellidos'], $userCols))
+                        ->select(array_merge(['a.id_aprendiz'], $aprCols))
                         ->get();
                     $list = $rows->map(function ($r) {
                         $name = trim(((string)($r->nombres ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
                         if ($name === '') {
-                            $userName = trim(((string)($r->nombre ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
-                            if ($userName === '' && isset($r->name)) {
-                                $userName = trim((string)$r->name);
-                            }
-                            if ($userName === '' && isset($r->email)) {
-                                $userName = trim((string)$r->email);
-                            }
-                            $name = $userName;
+                            $name = trim((string)($r->correo_institucional ?? ''));
                         }
                         if ($name === '') { $name = 'Aprendiz #' . (string)($r->id_aprendiz ?? ''); }
                         return [
@@ -587,9 +633,71 @@ class CalendarioLiderController extends Controller
             } catch (\Throwable $e) {
                 // noop
             }
-            $ev->participantes = $list;
+            $ev->participantes = $list->values()->all();
             return $ev;
         });
+
+        // Eliminar llaves duplicadas (el front ya prioriza `participantes`)
+        $eventos = $eventos->map(function ($ev) {
+            try {
+                unset($ev->participantes_detalle);
+                unset($ev->participantes_detalles);
+                unset($ev->aprendices_asignados);
+            } catch (\Throwable $e) {
+                // noop
+            }
+            return $ev;
+        });
+
+        // Asegurar que `participantes` sea estructurado (id_aprendiz + nombre + asistencia).
+        // Evita casos donde llega como arreglo de strings (ej. [" "]) y rompe la edición.
+        try {
+            $badIds = $eventos->filter(function ($ev) {
+                $parts = $ev->participantes ?? [];
+                if ($parts instanceof \Illuminate\Support\Collection) { $parts = $parts->values()->all(); }
+                if (!is_array($parts) || empty($parts)) { return false; }
+                $first = $parts[0];
+                if (is_array($first)) {
+                    return !(isset($first['id_aprendiz']) && (int)$first['id_aprendiz'] > 0);
+                }
+                return true; // string/number/etc
+            })->pluck('id_evento')->filter()->values();
+
+            if ($badIds->isNotEmpty() && Schema::hasTable('evento_participantes') && Schema::hasTable('aprendices')) {
+                $aprCols = [];
+                if (Schema::hasColumn('aprendices', 'nombres')) { $aprCols[] = 'a.nombres'; }
+                if (Schema::hasColumn('aprendices', 'apellidos')) { $aprCols[] = 'a.apellidos'; }
+                if (Schema::hasColumn('aprendices', 'correo_institucional')) { $aprCols[] = 'a.correo_institucional'; }
+
+                $rows = DB::table('evento_participantes as ep')
+                    ->leftJoin('aprendices as a', 'a.id_aprendiz', '=', 'ep.id_aprendiz')
+                    ->whereIn('ep.id_evento', $badIds)
+                    ->select(array_merge(['ep.id_evento', 'ep.id_aprendiz', 'ep.asistencia'], $aprCols))
+                    ->get()
+                    ->groupBy('id_evento');
+
+                $eventos = $eventos->map(function ($ev) use ($rows) {
+                    $eid = $ev->id_evento ?? null;
+                    if (!$eid || !$rows->has($eid)) { return $ev; }
+                    $grp = $rows->get($eid, collect());
+                    $ev->participantes = $grp->map(function ($r) {
+                        $full = trim(((string)($r->nombres ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
+                        $name = $full !== '' ? $full : trim((string)($r->correo_institucional ?? ''));
+                        if ($name === '') { $name = 'Aprendiz #' . (string)($r->id_aprendiz ?? ''); }
+                        $st = strtoupper(trim((string)($r->asistencia ?? 'PENDIENTE')));
+                        $asistencia = $st === 'ASISTIO' ? 'asistio' : ($st === 'NO_ASISTIO' ? 'no_asistio' : 'pendiente');
+                        return [
+                            'id_aprendiz' => (int)($r->id_aprendiz ?? 0),
+                            'nombre' => $name,
+                            'asistencia' => $asistencia,
+                        ];
+                    })->filter(fn($p)=> (int)($p['id_aprendiz'] ?? 0) > 0)->values()->all();
+                    return $ev;
+                });
+            }
+        } catch (\Throwable $e) {
+            // noop
+        }
 
         return response()->json(['eventos' => $eventos]);
     }
@@ -602,7 +710,8 @@ class CalendarioLiderController extends Controller
             'fecha_hora' => 'required|date',
             'duracion' => 'required|integer|min:15',
             'ubicacion' => 'nullable|string|max:255',
-            'link_virtual' => 'nullable|url',
+            // Permitir string y normalizar esquema para no rechazar enlaces válidos sin http(s)
+            'link_virtual' => 'nullable|string|max:1000',
             'id_proyecto' => 'nullable|integer',
             'tipo' => 'nullable|string|in:REUNION,CAPACITACION,SEGUIMIENTO,ENTREGA,OTRO',
             'linea_investigacion' => 'nullable|string|max:255',
@@ -610,6 +719,18 @@ class CalendarioLiderController extends Controller
             'participantes' => 'nullable|array',
             'participantes.*' => 'integer',
         ]);
+
+        // Compatibilidad con DB: si la tabla eventos no tiene linea_investigacion, no incluirla en el insert
+        if (!Schema::hasColumn('eventos', 'linea_investigacion')) {
+            unset($data['linea_investigacion']);
+        }
+        // Si la columna recordatorio es NOT NULL en la DB, forzar valor por defecto
+        if (Schema::hasColumn('eventos', 'recordatorio')) {
+            $recordatorio = $data['recordatorio'] ?? null;
+            if ($recordatorio === null || $recordatorio === '') {
+                $data['recordatorio'] = 'none';
+            }
+        }
 
         if (empty($data['tipo'])) {
             $data['tipo'] = 'REUNION';
@@ -637,20 +758,85 @@ class CalendarioLiderController extends Controller
             return response()->json($err, 422);
         }
 
-        $evento = Evento::create($data);
+        // Normalizar enlace virtual: agregar esquema si falta
+        if (array_key_exists('link_virtual', $data) && is_string($data['link_virtual'])) {
+            $trim = trim($data['link_virtual']);
+            if ($trim !== '' && !preg_match('/^https?:\/\//i', $trim)) {
+                $trim = 'https://' . $trim;
+            }
+            $data['link_virtual'] = $trim === '' ? null : $trim;
+        }
+
+        // Evitar error por longitud real de la columna (en la DB dump suele ser VARCHAR(255))
+        if (!empty($data['link_virtual']) && Schema::hasTable('eventos') && Schema::hasColumn('eventos', 'link_virtual')) {
+            try {
+                $maxLen = DB::table('information_schema.columns')
+                    ->where('table_schema', DB::getDatabaseName())
+                    ->where('table_name', 'eventos')
+                    ->where('column_name', 'link_virtual')
+                    ->value('CHARACTER_MAXIMUM_LENGTH');
+                $maxLen = is_numeric($maxLen) ? (int)$maxLen : null;
+                if ($maxLen && mb_strlen((string)$data['link_virtual']) > $maxLen) {
+                    return response()->json([
+                        'message' => 'El enlace de reunión es demasiado largo para la base de datos.',
+                        'errors' => [
+                            'link_virtual' => ['El enlace supera el máximo permitido ('.$maxLen.' caracteres).'],
+                        ],
+                    ], 422);
+                }
+            } catch (\Throwable $e) {
+                // noop
+            }
+        }
+
         try {
+            DB::beginTransaction();
+            $evento = Evento::create($data);
+
             $incomingParticipants = $request->exists('participantes') ? $request->input('participantes') : null;
-            if (is_array($incomingParticipants) && method_exists($evento,'participantes')) {
-                $participants = collect($incomingParticipants)
+            $participants = is_array($incomingParticipants)
+                ? collect($incomingParticipants)->map(fn($v)=> (int)$v)->filter(fn($v)=> $v>0)->unique()->values()->all()
+                : [];
+
+            // Si no llegaron participantes pero hay proyecto, tomar los aprendices del proyecto (aprendiz_proyecto)
+            if (empty($participants) && !empty($evento->id_proyecto) && Schema::hasTable('aprendiz_proyecto')) {
+                $participants = DB::table('aprendiz_proyecto')
+                    ->where('id_proyecto', $evento->id_proyecto)
+                    ->pluck('id_aprendiz')
                     ->map(fn($v)=> (int)$v)
                     ->filter(fn($v)=> $v>0)
                     ->unique()
                     ->values()
                     ->all();
-                $evento->participantes()->sync($participants);
             }
-        } catch (\Throwable $e) {}
 
+            if (!empty($participants) && method_exists($evento,'participantes')) {
+                // Persistir pivote explícitamente para evitar fallos silenciosos de sync
+                if (Schema::hasTable('evento_participantes')) {
+                    DB::table('evento_participantes')->where('id_evento', $evento->id_evento)->delete();
+                    $now = now();
+                    $rows = collect($participants)->map(fn($id)=>[
+                        'id_evento' => $evento->id_evento,
+                        'id_aprendiz' => $id,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ])->values()->all();
+                    if (!empty($rows)) {
+                        DB::table('evento_participantes')->insert($rows);
+                    }
+                } else {
+                    $evento->participantes()->sync($participants);
+                }
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            try { DB::rollBack(); } catch (\Throwable $ex) {}
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo guardar la reunión con sus participantes.',
+            ], 500);
+        }
         // Recargar participantes para que el payload de respuesta ya los incluya
         $evento = $this->cargarParticipantesConNombres($evento);
         return response()->json(['success' => true, 'evento' => $evento]);
@@ -665,7 +851,8 @@ class CalendarioLiderController extends Controller
             'fecha_hora' => 'sometimes|required|date',
             'duracion' => 'sometimes|required|integer|min:15',
             'ubicacion' => 'sometimes|nullable|string|max:255',
-            'link_virtual' => 'sometimes|nullable|url',
+            // Permitir string y normalizar esquema para no rechazar enlaces válidos sin http(s)
+            'link_virtual' => 'sometimes|nullable|string|max:1000',
             'id_proyecto' => 'sometimes|nullable|integer',
             'tipo' => 'sometimes|nullable|string|in:REUNION,CAPACITACION,SEGUIMIENTO,ENTREGA,OTRO',
             'linea_investigacion' => 'sometimes|nullable|string|max:255',
@@ -673,6 +860,18 @@ class CalendarioLiderController extends Controller
             'participantes' => 'sometimes|array',
             'participantes.*' => 'integer',
         ]);
+
+        // Compatibilidad con DB: si la tabla eventos no tiene linea_investigacion, no incluirla en el update
+        if (!Schema::hasColumn('eventos', 'linea_investigacion')) {
+            unset($data['linea_investigacion']);
+        }
+        if (Schema::hasColumn('eventos', 'recordatorio')) {
+            if (array_key_exists('recordatorio', $data)) {
+                if ($data['recordatorio'] === null || $data['recordatorio'] === '') {
+                    $data['recordatorio'] = 'none';
+                }
+            }
+        }
 
         if (array_key_exists('tipo', $data) && empty($data['tipo'])) {
             $data['tipo'] = 'REUNION';
@@ -714,20 +913,85 @@ class CalendarioLiderController extends Controller
             return response()->json($err, 422);
         }
 
-        $ev->update($data);
+        // Normalizar enlace virtual: agregar esquema si falta
+        if (array_key_exists('link_virtual', $data) && is_string($data['link_virtual'])) {
+            $trim = trim($data['link_virtual']);
+            if ($trim !== '' && !preg_match('/^https?:\/\//i', $trim)) {
+                $trim = 'https://' . $trim;
+            }
+            $data['link_virtual'] = $trim === '' ? null : $trim;
+        }
+
+        // Evitar error por longitud real de la columna (en la DB dump suele ser VARCHAR(255))
+        if (array_key_exists('link_virtual', $data) && !empty($data['link_virtual']) && Schema::hasTable('eventos') && Schema::hasColumn('eventos', 'link_virtual')) {
+            try {
+                $maxLen = DB::table('information_schema.columns')
+                    ->where('table_schema', DB::getDatabaseName())
+                    ->where('table_name', 'eventos')
+                    ->where('column_name', 'link_virtual')
+                    ->value('CHARACTER_MAXIMUM_LENGTH');
+                $maxLen = is_numeric($maxLen) ? (int)$maxLen : null;
+                if ($maxLen && mb_strlen((string)$data['link_virtual']) > $maxLen) {
+                    return response()->json([
+                        'message' => 'El enlace de reunión es demasiado largo para la base de datos.',
+                        'errors' => [
+                            'link_virtual' => ['El enlace supera el máximo permitido ('.$maxLen.' caracteres).'],
+                        ],
+                    ], 422);
+                }
+            } catch (\Throwable $e) {
+                // noop
+            }
+        }
+
         try {
+            DB::beginTransaction();
+            $ev->update($data);
+
             // Usar exists() para JSON:has() puede fallar con arreglos vacíos
             $incomingParticipants = $request->exists('participantes') ? $request->input('participantes') : null;
-            if (is_array($incomingParticipants) && method_exists($ev,'participantes')) {
-                $participants = collect($incomingParticipants)
+            $participants = is_array($incomingParticipants)
+                ? collect($incomingParticipants)->map(fn($v)=> (int)$v)->filter(fn($v)=> $v>0)->unique()->values()->all()
+                : [];
+
+            // Si no llegaron participantes pero hay proyecto, tomar los aprendices del proyecto
+            if (empty($participants) && !empty($ev->id_proyecto) && Schema::hasTable('aprendiz_proyecto')) {
+                $participants = DB::table('aprendiz_proyecto')
+                    ->where('id_proyecto', $ev->id_proyecto)
+                    ->pluck('id_aprendiz')
                     ->map(fn($v)=> (int)$v)
                     ->filter(fn($v)=> $v>0)
                     ->unique()
                     ->values()
                     ->all();
-                $ev->participantes()->sync($participants);
             }
-        } catch (\Throwable $e) {}
+
+            if (!empty($participants) && method_exists($ev,'participantes')) {
+                if (Schema::hasTable('evento_participantes')) {
+                    DB::table('evento_participantes')->where('id_evento', $ev->id_evento)->delete();
+                    $now = now();
+                    $rows = collect($participants)->map(fn($id)=>[
+                        'id_evento' => $ev->id_evento,
+                        'id_aprendiz' => $id,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ])->values()->all();
+                    if (!empty($rows)) {
+                        DB::table('evento_participantes')->insert($rows);
+                    }
+                } else {
+                    $ev->participantes()->sync($participants);
+                }
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            try { DB::rollBack(); } catch (\Throwable $ex) {}
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo actualizar la reunión con sus participantes.',
+            ], 500);
+        }
         $ev = $this->cargarParticipantesConNombres($ev->fresh());
         return response()->json(['success' => true, 'evento' => $ev]);
     }
@@ -782,6 +1046,12 @@ class CalendarioLiderController extends Controller
                 $evento->setAttribute('participantes_detalle', $parts);
                 $evento->setAttribute('participantes_detalles', $parts);
                 $evento->setAttribute('aprendices_asignados', $parts);
+            }
+
+            // Evitar que Eloquent serialice la relación `participantes` (que puede venir vacía)
+            // y sobreescriba nuestros atributos calculados.
+            if (method_exists($evento, 'unsetRelation')) {
+                $evento->unsetRelation('participantes');
             }
         } catch (\Throwable $e) {
             // noop
@@ -1110,14 +1380,14 @@ class CalendarioLiderController extends Controller
                             $hasNombreCompletoApr = Schema::hasColumn('aprendices', 'nombre_completo');
                             $aprNameExpr = $hasNombreCompletoApr
                                 ? 'aprendices.nombre_completo'
-                                : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
+                                : "TRIM(CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')))";
 
                             $namesByUid = collect();
                             if ($userCol === 'id_aprendiz' && Schema::hasTable('aprendices')) {
                                 $aprIds = $ga->pluck('uid')->unique()->values();
                                 if ($aprIds->isNotEmpty()) {
                                     $rowsN = DB::table('aprendices')->whereIn('id_aprendiz', $aprIds)->select('id_aprendiz', DB::raw($aprNameExpr.' as nombre'))->get();
-                                    $namesByUid = $rowsN->pluck('nombre','id_aprendiz');
+                                    $namesByUid = $rowsN->pluck('nombre','id_aprendiz')->map(fn($v)=> trim((string)$v))->filter();
                                 }
                             } elseif (in_array($userCol, ['id_usuario','user_id']) && Schema::hasTable('aprendices')) {
                                 $dbName = DB::getDatabaseName();
@@ -1127,7 +1397,7 @@ class CalendarioLiderController extends Controller
                                     $uids = $ga->pluck('uid')->unique()->values();
                                     if ($uids->isNotEmpty()) {
                                         $rowsN = DB::table('aprendices')->whereIn($aprUserFk, $uids)->select($aprUserFk.' as uid', DB::raw($aprNameExpr.' as nombre'))->get();
-                                        $namesByUid = $rowsN->pluck('nombre','uid');
+                                        $namesByUid = $rowsN->pluck('nombre','uid')->map(fn($v)=> trim((string)$v))->filter();
                                     }
                                 }
                             }
@@ -1139,7 +1409,11 @@ class CalendarioLiderController extends Controller
                                 $gids = $pid ? ($pidToGids[$pid] ?? []) : [];
                                 if (empty($gids)) { $out[$eid] = []; $missing[] = $eid; continue; }
                                 $uids = $ga->filter(fn($r)=> in_array($r->id_grupo, $gids))->pluck('uid')->unique()->values();
-                                $names = $uids->map(fn($u)=> (string)($namesByUid[$u] ?? ''))->filter()->values()->all();
+                                $names = $uids->map(fn($u)=> (string)($namesByUid[$u] ?? ''))
+                                    ->map(fn($v)=> trim((string)$v))
+                                    ->filter(fn($v)=> $v !== '')
+                                    ->values()
+                                    ->all();
                                 if (empty($names)) { $missing[] = $eid; }
                                 $out[$eid] = $names;
                             }
@@ -1157,12 +1431,14 @@ class CalendarioLiderController extends Controller
                                             ->select('id_evento', DB::raw($epCol.' as nombre'))
                                             ->get()
                                             ->groupBy('id_evento');
-                                        foreach ($rows as $eid => $grp) { $out[$eid] = $grp->pluck('nombre')->filter()->values()->all(); }
+                                        foreach ($rows as $eid => $grp) {
+                                            $out[$eid] = $grp->pluck('nombre')->map(fn($v)=> trim((string)$v))->filter()->values()->all();
+                                        }
                                     } else {
                                         $hasNombreCompletoApr = Schema::hasColumn('aprendices', 'nombre_completo');
                                         $aprNameExpr = $hasNombreCompletoApr
                                             ? 'aprendices.nombre_completo'
-                                            : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
+                                            : "TRIM(CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')))";
                                         if (in_array($epCol, ['id_aprendiz','aprendiz_id'])) {
                                             $aprPk = null;
                                             foreach (['id_aprendiz','id','id_usuario','user_id'] as $cand) { if (Schema::hasColumn('aprendices', $cand)) { $aprPk = $cand; break; } }
@@ -1173,7 +1449,9 @@ class CalendarioLiderController extends Controller
                                                     ->select('evento_participantes.id_evento', DB::raw($aprNameExpr.' as nombre'))
                                                     ->get()
                                                     ->groupBy('id_evento');
-                                                foreach ($rows as $eid => $grp) { $out[$eid] = $grp->pluck('nombre')->filter()->values()->all(); }
+                                                foreach ($rows as $eid => $grp) {
+                                                    $out[$eid] = $grp->pluck('nombre')->map(fn($v)=> trim((string)$v))->filter()->values()->all();
+                                                }
                                             }
                                         } elseif (in_array($epCol, ['id_usuario','user_id']) && Schema::hasTable('users')) {
                                             $rows = DB::table('evento_participantes')
@@ -1182,7 +1460,9 @@ class CalendarioLiderController extends Controller
                                                 ->select('evento_participantes.id_evento', 'users.name as nombre')
                                                 ->get()
                                                 ->groupBy('id_evento');
-                                            foreach ($rows as $eid => $grp) { $out[$eid] = $grp->pluck('nombre')->filter()->values()->all(); }
+                                            foreach ($rows as $eid => $grp) {
+                                                $out[$eid] = $grp->pluck('nombre')->map(fn($v)=> trim((string)$v))->filter()->values()->all();
+                                            }
                                         } elseif ($epCol === 'email') {
                                             $rows = null;
                                             if (Schema::hasTable('aprendices') && Schema::hasColumn('aprendices','email')) {
@@ -1200,8 +1480,38 @@ class CalendarioLiderController extends Controller
                                             }
                                             if ($rows) {
                                                 $grouped = $rows->groupBy('id_evento');
-                                                foreach ($grouped as $eid => $grp) { $out[$eid] = $grp->pluck('nombre')->filter()->values()->all(); }
+                                                foreach ($grouped as $eid => $grp) {
+                                                    $out[$eid] = $grp->pluck('nombre')->map(fn($v)=> trim((string)$v))->filter()->values()->all();
+                                                }
                                             }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Fallback final: si aún quedaron vacíos y hay id_proyecto, cargar desde aprendiz_proyecto
+                            $stillMissing = collect($missing)->filter(function ($eid) use ($out) {
+                                $arr = $out[$eid] ?? [];
+                                return empty($arr);
+                            })->values();
+                            if ($stillMissing->isNotEmpty() && Schema::hasTable('aprendiz_proyecto') && Schema::hasTable('aprendices')) {
+                                $pids2 = $stillMissing->map(fn($eid) => $evToPid[$eid] ?? null)->filter()->unique()->values();
+                                if ($pids2->isNotEmpty()) {
+                                    $aprNameExpr2 = Schema::hasColumn('aprendices', 'nombre_completo')
+                                        ? 'aprendices.nombre_completo'
+                                        : "TRIM(CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')))";
+                                    $byPid = DB::table('aprendiz_proyecto')
+                                        ->join('aprendices', 'aprendices.id_aprendiz', '=', 'aprendiz_proyecto.id_aprendiz')
+                                        ->whereIn('aprendiz_proyecto.id_proyecto', $pids2)
+                                        ->select('aprendiz_proyecto.id_proyecto', DB::raw($aprNameExpr2.' as nombre'))
+                                        ->get()
+                                        ->groupBy('id_proyecto')
+                                        ->map(fn($g) => $g->pluck('nombre')->filter()->values()->all());
+
+                                    foreach ($stillMissing as $eid) {
+                                        $pid = $evToPid[$eid] ?? null;
+                                        if ($pid && isset($byPid[$pid]) && !empty($byPid[$pid])) {
+                                            $out[$eid] = $byPid[$pid];
                                         }
                                     }
                                 }
@@ -1230,13 +1540,13 @@ class CalendarioLiderController extends Controller
                     ->whereIn('id_evento', $ids)
                     ->select('id_evento', DB::raw($epCol.' as nombre'))
                     ->get();
-                return $rows->groupBy('id_evento')->map(fn($g)=> $g->pluck('nombre')->filter()->values()->all());
+                return $rows->groupBy('id_evento')->map(fn($g)=> $g->pluck('nombre')->map(fn($v)=> trim((string)$v))->filter()->values()->all());
             }
 
             $hasNombreCompletoApr = Schema::hasColumn('aprendices', 'nombre_completo');
             $aprNameExpr = $hasNombreCompletoApr
                 ? 'aprendices.nombre_completo'
-                : "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
+                : "TRIM(CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,'')))";
 
             if ($epCol && in_array($epCol, ['id_aprendiz','aprendiz_id'])) {
                 $aprPk = null;
@@ -1248,7 +1558,7 @@ class CalendarioLiderController extends Controller
                         ->whereIn('evento_participantes.id_evento', $ids)
                         ->select('evento_participantes.id_evento', DB::raw($aprNameExpr.' as nombre'))
                         ->get();
-                    $grouped = $rows->groupBy('id_evento')->map(fn($g)=> $g->pluck('nombre')->filter()->values()->all());
+                    $grouped = $rows->groupBy('id_evento')->map(fn($g)=> $g->pluck('nombre')->map(fn($v)=> trim((string)$v))->filter()->values()->all());
 
                     // Si algún evento quedó sin nombres (por falta de columnas en aprendices), intentar vía users
                     $missingIds = $ids->diff($grouped->keys())->values();

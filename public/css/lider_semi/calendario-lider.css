@@ -343,11 +343,16 @@
 .cal-lider .drawer-value { font-weight:800; color:#0f172a; }
 .cal-lider .drawer-link { color: var(--cal-green-dark); font-weight:800; text-decoration: underline; }
 .cal-lider .drawer-description { border:1px solid var(--cal-border); border-radius:12px; padding:12px; background:#F9FCFE; color:#0f172a; min-height:44px; }
-.cal-lider .drawer-actions { display:flex; justify-content:center; padding-top:30px; border-top:30px solid #EEF3F6; }
+.cal-lider .drawer-actions { display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:12px; padding-top:30px; border-top:30px solid #EEF3F6; }
+.cal-lider .drawer-actions .btn-calendario{ flex: 1 1 160px; min-width: 160px; }
 
 .cal-lider .attendance-list { display:flex; flex-direction:column; gap:10px; }
 .cal-lider .attendance-item { background:#F3F8FF; border:1px solid var(--cal-border); border-radius:12px; padding:12px; }
 .cal-lider .attendance-item .name { font-weight:800; color:#0f172a; }
+
+.cal-lider .participants-filter{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.cal-lider .participants-filter #search-participants{ flex: 1 1 260px; min-width: 220px; }
+.cal-lider .participants-filter #search-doc-type{ flex: 0 0 220px; min-width: 200px; }
 .cal-lider .attendance-item .hint { font-size:12px; color:#6b7280; margin:4px 0 8px; }
 .cal-lider .attendance-item .choices { display:flex; gap:16px; align-items:center; }
 .cal-lider .attendance-summary { background:#E8F1FF; border:1px solid var(--cal-border); border-radius:12px; padding:12px; }
@@ -415,7 +420,7 @@
   font-size:14px;
 }
 .cal-lider .attendance-option input[type="radio"]{
-  accent-color:#5b21b6;
+  accent-color:#35A900;
 }
 
 /* Resumen */
@@ -492,6 +497,149 @@
   .cal-lider .days-grid,
   .cal-lider #weekGrid,
   .cal-lider #dayGrid{ -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+}
+
+.cal-confirm-open{ overflow: hidden; }
+
+.cal-confirm-overlay{
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: rgba(0, 48, 77, 0.55);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.cal-confirm-modal{
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  max-width: 360px;
+  width: calc(150% - 40px);
+  border-radius: 12px;
+  background: #FFFFFF;
+  color: #000000;
+  border: 2px solid #00304D;
+  border-radius: 14px;
+  box-shadow: 0 18px 55px rgba(0,0,0,0.35);
+  overflow: hidden;
+  animation: calConfirmPop 160ms ease-out;
+}
+
+@keyframes calConfirmPop{
+  from{ opacity: 0; transform: translate(-50%, -48%) scale(0.98); }
+  to{ opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.cal-confirm-header{
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px 6px;
+  background: #00304D;
+}
+
+.cal-confirm-icon{
+  width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 12px;
+  background: #35A900;
+  color: #FFFFFF;
+  border: 1px solid rgba(255,255,255,0.25);
+  flex: 0 0 auto;
+}
+
+.cal-confirm-modal.danger .cal-confirm-icon{
+  background: #000000;
+  color: #FFFFFF;
+  border-color: rgba(255,255,255,0.25);
+}
+
+.cal-confirm-text{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cal-confirm-title{
+  font-weight: 800;
+  color: #FFFFFF;
+  font-size: 12px;
+  margin-bottom: 1px;
+}
+
+.cal-confirm-message{
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.cal-confirm-close{
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.85);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 8px;
+}
+.cal-confirm-close:hover{
+  background: rgba(255,255,255,0.14);
+  color: #FFFFFF;
+}
+
+.cal-confirm-actions{
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 8px 10px 10px;
+  background: #FFFFFF;
+}
+
+.cal-confirm-btn{
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-weight: 700;
+  font-size: 11.5px;
+  transition: transform 120ms ease, filter 120ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+.cal-confirm-btn:active{
+  transform: translateY(1px);
+}
+
+.cal-confirm-cancel{
+  background: #FFFFFF;
+  color: #00304D;
+  border: 1.5px solid #00304D;
+}
+.cal-confirm-cancel:hover{
+  filter: brightness(0.98);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.cal-confirm-accept{
+  background: #35A900;
+  color: #FFFFFF;
+}
+.cal-confirm-modal.danger .cal-confirm-accept{
+  background: #000000;
+  color: #FFFFFF;
+}
+.cal-confirm-accept:hover{
+  background: #007832;
+}
+.cal-confirm-modal.danger .cal-confirm-accept:hover{
+  background: #00304D;
 }
 
 .cal-lider .days-grid > *{
