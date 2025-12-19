@@ -14,6 +14,28 @@
 <link rel="stylesheet" href="{{ asset('css/common/calendar-month.css') }}?v={{ $v }}">
 <link rel="stylesheet" href="{{ asset('css/lider_semi/calendario-lider.css') }}?v={{ $v }}">
 
+<style>
+  /* Fijar la fecha (currentPeriod) a la derecha y evitar que salte de línea */
+  .cal-lider .header .header-controls{ display:flex; align-items:center; gap:12px; flex-wrap: nowrap; width:100%; position: relative; padding-right: 240px; }
+  .cal-lider .header .header-controls .view-switcher{ flex:0 0 auto; min-width:0; }
+  .cal-lider .header .header-controls .nav-controls{ flex:0 0 auto; min-width:0; }
+  .cal-lider .header .header-controls .current-period{
+    position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+    white-space: nowrap; font-weight: 800; color:#0b3357; text-align: right; min-width: 220px;
+  }
+  /* Mantener controles visibles (opcional sticky si hay scroll) */
+  .cal-lider .header{ position: sticky; top: 0; z-index: 3; background: transparent; }
+  /* Badge verde en los días del mes con reuniones asignadas */
+  .cal-lider #calendar .fc-daygrid-day-frame{ position: relative; }
+  .cal-lider #calendar .scml-day-badge{
+    position:absolute; left:6px; top:6px; z-index:2; min-width:26px; height:26px;
+    padding: 2px 6px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center;
+    background: linear-gradient(135deg, #1bb152, #178a3f);
+    color:#0b3357; font-weight:800; box-shadow: 0 6px 14px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.25);
+    font-size:.85rem;
+  }
+</style>
+
 @endpush
 
 @push('scripts')
@@ -461,7 +483,7 @@ document.addEventListener('DOMContentLoaded', function(){
                 }
                 if (codigo) { wrapCod.style.display='block'; spanCod.textContent = codigo; } else { wrapCod.style.display='none'; spanCod.textContent='—'; }
 
-                const modal = new bootstrap.Modal(modalEl);
+                const modal = new bootstrap.Modal(modalEl, { backdrop: false, keyboard: true });
                 modal.show();
             },
         });
@@ -472,7 +494,7 @@ document.addEventListener('DOMContentLoaded', function(){
         (function(){
             const modalEl = document.getElementById('eventoModal');
             if (!modalEl || !window.bootstrap) return;
-            const ensureModal = () => bootstrap.Modal.getOrCreateInstance(modalEl, { backdrop: true, keyboard: true });
+            const ensureModal = () => bootstrap.Modal.getOrCreateInstance(modalEl, { backdrop: false, keyboard: true });
 
             // Click en botones con data-bs-dismiss
             modalEl.querySelectorAll('[data-bs-dismiss="modal"]').forEach(btn => {
