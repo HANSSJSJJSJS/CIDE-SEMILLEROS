@@ -29,7 +29,7 @@
                     <span class="truncate-1">{{ $semillero->nombre }}</span>
                     <div class="d-flex align-items-center gap-2">
                         <span class="badge badge-status {{ $estadoClass }}">{{ $semillero->estado }}</span>
-                        <small class="text-white-50">{{ (int)($semillero->aprendices ?? 0) }} aprendices</small>
+                        <small id="apr-count-{{ $loop->index }}" class="text-white-50">{{ (int)($semillero->aprendices ?? 0) }} aprendices</small>
                     </div>
                 </div>
                 <div class="card-body">
@@ -56,69 +56,83 @@
             </div>
         </div>
 
-        <div class="modal fade" id="detalleSemillero{{ $loop->index }}" tabindex="-1" aria-labelledby="detalleSemilleroLabel{{ $loop->index }}" aria-hidden="true">
+        <div class="modal fade detail-modal" id="detalleSemillero{{ $loop->index }}" tabindex="-1" aria-labelledby="detalleSemilleroLabel{{ $loop->index }}" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
                 <div class="modal-content">
-                    <div class="modal-header brand-header">
+                    <div class="modal-header brand-header detail-modal-header">
                         <h5 class="modal-title fw-bold" id="detalleSemilleroLabel{{ $loop->index }}">{{ $semillero->nombre }}</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <h6 class="fw-bold mb-2">Información General</h6>
-                            <div class="d-flex align-items-center gap-3">
-                                <div><span class="fw-semibold">Nombre:</span> {{ $semillero->nombre }}</div>
-                                <div><span class="fw-semibold">Estado:</span> <span class="badge bg-primary-subtle text-primary fw-semibold border">{{ $semillero->estado }}</span></div>
+                    <div class="modal-body detail-modal-body">
+                        <div class="detail-section-card">
+                            <div class="detail-section-head">
+                                <h6 class="detail-section-title">Información General</h6>
+                            </div>
+                            <div class="detail-info-row">
+                                <div class="detail-info-item"><span class="detail-info-label">Nombre:</span> {{ $semillero->nombre }}</div>
+                                <div class="detail-info-item"><span class="detail-info-label">Estado:</span> <span class="detail-status-pill">{{ $semillero->estado }}</span></div>
                             </div>
                         </div>
 
-                        <hr class="my-3"/>
-
-                        <div class="mb-3">
-                            <h6 class="fw-bold mb-2">Descripción</h6>
-                            <p class="mb-0 text-secondary">{{ $semillero->descripcion ?: 'Sin descripción' }}</p>
+                        <div class="detail-section-card">
+                            <div class="detail-section-head">
+                                <h6 class="detail-section-title">Descripción</h6>
+                            </div>
+                            <p class="detail-text">{{ $semillero->descripcion ?: 'Sin descripción' }}</p>
                         </div>
 
-                        <hr class="my-3"/>
-
-                        <div class="mb-3">
-                            <h6 class="fw-bold mb-2">Progreso del Proyecto</h6>
-                            <div class="progress" role="progressbar" aria-valuenow="{{ $semillero->progreso }}" aria-valuemin="0" aria-valuemax="100">
-                                <div class="progress-bar bg-success" style="width: {{ $semillero->progreso }}%;">{{ $semillero->progreso }}%</div>
+                        <div class="detail-section-card">
+                            <div class="detail-section-head">
+                                <h6 class="detail-section-title">Progreso del Proyecto</h6>
+                            </div>
+                            <div class="progress detail-progress" role="progressbar" aria-valuenow="{{ $semillero->progreso }}" aria-valuemin="0" aria-valuemax="100">
+                                <div id="modalProgress-{{ $loop->index }}" class="progress-bar detail-progress-bar" style="width: {{ $semillero->progreso }}%;">{{ $semillero->progreso }}%</div>
                             </div>
                         </div>
 
-                        <hr class="my-3"/>
-
-                        <div class="mb-3">
-                            <h6 class="fw-bold mb-2">Información Adicional</h6>
+                        <div class="detail-section-card">
+                            <div class="detail-section-head">
+                                <h6 class="detail-section-title">Información Adicional</h6>
+                            </div>
                             <div class="row g-2">
-                                <div class="col-md-4"><span class="fw-semibold">Líder:</span> {{ Auth::user()->name }}</div>
-                                <div class="col-md-4"><span class="fw-semibold">Fecha de Inicio:</span> {{ isset($semillero->fecha_inicio) && $semillero->fecha_inicio ? \Carbon\Carbon::parse($semillero->fecha_inicio)->translatedFormat('d \de F, Y') : 'N/D' }}</div>
-                                <div class="col-md-4"><span class="fw-semibold">Aprendices Asignados:</span> {{ (int)($semillero->aprendices ?? 0) }}</div>
+                                <div class="col-md-4"><span class="detail-info-label">Líder:</span> {{ Auth::user()->name }}</div>
+                                <div class="col-md-4"><span class="detail-info-label">Fecha de Inicio:</span> {{ isset($semillero->fecha_inicio) && $semillero->fecha_inicio ? \Carbon\Carbon::parse($semillero->fecha_inicio)->translatedFormat('d \de F, Y') : 'N/D' }}</div>
+                                <div class="col-md-4"><span class="detail-info-label">Aprendices Asignados:</span> {{ (int)($semillero->aprendices ?? 0) }}</div>
                             </div>
                         </div>
 
-                        <div class="mb-2">
-                            <h6 class="fw-bold mb-2">Aprendices Asignados</h6>
-                            <div class="row g-3" id="aprendicesList{{ $loop->index }}">
+                        <div class="detail-section-card">
+                            <div class="detail-section-head">
+                                <h6 class="detail-section-title">Aprendices Asignados</h6>
+                            </div>
+                            <div class="detail-apr-list" id="aprendicesList{{ $loop->index }}">
                                 @php
                                     $items = isset($semillero->aprendices_items) && is_iterable($semillero->aprendices_items) ? $semillero->aprendices_items : [];
                                 @endphp
                                 @forelse($items as $ap)
-                                    <div class="col-md-6" data-isan servid="{{ $ap['id_aprendiz'] ?? '' }}">
-                                        <div class="border rounded p-3 d-flex align-items-center gap-3">
-                                            <div class="avatar-initials">
-                                                {{ strtoupper(substr($ap['nombre'] ?? 'A',0,1)) }}{{ strtoupper(substr(explode(' ', $ap['nombre'] ?? 'M')[1] ?? 'M',0,1)) }}
-                                            </div>
-                                            <div>
-                                                <div class="fw-semibold">{{ $ap['nombre'] ?? 'Aprendiz' }}</div>
-                                                <small class="text-muted">{{ $ap['programa'] ?? 'Sin programa' }}</small>
-                                            </div>
+                                    @php
+                                        $nombreAp = trim((string)($ap['nombres'] ?? '') . ' ' . (string)($ap['apellidos'] ?? '')) ?: ($ap['nombre'] ?? 'Aprendiz');
+                                        $ini1 = strtoupper(mb_substr((string)$nombreAp, 0, 1));
+                                        $parts = preg_split('/\s+/', trim((string)$nombreAp));
+                                        $ini2 = strtoupper(mb_substr((string)($parts[1] ?? ''), 0, 1));
+                                        $ini = trim($ini1 . $ini2);
+                                        $sub = (string)($ap['programa'] ?? '');
+                                        if (trim($sub) === '') {
+                                            $sub = trim((string)($ap['tipo_documento'] ?? '') . ' ' . (string)($ap['documento'] ?? ''));
+                                        }
+                                        if (trim($sub) === '') {
+                                            $sub = 'Sin programa';
+                                        }
+                                    @endphp
+                                    <div class="detail-apr-item" data-id="{{ $ap['id_aprendiz'] ?? '' }}">
+                                        <div class="detail-apr-avatar">{{ $ini ?: 'AP' }}</div>
+                                        <div class="detail-apr-meta">
+                                            <div class="detail-apr-name">{{ $nombreAp }}</div>
+                                            <div class="detail-apr-sub">{{ $sub }}</div>
                                         </div>
                                     </div>
                                 @empty
-                                    <div class="col-12"><small class="text-muted">Sin aprendices asignados.</small></div>
+                                    <div class="detail-empty"><small class="text-muted">Sin aprendices asignados.</small></div>
                                 @endforelse
                             </div>
                         </div>
@@ -142,7 +156,7 @@
         </div>
 
         {{-- Modal flotante para editar aprendices (por semillero o proyecto) --}}
-        <div class="modal fade" id="editApr{{ $loop->index }}" tabindex="-1" aria-labelledby="editAprLabel{{ $loop->index }}" aria-hidden="true">
+        <div class="modal fade edit-apr-modal" id="editApr{{ $loop->index }}" tabindex="-1" aria-labelledby="editAprLabel{{ $loop->index }}" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header brand-header">
@@ -153,9 +167,14 @@
                         <small class="text-muted">Agregue o Elimine Aprendices del Proyecto</small>
                         <div class="row mt-2 g-2"></div>
 
-                        <div class="mt-3">
-                            <label class="form-label fw-semibold">Buscar Aprendices Existentes</label>
-                            <div class="row g-2">
+                        <div class="mt-3 search-filter-card">
+                            <div class="search-filter-head">
+                                <div class="search-filter-title">
+                                    <i class="bi bi-search"></i>
+                                    <span>Buscar Aprendices Existentes</span>
+                                </div>
+                            </div>
+                            <div class="row g-2 search-filter-controls">
                                 <div class="col-md-5">
                                     <label class="form-label">Tipo de Documento</label>
                                     <select id="tipo-doc-{{ $loop->index }}" class="form-select">
@@ -173,25 +192,46 @@
                                     <input id="buscador-{{ $loop->index }}" type="text" class="form-control" placeholder="Ej: 1023456789">
                                 </div>
                             </div>
-                            <div class="border rounded mt-2" style="max-height:260px; overflow:auto;">
-                                <div id="resultados-{{ $loop->index }}" class="list-group list-group-flush" style="display:none;"></div>
-                                <div id="no-result-{{ $loop->index }}" class="p-3 text-muted" style="display:none;">Sin resultados</div>
+                            <div class="search-results-pane mt-3">
+                                <div id="resultados-{{ $loop->index }}" class="search-results" style="display:none;"></div>
+                                <div id="no-result-{{ $loop->index }}" class="search-no-result" style="display:none;">Sin resultados</div>
                             </div>
                         </div>
 
-                        <div class="mt-4">
-                            <h6 class="fw-bold mb-2">Aprendices Actuales</h6>
-                            <div id="lista-asignados-{{ $loop->index }}" class="vstack gap-2">
+                        <div class="mt-4 apr-current-section">
+                            <div class="apr-current-head">
+                                <div class="apr-current-title">
+                                    <i class="bi bi-clipboard-check"></i>
+                                    <span>Aprendices Actuales en el Proyecto</span>
+                                </div>
+                            </div>
+                            <div id="lista-asignados-{{ $loop->index }}" class="apr-current-list">
                                 @php
                                     $items = isset($semillero->aprendices_items) && is_iterable($semillero->aprendices_items) ? $semillero->aprendices_items : [];
                                 @endphp
                                 @foreach($items as $ap)
-                                    <div class="border rounded p-2 d-flex justify-content-between align-items-center" data-id="{{ $ap['id_aprendiz'] ?? '' }}">
-                                        <div>
-                                            <div class="fw-semibold">{{ ($ap['nombre'] ?? null) ?: trim((($ap['nombres'] ?? '') . ' ' . ($ap['apellidos'] ?? ''))) ?: 'Sin nombre' }}</div>
-                                            <small class="text-muted">{{ $ap['programa'] ?? 'Sin programa' }}</small>
+                                    @php
+                                        $displayName = trim((string)($ap['nombres'] ?? '') . ' ' . (string)($ap['apellidos'] ?? '')) ?: ($ap['nombre'] ?? 'Aprendiz');
+                                        $badgeText = (string)($ap['programa'] ?? '');
+                                        if (trim($badgeText) === '') {
+                                            $badgeText = trim((string)($ap['tipo_documento'] ?? '') . ' ' . (string)($ap['documento'] ?? ''));
+                                        }
+                                        if (trim($badgeText) === '') {
+                                            $badgeText = 'Sin programa';
+                                        }
+                                        $ini = strtoupper(mb_substr((string)$displayName, 0, 1));
+                                    @endphp
+                                    <div class="apr-current-item" data-id="{{ $ap['id_aprendiz'] ?? '' }}">
+                                        <div class="apr-current-left">
+                                            <div class="apr-current-avatar">{{ $ini }}</div>
+                                            <div class="apr-current-meta">
+                                                <div class="apr-current-name">{{ $displayName }}</div>
+                                                <span class="apr-current-badge">{{ $badgeText }}</span>
+                                            </div>
                                         </div>
-                                        <button class="btn btn-sm btn-danger btn-eliminar"><i class="bi bi-trash me-1"></i>Eliminar</button>
+                                        <button type="button" class="apr-current-remove btn-eliminar" aria-label="Eliminar">
+                                            <svg viewBox="0 0 448 512" class="svgIcon" aria-hidden="true"><path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"></path></svg>
+                                        </button>
                                     </div>
                                 @endforeach
                             </div>
@@ -325,77 +365,138 @@
             let typingTimer;
             function renderResultado(item){
                 const row = document.createElement('label');
-                row.className = 'list-group-item d-flex align-items-start gap-2';
+                row.className = 'search-item';
                 const aid = (item && item.id_aprendiz) ? parseInt(item.id_aprendiz,10) : null;
                 const uid = (item && item.user_id) ? parseInt(item.user_id,10) : null;
                 row.dataset.id = aid ? String(aid) : (uid ? ('U-' + uid) : '');
                 const cb = document.createElement('input');
                 cb.type = 'checkbox';
-                cb.className = 'form-check-input mt-1';
+                cb.className = 'form-check-input search-check';
                 // Marcar si ya está asignado
                 if (lista && lista.querySelector(`[data-id="${item.id_aprendiz}"]`)) cb.checked = true;
                 cb.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); });
-                const fallbackName = `${(item.nombres||'').trim()} ${(item.apellidos||'').trim()}`.trim();
-                const fallbackEmail = (item.correo_institucional || '').trim();
-                const displayName = (item.nombre_completo && String(item.nombre_completo).trim()) || fallbackName || fallbackEmail || 'Sin nombre';
+                const displayName = `${String(item.nombres||'').trim()} ${String(item.apellidos||'').trim()}`.trim() || 'Aprendiz';
+                const tipoRaw = String(item.tipo_documento||'').trim().toUpperCase();
+                const docRaw = String(item.documento||'').trim();
+                const tipoLabelMap = { CC:'CC', TI:'TI', CE:'CE', PAS:'PASAPORTE', PEP:'PEP', RC:'RC' };
+                const tipoLabel = (tipoLabelMap[tipoRaw] || tipoRaw);
+                const displayDoc = `${tipoRaw} ${docRaw}`.trim();
+
+                const ini1 = (displayName || 'A').trim().charAt(0).toUpperCase();
+                const seg = (displayName || '').trim().split(' ');
+                const ini2 = (seg.length > 1 ? seg[1].charAt(0) : 'M').toUpperCase();
+
+                const avatar = document.createElement('div');
+                avatar.className = 'search-avatar';
+                avatar.textContent = `${ini1}${ini2}`;
+
+                const meta = document.createElement('div');
+                meta.className = 'search-meta';
+                const nameEl = document.createElement('div');
+                nameEl.className = 'search-name';
+                nameEl.textContent = displayName;
+
+                const subEl = document.createElement('div');
+                subEl.className = 'search-sub';
+                if (tipoLabel || docRaw) {
+                    const pill = document.createElement('span');
+                    pill.className = 'search-pill';
+                    pill.textContent = tipoLabel || 'DOC';
+                    const num = document.createElement('span');
+                    num.className = 'search-docnum';
+                    num.textContent = docRaw || '';
+                    subEl.appendChild(pill);
+                    if (docRaw) subEl.appendChild(num);
+                } else {
+                    subEl.textContent = (item.programa ?? 'Sin programa');
+                }
+
+                meta.appendChild(nameEl);
+                meta.appendChild(subEl);
+
+                if (cb.checked) row.classList.add('is-checked');
                 row.addEventListener('click', function(e){
                     e.preventDefault(); e.stopPropagation();
                     cb.checked = !cb.checked;
+                    row.classList.toggle('is-checked', cb.checked);
                     if (cb.checked) {
-                        attachAprendiz({aprendiz_id: aid, user_id: uid}, displayName, item.programa);
+                        attachAprendiz({aprendiz_id: aid, user_id: uid}, displayName, item.programa, displayDoc);
                     } else {
                         const nodo = lista.querySelector(`[data-id="${item.id_aprendiz}"]`);
                         if (nodo) detachAprendiz(item.id_aprendiz, nodo);
                     }
                 });
                 cb.addEventListener('change', function(e){ e.preventDefault(); e.stopPropagation();
+                    row.classList.toggle('is-checked', cb.checked);
                     if (cb.checked) {
-                        attachAprendiz({aprendiz_id: aid, user_id: uid}, displayName, item.programa);
+                        attachAprendiz({aprendiz_id: aid, user_id: uid}, displayName, item.programa, displayDoc);
                     } else {
                         const nodo = lista.querySelector(`[data-id="${item.id_aprendiz}"]`);
                         if (nodo) detachAprendiz(item.id_aprendiz, nodo);
                     }
                 });
-                const info = document.createElement('div');
-                info.innerHTML = `<div class=\"fw-semibold\">${displayName}</div><small class=\"text-muted\">${item.programa ?? 'Sin programa'}</small>`;
                 row.appendChild(cb);
-                row.appendChild(info);
+                row.appendChild(avatar);
+                row.appendChild(meta);
                 return row;
             }
-            function attachAprendiz(arg, nombre, programa){
+            function attachAprendiz(arg, nombre, programa, docLabel){
                 const payload = (arg && typeof arg === 'object') ? arg : {aprendiz_id: arg};
                 apiFetch(route('attach'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) })
                     .then(async r=>{ let data; try{ data = await r.json(); }catch(e){ throw new Error('Respuesta no JSON ('+r.status+')'); } return {ok:r.ok,status:r.status,data}; })
                     .then(({ok,status,data})=>{ if(ok && data && data.ok){
                         const div = document.createElement('div');
-                        div.className = 'border rounded p-2 d-flex justify-content-between align-items-center';
                         const newId = data.aprendiz && data.aprendiz.id_aprendiz ? data.aprendiz.id_aprendiz : (payload.aprendiz_id || '');
                         div.dataset.id = newId;
-                        const prog = data.aprendiz && data.aprendiz.programa ? data.aprendiz.programa : (programa ?? 'Sin programa');
-                        div.innerHTML = `<div><div class=\"fw-semibold\">${nombre}</div><small class=\"text-muted\">${prog}</small></div><button class=\"btn btn-sm btn-danger btn-eliminar\">Eliminar</button>`;
-                        lista.appendChild(div); resultados.style.display='none'; resultados.innerHTML='';
+
+                        const doc = (data.aprendiz && (String(data.aprendiz.tipo_documento||'').trim() || String(data.aprendiz.documento||'').trim()))
+                            ? `${String(data.aprendiz.tipo_documento||'').trim()} ${String(data.aprendiz.documento||'').trim()}`.trim()
+                            : (docLabel || '');
+                        const badgeText = (data.aprendiz && data.aprendiz.programa ? data.aprendiz.programa : (programa ?? '')) || doc || 'Sin programa';
+                        const ini = (nombre||'A').trim().charAt(0).toUpperCase();
+
+                        div.className = 'apr-current-item';
+                        div.innerHTML = `
+                            <div class="apr-current-left">
+                                <div class="apr-current-avatar">${ini}</div>
+                                <div class="apr-current-meta">
+                                    <div class="apr-current-name">${nombre}</div>
+                                    <span class="apr-current-badge">${badgeText}</span>
+                                </div>
+                            </div>
+                            <button type="button" class="apr-current-remove btn-eliminar" aria-label="Eliminar">
+                                <svg viewBox="0 0 448 512" class="svgIcon" aria-hidden="true"><path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"></path></svg>
+                            </button>
+                        `;
+                        lista.appendChild(div);
+                        resultados.style.display='none';
+                        resultados.innerHTML='';
+
                         // Actualizar "Ver Detalles": agregar tarjeta y contador
                         if (detailsList){
-                            const col = document.createElement('div');
-                            col.className = 'col-md-6';
-                            col.dataset.id = newId;
+                            const item = document.createElement('div');
+                            item.className = 'detail-apr-item';
+                            item.dataset.id = newId;
                             const ini1 = (nombre||'A').trim().charAt(0).toUpperCase();
                             const seg = (nombre||'').trim().split(' ');
-                            const ini2 = (seg.length>1 ? seg[1].charAt(0) : 'M').toUpperCase();
-                            const prog = data.aprendiz && data.aprendiz.programa ? data.aprendiz.programa : (programa ?? 'Sin programa');
-                            col.innerHTML = `<div class=\"border rounded p-3 d-flex align-items-center gap-3\"><div class=\"rounded-circle d-flex justify-content-center align-items-center\" style=\"width:48px;height:48px;background-color:#5aa72e;color:#fff;font-weight:700;\">${ini1}${ini2}</div><div><div class=\"fw-semibold\">${nombre}</div><small class=\"text-muted\">${prog}</small></div></div>`;
-                            detailsList.appendChild(col);
-                            // Eliminar placeholder 'Sin aprendices asignados.' si existe
-                            const placeholder = detailsList.querySelector('.col-12 small.text-muted');
-                            if (placeholder && placeholder.closest('.col-12')) {
-                                placeholder.closest('.col-12').remove();
-                            }
+                            const ini2 = (seg.length>1 ? seg[1].charAt(0) : '').toUpperCase();
+                            const iniPair = (ini1 + ini2).trim() || 'AP';
+                            const sub2 = (data.aprendiz && data.aprendiz.programa ? data.aprendiz.programa : (programa ?? '')) || doc || 'Sin programa';
+                            item.innerHTML = `<div class="detail-apr-avatar">${iniPair}</div><div class="detail-apr-meta"><div class="detail-apr-name">${nombre}</div><div class="detail-apr-sub">${sub2}</div></div>`;
+                            detailsList.appendChild(item);
+                            const empty = detailsList.querySelector('.detail-empty');
+                            if (empty) empty.remove();
                         }
                         if (countEl){
-                            const m = (countEl.textContent||'0').match(/\d+/); let n = m?parseInt(m[0],10):0; n++; countEl.textContent = n + ' aprendices';
+                            const m = (countEl.textContent||'0').match(/\d+/);
+                            let n = m ? parseInt(m[0],10) : 0;
+                            n++;
+                            countEl.textContent = n + ' aprendices';
                         }
                         notify('Aprendiz Asignado Correctamente','success');
-                    } else { notify('Error Al Asignar ('+status+')','danger'); }})
+                    } else {
+                        notify('Error Al Asignar ('+status+')','danger');
+                    }})
                     .catch(()=> notify('No Se Pudo Asignar (red/JSON)','danger'));
             }
             function detachAprendiz(id, nodo){
@@ -403,18 +504,24 @@
                     .then(async r=>{ let data; try{ data = await r.json(); }catch(e){ throw new Error('Respuesta no JSON ('+r.status+')'); } return {ok:r.ok,status:r.status,data}; })
                     .then(({ok,status,data})=>{ if(ok && data && data.ok){
                         nodo.remove();
-                        // Desmarcar en resultados si visible
-                        const rowCb = resultados && resultados.querySelector(`[data-id="${id}"] input[type="checkbox"]`);
-                        if (rowCb) rowCb.checked = false;
-                        // Quitar también en "Ver Detalles" y decrementar contador
-                        if (detailsList){
-                            const card = detailsList.querySelector(`[data-id="${id}"]`);
-                            if (card) card.remove();
+                            // Desmarcar en resultados si visible
+                            const rowCb = resultados && resultados.querySelector(`[data-id="${id}"] input[type="checkbox"]`);
+                            if (rowCb) rowCb.checked = false;
+                            // Quitar también en "Ver Detalles" y decrementar contador
+                            if (detailsList){
+                                const card = detailsList.querySelector(`[data-id="${id}"]`);
+                                if (card) card.remove();
+                            }
+                            if (countEl){
+                                const m = (countEl.textContent||'0').match(/\d+/);
+                                let n = m ? parseInt(m[0],10) : 0;
+                                n = Math.max(0, n-1);
+                                countEl.textContent = n + ' aprendices';
+                            }
+                        } else {
+                            notify('Error Al Eliminar ('+status+')','danger');
                         }
-                        if (countEl){
-                            const m = (countEl.textContent||'0').match(/\d+/); let n = m?parseInt(m[0],10):0; n = Math.max(0, n-1); countEl.textContent = n + ' aprendices';
-                        }
-                    } else { notify('Error Al Eliminar ('+status+')','danger'); }})
+                    })
                     .catch(()=> notify('No se Pudo Eliminar (red/JSON)','danger'));
             }
             function crearYAdjuntar(){
@@ -429,14 +536,31 @@
 
                 const nombreCompleto = nombres + ' ' + apellidos;
 
-                apiFetch(route('create'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ nombres: nombres, apellidos: apellidos, correo_institucional: correo || null })})
-                    .then(r=>r.json()).then(data=>{
+                apiFetch(route('create'), {
+                    method:'POST',
+                    headers:{ 'Content-Type':'application/json' },
+                    body: JSON.stringify({ nombres: nombres, apellidos: apellidos, correo_institucional: correo || null })
+                })
+                    .then(r=>r.json())
+                    .then(data=>{
                         if(data && data.ok){
-                            const ap=data.aprendiz;
-                            const div=document.createElement('div');
-                            div.className='border rounded p-2 d-flex justify-content-between align-items-center';
-                            div.dataset.id=ap.id_aprendiz;
-                            div.innerHTML = `<div><div class=\"fw-semibold\">${ap.nombre_completo}</div><small class=\"text-muted\">${ap.correo_institucional ?? ''}</small></div><button class=\"btn btn-sm btn-danger btn-eliminar\">Eliminar</button>`;
+                            const ap = data.aprendiz;
+                            const div = document.createElement('div');
+                            div.dataset.id = ap.id_aprendiz;
+                            const ini = (nombreCompleto||'A').trim().charAt(0).toUpperCase();
+                            div.className = 'apr-current-item';
+                            div.innerHTML = `
+                                <div class="apr-current-left">
+                                    <div class="apr-current-avatar">${ini}</div>
+                                    <div class="apr-current-meta">
+                                        <div class="apr-current-name">${nombreCompleto}</div>
+                                        <span class="apr-current-badge">Sin programa</span>
+                                    </div>
+                                </div>
+                                <button type="button" class="apr-current-remove btn-eliminar" aria-label="Eliminar">
+                                    <svg viewBox="0 0 448 512" class="svgIcon" aria-hidden="true"><path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"></path></svg>
+                                </button>
+                            `;
                             lista.appendChild(div);
                             if(inpNombre) inpNombre.value='';
                             if(inpApellidos) inpApellidos.value='';
@@ -445,7 +569,8 @@
                         } else {
                             notify('Error al crear aprendiz', 'danger');
                         }
-                    }).catch(err => {
+                    })
+                    .catch(err => {
                         console.error('Error creando aprendiz:', err);
                         notify('Error al crear aprendiz', 'danger');
                     });
@@ -489,6 +614,21 @@
             }
             if (buscador) buscador.addEventListener('keyup', doSearch);
             if (tipoDoc) tipoDoc.addEventListener('change', doSearch);
+
+            const detailEl = document.getElementById('detalleSemillero' + idx);
+            if (detailEl) {
+                detailEl.addEventListener('shown.bs.modal', function(){
+                    const progressBar = document.getElementById('modalProgress-' + idx);
+                    if (!progressBar) return;
+                    const targetWidth = (progressBar.dataset && progressBar.dataset.targetWidth) ? progressBar.dataset.targetWidth : (progressBar.style.width || '0%');
+                    if (progressBar.dataset) progressBar.dataset.targetWidth = targetWidth;
+                    progressBar.style.width = '0%';
+                    void progressBar.offsetWidth;
+                    setTimeout(() => {
+                        progressBar.style.width = targetWidth;
+                    }, 120);
+                });
+            }
             // Cargar aprendices iniciales al abrir el modal
             const modalEl = document.getElementById('editApr' + idx);
             if (modalEl) {
@@ -510,22 +650,27 @@
                 const ids = Array.from(lista.querySelectorAll('[data-id]')).map(n=> parseInt(n.dataset.id,10)).filter(Boolean);
                 const REF = (window['refId'+idx] ?? refId);
                 const isSemDyn = (window['isSem'+idx] ?? isSem);
-                const fallbackUrl = isSemDyn
-                    ? `/lider_semi/semilleros/${REF}/aprendices`
-                    : `/lider_semi/proyectos/${REF}/aprendices`;
                 const refNum = parseInt(REF, 10);
                 if (!Number.isInteger(refNum) || refNum <= 0) {
                     console.error('[Guardar Aprendices] REF inválido:', REF, '| idx:', idx, '| isSem:', isSemDyn);
                     notify('No se pudo guardar: ID inválido (recarga la página).', 'danger');
                     return;
                 }
-                if (!/\/aprendices(\/|$)/.test(fallbackUrl)) {
-                    console.error('[Guardar Aprendices] URL inválida:', fallbackUrl);
+                const updateUrlNamed = route('update');
+                const updateUrlFallback = isSemDyn
+                    ? `/lider_semi/semilleros/${refNum}/aprendices`
+                    : `/lider_semi/proyectos/${refNum}/aprendices`;
+                const updateUrl = (updateUrlNamed && updateUrlNamed !== '#' && /\/aprendices(\/|$)/.test(updateUrlNamed))
+                    ? updateUrlNamed
+                    : updateUrlFallback;
+
+                if (!/\/aprendices(\/|$)/.test(updateUrl)) {
+                    console.error('[Guardar Aprendices] URL inválida:', updateUrl, '| named:', updateUrlNamed, '| fallback:', updateUrlFallback);
                     notify('No se pudo guardar: URL inválida (recarga la página).', 'danger');
                     return;
                 }
-                console.log('[Guardar Aprendices] PUT', fallbackUrl, { idsCount: ids.length, idx, isSem: isSemDyn, refId: refNum });
-                apiFetch(fallbackUrl, { method:'PUT', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ aprendices_ids: ids }) })
+                console.log('[Guardar Aprendices] PUT', updateUrl, { idsCount: ids.length, idx, isSem: isSemDyn, refId: refNum });
+                apiFetch(updateUrl, { method:'PUT', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ aprendices_ids: ids }) })
                     .then(async r=>{ let data; try{ data = await r.json(); }catch(_){ data=null; } return {ok:r.ok,status:r.status,data}; })
                     .then(({ok,status,data})=>{
                         if(ok && data && data.ok){
