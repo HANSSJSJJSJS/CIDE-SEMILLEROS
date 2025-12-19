@@ -16,6 +16,82 @@
 
 @endpush
 
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const monthView = document.getElementById('monthView');
+  const weekView = document.getElementById('weekView');
+  const dayView = document.getElementById('dayView');
+  const buttons = document.querySelectorAll('.view-switcher .view-btn');
+
+  // Genera grilla simple del mes actual (solo diseño)
+  function renderMonthStatic(){
+    const grid = document.getElementById('daysGrid');
+    if(!grid) return;
+    grid.innerHTML = '';
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const first = new Date(year, month, 1);
+    const last = new Date(year, month+1, 0);
+    const prevLast = new Date(year, month, 0);
+    const startWeekIndex = first.getDay(); // 0=Dom
+    // Días previos para completar la primera fila
+    for(let i=startWeekIndex; i>0; i--){
+      const d = prevLast.getDate()-i+1;
+      const cell = document.createElement('div');
+      cell.className = 'day-cell other-month';
+      cell.innerHTML = `<div class="day-number">${d}</div>`;
+      grid.appendChild(cell);
+    }
+    // Días del mes
+    for(let d=1; d<=last.getDate(); d++){
+      const date = new Date(year, month, d);
+      const cell = document.createElement('div');
+      cell.className = 'day-cell';
+      if (date.toDateString() === today.toDateString()) cell.classList.add('today');
+      cell.innerHTML = `<div class="day-number">${d}</div>`;
+      grid.appendChild(cell);
+    }
+    // Días del siguiente mes para completar 6 filas (42 celdas)
+    const total = grid.children.length;
+    for(let d=1; total + d <= 42; d++){
+      const cell = document.createElement('div');
+      cell.className = 'day-cell other-month';
+      cell.innerHTML = `<div class="day-number">${d}</div>`;
+      grid.appendChild(cell);
+    }
+  }
+
+  // Genera slots del día (08-17) incluyendo marca de almuerzo
+  function renderDayStatic(){
+    const slotsCol = document.querySelector('#dayGrid .day-slots');
+    if(!slotsCol) return;
+    slotsCol.innerHTML = '';
+    const hours = [8,9,10,11,12,13,14,15,16,17];
+    hours.forEach(h=>{
+      const slot = document.createElement('div');
+      slot.className = 'day-time-slot';
+      if (h===12 || h===13) slot.classList.add('lunch');
+      slotsCol.appendChild(slot)
+    });
+  }
+
+  // Desactivar el conmutador de vistas estáticas (usamos FullCalendar)
+  function show(view){ /* no-op */ }
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', function(e){
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }, true); // capture primero
+  });
+
+  // No renderizar vistas estáticas; FullCalendar maneja todo
+});
+</script>
+@endpush
+
 @section('content')
                 <div class="cal-lider">
 
@@ -30,7 +106,7 @@
                             </div>
                             <div class="title-text">
                                 <h1 class="title">Calendario de Reuniones</h1>
-                                <div class="subtitle">Consulta tus Eventos y reuniones</div>
+                                <div class="subtitle">Consulta tus eventos y reuniones</div>
                             </div>
                         </div>
                     </div>
@@ -58,7 +134,21 @@
 
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <div class="calendar-week" id="weekView">
+                        <!-- Vista de Mes (estática) -->
+                        <div class="calendar-month" id="monthView" style="display:none;">
+                            <div class="weekdays">
+                                <div class="weekday">Dom</div>
+                                <div class="weekday">Lun</div>
+                                <div class="weekday">Mar</div>
+                                <div class="weekday">Mié</div>
+                                <div class="weekday">Jue</div>
+                                <div class="weekday">Vie</div>
+                                <div class="weekday">Sáb</div>
+                            </div>
+                            <div class="days-grid" id="daysGrid"></div>
+                        </div>
+
+                        <div class="calendar-week" id="weekView" style="display:none;">
                             <div class="week-header" id="weekHeader">
                                 <div class="week-time-label">Hora</div>
                                 <div class="week-day-header"><div class="week-day-name">Dom</div><div class="week-day-number">14</div></div>
@@ -68,6 +158,7 @@
                                 <div class="week-day-header"><div class="week-day-name">Jue</div><div class="week-day-number">18</div></div>
                                 <div class="week-day-header"><div class="week-day-name">Vie</div><div class="week-day-number">19</div></div>
                                 <div class="week-day-header"><div class="week-day-name">Sáb</div><div class="week-day-number">20</div></div>
+
                             </div>
                             <div class="week-grid" id="weekGrid">
                                 <div class="week-times">
@@ -89,10 +180,36 @@
                                 <div class="week-day-column"></div>
                                 <div class="week-day-column"></div>
                                 <div class="week-day-column"></div>
+
+                            </div>
+                        </div>
+
+                        <!-- Vista de Día (estática) -->
+                        <div class="calendar-day" id="dayView" style="display:none;">
+                            <div class="day-header" id="dayHeader">
+                                <div class="day-header-card">
+                                    <div class="dh-week">Mié</div>
+                                    <div class="dh-day">17</div>
+                                </div>
+                            </div>
+                            <div class="day-grid" id="dayGrid">
+                                <div class="day-times">
+                                    <div class="day-time-label">08:00</div>
+                                    <div class="day-time-label">09:00</div>
+                                    <div class="day-time-label">10:00</div>
+                                    <div class="day-time-label">11:00</div>
+                                    <div class="day-time-label lunch">12:00</div>
+                                    <div class="day-time-label lunch">13:00</div>
+                                    <div class="day-time-label">14:00</div>
+                                    <div class="day-time-label">15:00</div>
+                                    <div class="day-time-label">16:00</div>
+                                    <div class="day-time-label">17:00</div>
+                                </div>
+                                <div class="day-slots"></div>
                             </div>
                         </div>
                         <div id="apr-week-header" class="apr-week-header d-none"></div>
-                        <div id='calendar' class="d-none"></div>
+                        <div id='calendar'></div>
                     </div>
                 </div>
                 </div>
@@ -299,8 +416,19 @@
                     });
                 }
 
-                // Enlace y código
-                const enlace = info.event.extendedProps.link || '';
+                // Enlace y código (detectar incluso si está en 'ubicacion' o dentro de la descripción)
+                let enlace = info.event.extendedProps.link || '';
+                const ubicRaw = info.event.extendedProps.ubicacion || '';
+                const descRaw = info.event.extendedProps.descripcion || '';
+                const urlRegex = /(https?:\/\/[^\s]+)/i;
+                if (!enlace) {
+                    const m1 = (ubicRaw||'').match(urlRegex);
+                    if (m1) enlace = m1[0];
+                }
+                if (!enlace) {
+                    const m2 = (descRaw||'').match(urlRegex);
+                    if (m2) enlace = m2[0];
+                }
                 const codigo = info.event.extendedProps.codigo || '';
                 const wrapLink = document.getElementById('eventoEnlaceWrap');
                 const aLink = document.getElementById('eventoEnlace');
@@ -309,6 +437,8 @@
                 if (enlace) {
                     wrapLink.style.display='block';
                     aLink.href = enlace;
+                    aLink.target = '_blank';
+                    aLink.rel = 'noopener noreferrer';
                     // Derivar etiqueta del enlace
                     let label = '';
                     try {
@@ -323,9 +453,11 @@
                     }
                     aLink.textContent = label || info.event.title || 'Reunión';
                 } else {
-                    wrapLink.style.display='none';
+                    // Mostrar igualmente la sección con estado claro si no hay enlace
+                    wrapLink.style.display='block';
                     aLink.removeAttribute('href');
-                    aLink.textContent = '';
+                    aLink.removeAttribute('target');
+                    aLink.textContent = 'Sin enlace disponible';
                 }
                 if (codigo) { wrapCod.style.display='block'; spanCod.textContent = codigo; } else { wrapCod.style.display='none'; spanCod.textContent='—'; }
 
@@ -470,6 +602,38 @@
 
         actualizarNotificacionSilenciosaCal();
         setInterval(actualizarNotificacionSilenciosaCal, 60000);
+    });
+    // Cierres robustos del modal por si algún handler falla
+    document.addEventListener('click', function(ev){
+        try{
+            const modalEl = document.getElementById('eventoModal');
+            if (!modalEl || !window.bootstrap) return;
+            const inst = bootstrap.Modal.getOrCreateInstance(modalEl);
+            // Click en cualquier botón con data-bs-dismiss dentro del modal
+            if (ev.target.closest('#eventoModal [data-bs-dismiss="modal"]')) {
+                ev.preventDefault();
+                inst.hide();
+            }
+            // Click en backdrop del modal
+            if (modalEl.classList.contains('show') && ev.target === modalEl){
+                inst.hide();
+            }
+            // Click explícito sobre el backdrop de Bootstrap
+            if (document.querySelector('.modal-backdrop') && ev.target.classList && ev.target.classList.contains('modal-backdrop')){
+                inst.hide();
+            }
+        }catch{}
+    }, true);
+
+    // Cerrar con tecla Escape de forma garantizada
+    document.addEventListener('keydown', function(ev){
+        try{
+            if (ev.key !== 'Escape') return;
+            const modalEl = document.getElementById('eventoModal');
+            if (!modalEl || !window.bootstrap) return;
+            const inst = bootstrap.Modal.getOrCreateInstance(modalEl);
+            if (modalEl.classList.contains('show')) inst.hide();
+        }catch{}
     });
 </script>
 @endpush
