@@ -24,20 +24,30 @@ class DashboardController_semi extends Controller
 
         // Construir consulta de semilleros de forma compatible con diferentes esquemas
         $query = Semillero::query();
+
+        $applyActivoSemillero = function ($q) {
+            if (Schema::hasColumn('semilleros', 'estado')) {
+                // Considerar activo todo lo que NO sea finalizado/inactivo/cancelado (soporta variantes)
+                $q->whereNotIn(DB::raw('TRIM(UPPER(estado))'), ['FINALIZADO', 'INACTIVO', 'CANCELADO']);
+            }
+            return $q;
+        };
         // Detectar columna de líder en semilleros: id_lider_usuario | id_lider_semi | lider_id
+        $hasLeaderFilter = false;
         if (Schema::hasColumn('semilleros', 'id_lider_usuario')) {
             $query->where('id_lider_usuario', $userId);
+            $hasLeaderFilter = true;
         } elseif (Schema::hasColumn('semilleros', 'id_lider_semi')) {
             $query->where('id_lider_semi', $userId);
+            $hasLeaderFilter = true;
         } elseif (Schema::hasColumn('semilleros', 'lider_id')) {
             $query->where('lider_id', $userId);
+            $hasLeaderFilter = true;
         }
-        if (Schema::hasColumn('semilleros', 'estado')) {
-            $query->whereIn('estado', ['Activo', 'ACTIVO']);
-        }
+        $applyActivoSemillero($query);
 
-        // Evitar withCount si la relación no existe en el modelo o la tabla correspondiente
-        $semilleros = $query->get();
+        // Evitar traer todos los semilleros si el esquema no tiene una columna directa de líder
+        $semilleros = $hasLeaderFilter ? $query->get() : collect();
 
         // Resolver IDs de semilleros del líder (según PK real).
         // Si no hay semilleros asignados directamente, intentar usar la tabla lideres_semillero.
@@ -46,30 +56,27 @@ class DashboardController_semi extends Controller
             $semPk = Schema::hasColumn('semilleros', 'id_semillero') ? 'id_semillero' : 'id';
             $semilleroIds = $semilleros->pluck($semPk)->all();
         } elseif (Schema::hasTable('lideres_semillero') && Schema::hasColumn('lideres_semillero', 'id_semillero')) {
-            $semilleroIds = DB::table('lideres_semillero')
+            $rawIds = DB::table('lideres_semillero')
                 ->where('id_lider_semi', $userId)
                 ->whereNotNull('id_semillero')
                 ->pluck('id_semillero')
                 ->all();
 
-            if (!empty($semilleroIds)) {
-                $semilleros = DB::table('semilleros')
-                    ->whereIn('id_semillero', $semilleroIds)
-                    ->get();
+            if (!empty($rawIds)) {
+                $semPk = Schema::hasColumn('semilleros', 'id_semillero') ? 'id_semillero' : 'id';
+                $semQ = DB::table('semilleros')->whereIn($semPk, $rawIds);
+                if (Schema::hasColumn('semilleros', 'estado')) {
+                    $semQ->whereNotIn(DB::raw('TRIM(UPPER(estado))'), ['FINALIZADO', 'INACTIVO', 'CANCELADO']);
+                }
+                $semilleros = $semQ->get();
+                $semilleroIds = $semilleros->pluck($semPk)->all();
             }
         }
 
-        // Proyectos activos del líder (por sus semilleros)
+        // Proyectos activos del líder: en esta vista se interpretan como semilleros activos asignados al líder
         $proyectosActivos = 0;
-        $proyectoIds = [];
-        if (!empty($semilleroIds) && Schema::hasTable('proyectos') && Schema::hasColumn('proyectos', 'id_semillero')) {
-            $proyectosQuery = DB::table('proyectos')->whereIn('id_semillero', $semilleroIds);
-            if (Schema::hasColumn('proyectos', 'estado')) {
-                // Aceptar variantes de mayúsculas/minúsculas
-                $proyectosQuery->whereIn(DB::raw('UPPER(estado)'), ['ACTIVO']);
-            }
-            $proyectoIds = $proyectosQuery->pluck('id_proyecto')->all();
-            $proyectosActivos = count($proyectoIds);
+        if (!empty($semilleroIds)) {
+            $proyectosActivos = count($semilleroIds);
         }
 
         // Total de aprendices: usar relación directa aprendices.semillero_id
