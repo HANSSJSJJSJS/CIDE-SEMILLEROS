@@ -182,5 +182,493 @@ body{background:var(--cal-bg)}
 .apr-week-header .wk-pill .wk-name{ font-weight:800 }
 .apr-week-header .wk-pill .wk-num{ font-weight:800 }
 
+/* Encabezado Semana (casillas) igual al Líder: usa el markup .week-header dentro de #apr-week-header */
+.cal-lider #apr-week-header{ width:100%; margin-top: 10px; }
+.cal-lider #apr-week-header .week-header{
+  display:grid;
+  grid-template-columns: 140px repeat(7, 1fr);
+  align-items:center;
+  background: var(--cal-navy);
+  color:#fff;
+  border-radius:16px;
+  padding:14px 18px;
+  box-shadow: 0 10px 24px rgba(11,76,98,.18);
+  overflow:hidden;
+}
+
+/* Mantener alineación con la columna de horas de FullCalendar (Semana) */
+.fc .fc-timeGridWeek-view .fc-timegrid-axis{
+  width: 140px !important;
+}
+.fc .fc-timeGridWeek-view .fc-timegrid-axis-frame{
+  width: 140px !important;
+}
+
+/* Columna de horas (Semana) — replicar estilo del líder */
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-timegrid-axis,
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-timegrid-slot-label{
+  background: #ffffff !important;
+}
+
+/* Separador vertical fuerte entre horas y el grid */
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-timegrid-axis,
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-timegrid-slot-label{
+  border-right: 3px solid #e1e8ef !important;
+}
+
+/* Tipografía/centrado de las horas */
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-timegrid-slot-label-frame{
+  justify-content: center !important;
+}
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-timegrid-slot-label-cushion,
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-timegrid-axis-cushion{
+  font-weight: 800 !important;
+  color: #6b7280 !important;
+  font-size: 14px !important;
+  padding: 0 !important;
+}
+
+/* Asegurar altura/centrado consistente de las filas */
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-timegrid-slot-label{
+  vertical-align: middle !important;
+}
+
+/* Fondo tipo "glass" como Líder (solo Semana) */
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-scrollgrid,
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-timegrid{
+  background: rgba(255,255,255,.82) !important;
+}
+@supports ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  .cal-lider #calendar .fc .fc-timeGridWeek-view .fc-scrollgrid,
+  .cal-lider #calendar .fc .fc-timeGridWeek-view .fc-timegrid{
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+  }
+}
+
+/* Bordes/sombra suaves como tarjeta */
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-scrollgrid{
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(15,23,42,0.10);
+}
+
+/* Algunas partes internas pintan su propio fondo: forzarlo también allí */
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-view-harness,
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-scroller-harness,
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-scroller,
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-timegrid-body,
+.cal-lider #calendar .fc .fc-timeGridWeek-view table,
+.cal-lider #calendar .fc .fc-timeGridWeek-view tbody{
+  background: rgba(255,255,255,.82) !important;
+}
+
+.cal-lider #calendar .fc .fc-timeGridWeek-view td,
+.cal-lider #calendar .fc .fc-timeGridWeek-view th{
+  background-color: transparent !important;
+}
+
+/* Rejilla tipo Líder: franja de ALMUERZO (12:00 y 13:00) */
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-timegrid-slot-lane.lunch,
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-timegrid-slot-label.lunch{
+  background: #F7FAFF !important;
+}
+
+#calendar .fc .fc-timeGridWeek-view .fc-timegrid-slot-lane.lunch,
+#calendar .fc .fc-timeGridWeek-view .fc-timegrid-slot-label.lunch{
+  background: #F7FAFF !important;
+}
+
+/* Fallback: en algunos builds la vista no trae la clase .fc-timeGridWeek-view */
+#calendar .fc .fc-timegrid-slot-lane.lunch,
+#calendar .fc .fc-timegrid-slot-label.lunch,
+#calendar .fc .fc-timegrid-slot.fc-timegrid-slot-lane.lunch,
+#calendar .fc .fc-timegrid-slot.fc-timegrid-slot-label.lunch{
+  background: #F7FAFF !important;
+}
+
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-timegrid-slot-lane.lunch{
+  position: relative;
+}
+
+#calendar .fc .fc-timegrid-slot-lane.lunch,
+#calendar .fc .fc-timegrid-slot.fc-timegrid-slot-lane.lunch{
+  position: relative;
+}
+
+#calendar .fc .fc-timeGridWeek-view .fc-timegrid-slot-lane.lunch{
+  position: relative;
+}
+
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-timegrid-slot-lane.lunch::after{
+  content: 'ALMUERZO';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: center;
+  font-weight: 800;
+  font-size: 12px;
+  color: #8a96a3;
+  letter-spacing: .12em;
+  pointer-events: none;
+}
+
+#calendar .fc .fc-timegrid-slot-lane.lunch::after,
+#calendar .fc .fc-timegrid-slot.fc-timegrid-slot-lane.lunch::after{
+  content: 'ALMUERZO';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: center;
+  font-weight: 800;
+  font-size: 12px;
+  color: #8a96a3;
+  letter-spacing: .12em;
+  pointer-events: none;
+}
+
+#calendar .fc .fc-timeGridWeek-view .fc-timegrid-slot-lane.lunch::after{
+  content: 'ALMUERZO';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: center;
+  font-weight: 800;
+  font-size: 12px;
+  color: #8a96a3;
+  letter-spacing: .12em;
+  pointer-events: none;
+}
+
+/* Columna del día (similar a week-day-column.active del Líder) */
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-timegrid-col.fc-day-today{
+  background: #F2FBF6 !important;
+  box-shadow: inset 1px 0 0 rgba(16,128,96,.08), inset -1px 0 0 rgba(16,128,96,.08), inset 0 0 0 9999px rgba(16,128,96,.03);
+}
+
+#calendar .fc .fc-timegrid-col.fc-day-today{
+  background: #F2FBF6 !important;
+  box-shadow: inset 1px 0 0 rgba(16,128,96,.08), inset -1px 0 0 rgba(16,128,96,.08), inset 0 0 0 9999px rgba(16,128,96,.03);
+}
+
+/* Eje de horas: evitar que el colgroup lo deje en 27px */
+#calendar .fc .fc-timegrid-axis,
+#calendar .fc .fc-timegrid-slot-label,
+#calendar .fc .fc-scrollgrid-shrink{
+  width: 90px !important;
+  min-width: 90px !important;
+  max-width: 90px !important;
+}
+
+#calendar .fc .fc-timegrid-slots colgroup col:first-child,
+#calendar .fc .fc-scrollgrid colgroup col:first-child{
+  width: 90px !important;
+}
+
+/* Forzar width incluso si viene inline style en <col style="width:27px"> */
+#calendar .fc colgroup col:first-child{
+  width: 90px !important;
+  min-width: 90px !important;
+  max-width: 90px !important;
+}
+
+/* Etiqueta de ALMUERZO inyectada por JS (más confiable que ::after) */
+#calendar .fc .fc-timegrid-slot-lane.lunch{
+  position: relative;
+}
+
+#calendar .fc .scml-lunch-label{
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: center;
+  font-weight: 800;
+  font-size: 12px;
+  color: #8a96a3;
+  letter-spacing: .12em;
+  pointer-events: none;
+  z-index: 6;
+}
+
+#calendar .fc{
+  --fc-timegrid-slot-min-height: 60px;
+}
+
+#calendar .fc .fc-timegrid-slot-label{
+  background: #FAFCFF !important;
+  border-right: 1px solid rgba(15,23,42,0.18) !important;
+  border-bottom: 1px solid rgba(15,23,42,0.10) !important;
+}
+
+#calendar .fc .fc-timegrid-slot-label .fc-timegrid-slot-label-cushion{
+  font-weight: 700;
+  color: #64748b;
+}
+
+#calendar .fc .fc-timegrid-slot-lane{
+  border-bottom: 1px solid rgba(15,23,42,0.10) !important;
+  position: relative;
+}
+
+#calendar .fc .fc-timegrid-slot-lane::after{
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1px dashed rgba(15,23,42,0.12);
+  pointer-events: none;
+}
+
+#calendar .fc .fc-timegrid-slot-lane.lunch::after{
+  border-top: none;
+}
+
+#calendar .fc .fc-timegrid-col{
+  border-right: 1px solid rgba(15,23,42,0.10) !important;
+}
+
+#calendar .fc .fc-timegrid-col:last-child{
+  border-right: none !important;
+}
+
+/* Forzar líneas de la rejilla directamente en las celdas (FullCalendar suele poner border-style:hidden) */
+#calendar .fc td.fc-timegrid-slot.fc-timegrid-slot-label,
+#calendar .fc td.fc-timegrid-slot.fc-timegrid-slot-lane{
+  border-bottom: 1px solid rgba(15,23,42,0.14) !important;
+}
+
+#calendar .fc td.fc-timegrid-slot.fc-timegrid-slot-label{
+  border-right: 1px solid rgba(15,23,42,0.20) !important;
+  background: #FAFCFF !important;
+}
+
+#calendar .fc td.fc-timegrid-slot.fc-timegrid-slot-lane{
+  background-color: transparent !important;
+  position: relative;
+}
+
+/* Línea punteada central como el líder (más confiable que ::after) */
+#calendar .fc td.fc-timegrid-slot.fc-timegrid-slot-lane:not(.lunch){
+  background-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent calc(50% - 0.5px),
+    rgba(15,23,42,0.16) calc(50% - 0.5px),
+    rgba(15,23,42,0.16) calc(50% + 0.5px),
+    transparent calc(50% + 0.5px),
+    transparent 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+#calendar .fc td.fc-timegrid-slot.fc-timegrid-slot-lane.lunch{
+  background-image: none !important;
+}
+
+/* Bordes verticales entre días */
+#calendar .fc .fc-timegrid-col-frame{
+  border-right: 1px solid rgba(15,23,42,0.12) !important;
+}
+
+#calendar .fc .fc-timegrid-col:last-child .fc-timegrid-col-frame{
+  border-right: none !important;
+}
+
+#calendar .fc .fc-timeGridWeek-view .fc-timegrid-col.fc-day-today{
+  background: #F2FBF6 !important;
+  box-shadow: inset 1px 0 0 rgba(16,128,96,.08), inset -1px 0 0 rgba(16,128,96,.08), inset 0 0 0 9999px rgba(16,128,96,.03);
+}
+
+/* Evitar tintes grises heredados en el eje */
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-scrollgrid-section-body td,
+.cal-lider #calendar .fc .fc-timeGridWeek-view .fc-scrollgrid-section-body th{
+  background-clip: padding-box;
+}
+
+.cal-lider #apr-week-header .week-time-label{
+  font-weight:800;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height: auto;
+  padding: 10px 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color:#ffffff;
+  border-right: 1px solid rgba(255,255,255,.18);
+}
+
+.cal-lider #apr-week-header .week-day-header{
+  position:relative;
+  text-align:center;
+  padding:10px 0;
+  color:#e6f0f6;
+}
+.cal-lider #apr-week-header .week-day-header + .week-day-header{
+  border-left:1px solid rgba(255,255,255,.18);
+}
+
+.cal-lider #apr-week-header .week-day-name{ font-weight:800; opacity:.95; }
+.cal-lider #apr-week-header .week-day-number{ font-weight:900; font-size:22px; line-height:1.05; color:#ffffff; }
+
+/* Hoy (caja verde) */
+.cal-lider #apr-week-header .week-day-header.today.active{
+  color:#ffffff;
+}
+.cal-lider #apr-week-header .week-day-header.today.active .week-day-pill{
+  display:inline-flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:14px 22px;
+  border-radius:16px;
+  background: linear-gradient(180deg, rgba(13,106,96,.95), rgba(11,76,98,.95));
+  box-shadow: 0 16px 30px rgba(0,0,0,.28);
+  min-width: 120px;
+}
+.cal-lider #apr-week-header .week-day-header.today.active .wd-name{ font-weight:900; letter-spacing:.02em; }
+.cal-lider #apr-week-header .week-day-header.today.active .wd-day{ font-weight:900; font-size:24px; }
+
+/* Festivo (caja blanca con badge) */
+.cal-lider #apr-week-header .week-day-header.festivo{
+  margin: 0;
+  padding: 0;
+}
+.cal-lider #apr-week-header .week-day-header.festivo{
+  background: transparent;
+}
+.cal-lider #apr-week-header .week-day-header.festivo::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  background: rgba(255,255,255,.96);
+  border:2px solid rgba(255,255,255,.9);
+  border-radius:14px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.18);
+}
+.cal-lider #apr-week-header .week-day-header.festivo .week-day-name,
+.cal-lider #apr-week-header .week-day-header.festivo .week-day-number{
+  position:relative;
+  color: #0b3357;
+}
+.cal-lider #apr-week-header .week-day-header.festivo::after{
+  content:'Festivo';
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 34px);
+  transform: translateX(-50%);
+  z-index: 1;
+  font-size: 12px;
+  font-weight: 900;
+  color: #7c2d12;
+  background: #ffd166;
+  padding: 4px 10px;
+  border-radius: 10px;
+  box-shadow: 0 6px 14px rgba(0,0,0,.12);
+}
+
 /* Ajuste del grid para acoplar con el header personalizado en Semana */
 .fc .fc-timeGridWeek-view .fc-scrollgrid{ border-top:none; border-top-left-radius:0; border-top-right-radius:0 }
+
+/* Evitar que el contenedor (apr-week-header) pinte una barra vacía si el HTML interno no está listo */
+.apr-week-header{
+  background: transparent !important;
+  padding: 0 !important;
+  display: block !important;
+  grid-template-columns: unset !important;
+  gap: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+/* Calendario Líder - estilos unificados (Líder General)
+   Paleta: verde:#35A900, verde-oscuro:#007832, azul:#00304D, blanco:#ffffff, negro:#000000 */
+
+.cal-lider { --cal-green: #35A900; --cal-green-dark: #007832; --cal-blue: #00304D; --cal-white: #ffffff; --cal-black: #000000; --cal-bg: #F5F8FA; --cal-border: #E6EEF3; --cal-muted: #6B7280; --cal-shadow: 0 2px 6px rgba(0,0,0,.06); }
+
+.cal-lider { background: var(--cal-bg); }
+
+/* Layout base igual al Admin (evita que css/common/layout.css defina .container como flex en fila) */
+.cal-lider,
+.container.cal-lider{
+  display:block !important;
+  max-width: 1280px;
+  width: 100% !important;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+@media (max-width: 1024px){
+  .cal-lider,
+  .container.cal-lider{ padding: 0 16px; }
+}
+
+.cal-lider > *{ width: 100% !important; }
+
+/* No forzar ancho completo en overlays/toasts (evita alertas gigantes) */
+.cal-lider > .cal-toast-container{ width: auto !important; }
+.cal-lider .cal-toast{ max-width: 420px; }
+
+/* No forzar ancho completo en el drawer (debe ser lateral, no pantalla completa) */
+.cal-lider > #event-detail-drawer{ width: 520px !important; }
+
+.cal-lider .calendar-month,
+.cal-lider .calendar-week,
+.cal-lider .calendar-day{ width: 100%; }
+
+/* Ocultar vistas no seleccionadas por defecto (evita superposición) */
+.cal-lider #weekView,
+.cal-lider #dayView { display: none; }
+
+.cal-lider .header {
+  background: transparent;
+  margin: 12px 0 10px;
+  display: block;
+  position: static;
+  padding: 0;
+  box-shadow: none;
+}
+.cal-lider .header-top { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.cal-lider .header-title { display:flex; align-items:center; gap:12px; }
+.cal-lider .header-title,
+.cal-lider .header-title *{
+  background: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+.cal-lider .header-title .title-icon { width:50px; height:50px; border-radius:10px;  background: linear-gradient(135deg, var(--cal-green), var(--cal-green-dark)) !important; color: var(--cal-white); display:flex; align-items:center; justify-content:center; box-shadow: 0 6px 12px rgba(0,0,0,.12); }
+.cal-lider .header-title .title-text .title { margin:0; color: var(--cal-blue) !important; font-weight: 800; letter-spacing:.2px; }
+.cal-lider .header-title .title-text .subtitle { color:#6b7280 !important; margin-top:2px; font-weight:600; }
+
+.cal-lider .view-switcher { display:flex; gap:8px; align-items:center; }
+.cal-lider .view-btn { appearance:none; border:1px solid var(--cal-border); background: var(--cal-white); color: var(--cal-blue); font-weight:600; padding:8px 14px; border-radius:20px; box-shadow: var(--cal-shadow); transition: all .15s ease; }
+.cal-lider .view-btn:hover { transform: translateY(-1px); }
+.cal-lider .view-btn.active { border-color: transparent; color: var(--cal-white); background: linear-gradient(135deg, var(--cal-green), var(--cal-green-dark)); }
+
+.cal-lider .header-controls { display:grid !important; grid-template-columns: 1fr auto 1fr; align-items:center; gap:12px; margin-top:10px; }
+.cal-lider .header-controls .view-switcher { justify-self:start; }
+.cal-lider .header-controls .nav-controls { justify-self:center; }
+.cal-lider .header-controls .current-period { justify-self:end; }
+.cal-lider .nav-controls { display:flex; gap:8px; align-items:center; }
+.cal-lider .nav-btn, .cal-lider .today-btn { border:1px solid var(--cal-border); background: var(--cal-white); color: var(--cal-blue); font-weight:700; padding:8px 12px; border-radius:10px; box-shadow: var(--cal-shadow); }
+.cal-lider .today-btn { color: var(--cal-white); background: linear-gradient(135deg, var(--cal-green), var(--cal-green-dark)); border-color: transparent; }
+.cal-lider .nav-btn { background:#FFFFFF; }
+.cal-lider .nav-btn:first-child::before { content:"\2039"; margin-right:6px; }
+.cal-lider .nav-btn:last-child::after { content:"\203A"; margin-left:6px; }
+.cal-lider #currentPeriod, .cal-lider #current-period { color: var(--cal-blue); font-weight:700; font-size:20px; }

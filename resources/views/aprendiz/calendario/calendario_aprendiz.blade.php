@@ -8,11 +8,11 @@
 @php $v = time(); @endphp
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="{{ asset('css/aprendiz/style.css') }}">
-<link rel="stylesheet" href="{{ asset('css/aprendiz/aprendiz-calendario.css') }}?v={{ $v }}">
 <link rel="stylesheet" href="{{ asset('css/common/calendario.css') }}?v={{ $v }}">
 <link rel="stylesheet" href="{{ asset('css/common/calendario-views.css') }}?v={{ $v }}">
 <link rel="stylesheet" href="{{ asset('css/common/calendar-month.css') }}?v={{ $v }}">
 <link rel="stylesheet" href="{{ asset('css/lider_semi/calendario-lider.css') }}?v={{ $v }}">
+<link rel="stylesheet" href="{{ asset('css/aprendiz/aprendiz-calendario.css') }}?v={{ $v }}">
 
 <style>
   /* Fijar la fecha (currentPeriod) a la derecha y evitar que salte de línea */
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   }
 
-  // Desactivar el conmutador de vistas estáticas (usamos FullCalendar)
+  // Mantener ocultas las vistas estáticas; Mes lo maneja FullCalendar
   function show(view){ /* no-op */ }
 
   buttons.forEach(btn => {
@@ -109,7 +109,8 @@ document.addEventListener('DOMContentLoaded', function(){
     }, true); // capture primero
   });
 
-  // No renderizar vistas estáticas; FullCalendar maneja todo
+  // Inicialmente: no mostrar monthView estático (evita duplicado)
+  try { if (monthView) monthView.style.display = 'none'; } catch {}
 });
 </script>
 @endpush
@@ -332,14 +333,286 @@ document.addEventListener('DOMContentLoaded', function(){
     document.addEventListener('DOMContentLoaded', function() {
 
         const calendarEl = document.getElementById('calendar');
+        const monthView = document.getElementById('monthView');
+        const weekView = document.getElementById('weekView');
+        const dayView = document.getElementById('dayView');
         let calendar;
         try{
+        let currentViewMode = 'month';
+        let currentDate = new Date();
+
+        const pad2 = (n)=> String(n).padStart(2,'0');
+        const ymdLocal = (d)=>{
+            const x = new Date(d);
+            const y = x.getFullYear();
+            const m = pad2(x.getMonth()+1);
+            const dd = pad2(x.getDate());
+            return `${y}-${m}-${dd}`;
+        };
+        const isSameDay = (a,b)=>{
+            try{
+                return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+            }catch{ return false; }
+        };
+        const getWeekStart = (date)=>{
+            const d = new Date(date);
+            const day = d.getDay();
+            d.setDate(d.getDate() - day);
+            d.setHours(0,0,0,0);
+            return d;
+        };
+        const getDayName = (date)=> ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][date.getDay()];
+        const toEventLite = (ev)=>{
+            try{
+                const start = ev?.start ? new Date(ev.start) : null;
+                const end = ev?.end ? new Date(ev.end) : null;
+                if (!start) return null;
+                const date = ymdLocal(start);
+                const time = `${pad2(start.getHours())}:${pad2(start.getMinutes())}`;
+                let duration = 60;
+                if (end && isFinite(end.getTime())) {
+                    duration = Math.max(15, Math.round((end.getTime()-start.getTime())/60000));
+                }
+                return {
+                    id: ev?.id ?? null,
+                    title: ev?.title ?? 'Reunión',
+                    date,
+                    time,
+                    duration,
+                    start,
+                    end,
+                    extendedProps: ev?.extendedProps || {}
+                };
+            }catch{ return null; }
+        };
+
+        function showEventModalFromLite(lite){
+            try{
+                if (!lite) return;
+                const modalEl = document.getElementById('eventoModal');
+                document.getElementById('eventoTitulo').textContent = lite.title || 'Reunión';
+                document.getElementById('eventoProyecto').textContent = lite.extendedProps?.proyecto || '—';
+                document.getElementById('eventoLider').textContent = lite.extendedProps?.lider || '—';
+                const fmt = (d)=> d ? d.toLocaleString('es-CO', { dateStyle:'medium', timeStyle:'short' }) : '';
+                document.getElementById('eventoFecha').textContent = `${fmt(lite.start)}${lite.end?' - '+fmt(lite.end):''}`;
+                document.getElementById('eventoDesc').textContent = lite.extendedProps?.descripcion || '—';
+
+                const tipo = lite.extendedProps?.tipo || '';
+                const ubic = lite.extendedProps?.ubicacion || '';
+                const badgeTipo = document.getElementById('badgeTipo');
+                const badgeUbic = document.getElementById('badgeUbic');
+                if (tipo) { badgeTipo.style.display='inline-block'; badgeTipo.textContent = tipo.charAt(0).toUpperCase()+tipo.slice(1); } else { badgeTipo.style.display='none'; }
+                if (ubic) { badgeUbic.style.display='inline-block'; badgeUbic.textContent = ubic.charAt(0).toUpperCase()+ubic.slice(1); } else { badgeUbic.style.display='none'; }
+
+                const cont = document.getElementById('eventoParticipantes');
+                cont.innerHTML = '';
+                const part = lite.extendedProps?.participantes || [];
+                if (part.length === 0) {
+                    cont.innerHTML = '<span class="text-muted">—</span>';
+                } else {
+                    part.forEach(n=>{
+                        const chip = document.createElement('span');
+                        chip.className = 'badge rounded-pill text-bg-light border';
+                        chip.textContent = n;
+                        cont.appendChild(chip);
+                    });
+                }
+
+                let enlace = lite.extendedProps?.link || '';
+                const ubicRaw = lite.extendedProps?.ubicacion || '';
+                const descRaw = lite.extendedProps?.descripcion || '';
+                const urlRegex = /(https?:\/\/[^\s]+)/i;
+                if (!enlace) {
+                    const m1 = (ubicRaw||'').match(urlRegex);
+                    if (m1) enlace = m1[0];
+                }
+                if (!enlace) {
+                    const m2 = (descRaw||'').match(urlRegex);
+                    if (m2) enlace = m2[0];
+                }
+                const codigo = lite.extendedProps?.codigo || '';
+                const wrapLink = document.getElementById('eventoEnlaceWrap');
+                const aLink = document.getElementById('eventoEnlace');
+                const wrapCod = document.getElementById('eventoCodigoWrap');
+                const spanCod = document.getElementById('eventoCodigo');
+                if (enlace) {
+                    wrapLink.style.display='block';
+                    aLink.href = enlace;
+                    aLink.target = '_blank';
+                    aLink.rel = 'noopener noreferrer';
+                    let label = '';
+                    try {
+                        const u = new URL(enlace);
+                        const host = u.hostname.toLowerCase();
+                        if (host.includes('teams.microsoft')) label = 'Microsoft Teams';
+                        else if (host.includes('meet.google')) label = 'Google Meet';
+                        else if (host.includes('zoom.us')) label = 'Zoom';
+                        else label = host;
+                    } catch(e) {
+                        label = lite.title || 'Reunión';
+                    }
+                    aLink.textContent = label || lite.title || 'Reunión';
+                } else {
+                    wrapLink.style.display='block';
+                    aLink.removeAttribute('href');
+                    aLink.removeAttribute('target');
+                    aLink.textContent = 'Sin enlace disponible';
+                }
+                if (codigo) { wrapCod.style.display='block'; spanCod.textContent = codigo; } else { wrapCod.style.display='none'; spanCod.textContent='—'; }
+
+                const modal = new bootstrap.Modal(modalEl, { backdrop: false, keyboard: true });
+                modal.show();
+            }catch{}
+        }
+
+        function renderWeekView(){
+            const weekHeader = document.getElementById('weekHeader');
+            const weekGrid = document.getElementById('weekGrid');
+            if (!weekHeader || !weekGrid) return;
+            const weekStart = getWeekStart(currentDate);
+            const weekDays = Array.from({length:7},(_,i)=>{ const d=new Date(weekStart); d.setDate(weekStart.getDate()+i); return d; });
+
+            weekHeader.innerHTML = '<div class="week-time-label">Hora</div>';
+            const activeDateStr = ymdLocal(currentDate);
+            weekDays.forEach(date=>{
+                const header=document.createElement('div');
+                header.className='week-day-header';
+                const dateStr = ymdLocal(date);
+                if (isSameDay(date, new Date())) header.classList.add('today');
+                if (dateStr === activeDateStr) header.classList.add('active');
+                header.innerHTML = (dateStr === activeDateStr)
+                  ? `<div class="week-day-pill"><div class="wd-name">${getDayName(date)}</div><div class="wd-day">${date.getDate()}</div></div>`
+                  : `<div class="week-day-name">${getDayName(date)}</div><div class="week-day-number">${date.getDate()}</div>`;
+                weekHeader.appendChild(header);
+            });
+
+            const workHours = [8,9,10,11,12,13,14,15,16];
+            weekGrid.innerHTML = '';
+            const timesCol=document.createElement('div');
+            timesCol.className='week-times';
+            workHours.forEach(hour=>{
+                const tl=document.createElement('div');
+                tl.className='time-slot-label';
+                if (hour===12 || hour===13) tl.classList.add('lunch');
+                tl.textContent = `${pad2(hour)}:00`;
+                timesCol.appendChild(tl);
+            });
+            weekGrid.appendChild(timesCol);
+
+            const lites = (reuniones||[]).map(toEventLite).filter(Boolean);
+            weekDays.forEach(date=>{
+                const dayCol=document.createElement('div');
+                dayCol.className='week-day-column';
+                const dateStr=ymdLocal(date);
+                if (dateStr === activeDateStr) dayCol.classList.add('active');
+                if (isSameDay(date, new Date())) dayCol.classList.add('today');
+                workHours.forEach(hour=>{
+                    const slot=document.createElement('div');
+                    slot.className='week-time-slot';
+                    if (hour===12 || hour===13) slot.classList.add('lunch');
+                    dayCol.appendChild(slot);
+                });
+
+                lites.filter(e=>e.date===dateStr).forEach(ev=>{
+                    const el=document.createElement('div');
+                    el.className='week-event';
+                    const h = ev.start.getHours();
+                    const top = (h-8)*60 + 4;
+                    const height = Math.max(20, ((ev.duration||60)/60*60) - 8);
+                    el.style.top = `${top}px`;
+                    el.style.height = `${height}px`;
+                    el.innerHTML = `<div style="font-weight:600;">${ev.time}</div><div style="font-size:10px;">${ev.title}</div>`;
+                    el.addEventListener('click', (e)=>{ e.stopPropagation(); showEventModalFromLite(ev); });
+                    dayCol.appendChild(el);
+                });
+                weekGrid.appendChild(dayCol);
+            });
+        }
+
+        function renderDayView(){
+            const dayHeader = document.getElementById('dayHeader');
+            const dayGrid = document.getElementById('dayGrid');
+            if (!dayHeader || !dayGrid) return;
+            dayHeader.innerHTML = `<div class="day-header-card"><div class="dh-week">${getDayName(currentDate)}</div><div class="dh-day">${currentDate.getDate()}</div></div>`;
+            const dateStr = ymdLocal(currentDate);
+            const workHours = [8,9,10,11,12,13,14,15,16];
+
+            dayGrid.innerHTML = '';
+            const timesCol=document.createElement('div');
+            timesCol.className='day-times';
+            workHours.forEach(hour=>{
+                const tl=document.createElement('div');
+                tl.className='day-time-label';
+                if (hour===12 || hour===13) tl.classList.add('lunch');
+                tl.textContent = `${pad2(hour)}:00`;
+                timesCol.appendChild(tl);
+            });
+            dayGrid.appendChild(timesCol);
+
+            const slotsCol=document.createElement('div');
+            slotsCol.className='day-slots';
+            workHours.forEach(hour=>{
+                const slot=document.createElement('div');
+                slot.className='day-time-slot';
+                if (hour===12 || hour===13) slot.classList.add('lunch');
+                slotsCol.appendChild(slot);
+            });
+
+            const lites = (reuniones||[]).map(toEventLite).filter(Boolean);
+            lites.filter(e=>e.date===dateStr).forEach(ev=>{
+                const el=document.createElement('div');
+                el.className='day-event';
+                const h = ev.start.getHours();
+                const top = (h-8)*80 + 4;
+                const height = Math.max(24, ((ev.duration||60)/60*80) - 8);
+                el.style.top = `${top}px`;
+                el.style.height = `${height}px`;
+                el.innerHTML = `<div style="font-weight:600;font-size:13px;">${ev.time}</div><div style="font-size:12px;margin-top:2px;">${ev.title}</div>`;
+                el.addEventListener('click', (e)=>{ e.stopPropagation(); showEventModalFromLite(ev); });
+                slotsCol.appendChild(el);
+            });
+            dayGrid.appendChild(slotsCol);
+        }
+
+        function setViewMode(mode){
+            currentViewMode = mode;
+            const calWrap = document.getElementById('calendar');
+            if (mode === 'month') {
+                monthView && (monthView.style.display = 'none');
+                weekView && (weekView.style.display = 'none');
+                dayView && (dayView.style.display = 'none');
+                if (calWrap) calWrap.style.display = 'block';
+                document.getElementById('apr-week-header')?.classList.add('d-none');
+                calendar.changeView('dayGridMonth');
+                updatePeriod(calendar.getDate());
+            } else if (mode === 'week') {
+                if (calWrap) calWrap.style.display = 'none';
+                monthView && (monthView.style.display = 'none');
+                weekView && (weekView.style.display = 'block');
+                dayView && (dayView.style.display = 'none');
+                document.getElementById('apr-week-header')?.classList.add('d-none');
+                currentDate = calendar.getDate();
+                updatePeriod(currentDate);
+                renderWeekView();
+            } else {
+                if (calWrap) calWrap.style.display = 'none';
+                monthView && (monthView.style.display = 'none');
+                weekView && (weekView.style.display = 'none');
+                dayView && (dayView.style.display = 'block');
+                document.getElementById('apr-week-header')?.classList.add('d-none');
+                currentDate = calendar.getDate();
+                updatePeriod(currentDate);
+                renderDayView();
+            }
+        }
+
         const _cal = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
             headerToolbar: false,
             locale: 'es',
             buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día', list: 'Agenda', prev: 'Anterior', next: 'Siguiente' },
             height: 'auto',
+            expandRows: true,
             editable: false,
             selectable: false,
             eventStartEditable: false,
@@ -360,8 +633,32 @@ document.addEventListener('DOMContentLoaded', function(){
             ],
             slotMinTime: '08:00:00',
             slotMaxTime: '17:00:00',
+            slotDuration: '01:00:00',
+            slotLabelInterval: '01:00',
             allDaySlot: false,
             nowIndicator: true,
+            slotLaneDidMount: function(arg){
+                try{
+                    const h = arg?.date?.getHours?.();
+                    if (h === 12 || h === 13) {
+                        arg.el.classList.add('lunch');
+                        if (!arg.el.querySelector('.scml-lunch-label')) {
+                            const lab = document.createElement('div');
+                            lab.className = 'scml-lunch-label';
+                            lab.textContent = 'ALMUERZO';
+                            arg.el.appendChild(lab);
+                        }
+                    }
+                }catch{}
+            },
+            slotLabelDidMount: function(arg){
+                try{
+                    const h = arg?.date?.getHours?.();
+                    if (h === 12 || h === 13) {
+                        arg.el.classList.add('lunch');
+                    }
+                }catch{}
+            },
             events: reuniones,
             eventContent: function(arg){
                 try{
@@ -490,6 +787,10 @@ document.addEventListener('DOMContentLoaded', function(){
         calendar = _cal;
         calendar.render();
 
+        // Render inicial del periodo y del header de semana (por si datesSet no corre de inmediato)
+        try { updatePeriod(calendar.getDate()); } catch {}
+        try { renderAprWeekHeader({ view: calendar.view, start: calendar.view?.currentStart }); } catch {}
+
         // Fallbacks robustos para que el botón "Cerrar" funcione siempre
         (function(){
             const modalEl = document.getElementById('eventoModal');
@@ -546,25 +847,35 @@ document.addEventListener('DOMContentLoaded', function(){
                 const isWeek = info.view?.type === 'timeGridWeek';
                 hdr.classList.toggle('d-none', !isWeek);
                 if (!isWeek) { hdr.innerHTML = ''; return; }
-                const start = new Date(info.start.valueOf());
+                const baseStart = info?.start || info?.view?.currentStart;
+                if (!baseStart) { hdr.innerHTML = ''; return; }
+                const start = new Date(baseStart.valueOf());
                 const days = [];
                 for (let i=0;i<7;i++){ const d = new Date(start); d.setDate(start.getDate()+i); days.push(d); }
                 const dayNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
                 const today = new Date(); today.setHours(0,0,0,0);
-                let html = '<div class="wk-hora">Hora</div>';
+                let html = '<div class="week-header" id="weekHeader">';
+                html += '<div class="week-time-label">Hora</div>';
                 days.forEach(d=>{
                     const isToday = d.toDateString() === today.toDateString();
                     if (isToday){
-                        html += `<div class="wk-day today"><div class="wk-pill"><div class="wk-name">${dayNames[d.getDay()]}</div><div class="wk-num">${d.getDate()}</div></div></div>`;
+                        html += `<div class="week-day-header today active"><div class="week-day-pill"><div class="wd-name">${dayNames[d.getDay()]}</div><div class="wd-day">${d.getDate()}</div></div></div>`;
                     } else {
-                        html += `<div class="wk-day"><div class="wk-name">${dayNames[d.getDay()]}</div><div class="wk-num">${d.getDate()}</div></div>`;
+                        html += `<div class="week-day-header"><div class="week-day-name">${dayNames[d.getDay()]}</div><div class="week-day-number">${d.getDate()}</div></div>`;
                     }
                 });
+                html += '</div>';
                 hdr.innerHTML = html;
-            }catch{}
+            }catch(e){
+                try { console.error('renderAprWeekHeader error:', e, info); } catch {}
+            }
         }
 
         calendar.on('datesSet', (info) => {
+            try{
+                const isTimeGrid = info?.view?.type === 'timeGridWeek' || info?.view?.type === 'timeGridDay';
+                calendar.setOption('contentHeight', isTimeGrid ? 1400 : 'auto');
+            }catch{}
             updatePeriod(info.start);
             renderAprWeekHeader(info);
         });
@@ -574,15 +885,54 @@ document.addEventListener('DOMContentLoaded', function(){
                 viewButtons.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 const view = btn.getAttribute('data-view');
-                const map = { month: 'dayGridMonth', week: 'timeGridWeek', day: 'timeGridDay' };
-                calendar.changeView(map[view] || 'dayGridMonth');
-                updatePeriod(calendar.getDate());
+                try {
+                    setViewMode(view || 'month');
+                } catch {}
             });
         });
 
-        prevBtn?.addEventListener('click', () => { calendar.prev(); updatePeriod(calendar.getDate()); });
-        nextBtn?.addEventListener('click', () => { calendar.next(); updatePeriod(calendar.getDate()); });
-        todayBtn?.addEventListener('click', () => { calendar.today(); updatePeriod(calendar.getDate()); });
+        prevBtn?.addEventListener('click', () => {
+            if (currentViewMode === 'month') {
+                calendar.prev();
+                updatePeriod(calendar.getDate());
+            } else if (currentViewMode === 'week') {
+                currentDate.setDate(currentDate.getDate() - 7);
+                updatePeriod(currentDate);
+                renderWeekView();
+            } else {
+                currentDate.setDate(currentDate.getDate() - 1);
+                updatePeriod(currentDate);
+                renderDayView();
+            }
+        });
+        nextBtn?.addEventListener('click', () => {
+            if (currentViewMode === 'month') {
+                calendar.next();
+                updatePeriod(calendar.getDate());
+            } else if (currentViewMode === 'week') {
+                currentDate.setDate(currentDate.getDate() + 7);
+                updatePeriod(currentDate);
+                renderWeekView();
+            } else {
+                currentDate.setDate(currentDate.getDate() + 1);
+                updatePeriod(currentDate);
+                renderDayView();
+            }
+        });
+        todayBtn?.addEventListener('click', () => {
+            if (currentViewMode === 'month') {
+                calendar.today();
+                updatePeriod(calendar.getDate());
+            } else {
+                currentDate = new Date();
+                updatePeriod(currentDate);
+                if (currentViewMode === 'week') renderWeekView();
+                else renderDayView();
+            }
+        });
+
+        // Estado inicial
+        try { setViewMode('month'); } catch {}
         } catch(err){
             console.error('Error inicializando FullCalendar:', err);
             const warn = document.createElement('div');
