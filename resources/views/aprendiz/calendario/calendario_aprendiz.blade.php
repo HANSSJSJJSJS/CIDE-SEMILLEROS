@@ -24,7 +24,7 @@
     white-space: nowrap; font-weight: 800; color:#0b3357; text-align: right; min-width: 220px;
   }
   /* Mantener controles visibles (opcional sticky si hay scroll) */
-  .cal-lider .header{ position: sticky; top: 0; z-index: 3; background: transparent; }
+  .cal-lider .header{ position: sticky; top: 0; z-index: 9999; background: rgba(246, 248, 245, .98); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
   /* Badge verde en los días del mes con reuniones asignadas */
   .cal-lider #calendar .fc-daygrid-day-frame{ position: relative; }
   .cal-lider #calendar .scml-day-badge{
@@ -336,10 +336,21 @@ document.addEventListener('DOMContentLoaded', function(){
         const monthView = document.getElementById('monthView');
         const weekView = document.getElementById('weekView');
         const dayView = document.getElementById('dayView');
+        const calRoot = document.querySelector('.cal-lider');
         let calendar;
         try{
         let currentViewMode = 'month';
         let currentDate = new Date();
+
+        function syncStickyTop(){
+            try{
+                if (!calRoot) return;
+                const header = calRoot.querySelector('.header');
+                if (!header) return;
+                const h = Math.ceil(header.getBoundingClientRect().height || 0);
+                if (h > 0) calRoot.style.setProperty('--apr-cal-sticky-top', `${h}px`);
+            }catch{}
+        }
 
         const pad2 = (n)=> String(n).padStart(2,'0');
         const ymdLocal = (d)=>{
@@ -585,6 +596,7 @@ document.addEventListener('DOMContentLoaded', function(){
                 document.getElementById('apr-week-header')?.classList.add('d-none');
                 calendar.changeView('dayGridMonth');
                 updatePeriod(calendar.getDate());
+                syncStickyTop();
             } else if (mode === 'week') {
                 if (calWrap) calWrap.style.display = 'none';
                 monthView && (monthView.style.display = 'none');
@@ -594,6 +606,7 @@ document.addEventListener('DOMContentLoaded', function(){
                 currentDate = calendar.getDate();
                 updatePeriod(currentDate);
                 renderWeekView();
+                syncStickyTop();
             } else {
                 if (calWrap) calWrap.style.display = 'none';
                 monthView && (monthView.style.display = 'none');
@@ -603,6 +616,7 @@ document.addEventListener('DOMContentLoaded', function(){
                 currentDate = calendar.getDate();
                 updatePeriod(currentDate);
                 renderDayView();
+                syncStickyTop();
             }
         }
 
@@ -933,6 +947,8 @@ document.addEventListener('DOMContentLoaded', function(){
 
         // Estado inicial
         try { setViewMode('month'); } catch {}
+        try { syncStickyTop(); } catch {}
+        try { window.addEventListener('resize', syncStickyTop, { passive: true }); } catch {}
         } catch(err){
             console.error('Error inicializando FullCalendar:', err);
             const warn = document.createElement('div');

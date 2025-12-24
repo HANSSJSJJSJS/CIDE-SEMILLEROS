@@ -23,6 +23,7 @@
   --border-light: #d9d9d9;
 }
 
+
 /* ---------------------------------------------
    Header de la página (como en la maqueta)
    - Título arriba
@@ -50,6 +51,7 @@
   color:var(--text-light);
   white-space:nowrap;
 }
+
 
 /* ===================================================================
    TARJETAS DE PROYECTOS – Diseño de maqueta
@@ -621,6 +623,9 @@
 
 .search-item{
   cursor:pointer;
+  -webkit-user-select:none;
+  -moz-user-select:none;
+  -ms-user-select:none;
   user-select:none;
   display:flex;
   align-items:center;
