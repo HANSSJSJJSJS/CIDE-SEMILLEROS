@@ -18,29 +18,15 @@ body{background:var(--cal-bg)}
 /* Blindaje: header superior siempre por encima (evita que el calendario se vea/mezcle debajo) */
 .cal-lider{
   --apr-cal-sticky-top: 140px;
-  position: relative;
-  z-index: 0;
 }
 .cal-lider .header{
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 9999 !important;
-  background: rgba(246, 248, 245, .98) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  backdrop-filter: blur(12px) !important;
-  box-shadow: 0 8px 18px rgba(15,23,42,0.10) !important;
-}
-
-/* El calendario y sus vistas deben quedar por debajo del header sticky */
-.cal-lider #calendar,
-.cal-lider #weekView,
-.cal-lider #dayView{
-  position: relative !important;
-  z-index: 1 !important;
-}
-.cal-lider #calendar .fc,
-.cal-lider #calendar .fc *{
-  z-index: auto;
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
 }
 
 /* Evitar doble contenedor: el wrapper Bootstrap (.card) no debe crear un marco adicional */
@@ -115,9 +101,9 @@ body{background:var(--cal-bg)}
 
 /* Encabezado fijo (Mes): Dom/Lun/Mar... se mantiene visible al hacer scroll */
 .cal-lider #calendar .fc .fc-scrollgrid-section-header{
-  position: sticky;
-  top: calc(var(--apr-cal-sticky-top, 0px) + 8px);
-  z-index: 1100;
+  position: static;
+  top: auto;
+  z-index: auto;
 }
 .cal-lider #calendar .fc .fc-scrollgrid-section-header > *{
   background: var(--cal-navy);
@@ -672,7 +658,7 @@ body{background:var(--cal-bg)}
 
 .cal-lider { --cal-green: #35A900; --cal-green-dark: #007832; --cal-blue: #00304D; --cal-white: #ffffff; --cal-black: #000000; --cal-bg: #F5F8FA; --cal-border: #E6EEF3; --cal-muted: #6B7280; --cal-shadow: 0 2px 6px rgba(0,0,0,.06); }
 
-.cal-lider { background: var(--cal-bg); }
+.cal-lider { background: transparent; }
 
 /* Layout base igual al Admin (evita que css/common/layout.css defina .container como flex en fila) */
 .cal-lider,
@@ -710,6 +696,8 @@ body{background:var(--cal-bg)}
   margin: 12px 0 10px;
   display: block;
   position: static;
+  top: auto;
+  z-index: auto;
   padding: 0;
   box-shadow: none;
 }

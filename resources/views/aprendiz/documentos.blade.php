@@ -72,7 +72,8 @@
                                             data-proyecto="{{ $pend->id_proyecto }}"
                                             data-accept="{{ $acceptForThis }}"
                                             data-tipo="{{ $t }}"
-                                            data-label="{{ $labelForThis }}">
+                                            data-label="{{ $labelForThis }}"
+                                            data-fecha-limite="{{ !empty($pend->fecha_limite) ? \Carbon\Carbon::parse($pend->fecha_limite)->format('Y-m-d') : '' }}">
                                         {{ $pend->nombre_proyecto ?? 'Proyecto' }} — {{ $pend->documento ?? 'Evidencia' }} {{ !empty($pend->fecha_limite) ? '(' . \Carbon\Carbon::parse($pend->fecha_limite)->format('Y-m-d') . ')' : '' }}
                                     </option>
                                 @endforeach
@@ -80,6 +81,8 @@
                             <small class="text-muted">Si eliges una evidencia, el archivo se subirá directamente a esa asignación.</small>
                         </div>
                         @endif
+
+                        <div id="deadlineAlert" class="alert alert-warning" style="display:none;" role="alert"></div>
 
                         <div class="mb-3">
                             <label for="id_proyecto" class="form-label">Proyecto *</label>
@@ -414,6 +417,9 @@ document.addEventListener('DOMContentLoaded', function(){
   const dzExpectedGeneric = document.getElementById('dz-expected-generic');
   const dzExpectedAssigned = document.getElementById('dz-expected-assigned');
   const dzExpectedLabel = document.getElementById('dz-expected-label');
+  const deadlineAlert = document.getElementById('deadlineAlert');
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const todayStr = (new Date()).toISOString().slice(0,10);
   if (dz && input){
     dz.addEventListener('click', function(e){
       if (e.target !== input) { input.click(); }
@@ -458,6 +464,20 @@ document.addEventListener('DOMContentLoaded', function(){
         const proj = opt.getAttribute('data-proyecto');
         const accept = opt.getAttribute('data-accept');
         const label = opt.getAttribute('data-label') || '';
+        const fechaLimite = opt.getAttribute('data-fecha-limite') || '';
+        const expired = !!(fechaLimite && fechaLimite < todayStr);
+        if (deadlineAlert) {
+          if (expired) {
+            deadlineAlert.style.display = '';
+            deadlineAlert.innerHTML = `<i class="fas fa-exclamation-triangle"></i> La fecha límite (<strong>${fechaLimite}</strong>) ya venció. No puedes subir esta evidencia.`;
+          } else {
+            deadlineAlert.style.display = 'none';
+            deadlineAlert.textContent = '';
+          }
+        }
+        if (submitBtn) {
+          submitBtn.disabled = expired;
+        }
         if (proyectoSelect && proj) {
           proyectoSelect.value = proj;
           proyectoSelect.disabled = true;
@@ -486,6 +506,8 @@ document.addEventListener('DOMContentLoaded', function(){
       } else {
         // Volver a modo general
         if (proyectoSelect) { proyectoSelect.disabled = false; }
+        if (deadlineAlert) { deadlineAlert.style.display = 'none'; deadlineAlert.textContent = ''; }
+        if (submitBtn) { submitBtn.disabled = false; }
         if (input) {
           input.setAttribute('accept', '{{ $acceptTipos }}');
         }

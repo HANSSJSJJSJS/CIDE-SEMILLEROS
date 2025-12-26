@@ -24,7 +24,7 @@
     white-space: nowrap; font-weight: 800; color:#0b3357; text-align: right; min-width: 220px;
   }
   /* Mantener controles visibles (opcional sticky si hay scroll) */
-  .cal-lider .header{ position: sticky; top: 0; z-index: 9999; background: rgba(246, 248, 245, .98); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+  .cal-lider .header{ position: static; top: auto; z-index: auto; background: transparent; }
   /* Badge verde en los días del mes con reuniones asignadas */
   .cal-lider #calendar .fc-daygrid-day-frame{ position: relative; }
   .cal-lider #calendar .scml-day-badge{

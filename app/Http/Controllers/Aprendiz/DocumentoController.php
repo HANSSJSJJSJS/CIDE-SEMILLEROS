@@ -262,6 +262,24 @@ class DocumentoController extends Controller
 
         // Si hay evidencia pendiente, ACTUALIZAMOS ese registro
         if ($evidenciaPendiente) {
+            // Regla: no permitir subir si ya pasó la fecha límite
+            if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','fecha_limite') && !empty($evidenciaPendiente->fecha_limite)) {
+                try {
+                    $limite = \Illuminate\Support\Carbon::parse($evidenciaPendiente->fecha_limite)->startOfDay();
+                    if (now()->startOfDay()->gt($limite)) {
+                        // Si se bloquea, limpiar archivo recién guardado para no dejar basura
+                        try { \Illuminate\Support\Facades\Storage::disk('public')->delete($ruta); } catch (\Throwable $e) {}
+                        $msg = 'La fecha límite de entrega ya venció. No puedes subir esta evidencia.';
+                        if ($request->ajax() || $request->wantsJson()) {
+                            return response()->json(['ok' => false, 'message' => $msg], 422);
+                        }
+                        return back()->with('error', $msg);
+                    }
+                } catch (\Throwable $e) {
+                    // Si no se puede parsear la fecha, no bloquear por seguridad
+                }
+            }
+
             $update = [
                 'ruta_archivo' => $ruta,
                 'tamanio'      => $tamanio,
@@ -393,6 +411,18 @@ class DocumentoController extends Controller
             return back()->with('error', 'Documento no encontrado o no te pertenece');
         }
 
+        // Regla: no permitir actualizar si ya pasó la fecha límite
+        if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','fecha_limite') && !empty($documento->fecha_limite)) {
+            try {
+                $limite = \Illuminate\Support\Carbon::parse($documento->fecha_limite)->startOfDay();
+                if (now()->startOfDay()->gt($limite)) {
+                    return back()->with('error', 'La fecha límite de entrega ya venció. No puedes actualizar esta evidencia.');
+                }
+            } catch (\Throwable $e) {
+                // si falla el parseo, no bloquear
+            }
+        }
+
         // Si la evidencia ya fue aprobada por el líder, no permitir que el aprendiz la modifique
         if (property_exists($documento, 'estado')) {
             $estadoActual = strtolower((string)($documento->estado ?? ''));
@@ -504,6 +534,22 @@ class DocumentoController extends Controller
             ->where($docAprCol, $aprId)
             ->first();
         if (!$documento) { return back()->with('error', 'Documento no encontrado'); }
+
+        // Regla: no permitir subir si ya pasó la fecha límite
+        if (\Illuminate\Support\Facades\Schema::hasColumn('documentos','fecha_limite') && !empty($documento->fecha_limite)) {
+            try {
+                $limite = \Illuminate\Support\Carbon::parse($documento->fecha_limite)->startOfDay();
+                if (now()->startOfDay()->gt($limite)) {
+                    $msg = 'La fecha límite de entrega ya venció. No puedes subir esta evidencia.';
+                    if ($request->ajax() || $request->wantsJson()) {
+                        return response()->json(['ok' => false, 'message' => $msg], 422);
+                    }
+                    return back()->with('error', $msg);
+                }
+            } catch (\Throwable $e) {
+                // si falla el parseo, no bloquear
+            }
+        }
 
         // Determinar el tipo definido por el líder (base textual)
         $tipoBase = strtolower(trim((string)($documento->tipo_documento ?? $documento->tipo_archivo ?? '')));
