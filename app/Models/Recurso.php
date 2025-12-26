@@ -9,16 +9,21 @@ use Illuminate\Database\Eloquent\Model;
 class Recurso extends Model
 {
     protected $table = 'recursos';
+    protected $primaryKey = 'id_recurso';
 
     protected $fillable = [
         'nombre_archivo',
         'archivo',
+        'archivo_respuesta',
         'categoria',
         'tipo_documento',
         'dirigido_a',
         'estado',
         'fecha_vencimiento',
         'descripcion',
+        'respuesta',
+        'enlace_respuesta',
+        'respondido_en',
         'comentarios',
         'user_id',
         'semillero_id',
@@ -27,6 +32,7 @@ class Recurso extends Model
 
     protected $casts = [
         'fecha_vencimiento' => 'date',
+        'respondido_en' => 'datetime',
     ];
 
     // Relación con semillero

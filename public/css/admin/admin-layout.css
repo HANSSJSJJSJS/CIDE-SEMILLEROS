@@ -198,3 +198,94 @@
     visibility: hidden;
   }
 }
+
+ :root{
+   --cide-green:#35A900;
+   --cide-green-dark:#007832;
+   --cide-blue:#00304D;
+   --cide-white:#ffffff;
+   --cide-black:#000000;
+ }
+
+ .swal2-popup{
+   border-radius: 16px !important;
+   background: var(--cide-white) !important;
+   color: var(--cide-blue) !important;
+   border: 2px solid rgba(0, 48, 77, 0.12) !important;
+   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35) !important;
+ }
+
+ .swal2-title{
+   color: var(--cide-blue) !important;
+   font-weight: 900 !important;
+   letter-spacing: 0.3px !important;
+ }
+
+ .swal2-html-container{
+   color: var(--cide-black) !important;
+   font-weight: 600 !important;
+ }
+
+ .swal2-actions{
+   gap: 12px !important;
+ }
+
+ .swal2-styled{
+   border-radius: 12px !important;
+   padding: 10px 18px !important;
+   font-weight: 800 !important;
+   box-shadow: none !important;
+ }
+
+ .swal2-confirm.swal2-styled{
+   background: var(--cide-green) !important;
+   color: var(--cide-white) !important;
+   border: 2px solid var(--cide-green) !important;
+ }
+
+ .swal2-confirm.swal2-styled:hover{
+   background: var(--cide-green-dark) !important;
+   border-color: var(--cide-green-dark) !important;
+ }
+
+ .swal2-cancel.swal2-styled{
+   background: var(--cide-white) !important;
+   color: var(--cide-blue) !important;
+   border: 2px solid rgba(0, 48, 77, 0.35) !important;
+ }
+
+ .swal2-cancel.swal2-styled:hover{
+   background: rgba(0, 48, 77, 0.06) !important;
+ }
+
+ .swal2-icon.swal2-success{
+   border-color: var(--cide-green) !important;
+   color: var(--cide-green) !important;
+ }
+
+ .swal2-success-ring,
+ .swal2-success-line-tip,
+ .swal2-success-line-long{
+   border-color: var(--cide-green) !important;
+ }
+
+ .swal2-icon.swal2-warning{
+   border-color: var(--cide-green) !important;
+   color: var(--cide-green) !important;
+ }
+
+ .swal2-icon.swal2-info,
+ .swal2-icon.swal2-question{
+   border-color: var(--cide-blue) !important;
+   color: var(--cide-blue) !important;
+ }
+
+ .swal2-icon.swal2-error{
+   border-color: var(--cide-blue) !important;
+   color: var(--cide-blue) !important;
+ }
+
+ .swal2-x-mark-line-left,
+ .swal2-x-mark-line-right{
+   background-color: var(--cide-blue) !important;
+ }

@@ -193,25 +193,58 @@ function renderRecursos(lista) {
             const estado = (r.estado ?? "pendiente").toString().toLowerCase();
             const puedeEditar = estado !== "aprobado";
             const puedeAprobarRechazar = estado === "pendiente";
+            const esVencido = estado === 'vencido';
             const titulo = r.titulo ?? "";
             const fecha = r.fecha_limite ?? "—";
             const lider = r.lider_nombre ?? "N/A";
             const descripcion = r.descripcion ?? "";
             const archivo = r.archivo ?? null;
+            const archivoRespuesta = r.archivo_respuesta ?? null;
+            const enlaceRespuesta = r.enlace_respuesta ?? null;
+            const comentarios = r.comentarios ?? "";
+            const respondidoEn = r.respondido_en ?? null;
             const tipoDocumento = r.tipo_documento ?? "";
             const badgeText = estado.toUpperCase();
 
-            const btnArchivo = archivo
-                ? `<a class="btn btn-recurso-file" href="/storage/${archivo}" download>
-                        <i class="bi bi-file-earmark-text"></i>
-                        Descargar
+            const computeViewUrl = () => {
+                if (enlaceRespuesta) return enlaceRespuesta;
+                if (archivoRespuesta) return `/storage/${archivoRespuesta}`;
+
+                const txt = (comentarios || '').toString();
+                if (txt) {
+                    let m = txt.match(/Enlace respuesta:\s*(https?:\/\/\S+)/i);
+                    if (m && m[1]) return m[1];
+                    m = txt.match(/Archivo respuesta:\s*([^\s]+)/i);
+                    if (m && m[1]) return `/storage/${m[1].trim()}`;
+                }
+
+                // Fallback: en algunos esquemas el archivo de respuesta termina en la columna `archivo`
+                // (p.ej. cuando no existe `archivo_respuesta`).
+                if (archivo) {
+                    return `/storage/${archivo}`;
+                }
+                return null;
+            };
+
+            const viewUrl = computeViewUrl();
+
+            const btnArchivo = viewUrl
+                ? `<a class="btn btn-recurso-file" href="${viewUrl}" target="_blank" rel="noopener">
+                        <i class="bi bi-eye"></i>
+                        Ver
                    </a>`
                 : `<button type="button" class="btn btn-recurso-file" disabled>
                         <i class="bi bi-file-earmark"></i>
-                        Sin Archivo
+                        Sin Evidencia
                    </button>`;
 
-            const accion = `<button type="button" class="recurso-action btn-editar-recurso"
+            const accion = esVencido
+                ? `<button type="button" class="recurso-action btn-eliminar-recurso"
+                                data-id="${r.id}"
+                                aria-label="Eliminar recurso">
+                            <i class="bi bi-trash"></i>
+                        </button>`
+                : `<button type="button" class="recurso-action btn-editar-recurso"
                                 data-id="${r.id}"
                                 data-estado="${estado}"
                                 data-lider="${encodeURIComponent(lider)}"
@@ -305,6 +338,79 @@ function activarBotonesEstados() {
             abrirModalEditar(btn);
         });
     });
+
+    document.querySelectorAll(".btn-eliminar-recurso").forEach(btn => {
+        btn.addEventListener("click", () => {
+            eliminarRecursoVencido(btn.dataset.id);
+        });
+    });
+}
+
+function eliminarRecursoVencido(id) {
+    if (!id) return;
+    if (!window.ACT_DELETE_RECURSO_URL) {
+        showNotification('Error', 'No se encontró la ruta para eliminar.', 'error');
+        return;
+    }
+
+    const runDelete = () => {
+        const url = buildUrl(window.ACT_DELETE_RECURSO_URL, id);
+
+        fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+            .then(async (r) => {
+                const data = await r.json().catch(() => ({}));
+                return { ok: r.ok, data };
+            })
+            .then(({ ok, data }) => {
+                if (!ok) {
+                    showNotification('Error', data.message ?? 'No se pudo eliminar el recurso', 'error');
+                    return;
+                }
+                showNotification('Eliminado', 'Recurso eliminado correctamente', 'success');
+                if (semilleroActualId) {
+                    cargarRecursos(semilleroActualId);
+                }
+            })
+            .catch(() => {
+                showNotification('Error', 'No se pudo eliminar el recurso', 'error');
+            });
+    };
+
+    if (window.Swal && typeof window.Swal.fire === 'function') {
+        window.Swal.fire({
+            title: 'Eliminar recurso vencido',
+            html: '<div class="cide-swal-text">¿Deseas eliminar este recurso vencido?</div>',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Eliminar',
+            cancelButtonText: 'Cancelar',
+            reverseButtons: true,
+            focusCancel: true,
+            customClass: {
+                popup: 'cide-swal-popup',
+                title: 'cide-swal-title',
+                htmlContainer: 'cide-swal-html',
+                confirmButton: 'cide-swal-confirm',
+                cancelButton: 'cide-swal-cancel',
+            }
+        }).then((result) => {
+            if (result && result.isConfirmed) {
+                runDelete();
+            }
+        });
+        return;
+    }
+
+    const ok = confirm('¿Deseas eliminar este recurso vencido?');
+    if (!ok) return;
+    runDelete();
 }
 
 

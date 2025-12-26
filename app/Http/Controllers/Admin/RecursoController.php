@@ -156,6 +156,30 @@ class RecursoController extends Controller
             $select[] = DB::raw('NULL as archivo');
         }
 
+        if (Schema::hasColumn('recursos', 'archivo_respuesta')) {
+            $select[] = 'r.archivo_respuesta';
+        } else {
+            $select[] = DB::raw('NULL as archivo_respuesta');
+        }
+
+        if (Schema::hasColumn('recursos', 'enlace_respuesta')) {
+            $select[] = 'r.enlace_respuesta';
+        } else {
+            $select[] = DB::raw('NULL as enlace_respuesta');
+        }
+
+        if (Schema::hasColumn('recursos', 'comentarios')) {
+            $select[] = 'r.comentarios';
+        } else {
+            $select[] = DB::raw('NULL as comentarios');
+        }
+
+        if (Schema::hasColumn('recursos', 'respondido_en')) {
+            $select[] = 'r.respondido_en';
+        } else {
+            $select[] = DB::raw('NULL as respondido_en');
+        }
+
         if (Schema::hasColumn('recursos', 'fecha_vencimiento')) {
             $select[] = DB::raw('DATE(r.fecha_vencimiento) as fecha_limite');
         } elseif (Schema::hasColumn('recursos', 'fecha_limite')) {
@@ -191,6 +215,14 @@ class RecursoController extends Controller
             // Evitar que el front intente descargar un placeholder
             if (isset($r->archivo) && ($r->archivo === 'sin_archivo' || $r->archivo === '')) {
                 $r->archivo = null;
+            }
+
+            if (isset($r->archivo_respuesta) && ($r->archivo_respuesta === '' || $r->archivo_respuesta === 'sin_archivo')) {
+                $r->archivo_respuesta = null;
+            }
+
+            if (isset($r->enlace_respuesta) && $r->enlace_respuesta === '') {
+                $r->enlace_respuesta = null;
             }
 
             if ($r->estado === 'pendiente' && $r->fecha_limite !== '—' && $r->fecha_limite < $hoy) {
@@ -246,6 +278,91 @@ class RecursoController extends Controller
         }
 
         Recurso::create($data);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function destroy($recurso)
+    {
+        if (!Schema::hasTable('recursos')) {
+            return response()->json(['success' => false, 'message' => 'Tabla recursos no encontrada'], 404);
+        }
+
+        $cols = Schema::getColumnListing('recursos');
+        $idCol = null;
+        foreach (['id_recurso', 'id', 'id_recursos', 'id_recurso_lider', 'id_recurso_semillero'] as $cand) {
+            if (in_array($cand, $cols, true)) {
+                $idCol = $cand;
+                break;
+            }
+        }
+        if (!$idCol) {
+            foreach ($cols as $c) {
+                if ($c === 'id' || str_starts_with($c, 'id_')) {
+                    $idCol = $c;
+                    break;
+                }
+            }
+        }
+        if (!$idCol) {
+            return response()->json(['success' => false, 'message' => 'No se pudo determinar la llave del recurso'], 500);
+        }
+
+        $row = DB::table('recursos')->where($idCol, $recurso)->first();
+        if (!$row) {
+            return response()->json(['success' => false, 'message' => 'Recurso no encontrado'], 404);
+        }
+
+        $estado = strtolower((string)($row->estado ?? 'pendiente'));
+        $vencido = ($estado === 'vencido');
+
+        $hoy = now()->toDateString();
+        if (!$vencido) {
+            if ($estado === 'pendiente') {
+                $fechaCol = null;
+                foreach (['fecha_vencimiento', 'fecha_limite'] as $cand) {
+                    if (in_array($cand, $cols, true)) {
+                        $fechaCol = $cand;
+                        break;
+                    }
+                }
+                if ($fechaCol) {
+                    try {
+                        $f = (string)($row->{$fechaCol} ?? '');
+                        $f = $f ? substr($f, 0, 10) : '';
+                        if ($f !== '' && $f < $hoy) {
+                            $vencido = true;
+                        }
+                    } catch (\Throwable $e) {
+                        $vencido = false;
+                    }
+                }
+            }
+        }
+
+        if (!$vencido) {
+            return response()->json(['success' => false, 'message' => 'Solo se pueden eliminar recursos vencidos'], 403);
+        }
+
+        try {
+            $paths = [];
+            if (in_array('archivo', $cols, true) && !empty($row->archivo) && $row->archivo !== 'sin_archivo') {
+                $paths[] = (string)$row->archivo;
+            }
+            if (in_array('archivo_respuesta', $cols, true) && !empty($row->archivo_respuesta) && $row->archivo_respuesta !== 'sin_archivo') {
+                $paths[] = (string)$row->archivo_respuesta;
+            }
+
+            foreach ($paths as $p) {
+                if ($p && Storage::disk('public')->exists($p)) {
+                    Storage::disk('public')->delete($p);
+                }
+            }
+        } catch (\Throwable $e) {
+            // continuar
+        }
+
+        DB::table('recursos')->where($idCol, $recurso)->delete();
 
         return response()->json(['success' => true]);
     }
@@ -355,6 +472,31 @@ class RecursoController extends Controller
             return response()->json(['success' => false, 'message' => 'No puedes editar un recurso aprobado'], 403);
         }
 
+        $fechaColActual = null;
+        foreach (['fecha_vencimiento', 'fecha_limite'] as $cand) {
+            if (in_array($cand, $cols, true)) {
+                $fechaColActual = $cand;
+                break;
+            }
+        }
+
+        $fechaAntes = '';
+        if ($fechaColActual) {
+            try {
+                $f = (string)($row->{$fechaColActual} ?? '');
+                $fechaAntes = $f ? substr($f, 0, 10) : '';
+            } catch (\Throwable $e) {
+                $fechaAntes = '';
+            }
+        }
+
+        $fechaNueva = '';
+        try {
+            $fechaNueva = substr((string)$request->fecha_limite, 0, 10);
+        } catch (\Throwable $e) {
+            $fechaNueva = (string)$request->fecha_limite;
+        }
+
         $update = [];
 
         if (Schema::hasColumn('recursos', 'tipo_documento')) {
@@ -371,6 +513,74 @@ class RecursoController extends Controller
 
         if (Schema::hasColumn('recursos', 'descripcion')) {
             $update['descripcion'] = $request->descripcion;
+        }
+
+        // Si se cambió la fecha, reabrir para que el líder pueda responder de nuevo
+        // (limpia evidencia anterior y vuelve a pendiente)
+        if ($fechaAntes !== '' && $fechaNueva !== '' && $fechaAntes !== $fechaNueva) {
+            // Eliminar archivos viejos (si existen) para evitar basura en storage
+            try {
+                if (Schema::hasColumn('recursos', 'archivo_respuesta') && !empty($row->archivo_respuesta)) {
+                    $old = (string)$row->archivo_respuesta;
+                    if ($old !== '' && Storage::disk('public')->exists($old)) {
+                        Storage::disk('public')->delete($old);
+                    }
+                }
+
+                // Si la evidencia quedó en `archivo` (fallback), solo borrarla si parece una respuesta
+                // (ruta típica: recursos/respuestas/...).
+                if (Schema::hasColumn('recursos', 'archivo') && !empty($row->archivo)) {
+                    $oldA = (string)$row->archivo;
+                    if ($oldA !== '' && stripos($oldA, 'recursos/respuestas') !== false) {
+                        if (Storage::disk('public')->exists($oldA)) {
+                            Storage::disk('public')->delete($oldA);
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // continuar
+            }
+
+            if (Schema::hasColumn('recursos', 'archivo_respuesta')) {
+                $update['archivo_respuesta'] = null;
+            }
+            if (Schema::hasColumn('recursos', 'enlace_respuesta')) {
+                $update['enlace_respuesta'] = null;
+            }
+            if (Schema::hasColumn('recursos', 'respuesta')) {
+                $update['respuesta'] = null;
+            }
+            if (Schema::hasColumn('recursos', 'respondido_en')) {
+                $update['respondido_en'] = null;
+            }
+
+            // Limpiar fallbacks de evidencia en comentarios, conservando observaciones si existen
+            if (Schema::hasColumn('recursos', 'comentarios')) {
+                try {
+                    $c = (string)($row->comentarios ?? '');
+                    if ($c !== '') {
+                        $c = preg_replace('/\r?\n?Enlace respuesta:\s*https?:\/\/[^\s]+/i', '', $c);
+                        $c = preg_replace('/\r?\n?Archivo respuesta:\s*[^\r\n]+/i', '', $c);
+                        $c = trim((string)$c);
+                        $update['comentarios'] = ($c === '') ? null : $c;
+                    }
+                } catch (\Throwable $e) {
+                    // continuar
+                }
+            }
+
+            // Si no existe archivo_respuesta, puede que la respuesta esté en `archivo`.
+            // Solo lo limpiamos si parece evidencia de respuesta.
+            if (!Schema::hasColumn('recursos', 'archivo_respuesta') && Schema::hasColumn('recursos', 'archivo')) {
+                $oldA = (string)($row->archivo ?? '');
+                if ($oldA !== '' && stripos($oldA, 'recursos/respuestas') !== false) {
+                    $update['archivo'] = null;
+                }
+            }
+
+            if (Schema::hasColumn('recursos', 'estado')) {
+                $update['estado'] = 'pendiente';
+            }
         }
 
         if (empty($update)) {
