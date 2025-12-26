@@ -1,14 +1,18 @@
 @extends('layouts.lider_semi')
 
+@section('styles')
+<link rel="stylesheet" href="{{ asset('css/lider_semi/aprendices.css') }}">
+@endsection
+
 @section('content')
-<div class="container-fluid mt-4 px-4">
+<div class="container-fluid mt-4 px-4 ls-aprendices">
     <div class="mb-4">
-        <h3 class="fw-bold" style="color:#2d572c;">Aprendices del Grupo</h3>
+        <h3 class="ls-title">Aprendices del Grupo</h3>
         <p class="text-muted">Supervisa el progreso y desempeño de tus aprendices</p>
     </div>
 
     <!-- Filtros de Búsqueda -->
-    <div class="card border-0 shadow-sm mb-3">
+    <div class="card mb-3 glass-card ls-filters">
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-3">
@@ -40,7 +44,7 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm">
+    <div class="card glass-card ls-table">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
@@ -69,7 +73,7 @@
                                 </div>
                             </td>
                             <td class="py-3">
-                                <span class="badge" style="background-color:#e8f5e9;color:#2d572c;border:1px solid #5aa72e;padding:6px 12px;border-radius:20px;">
+                                <span class="project-pill">
                                     {{ $aprendiz->proyecto_nombre }}
                                 </span>
                             </td>
@@ -85,8 +89,7 @@
                                 @endif
                             </td>
                             <td class="py-3 text-end pe-4">
-                                <button class="btn btn-sm btn-outline-success btn-ver-detalle"
-                                        style="border-radius:20px;padding:4px 12px;"
+                                <button class="btn btn-sm btn-outline-success btn-ver-detalle btn-view"
                                         data-id="{{ $aprendiz->id_aprendiz }}"
                                         data-nombre="{{ $aprendiz->nombre_completo }}"
                                         data-tipo-doc="{{ $aprendiz->tipo_documento ?? 'CC' }}"

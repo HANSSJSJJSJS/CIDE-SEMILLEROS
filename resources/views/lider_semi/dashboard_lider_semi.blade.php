@@ -4,7 +4,7 @@
 <style>
   .dash-wrap{background:transparent;padding:1rem 0}
   .dash-title{font-weight:800;color:#0f172a}
-  .metric-card{border:1px solid #e2e8f0;border-radius:16px;padding:18px;background:#fff;box-shadow:0 6px 20px rgba(15,23,42,.06);position:relative;transition:transform .12s ease,box-shadow .12s ease}
+  .metric-card{border:1px solid rgba(226,232,240,.55);border-radius:16px;padding:18px;background:rgba(255,255,255,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 6px 20px rgba(15,23,42,.10);position:relative;transition:transform .12s ease,box-shadow .12s ease}
   .metric-card.metric-link{cursor:pointer}
   .metric-card.metric-link:hover{transform:translateY(-2px);box-shadow:0 10px 25px rgba(15,23,42,.12)}
   .metric-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
@@ -13,20 +13,20 @@
   .metric-pill{display:inline-block;margin-top:6px;font-size:12px;padding:4px 10px;border-radius:999px}
   .pill-green{background:#e6f6ed;color:#22c55e}
   .pill-yellow{background:#fff7e6;color:#f59e0b}
-  .list-card{border:1px solid #e2e8f0;border-radius:16px;background:#fff;box-shadow:0 6px 20px rgba(15,23,42,.06)}
-  .item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;background:#fff}
+  .list-card{border:1px solid rgba(226,232,240,.55);border-radius:16px;background:rgba(255,255,255,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 6px 20px rgba(15,23,42,.10)}
+  .item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;background:rgba(255,255,255,.35);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(226,232,240,.50)}
   .item+.item{margin-top:10px}
   .avatar{width:36px;height:36px;border-radius:999px;background:#e2f7ee;color:#0f766e;font-weight:800;display:flex;align-items:center;justify-content:center}
   .status-pill{font-size:12px;padding:4px 10px;border-radius:999px;background:#ecfdf5;color:#16a34a}
   .bar{height:6px;background:#e2e8f0;border-radius:999px;overflow:hidden}
   .bar>span{display:block;height:100%;background:#22c55e}
-  .actions-card{border:1px solid #e2e8f0;border-radius:16px;background:#fff;box-shadow:0 6px 20px rgba(15,23,42,.06)}
+  .actions-card{border:1px solid rgba(226,232,240,.55);border-radius:16px;background:rgba(255,255,255,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 6px 20px rgba(15,23,42,.10)}
   .btn-block{display:block;width:100%;border-radius:12px;padding:12px 16px;font-weight:700}
   .btn-green{background:#22c55e;color:#fff}
   .btn-green:hover{filter:brightness(1.05)}
   .btn-dark{background:#0f172a;color:#fff}
-  .btn-outline-blue{background:#fff;border:2px solid #2563eb;color:#2563eb}
-  .btn-outline-blue:hover{background:#eff6ff}
+  .btn-outline-blue{background:rgba(255,255,255,.35);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:2px solid #2563eb;color:#2563eb}
+  .btn-outline-blue:hover{background:rgba(239,246,255,.55)}
 </style>
 
 <div class="container-fluid dash-wrap">
