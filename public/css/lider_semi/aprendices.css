@@ -1,0 +1,168 @@
+.ls-aprendices{
+    --ls-green: #2d572c;
+    --ls-green-2: #39A900;
+    --ls-text: #111;
+    --ls-border: rgba(0,0,0,.12);
+    --ls-glass: rgba(255,255,255,.12);
+    --ls-glass-strong: rgba(255,255,255,.16);
+    max-width: 1180px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.ls-aprendices .ls-title{
+    color: var(--ls-green);
+    font-weight: 800;
+    letter-spacing: .2px;
+}
+
+.ls-aprendices .glass-card{
+    background: var(--ls-glass);
+    border: 1px solid var(--ls-border) !important;
+    border-radius: 14px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: 0 12px 28px rgba(0,0,0,.10);
+}
+
+.ls-aprendices .ls-filters .card-body{
+    padding: 16px 18px;
+}
+
+.ls-aprendices .ls-filters .form-label{
+    font-size: 12px;
+    font-weight: 800;
+    color: #1f1f1f;
+    margin-bottom: 6px;
+}
+
+.ls-aprendices .ls-filters .form-control,
+.ls-aprendices .ls-filters .form-select{
+    background: rgba(255,255,255,.30);
+    border: 1px solid rgba(0,0,0,.12);
+    border-radius: 10px;
+    padding: 10px 12px;
+    box-shadow: none;
+}
+
+.ls-aprendices .ls-filters .form-underline{
+    border: 1px solid rgba(0,0,0,.12) !important;
+}
+
+.ls-aprendices .ls-filters .form-control:focus,
+.ls-aprendices .ls-filters .form-select:focus{
+    border-color: rgba(57,169,0,.45);
+    box-shadow: 0 0 0 .2rem rgba(57,169,0,.14);
+}
+
+.ls-aprendices .ls-filters #btn-limpiar-filtros{
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,.26);
+    border: 1px solid rgba(0,0,0,.12);
+}
+
+.ls-aprendices .ls-filters #btn-limpiar-filtros:hover,
+.ls-aprendices .ls-filters #btn-limpiar-filtros:focus{
+    background: rgba(255,255,255,.42) !important;
+    border-color: rgba(0,0,0,.16) !important;
+}
+
+.ls-aprendices .ls-table .card-body{
+    padding: 0;
+}
+
+.ls-aprendices .ls-table .table-responsive{
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(0,0,0,.10);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.ls-aprendices .ls-table .table{
+    margin: 0;
+    --bs-table-bg: transparent;
+    --bs-table-accent-bg: transparent;
+    --bs-table-border-color: rgba(0,0,0,.10);
+    --bs-table-hover-bg: rgba(255,255,255,.20);
+}
+
+.ls-aprendices .ls-table .table > :not(caption) > * > *{
+    background-color: transparent;
+}
+
+.ls-aprendices .ls-table thead{
+    background: rgba(255,255,255,.75) !important;
+}
+
+.ls-aprendices .ls-table thead th{
+    background: rgba(255,255,255,.75) !important;
+    color: #111 !important;
+    border-color: rgba(0,0,0,.08) !important;
+    font-weight: 900;
+    font-size: 12px;
+    letter-spacing: .35px;
+}
+
+.ls-aprendices .ls-table tbody td{
+    border-color: rgba(0,0,0,.10) !important;
+    vertical-align: middle;
+}
+
+.ls-aprendices .ls-table tbody tr:nth-child(odd){
+    background: rgba(255,255,255,.04);
+}
+
+.ls-aprendices .ls-table .table-hover tbody tr:hover{
+    background: rgba(255,255,255,.24);
+}
+
+.ls-aprendices .project-pill{
+    background: rgba(57,169,0,.12);
+    color: #1c5b2a;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-weight: 800;
+    font-size: 11px;
+    border: 1px solid rgba(57,169,0,.45);
+    max-width: 100%;
+    display: inline-block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ls-aprendices .btn-view{
+    border-radius: 999px !important;
+    padding: 4px 12px !important;
+    border-color: rgba(45,87,44,.55) !important;
+    color: var(--ls-green) !important;
+    background: rgba(255,255,255,.55) !important;
+    box-shadow: none !important;
+}
+
+.ls-aprendices .btn-view i{
+    margin-right: 6px;
+    font-size: 12px;
+}
+
+.ls-aprendices .btn-view:hover{
+    background: rgba(45,87,44,.10) !important;
+}
+
+.ls-aprendices .badge.bg-success,
+.ls-aprendices .badge.bg-danger{
+    font-weight: 800;
+    font-size: 11px;
+    padding: 4px 10px !important;
+    border-radius: 999px !important;
+}
+
+@media (max-width: 576px){
+    .ls-aprendices{ padding-left: 0; padding-right: 0; }
+    .ls-aprendices .ls-title{ font-size: 22px; }
+    .ls-aprendices .ls-filters .card-body{ padding: 14px; }
+}
