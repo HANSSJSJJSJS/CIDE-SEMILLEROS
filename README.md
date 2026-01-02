@@ -1,175 +1,165 @@
-# 🌱 CIDE – Sistema de Gestión de Semilleros
+🌱 CIDE – Sistema de Gestión de Semilleros
 
-Proyecto desarrollado en Laravel para la gestión de Semilleros de Investigación del CIDE.  
+Proyecto desarrollado en Laravel para la gestión de Semilleros de Investigación del CIDE.
 Permite administrar semilleros, usuarios, roles y módulos asociados.
 
 Guía paso a paso para desplegar el proyecto en una máquina nueva.
 
----
-
-## 📋 Requisitos Previos
+📋 Requisitos Previos
 
 Antes de comenzar, asegúrate de tener instalado:
 
-- 🐘 PHP 8.1 o 8.2
-- 📦 Composer
-- 🐬 MySQL o MariaDB
-- ⚡ Node.js (para Vite)
-- 🌿 Git
-- 🌐 Navegador web (Chrome, Edge, Firefox)
+🐘 PHP 8.1 o 8.2
+
+📦 Composer
+
+🐬 MySQL o MariaDB
+
+⚡ Node.js (requerido para Vite)
+
+🌿 Git
+
+🌐 Navegador web (Chrome, Edge, Firefox)
 
 Verificar versiones instaladas:
 
-```bash php -v ```
-```bash composer -V ```
-```bash mysql --version ```
-```bash node -v ```
-```bash npm -v ```
+php -v
 
----
+composer -V
 
-## 🛠️ Instrucciones de Instalación
+mysql --version
 
-### 1. Clonar el proyecto
+node -v
 
-```bash git clone https://github.com/TU_USUARIO/TU_REPOSITORIO.git ```
+npm -v
 
----
+🛠️ Instrucciones de Instalación
+1. Clona el proyecto
+git clone https://github.com/TU_USUARIO/TU_REPOSITORIO.git
 
-### 2. Entrar al directorio del proyecto
+2. Entra en el directorio del proyecto
+cd CIDE-SEMILLEROS
 
-```bash cd CIDE-SEMILLEROS ```
+3. Instala las dependencias de PHP
+composer install
 
----
+3.1 Opcional – Si hay problemas de memoria en Windows
+php -d memory_limit=-1 composer install
 
-### 3. Instalar dependencias de PHP
+4. Crea el archivo de configuración .env
 
-```bash composer install ```
+Laravel no incluye el archivo .env por seguridad.
+Crea manualmente el archivo .env en la raíz del proyecto con el siguiente contenido:
 
-Si en Windows se queda cargando o hay error de memoria:
+APP_NAME=CIDE-Semilleros
+APP_ENV=local
+APP_KEY=
+APP_DEBUG=true
+APP_URL=http://127.0.0.1:8000
 
-```bash php -d memory_limit=-1 composer install ```
+LOG_CHANNEL=stack
+LOG_LEVEL=debug
 
----
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=semilleros
+DB_USERNAME=root
+DB_PASSWORD=
 
-### 4. Crear el archivo de configuración `.env`
+5. Genera la clave de la aplicación
+php artisan key:generate
 
-Crear el archivo `.env` en la raíz del proyecto con el siguiente contenido:
+6. Limpia la caché de Laravel
+php artisan config:clear
 
-```bash APP_NAME=CIDE-Semilleros ```
-```bash APP_ENV=local ```
-```bash APP_KEY= ```
-```bash APP_DEBUG=true ```
-```bash APP_URL=http://127.0.0.1:8000 ```
-```bash LOG_CHANNEL=stack ```
-```bash LOG_LEVEL=debug ```
-```bash DB_CONNECTION=mysql ```
-```bash DB_HOST=127.0.0.1 ```
-```bash DB_PORT=3306 ```
-```bash DB_DATABASE=semilleros ```
-```bash DB_USERNAME=root ```
-```bash DB_PASSWORD= ```
+php artisan cache:clear
 
----
+php artisan view:clear
 
-### 5. Generar la clave de la aplicación
+7. Configura la base de datos
 
-```bash php artisan key:generate ```
+Crea la base de datos llamada semilleros desde MySQL o phpMyAdmin.
 
----
+Ejecuta las migraciones:
 
-### 6. Limpiar caché de Laravel
+php artisan migrate
 
-```bash php artisan config:clear ```
-```bash php artisan cache:clear ```
-```bash php artisan view:clear ```
+7.1 Opcional – Cargar datos iniciales
+php artisan migrate --seed
 
----
+8. Instala dependencias de frontend (Vite)
+npm install
 
-### 7. Configurar la base de datos
+9. Inicia Vite
+npm run dev
 
-Crear la base de datos llamada `semilleros` desde MySQL o phpMyAdmin.
 
-Ejecutar migraciones:
+⚠️ Mantén esta consola abierta mientras el proyecto esté en ejecución.
 
-```bash php artisan migrate ```
+10. Inicia el servidor de Laravel
+php artisan serve
 
-Si el proyecto incluye datos iniciales:
+11. Abre el proyecto en el navegador (Brexer 🌐)
+http://127.0.0.1:8000
 
-```bash php artisan migrate --seed ```
+🗂️ Estructura del Proyecto
+/CIDE-SEMILLEROS/
+├── app/                    # Lógica principal de la aplicación
+│   ├── Http/
+│   │   ├── Controllers/    # Controladores
+│   │   └── Middleware/     # Middlewares
+│   └── Models/             # Modelos Eloquent
+├── database/
+│   ├── migrations/         # Migraciones de la base de datos
+│   └── seeders/            # Datos iniciales
+├── resources/
+│   ├── views/              # Vistas Blade
+│   ├── css/                # Estilos
+│   └── js/                 # Scripts JavaScript
+├── routes/
+│   └── web.php             # Rutas web
+├── public/                 # Archivos públicos
+├── .env                    # Configuración del entorno (no versionado)
+├── artisan                 # CLI de Laravel
+└── composer.json           # Dependencias del proyecto
 
----
+🧰 Tecnologías
+Componente	Tecnología	Descripción
+Backend	🐘 Laravel	Framework PHP para aplicaciones web
+Base de datos	🐬 MySQL / MariaDB	Sistema de base de datos relacional
+ORM	🔗 Eloquent	ORM de Laravel
+Frontend	🌐 Blade + CSS + JS	Renderizado del lado del servidor
+Assets	⚡ Vite	Gestión y compilación de recursos
+Servidor	🚀 Artisan	Servidor de desarrollo local
+⚠️ Notas Importantes
 
-### 8. Instalar dependencias de frontend (Vite)
+El archivo .env no debe subirse al repositorio
 
-```bash npm install ```
+En una máquina nueva el .env debe crearse manualmente
 
----
+Si Vite no está activo, los estilos no cargarán
 
-### 9. Iniciar Vite
+Verifica que PHP tenga habilitadas las extensiones:
 
-```bash npm run dev ```
+openssl
 
-Mantener esta consola abierta mientras el proyecto esté en ejecución.
+pdo
 
----
+pdo_mysql
 
-### 10. Iniciar el servidor de Laravel
+mbstring
 
-```bash php artisan serve ```
+fileinfo
 
----
+curl
 
-### 11. Abrir en el navegador (Brexer 🌐)
-
-```bash http://127.0.0.1:8000 ```
-
----
-
-## 🗂️ Estructura del Proyecto
-
-```bash /CIDE-SEMILLEROS/ ```
-```bash ├── app/                    # Lógica principal ```
-```bash ├── database/               # Migraciones y seeders ```
-```bash ├── resources/              # Vistas Blade, CSS y JS ```
-```bash ├── routes/                 # Rutas web ```
-```bash ├── public/                 # Archivos públicos ```
-```bash ├── .env                    # Configuración (no versionado) ```
-```bash ├── artisan                 # CLI de Laravel ```
-```bash └── composer.json           # Dependencias ```
-
----
-
-## 🧰 Tecnologías
-
-- 🐘 Laravel
-- 🐬 MySQL / MariaDB
-- 🔗 Eloquent ORM
-- 🌐 Blade + CSS + JS
-- ⚡ Vite
-- 🚀 Artisan
-
----
-
-## ⚠️ Notas Importantes
-
-- El archivo `.env` no debe subirse al repositorio
-- En una máquina nueva el `.env` debe crearse manualmente
-- Si Vite no está activo, los estilos no cargarán
-- Extensiones PHP requeridas:
-```bash openssl pdo pdo_mysql mbstring fileinfo curl ```
-
----
-
-## 📄 Licencia
+📄 Licencia
 
 Proyecto desarrollado con fines académicos e institucionales para la gestión de Semilleros de Investigación del CIDE.
 
----
+👨‍💻 Autor
 
-## 👨‍💻 Autor
-
-CIDE – Sistema de Semilleros  
-Desarrollado por **[Tu nombre]**
-
+CIDE – Sistema de Semilleros
+Desarrollado por [Tu nombre]
 
