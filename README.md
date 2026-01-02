@@ -1,216 +1,114 @@
-# 🌿 CIDE-SEMILLEROS
+# CIDE – Sistema de Gestión de Semilleros
+#
+# Proyecto desarrollado en Laravel para la gestión de Semilleros de Investigación del CIDE.
+# Guía paso a paso para desplegar el proyecto en una máquina nueva.
+#
+# =====================================================
+# PASO 1. REQUISITOS DEL SISTEMA
+# =====================================================
+# - PHP 8.1 o 8.2
+# - Composer
+# - MySQL o MariaDB
+# - Node.js (para Vite)
+# - Git
+# - Navegador web (Chrome, Edge, Firefox)
+#
+# Verificar versiones instaladas:
+php -v
+composer -V
+mysql --version
+node -v
+npm -v
 
-## 📋 Requisitos previos
+# =====================================================
+# PASO 2. CLONAR EL REPOSITORIO
+# =====================================================
+git clone https://github.com/TU_USUARIO/TU_REPOSITORIO.git
+cd CIDE-SEMILLEROS
 
-| Herramienta     | Versión recomendada | Descripción |
-|-----------------|---------------------|--------------|
-| PHP             | 8.1 o superior      | Lenguaje principal usado por Laravel. |
-| Composer        | Última versión      | Gestor de dependencias de PHP. |
-| MySQL           | 5.7+                | Base de datos típica para Laravel. |
-| Node.js + NPM   | Node 18+            | Para compilar los assets (CSS, JS, etc.). |
-| Git             | —                   | Para clonar y administrar el repositorio. |
+# =====================================================
+# PASO 3. INSTALAR DEPENDENCIAS DE PHP
+# =====================================================
+composer install
 
+# Si se queda cargando o hay problemas de memoria en Windows:
+php -d memory_limit=-1 composer install
 
-"Listar el paso a paso para ejecutar el proyecto de manera local".
+# =====================================================
+# PASO 4. CREAR ARCHIVO DE CONFIGURACIÓN (.env)
+# =====================================================
+# Crear manualmente el archivo .env en la raíz del proyecto
+# y agregar el siguiente contenido:
+APP_NAME=CIDE-Semilleros
+APP_ENV=local
+APP_KEY=
+APP_DEBUG=true
+APP_URL=http://127.0.0.1:8000
+LOG_CHANNEL=stack
+LOG_LEVEL=debug
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=semilleros
+DB_USERNAME=root
+DB_PASSWORD=
 
-## 🛠️ Instrucciones deinstalaciónn
+# =====================================================
+# PASO 5. GENERAR CLAVE DE LA APLICACIÓN
+# =====================================================
+php artisan key:generate
 
-#### 1. Clona el proyecto.
+# =====================================================
+# PASO 6. LIMPIAR CACHÉ DE LARAVEL
+# =====================================================
+php artisan config:clear
+php artisan cache:clear
+php artisan view:clear
 
-```bash
+# =====================================================
+# PASO 7. CONFIGURAR BASE DE DATOS
+# =====================================================
+# Crear la base de datos llamada "semilleros" desde MySQL o phpMyAdmin
 
-  git clone https://github.com/HANSSJSJJSJS/CIDE-SEMILLEROS.git
+# Ejecutar migraciones:
+php artisan migrate
 
-```
+# Si el proyecto incluye seeders:
+php artisan migrate --seed
 
-#### 2. 
+# =====================================================
+# PASO 8. INSTALAR DEPENDENCIAS FRONTEND (VITE)
+# =====================================================
+npm install
 
-```bash
+# =====================================================
+# PASO 9. LEVANTAR VITE
+# =====================================================
+npm run dev
 
-inngresar en la raiz del proyecto
+# Mantener esta consola abierta mientras el proyecto esté en ejecución
 
-```
-
-#### 3. 
-
- Ingresar a la consola y ejecutar este comando. 
-
-```bash
-
-node instalar_dependencias.js
-
-```
-
-#### 4. 
-
- Iniciar el servidor ingresa el comando en CMD. 
-
-```bash
-
+# =====================================================
+# PASO 10. EJECUTAR LARAVEL
+# =====================================================
 php artisan serve
 
-```
+# =====================================================
+# PASO 11. ABRIR EN EL NAVEGADOR (BREXER)
+# =====================================================
+# Abrir el navegador web y acceder a:
+# http://127.0.0.1:8000
 
+# =====================================================
+# NOTAS IMPORTANTES
+# =====================================================
+# - El archivo .env nunca debe subirse al repositorio
+# - En una máquina nueva el archivo .env debe crearse manualmente
+# - Si Vite no está corriendo, los estilos no cargarán
+# - Verificar que las extensiones PHP estén habilitadas:
+#   openssl, pdo, pdo_mysql, mbstring, fileinfo, curl
+#
+# =====================================================
+# FIN DE LA GUÍA
+# =====================================================
 
-### 🧩 Posibles errores al iniciar el servidor Laravel
-
-| Mensaje o pantalla | Causa probable | Solución |
-|--------------------|----------------|-----------|
-| ❌ **404 Not Found** | No hay rutas configuradas o `routes/web.php` vacío | Abre `routes/web.php` y asegúrate de tener:<br>`Route::get('/', function () { return view('welcome'); });` |
-| ⚠️ **APP_KEY missing** | No generaste la clave de aplicación | Ejecuta:<br>`php artisan key:generate` |
-| 🔒 **Access denied for user 'root'@'localhost'** | Base de datos mal configurada | Revisa las variables `DB_` en tu archivo `.env` |
-| 🧱 **Class not found** | Falta alguna dependencia del proyecto | Ejecuta:<br>`composer install` |
-| ⚪ **Pantalla blanca** | Error en PHP, pero `APP_DEBUG` está desactivado | En el archivo `.env`, cambia:<br>`APP_DEBUG=true` |
-
-
-
-
-
-
-
-
-
-
-## 📋 guia de caerpetas 
-```bash
-📁 CIDE-SEMILLEROS/
-│
-├── 📁 app/
-│   ├── 📁 Console/            → Comandos personalizados (Artisan)
-│   ├── 📁 Exceptions/         → Manejo de errores
-│   ├── 📁 Http/
-│   │   ├── 📁 Controllers/    → Controladores (lógica de rutas)
-│   │   ├── 📁 Middleware/     → Filtros de autenticación, etc.
-│   │   └── Kernel.php         → Registro de middlewares
-│   ├── 📁 Models/             → Modelos (Eloquent ORM)
-│   └── 📁 Providers/          → Configuración de servicios
-│
-├── 📁 bootstrap/
-│   ├── app.php                → Inicializa Laravel
-│   └── 📁 cache/              → Cache de compilación
-│
-├── 📁 config/
-│   ├── app.php                → Configuración general
-│   ├── database.php           → Conexión a la BD
-│   ├── mail.php               → Configuración de correo
-│   ├── auth.php               → Autenticación
-│   └── ...                    → Otros archivos de configuración
-│
-├── 📁 database/
-│   ├── 📁 migrations/         → Migraciones (estructura de tablas)
-│   ├── 📁 seeders/            → Datos iniciales (usuarios, roles, etc.)
-│   └── 📁 factories/          → Generadores de datos falsos (testing)
-│
-├── 📁 public/
-│   ├── index.php              → Punto de entrada del proyecto
-│   ├── 📁 css/                → Archivos de estilo
-│   ├── 📁 js/                 → Scripts compilados
-│   ├── 📁 images/             → Imágenes públicas
-│   └── 📁 storage/ (link simbólico)
-│
-├── 📁 resources/
-│   ├── 📁 views/              → Plantillas Blade (.blade.php)
-│   ├── 📁 lang/               → Archivos de idioma (es, en, etc.)
-│   ├── 📁 js/                 → Scripts del frontend
-│   ├── 📁 sass/               → Estilos fuente (SASS)
-│   └── 📁 components/         → Componentes reutilizables (opcional)
-│
-├── 📁 routes/
-│   ├── web.php                → Rutas web (HTML / vistas)
-│   ├── api.php                → Rutas API (JSON / AJAX)
-│   ├── console.php            → Comandos artisan
-│   └── channels.php           → Canales broadcast (notificaciones)
-│
-├── 📁 storage/
-│   ├── 📁 app/                → Archivos cargados por el usuario
-│   ├── 📁 framework/          → Cache, sesiones, vistas compiladas
-│   └── 📁 logs/               → Registro de errores (laravel.log)
-│
-├── 📁 tests/                  → Pruebas automáticas
-│
-├── 📁 vendor/                 → Dependencias instaladas por Composer
-│
-├── .env                       → Configuración del entorno (base de datos, mail, etc.)
-├── artisan                    → CLI de Laravel (php artisan ...)
-├── composer.json              → Dependencias PHP
-├── package.json               → Dependencias frontend (NPM)
-├── vite.config.js             → Configuración de compilación frontend
-└── README.md                  → Documentación del proyecto
-
-```
-
-
-## 🧩 Flujo de datos (Laravel ↔ PostgreSQL)
-```bash
-
-
-┌──────────────────────────────┐
-│         Usuario / Cliente     │
-│ (Navegador o API Request)    │
-└──────────────┬───────────────┘
-               │
-               ▼
-┌──────────────────────────────┐
-│        public/               │
-│ - index.php (punto de entrada)│
-│ - CSS / JS / imágenes         │
-└──────────────┬───────────────┘
-               │
-               ▼
-┌──────────────────────────────┐
-│        routes/               │
-│ - web.php  → rutas web        │
-│ - api.php  → rutas API        │
-└──────────────┬───────────────┘
-               │
-               ▼
-┌──────────────────────────────┐
-│   app/Http/Controllers/      │
-│ - Reciben la petición        │
-│ - Aplican lógica de negocio  │
-│ - Llaman a los modelos       │
-└──────────────┬───────────────┘
-               │
-               ▼
-┌──────────────────────────────┐
-│       app/Models/            │
-│ - Representan tablas de BD   │
-│ - Usan Eloquent ORM          │
-│ - Consultan database/        │
-└──────────────┬───────────────┘
-               │
-               ▼
-┌──────────────────────────────┐
-│       database/              │
-│ - migrations/ → estructura   │
-│ - seeders/ → datos iniciales │
-│ - factories/ → datos de test │
-└──────────────┬───────────────┘
-               │
-               ▼
-┌──────────────────────────────┐
-│        config/ + .env        │
-│ - Conexión BD, correo, etc.  │
-│ - Variables del entorno      │
-└──────────────┬───────────────┘
-               │
-               ▼
-┌──────────────────────────────┐
-│       resources/views/       │
-│ - Vistas Blade (HTML)        │
-│ - Forman la respuesta final  │
-└──────────────┬───────────────┘
-               │
-               ▼
-┌──────────────────────────────┐
-│         storage/             │
-│ - logs/ → errores del sistema│
-│ - framework/ → cache, sesiones│
-│ - app/public → archivos del usuario │
-└──────────────┬───────────────┘
-               │
-               ▼
-┌──────────────────────────────┐
-│         vendor/              │
-│ - Librerías de Composer      │
-│ - Framework Laravel completo │
