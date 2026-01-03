@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\Storage;
 
 class RecursoController extends Controller
 {
+
+    public function index()
+{
+    return redirect()->route('admin.recursos.multimedia');
+}
     // ======================================================
     // VISTA MULTIMEDIA
     // ======================================================
