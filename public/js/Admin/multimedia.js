@@ -1,127 +1,100 @@
-// ======================================================
-// FUNCION PARA MOSTRAR MULTIMEDIA  (DEBE IR ARRIBA!!!)
-// ======================================================
-async function cargarMultimedia() {
-
-    const resp = await fetch("/admin/recursos/multimedia/list");
-    const recursos = await resp.json();
-
-    const contPlantillas = document.getElementById("contenedorPlantillas");
-    const contManuales = document.getElementById("contenedorManuales");
-    const contOtros = document.getElementById("contenedorOtros");
-
-    contPlantillas.innerHTML = "";
-    contManuales.innerHTML = "";
-    contOtros.innerHTML = "";
-
-    recursos.forEach(item => {
-
-      const card = `
-    <div class="col-md-3">
-        <div class="card-recurso">
-            <h6>${item.nombre_archivo}</h6>
-
-            <button class="btn-recurso btn-ver-archivo"
-                    onclick="window.open('/storage/${item.archivo}', '_blank')">
-                Ver archivo
-            </button>
-
-            <button class="btn-recurso btn-eliminar-archivo mt-2"
-                    onclick="eliminarMultimedia(${item.id})">
-                Eliminar
-            </button>
-        </div>
-    </div>
-`;
-
-
-        if (item.categoria === "plantillas") contPlantillas.innerHTML += card;
-        else if (item.categoria === "manuales") contManuales.innerHTML += card;
-        else contOtros.innerHTML += card;
-    });
-}
-
-
-// ======================================================
-// ELIMINAR MULTIMEDIA
-// ======================================================
-async function eliminarMultimedia(id) {
-    if (!confirm("¿Eliminar este archivo?")) return;
-
-    const resp = await fetch(`/admin/recursos/multimedia/delete/${id}`, {
-        method: "DELETE",
-        headers: {
-            "X-CSRF-TOKEN": document.querySelector("meta[name='csrf-token']").content
-        }
-    });
-
-    const data = await resp.json();
-
-    if (data.success) {
-        alert("Archivo eliminado");
-        cargarMultimedia();
-    } else {
-        alert("No se pudo eliminar");
+// ========================================
+// BADGE POR EXTENSIÓN
+// ========================================
+function badgeInfo(ext) {
+    switch (ext) {
+        case 'pdf':  return { label: 'PDF', color: 'bg-danger' };
+        case 'doc':
+        case 'docx': return { label: 'WORD', color: 'bg-primary' };
+        case 'ppt':
+        case 'pptx': return { label: 'PPT', color: 'bg-warning' };
+        case 'xls':
+        case 'xlsx': return { label: 'EXCEL', color: 'bg-success' };
+        case 'jpg':
+        case 'jpeg':
+        case 'png':  return { label: 'IMAGEN', color: 'bg-info' };
+        default:     return { label: 'ARCHIVO', color: 'bg-secondary' };
     }
 }
 
+// ========================================
+// CARGAR MULTIMEDIA
+// ========================================
+async function cargarMultimedia() {
+    try {
+        const resp = await fetch('/admin/recursos/multimedia/list');
 
-// ======================================================
-// DOMContentLoaded  (DEBE IR DESPUÉS)
-// ======================================================
-document.addEventListener("DOMContentLoaded", () => {
+        if (!resp.ok) {
+            throw new Error('Respuesta inválida del servidor');
+        }
 
-    const modal = document.getElementById("modalSubirMultimedia");
-    const btnAbrir = document.getElementById("btnAbrirModalMultimedia");
-    const form = document.getElementById("formSubirMultimedia");
-    const CSRF = document.querySelector("meta[name='csrf-token']").content;
+        const recursos = await resp.json();
 
-    // Cargar al inicio ahora sí funciona ✔
-    cargarMultimedia();
+        const contPlantillas = document.getElementById('contenedorPlantillas');
+        const contManuales   = document.getElementById('contenedorManuales');
+        const contOtros      = document.getElementById('contenedorOtros');
 
-    // ABRIR MODAL
-    btnAbrir.addEventListener("click", () => {
-        modal.classList.add("active");
-    });
+        contPlantillas.innerHTML = '';
+        contManuales.innerHTML   = '';
+        contOtros.innerHTML      = '';
 
-    // CERRAR MODAL
-    document.querySelectorAll("[data-close-modal='multimedia']").forEach(btn => {
-        btn.addEventListener("click", () => modal.classList.remove("active"));
-    });
+        recursos.forEach(item => {
+            const ext = item.extension || '';
+            const badge = badgeInfo(ext);
 
-    modal.addEventListener("click", e => {
-        if (e.target === modal) modal.classList.remove("active");
-    });
+            const card = `
+                <div class="col-md-3">
+                    <div class="card-recurso">
+                        <span class="badge ${badge.color} mb-2">${badge.label}</span>
+                        <h6>${item.nombre_archivo}</h6>
 
-    const destino = document.getElementById("destinoSeleccion");
-    const campoSemillero = document.getElementById("campoSemillero");
+                        <div class="d-flex gap-2 mt-2">
+                            <a class="btn btn-outline-primary btn-sm"
+                               href="/storage/${item.archivo}"
+                               target="_blank">
+                                <i class="bi bi-eye"></i>
+                            </a>
 
-    destino.addEventListener("change", () => {
-        campoSemillero.classList.toggle("d-none", destino.value !== "semillero");
-    });
+                            <button class="btn btn-danger btn-sm"
+                                onclick="eliminarMultimedia(${item.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
 
-    // SUBIR FORMULARIO
-    form.addEventListener("submit", async e => {
-        e.preventDefault();
-
-        const formData = new FormData(form);
-
-        const response = await fetch(window.MULTIMEDIA_STORE_URL, {
-            method: "POST",
-            headers: { "X-CSRF-TOKEN": CSRF },
-            body: formData
+            if (item.categoria === 'plantillas') {
+                contPlantillas.innerHTML += card;
+            } else if (item.categoria === 'manuales') {
+                contManuales.innerHTML += card;
+            } else {
+                contOtros.innerHTML += card;
+            }
         });
 
-        const data = await response.json();
+    } catch (error) {
+        console.error('Error cargando multimedia:', error);
+    }
+}
 
-        if (data.success) {
-            alert("✔ Multimedia subida correctamente");
-            modal.classList.remove("active");
-            form.reset();
-            cargarMultimedia();
-        } else {
-            alert("❌ Error al subir multimedia");
+// ========================================
+// ELIMINAR
+// ========================================
+async function eliminarMultimedia(id) {
+    if (!confirm('¿Eliminar este archivo?')) return;
+
+    await fetch(`${window.MultimediaConfig.deleteBaseUrl}/${id}`, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         }
     });
 
-});
+    cargarMultimedia();
+}
+
+window.eliminarMultimedia = eliminarMultimedia;
+
+// ========================================
+document.addEventListener('DOMContentLoaded', cargarMultimedia);
