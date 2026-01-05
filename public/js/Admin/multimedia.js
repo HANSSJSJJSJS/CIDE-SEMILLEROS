@@ -1,127 +1,224 @@
 // ======================================================
-// FUNCION PARA MOSTRAR MULTIMEDIA  (DEBE IR ARRIBA!!!)
+// BADGE SEGÚN TIPO DE ARCHIVO (ESPAÑOL)
 // ======================================================
-async function cargarMultimedia() {
+function badgeInfo(ext) {
+    switch (ext) {
+        case 'pdf':
+            return { label: 'PDF', color: 'bg-danger', preview: true };
 
-    const resp = await fetch("/admin/recursos/multimedia/list");
-    const recursos = await resp.json();
+        case 'doc':
+        case 'docx':
+            return { label: 'WORD', color: 'bg-primary', preview: false };
 
-    const contPlantillas = document.getElementById("contenedorPlantillas");
-    const contManuales = document.getElementById("contenedorManuales");
-    const contOtros = document.getElementById("contenedorOtros");
+        case 'ppt':
+        case 'pptx':
+            return { label: 'PRESENTACIÓN', color: 'bg-warning', preview: false };
 
-    contPlantillas.innerHTML = "";
-    contManuales.innerHTML = "";
-    contOtros.innerHTML = "";
+        case 'xls':
+        case 'xlsx':
+            return { label: 'EXCEL', color: 'bg-success', preview: false };
 
-    recursos.forEach(item => {
+        case 'jpg':
+        case 'jpeg':
+        case 'png':
+        case 'gif':
+            return { label: 'IMAGEN', color: 'bg-info', preview: true };
 
-      const card = `
-    <div class="col-md-3">
-        <div class="card-recurso">
-            <h6>${item.nombre_archivo}</h6>
+        case 'zip':
+        case 'rar':
+            return { label: 'COMPRIMIDO', color: 'bg-dark', preview: false };
 
-            <button class="btn-recurso btn-ver-archivo"
-                    onclick="window.open('/storage/${item.archivo}', '_blank')">
-                Ver archivo
-            </button>
-
-            <button class="btn-recurso btn-eliminar-archivo mt-2"
-                    onclick="eliminarMultimedia(${item.id})">
-                Eliminar
-            </button>
-        </div>
-    </div>
-`;
-
-
-        if (item.categoria === "plantillas") contPlantillas.innerHTML += card;
-        else if (item.categoria === "manuales") contManuales.innerHTML += card;
-        else contOtros.innerHTML += card;
-    });
+        default:
+            return { label: 'ARCHIVO', color: 'bg-secondary', preview: false };
+    }
 }
 
+// ======================================================
+// CARGAR MULTIMEDIA
+// ======================================================
+async function cargarMultimedia() {
+    try {
+        const resp = await fetch('/admin/recursos/multimedia/list');
+
+        if (!resp.ok) {
+            throw new Error('Respuesta inválida del servidor');
+        }
+
+        const recursos = await resp.json();
+
+        const contPlantillas = document.getElementById('contenedorPlantillas');
+        const contManuales   = document.getElementById('contenedorManuales');
+        const contOtros      = document.getElementById('contenedorOtros');
+
+        // Limpiar contenedores
+        contPlantillas.innerHTML = '';
+        contManuales.innerHTML   = '';
+        contOtros.innerHTML      = '';
+
+        if (!Array.isArray(recursos)) return;
+
+        recursos.forEach(item => {
+
+            // =========================
+            // EXTENSIÓN SEGURA
+            // =========================
+            let ext = '';
+            if (item.extension && item.extension.length <= 5) {
+                ext = item.extension.toLowerCase();
+            } else if (item.archivo && item.archivo.includes('.')) {
+                ext = item.archivo.split('.').pop().toLowerCase();
+            }
+
+            const badge = badgeInfo(ext);
+            const iconoAccion = badge.preview ? 'bi-eye' : 'bi-download';
+            const textoAccion = badge.preview ? 'Ver archivo' : 'Descargar archivo';
+
+            const card = `
+                <div class="col-md-3">
+                    <div class="card-recurso">
+                        <span class="badge ${badge.color} mb-2">${badge.label}</span>
+
+                        <h6 class="mt-1 text-truncate" title="${item.nombre_archivo}">
+                            ${item.nombre_archivo}
+                        </h6>
+
+                        <div class="d-flex gap-2 mt-3">
+                            <button class="btn btn-outline-primary btn-sm"
+                                title="${textoAccion}"
+                                onclick="window.open('/storage/${item.archivo}', '_blank')">
+                                <i class="bi ${iconoAccion}"></i>
+                            </button>
+
+                            <button class="btn btn-danger btn-sm"
+                                title="Eliminar archivo"
+                                onclick="eliminarMultimedia(${item.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            if (item.categoria === 'plantillas') {
+                contPlantillas.insertAdjacentHTML('beforeend', card);
+            } else if (item.categoria === 'manuales') {
+                contManuales.insertAdjacentHTML('beforeend', card);
+            } else {
+                contOtros.insertAdjacentHTML('beforeend', card);
+            }
+        });
+
+    } catch (error) {
+        console.error('Error cargando multimedia:', error);
+        alert('Error al cargar los archivos multimedia');
+    }
+}
 
 // ======================================================
 // ELIMINAR MULTIMEDIA
 // ======================================================
 async function eliminarMultimedia(id) {
-    if (!confirm("¿Eliminar este archivo?")) return;
+    if (!confirm('¿Eliminar este archivo?')) return;
 
-    const resp = await fetch(`/admin/recursos/multimedia/delete/${id}`, {
-        method: "DELETE",
-        headers: {
-            "X-CSRF-TOKEN": document.querySelector("meta[name='csrf-token']").content
+    try {
+        const resp = await fetch(`/admin/recursos/multimedia/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document
+                    .querySelector('meta[name="csrf-token"]').content
+            }
+        });
+
+        const data = await resp.json();
+
+        if (data.success) {
+            alert('✔ Archivo eliminado correctamente');
+            cargarMultimedia();
+        } else {
+            alert(data.message || 'No se pudo eliminar el archivo');
         }
-    });
 
-    const data = await resp.json();
-
-    if (data.success) {
-        alert("Archivo eliminado");
-        cargarMultimedia();
-    } else {
-        alert("No se pudo eliminar");
+    } catch (error) {
+        console.error('Error eliminando archivo:', error);
+        alert('Error al eliminar el archivo');
     }
 }
 
+// Necesario porque se llama desde HTML dinámico
+window.eliminarMultimedia = eliminarMultimedia;
 
 // ======================================================
-// DOMContentLoaded  (DEBE IR DESPUÉS)
+// DOM READY
 // ======================================================
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener('DOMContentLoaded', () => {
 
-    const modal = document.getElementById("modalSubirMultimedia");
-    const btnAbrir = document.getElementById("btnAbrirModalMultimedia");
-    const form = document.getElementById("formSubirMultimedia");
-    const CSRF = document.querySelector("meta[name='csrf-token']").content;
+    const modal       = document.getElementById('modalSubirMultimedia');
+    const btnAbrir    = document.getElementById('btnAbrirModalMultimedia');
+    const btnCerrar   = document.getElementById('cerrarModalMultimedia');
+    const btnCancelar = document.getElementById('cancelarModal');
+    const form        = document.getElementById('formSubirMultimedia');
 
-    // Cargar al inicio ahora sí funciona ✔
+    const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+
+    // Cargar multimedia al iniciar
     cargarMultimedia();
 
-    // ABRIR MODAL
-    btnAbrir.addEventListener("click", () => {
-        modal.classList.add("active");
+    // -------------------------
+    // MODAL
+    // -------------------------
+    btnAbrir?.addEventListener('click', () => {
+        modal.classList.remove('d-none');
     });
 
-    // CERRAR MODAL
-    document.querySelectorAll("[data-close-modal='multimedia']").forEach(btn => {
-        btn.addEventListener("click", () => modal.classList.remove("active"));
+    btnCerrar?.addEventListener('click', cerrarModal);
+    btnCancelar?.addEventListener('click', cerrarModal);
+
+    modal?.addEventListener('click', e => {
+        if (e.target === modal) cerrarModal();
     });
 
-    modal.addEventListener("click", e => {
-        if (e.target === modal) modal.classList.remove("active");
-    });
+    function cerrarModal() {
+        modal.classList.add('d-none');
+    }
 
-    const destino = document.getElementById("destinoSeleccion");
-    const campoSemillero = document.getElementById("campoSemillero");
-
-    destino.addEventListener("change", () => {
-        campoSemillero.classList.toggle("d-none", destino.value !== "semillero");
-    });
-
-    // SUBIR FORMULARIO
-    form.addEventListener("submit", async e => {
+    // -------------------------
+    // SUBIR MULTIMEDIA
+    // -------------------------
+    form?.addEventListener('submit', async e => {
         e.preventDefault();
 
         const formData = new FormData(form);
 
-        const response = await fetch(window.MULTIMEDIA_STORE_URL, {
-            method: "POST",
-            headers: { "X-CSRF-TOKEN": CSRF },
-            body: formData
-        });
+        try {
+            const response = await fetch(window.MultimediaConfig.storeUrl, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF },
+                body: formData,
+            });
 
-        const data = await response.json();
+            const text = await response.text();
+            let data;
 
-        if (data.success) {
-            alert("✔ Multimedia subida correctamente");
-            modal.classList.remove("active");
-            form.reset();
-            cargarMultimedia();
-        } else {
-            alert("❌ Error al subir multimedia");
+            try {
+                data = JSON.parse(text);
+            } catch {
+                console.error('Respuesta NO JSON:', text);
+                alert('Error del servidor');
+                return;
+            }
+
+            if (data.success) {
+                alert('✔ Multimedia subida correctamente');
+                cerrarModal();
+                form.reset();
+                cargarMultimedia();
+            } else {
+                alert(data.message || 'Error al subir multimedia');
+            }
+
+        } catch (error) {
+            console.error('Error subiendo multimedia:', error);
+            alert('Error de conexión');
         }
     });
-
 });

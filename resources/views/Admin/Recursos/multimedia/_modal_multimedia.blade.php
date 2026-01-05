@@ -1,68 +1,59 @@
-{{-- Modal Subir Multimedia --}}
-<div class="modal-overlay" id="modalSubirMultimedia">
-    <div class="modal-evidencia">
+<div id="modalSubirMultimedia" class="modal-overlay d-none">
 
-        {{-- BOTÓN CERRAR (X) --}}
-        <button class="btn-cerrar-modal" data-close-modal="multimedia">×</button>
+    <div class="modal-subir-multimedia">
+        <button class="modal-close" id="cerrarModalMultimedia">×</button>
 
-        <h2 class="mb-4">Subir Multimedia</h2>
+        <h3>Subir Multimedia</h3>
 
         <form id="formSubirMultimedia" enctype="multipart/form-data">
             @csrf
 
-            {{-- TÍTULO --}}
-            <label class="form-label-evidencia">Título *</label>
-            <input type="text" class="form-control-evidencia" name="titulo" required>
+            <div class="row g-3">
 
-            {{-- CATEGORÍA --}}
-            <label class="form-label-evidencia mt-3">Categoría *</label>
-            <select class="form-select-evidencia" name="categoria" required>
-                <option value="plantillas">Plantillas / Presentaciones</option>
-                <option value="manuales">Manuales</option>
-                <option value="otros">Otros</option>
-            </select>
+                <div class="col-md-6">
+                    <label class="form-label">Título *</label>
+                    <input type="text" name="titulo" class="form-control" required>
+                </div>
 
-            {{-- DESTINO --}}
-            <label class="form-label-evidencia mt-3">Destino *</label>
-            <select class="form-select-evidencia" name="destino" id="destinoSeleccion" required>
-                <option value="todos">Para todos los líderes</option>
-                <option value="semillero">Para un semillero específico</option>
-            </select>
+                <div class="col-md-3">
+                    <label class="form-label">Categoría *</label>
+                    <<select name="categoria" class="form-select" required>
+                            <option value="plantillas">Plantillas / Presentaciones</option>
+                            <option value="manuales">Manuales</option>
+                            <option value="otros">Otros</option>
+                        </select>
 
-            {{-- SEMILLERO --}}
-            <div id="campoSemillero" class="d-none mt-2">
-                <label class="form-label-evidencia">Selecciona Semillero *</label>
-                <select class="form-select-evidencia" name="semillero_id">
-                    <option value="">Seleccione...</option>
+                </div>
 
-                    @foreach($semilleros as $s)
-                        <option value="{{ $s->id_semillero }}">{{ $s->nombre }}</option>
-                    @endforeach
-                </select>
+                <div class="col-md-3">
+                    <label class="form-label">Destino *</label>
+                    <select name="destino" class="form-select">
+                        <option value="todos">Para todos los líderes</option>
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Descripción (opcional)</label>
+                    <textarea name="descripcion" class="form-control" rows="3"></textarea>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Archivo *</label>
+                    <input type="file" name="archivo" class="form-control" required>
+                </div>
+
             </div>
 
-            {{-- DESCRIPCIÓN --}}
-            <label class="form-label-evidencia mt-3">Descripción (opcional)</label>
-            <textarea class="form-control-evidencia form-textarea-evidencia"
-                      name="descripcion"
-                      rows="3">
-            </textarea>
-
-            {{-- ARCHIVO --}}
-            <label class="form-label-evidencia mt-3">Archivo *</label>
-            <input type="file" class="form-control-evidencia" name="archivo" required>
-
-            {{-- BOTONES --}}
-            <div class="modal-botones mt-4">
-                <button type="button" class="btn-cancelar-modal" data-close-modal="multimedia">
+            <div class="mt-4 d-flex justify-content-end gap-3">
+                <button type="button" class="btn btn-secondary" id="cancelarModal">
                     Cancelar
                 </button>
 
-                <button type="submit" class="btn-guardar-modal">
+                <button type="submit" class="btn btn-success">
                     <i class="bi bi-upload"></i> Subir
                 </button>
             </div>
-
         </form>
     </div>
+
 </div>
