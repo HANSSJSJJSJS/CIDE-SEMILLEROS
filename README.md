@@ -34,7 +34,7 @@
 ### PASO 2. CLONAR EL REPOSITORIO
 
  ```bash
- git clone https://github.com/TU_USUARIO/TU_REPOSITORIO.git
+ git clone https://github.com/HANSSJSJJSJS/CIDE-SEMILLEROS.git
  ```
 
 ###  PASO 3. ENTRAR AL DIRECTORIO DEL PROYECTO
