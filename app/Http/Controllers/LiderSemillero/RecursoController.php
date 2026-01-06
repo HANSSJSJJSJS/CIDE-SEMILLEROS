@@ -322,4 +322,49 @@ class RecursoController extends Controller
             'view_url' => $viewUrl,
         ]);
     }
+// ================================
+// VISTA MULTIMEDIA (LÍDER)
+// ================================
+public function multimedia()
+{
+    return view('lider_semi.recursos.multimedia');
+}
+
+// ================================
+// LISTAR MULTIMEDIA (AJAX)
+// ================================
+public function obtenerMultimedia()
+{
+    if (!Schema::hasTable('recursos')) {
+        return response()->json([]);
+    }
+
+    $cols = Schema::getColumnListing('recursos');
+
+    // Detectar ID real
+    $idCol = in_array('id_recurso', $cols) ? 'id_recurso' : 'id';
+
+    $recursos = DB::table('recursos')
+        ->select([
+            DB::raw("$idCol as id"),
+            'nombre_archivo',
+            'archivo',
+            'categoria',
+            'dirigido_a',
+            DB::raw("LOWER(SUBSTRING_INDEX(archivo, '.', -1)) as extension"),
+        ])
+        ->whereNotNull('archivo')
+        ->whereIn('dirigido_a', ['todos', 'semillero']) // 👈 CLAVE
+        ->orderBy('created_at', 'desc')
+        ->get()
+        ->map(function ($r) {
+            $r->url = asset('storage/' . $r->archivo); // 👈 URL real
+            return $r;
+        });
+
+    return response()->json($recursos);
+}
+
+
+
 }

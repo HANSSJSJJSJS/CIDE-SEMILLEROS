@@ -455,10 +455,25 @@ Route::middleware(['auth', 'role:LIDER_SEMILLERO'])
 
             Route::get('/recursos/multimedia', [LiderRecursoController::class, 'multimedia'])
                 ->name('recursos.multimedia');
-            
+            Route::get('/recursos/multimedia/list', [LiderRecursoController::class, 'obtenerMultimedia'])
+            ->name('recursos.multimedia.list');
             // Guardar recurso nuevo
             Route::post('/recursos/store', [LiderRecursoController::class, 'store'])->name('recursos.store');
             
+             // ------------------------
+            //Multimedia 
+            // ------------------------
+
+
+
+
+
+
+
+
+
+
+
 
         // ------------------------
         // PERFIL
