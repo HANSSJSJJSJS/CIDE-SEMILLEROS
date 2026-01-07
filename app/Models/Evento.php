@@ -15,6 +15,7 @@ class Evento extends Model
         'id_evento',
         'id_lider',
         'id_lider_semi',
+        'id_admin',
         'id_lider_usuario',
         'id_usuario',
         'id_proyecto',
@@ -27,7 +28,9 @@ class Evento extends Model
         'ubicacion',
         'link_virtual',
         'codigo_reunion',
-        'recordatorio'
+        'recordatorio',
+        'creado_por',
+        'estado'
     ];
 
     protected $casts = [

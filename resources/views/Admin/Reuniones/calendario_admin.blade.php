@@ -177,6 +177,10 @@
             <div class="drawer-value" id="detail-titulo">--</div>
           </div>
           <div class="drawer-field">
+            <div class="drawer-label">Agendada por</div>
+            <div class="drawer-value" id="detail-creador">--</div>
+          </div>
+          <div class="drawer-field">
             <div class="drawer-label">Tipo</div>
             <div class="drawer-value" id="detail-tipo">--</div>
           </div>
@@ -221,8 +225,8 @@
       </section>
 
       <section class="drawer-section">
-        <h4 class="drawer-section-title">Participantes en la reunión</h4>
-        <ul id="detail-participants-names" class="participants-names"></ul>
+        <h4 class="drawer-section-title">Descripción</h4>
+        <div id="detail-descripcion" class="drawer-description">--</div>
       </section>
 
       <div class="drawer-actions">
@@ -237,6 +241,8 @@
 <script type="application/json" id="calendar-config">
 {!! json_encode([
   'csrf'    => csrf_token(),
+  'currentUserId' => Auth::id(),
+  'currentUserRole' => optional(Auth::user())->role,
   'routes'  => [
     'obtener'     => route('admin.reuniones-lideres.obtener', [], false),
     'baseEventos' => route('admin.reuniones-lideres.store',   [], false),

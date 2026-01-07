@@ -4,6 +4,13 @@ const totalSteps = 3;
 let closeModalCallback = null;
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar solo si el wizard existe en esta página
+    const hasWizard = !!document.getElementById('btn-next-step')
+        && !!document.getElementById('btn-prev-step')
+        && !!document.getElementById('btn-submit')
+        && !!document.getElementById('event-type');
+    if (!hasWizard) return;
+
     // Inicializar con la función global por defecto
     initializeWizard(window.closeEventModal);
 });
@@ -150,6 +157,8 @@ function updateButtons() {
     const btnPrev = document.getElementById('btn-prev-step');
     const btnNext = document.getElementById('btn-next-step');
     const btnSubmit = document.getElementById('btn-submit');
+
+    if (!btnPrev || !btnNext || !btnSubmit) return;
     
     // Botón anterior
     if (currentStep === 1) {
@@ -175,9 +184,17 @@ function validateStep(step) {
     switch(step) {
         case 1:
             // Validar información básica
-            const title = document.getElementById('event-title').value.trim();
-            const type = document.getElementById('event-type').value;
-            const location = document.getElementById('event-location').value;
+            const titleEl = document.getElementById('event-title');
+            const typeEl = document.getElementById('event-type');
+            const locationEl = document.getElementById('event-location');
+
+            if (!titleEl || !typeEl || !locationEl) {
+                return true;
+            }
+
+            const title = titleEl.value.trim();
+            const type = typeEl.value;
+            const location = locationEl.value;
             
             if (!title) {
                 errorMessage = 'Por favor ingresa el título de la reunión';
@@ -250,18 +267,27 @@ function setupRealtimeSummary() {
 
 function updateSummary() {
     // Título
-    const title = document.getElementById('event-title').value || '--';
-    document.getElementById('summary-title').textContent = title;
+    const titleEl = document.getElementById('event-title');
+    const summaryTitleEl = document.getElementById('summary-title');
+    if (titleEl && summaryTitleEl) {
+        summaryTitleEl.textContent = titleEl.value || '--';
+    }
     
     // Tipo
     const typeSelect = document.getElementById('event-type');
-    const type = typeSelect.options[typeSelect.selectedIndex]?.text || '--';
-    document.getElementById('summary-type').textContent = type;
+    const summaryTypeEl = document.getElementById('summary-type');
+    if (typeSelect && summaryTypeEl) {
+        const type = typeSelect.options[typeSelect.selectedIndex]?.text || '--';
+        summaryTypeEl.textContent = type;
+    }
     
     // Fecha y hora
     const dateInput = document.getElementById('event-date');
     const timeInput = document.getElementById('event-time');
-    if (dateInput.value && timeInput.value) {
+    const summaryDtEl = document.getElementById('summary-datetime');
+    if (!summaryDtEl) {
+        // No hay sección resumen en esta página
+    } else if (dateInput && timeInput && dateInput.value && timeInput.value) {
         const date = new Date(dateInput.value + 'T' + timeInput.value);
         const dateStr = date.toLocaleDateString('es-CO', { 
             weekday: 'long', 
@@ -270,20 +296,26 @@ function updateSummary() {
             day: 'numeric' 
         });
         const timeStr = formatTime12Hour(timeInput.value);
-        document.getElementById('summary-datetime').textContent = `${dateStr} a las ${timeStr}`;
+        summaryDtEl.textContent = `${dateStr} a las ${timeStr}`;
     } else {
-        document.getElementById('summary-datetime').textContent = '--';
+        summaryDtEl.textContent = '--';
     }
     
     // Duración
     const durationSelect = document.getElementById('event-duration');
-    const duration = durationSelect.options[durationSelect.selectedIndex]?.text || '--';
-    document.getElementById('summary-duration').textContent = duration;
+    const summaryDurEl = document.getElementById('summary-duration');
+    if (durationSelect && summaryDurEl) {
+        const duration = durationSelect.options[durationSelect.selectedIndex]?.text || '--';
+        summaryDurEl.textContent = duration;
+    }
     
     // Ubicación
     const locationSelect = document.getElementById('event-location');
-    const location = locationSelect.options[locationSelect.selectedIndex]?.text || '--';
-    document.getElementById('summary-location').textContent = location;
+    const summaryLocEl = document.getElementById('summary-location');
+    if (locationSelect && summaryLocEl) {
+        const location = locationSelect.options[locationSelect.selectedIndex]?.text || '--';
+        summaryLocEl.textContent = location;
+    }
     
     // Participantes
     const selectedParticipants = document.querySelectorAll('.participant-checkbox-modal:checked');
@@ -293,19 +325,36 @@ function updateSummary() {
     });
     
     if (participantNames.length > 0) {
-        if (participantNames.length <= 3) {
-            document.getElementById('summary-participants').textContent = participantNames.join(', ');
-        } else {
-            document.getElementById('summary-participants').textContent = 
-                `${participantNames.slice(0, 3).join(', ')} y ${participantNames.length - 3} más`;
+        const sumPartsEl = document.getElementById('summary-participants');
+        if (sumPartsEl) {
+            if (participantNames.length <= 3) {
+                sumPartsEl.textContent = participantNames.join(', ');
+            } else {
+                sumPartsEl.textContent = `${participantNames.slice(0, 3).join(', ')} y ${participantNames.length - 3} más`;
+            }
         }
     } else {
-        document.getElementById('summary-participants').textContent = '--';
+        const sumPartsEl = document.getElementById('summary-participants');
+        if (sumPartsEl) sumPartsEl.textContent = '--';
     }
 }
 
 function handleFormSubmit(e) {
     e.preventDefault();
+
+    const eventDateEl = document.getElementById('event-date');
+    const eventTimeEl = document.getElementById('event-time');
+    const titleEl = document.getElementById('event-title');
+    const typeEl = document.getElementById('event-type');
+    const durationEl = document.getElementById('event-duration');
+    const locationEl = document.getElementById('event-location');
+    const reminderEl = document.querySelector('input[name="reminder"]:checked');
+    const proyectoEl = document.getElementById('event-proyecto');
+    const descEl = document.getElementById('event-description');
+
+    if (!eventDateEl || !eventTimeEl || !titleEl || !typeEl || !durationEl || !locationEl) {
+        return;
+    }
     
     // Validar paso final
     if (!validateStep(currentStep)) {
@@ -313,8 +362,8 @@ function handleFormSubmit(e) {
     }
     
     // Obtener fecha y hora
-    const eventDate = document.getElementById('event-date').value;
-    const eventTime = document.getElementById('event-time').value;
+    const eventDate = eventDateEl.value;
+    const eventTime = eventTimeEl.value;
     
     // Validar que fecha y hora existan
     if (!eventDate || !eventTime) {
@@ -324,14 +373,14 @@ function handleFormSubmit(e) {
     
     // Recopilar todos los datos
     const formData = {
-        titulo: document.getElementById('event-title').value,
-        tipo: document.getElementById('event-type').value,
+        titulo: titleEl.value,
+        tipo: typeEl.value,
         fecha_hora: eventDate + 'T' + eventTime,
-        duracion: parseInt(document.getElementById('event-duration').value),
-        ubicacion: document.getElementById('event-location').value,
-        recordatorio: document.querySelector('input[name="reminder"]:checked').value,
-        id_proyecto: document.getElementById('event-proyecto').value || null,
-        descripcion: document.getElementById('event-description').value,
+        duracion: parseInt(durationEl.value),
+        ubicacion: locationEl.value,
+        recordatorio: reminderEl ? reminderEl.value : 'none',
+        id_proyecto: proyectoEl && proyectoEl.value ? proyectoEl.value : null,
+        descripcion: descEl ? descEl.value : null,
         participantes: Array.from(document.querySelectorAll('.participant-checkbox-modal:checked')).map(cb => cb.value)
     };
     

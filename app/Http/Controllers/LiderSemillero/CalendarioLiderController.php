@@ -362,6 +362,10 @@ class CalendarioLiderController extends Controller
             }
         });
 
+        if (Schema::hasColumn('eventos', 'id_admin')) {
+            $q->whereNull('id_admin');
+        }
+
         if (Schema::hasColumn('eventos','estado')) {
             $q->where(function ($w) {
                 $w->whereNull('estado')->orWhere('estado','<>','cancelado');
