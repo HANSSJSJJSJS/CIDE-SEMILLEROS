@@ -24,7 +24,7 @@
 }
 
 .documentos-header h2 { font-weight: 700; margin-bottom: 8px; }
-.documentos-header p { opacity: .75; margin: 0; }
+.documentos-header p { opacity: .75; margin: 0;  }
 
 /* Botón Crear Recurso */
 .btn-crear-proyecto {
@@ -812,4 +812,8 @@
     font-size: 20px;
     font-weight: 700;
     cursor: pointer;
+}
+.documentos-header h2,
+.documentos-header p {
+    color: #ffffff !important;
 }

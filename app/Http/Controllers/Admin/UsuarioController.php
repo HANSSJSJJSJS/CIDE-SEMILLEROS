@@ -8,9 +8,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
-
 use App\Models\User;
 use App\Models\Aprendiz;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\UsuarioCreadoMail;
 
 class UsuarioController extends Controller
 {
@@ -168,7 +169,6 @@ class UsuarioController extends Controller
             'email'            => ['required','email','max:160','unique:users,email'],
             'nombre'           => ['required','string','max:120'],
             'apellido'         => ['required','string','max:255'],
-            'password'         => ['required','string','min:6'],
 
             'tipo_documento'   => [
                 'required',
@@ -206,7 +206,7 @@ class UsuarioController extends Controller
 
         $role      = $roleMap[$data['role']];
         $vinculado = (int) ($data['vinculado_sena'] ?? 1);
-
+        $passwordPlano = $this->generarPasswordSeguro(10);
         DB::beginTransaction();
 
         try {
@@ -215,14 +215,19 @@ class UsuarioController extends Controller
                 'nombre'         => $data['nombre'],
                 'apellidos'      => $data['apellido'],
                 'email'          => $data['email'],
-                'password'       => Hash::make($data['password']),
+                'password' => Hash::make($passwordPlano),
                 'role'           => $role,
                 'tipo_documento' => $data['tipo_documento'],
                 'documento'      => $data['documento'],
                 'celular'        => $data['celular'] ?? null,
                 'genero'         => $data['genero'] ?? null,
                 'tipo_rh'        => $data['tipo_rh'] ?? null,
+                'must_change_password' => 1,
             ]);
+            //  ENVIAR CREDENCIALES POR CORREO
+            Mail::to($user->email)->send(
+                new \App\Mail\UsuarioCreadoMail($user, $passwordPlano)
+            ); // Enviar correo con datos de acceso
 
             // ============= PERFILES =============
             switch ($role) {
@@ -279,6 +284,7 @@ class UsuarioController extends Controller
                         'estado'               => 'Activo',
                     ]);
                     break;
+
             }
 
             DB::commit();
@@ -294,7 +300,9 @@ class UsuarioController extends Controller
             return redirect()
                 ->route('admin.usuarios.index')
                 ->with('error',"Error al crear usuario: ".$e->getMessage());
+                
         }
+    
     }
 
     // ============================================================
@@ -328,6 +336,8 @@ class UsuarioController extends Controller
             'usuario'=>$usuario,
             'perfil'=>$perfil
         ]);
+        
+                    
     }
 
     // ============================================================
@@ -587,4 +597,35 @@ class UsuarioController extends Controller
             ->route('admin.usuarios.index')
             ->with('success','Se ha eliminado el usuario correctamente.');
     }
+/**
+ * Genera una contraseña segura:
+ * - mínimo 10 caracteres
+ * - al menos 1 mayúscula
+ * - al menos 1 número
+ */
+private function generarPasswordSeguro(int $length = 10): string
+{
+    if ($length < 10) {
+        $length = 10;
+    }
+
+    $mayusculas = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $minusculas = 'abcdefghijklmnopqrstuvwxyz';
+    $numeros    = '0123456789';
+
+    // Cumplir reglas mínimas
+    $password  = $mayusculas[random_int(0, strlen($mayusculas) - 1)];
+    $password .= $numeros[random_int(0, strlen($numeros) - 1)];
+
+    $todos = $mayusculas . $minusculas . $numeros;
+
+    for ($i = 2; $i < $length; $i++) {
+        $password .= $todos[random_int(0, strlen($todos) - 1)];
+    }
+
+    return str_shuffle($password);
+}
+
+
+    
 }

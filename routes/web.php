@@ -157,18 +157,18 @@ Route::middleware(['auth'])->group(function () {
 // ======================================================
 //          RUTAS ADMIN/ LIDER GENERAL / LÍDER INVESTIGACIÓN
 // ======================================================
-Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
+Route::middleware([
+        'auth',
+        'force.password.change',
+        'role:ADMIN,LIDER_INVESTIGACION'
+    ])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
 
-        Route::get('/rutas-prueba', function () {
-            return "Grupo admin cargado OK";
-        });
         Route::get('/test-multimedia', function () {
-    return route('admin.recursos.multimedia.store');
-});
-
+            return route('admin.recursos.multimedia.store');
+        });
         // ==========================
         //         DASHBOARD
         // ==========================
@@ -199,6 +199,7 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_INVESTIGACION'])
         Route::get('usuarios/{usuario}/detalle-ajax',
             [AdminUsuarioController::class, 'showAjax']
         )->name('usuarios.detalle.ajax');
+        
 
 
         // ==========================
