@@ -67,14 +67,19 @@
                                         elseif (in_array($t, ['img','imagen','image'], true)) { $acceptForThis = 'image/*'; $labelForThis = 'Imagen (JPG, PNG, GIF)'; }
                                         elseif (in_array($t, ['video','mp4','avi','mov','mkv'], true)) { $acceptForThis = 'video/*'; $labelForThis = 'Video (MP4, AVI, MOV, MKV)'; }
                                         elseif (in_array($t, ['enlace','link','url'], true)) { $labelForThis = 'Enlace (URL)'; }
+                                        $fechaLimiteOpt = !empty($pend->fecha_limite) ? \Carbon\Carbon::parse($pend->fecha_limite)->format('Y-m-d') : '';
+                                        $isExpiredOpt = false;
+                                        if (!empty($fechaLimiteOpt)) {
+                                            try { $isExpiredOpt = now()->startOfDay()->gt(\Carbon\Carbon::parse($fechaLimiteOpt)->startOfDay()); } catch (\Throwable $e) { $isExpiredOpt = false; }
+                                        }
                                     @endphp
                                     <option value="{{ $pend->id_documento }}"
                                             data-proyecto="{{ $pend->id_proyecto }}"
                                             data-accept="{{ $acceptForThis }}"
                                             data-tipo="{{ $t }}"
                                             data-label="{{ $labelForThis }}"
-                                            data-fecha-limite="{{ !empty($pend->fecha_limite) ? \Carbon\Carbon::parse($pend->fecha_limite)->format('Y-m-d') : '' }}">
-                                        {{ $pend->nombre_proyecto ?? 'Proyecto' }} — {{ $pend->documento ?? 'Evidencia' }} {{ !empty($pend->fecha_limite) ? '(' . \Carbon\Carbon::parse($pend->fecha_limite)->format('Y-m-d') . ')' : '' }}
+                                            data-fecha-limite="{{ $fechaLimiteOpt }}">
+                                        {{ $isExpiredOpt ? '[VENCIDA] ' : '' }}{{ $pend->nombre_proyecto ?? 'Proyecto' }} — {{ $pend->documento ?? 'Evidencia' }} {{ !empty($pend->fecha_limite) ? '(' . \Carbon\Carbon::parse($pend->fecha_limite)->format('Y-m-d') . ')' : '' }}
                                     </option>
                                 @endforeach
                             </select>
@@ -213,8 +218,15 @@
                         <h6 class="mb-3 text-success"><i class="fas fa-exclamation-triangle me-1"></i> Evidencias asignadas pendientes</h6>
                         <ul class="small mb-0 list-unstyled">
                             @foreach($pendientesAsignadas->sortBy('fecha_limite') as $pendiente)
+                                @php
+                                    $fechaLimiteCard = !empty($pendiente->fecha_limite) ? \Carbon\Carbon::parse($pendiente->fecha_limite)->format('Y-m-d') : '';
+                                    $isExpiredCard = false;
+                                    if (!empty($fechaLimiteCard)) {
+                                        try { $isExpiredCard = now()->startOfDay()->gt(\Carbon\Carbon::parse($fechaLimiteCard)->startOfDay()); } catch (\Throwable $e) { $isExpiredCard = false; }
+                                    }
+                                @endphp
                                 <li class="mb-2 pend-item" data-evid="{{ $pendiente->id_documento }}" style="cursor:pointer;">
-                                    <div class="p-2 rounded border border-success bg-success bg-opacity-10 pend-card" data-card-id="{{ $pendiente->id_documento }}">
+                                    <div class="p-2 rounded border {{ $isExpiredCard ? 'border-danger bg-danger bg-opacity-10' : 'border-success bg-success bg-opacity-10' }} pend-card" data-card-id="{{ $pendiente->id_documento }}">
                                         <div class="mb-1 small text-muted">ID: {{ $pendiente->id_documento }}</div>
                                         <div><strong>Proyecto:</strong> {{ $pendiente->nombre_proyecto ?? '—' }}</div>
                                         @if(isset($pendiente->numero_evidencia))
@@ -230,6 +242,11 @@
                                                 —
                                             @endif
                                         </div>
+                                        @if($isExpiredCard)
+                                            <div class="mt-2">
+                                                <span class="badge bg-danger">Vencida</span>
+                                            </div>
+                                        @endif
                                         <div class="mt-2 d-flex align-items-center" style="gap:8px;">
                                             <button type="button" class="btn btn-sm btn-outline-primary btn-preguntar-evid" data-evid="{{ $pendiente->id_documento }}" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="apr-tooltip-blue" title="Usa este botón para enviar dudas al líder sobre esta evidencia">
                                                 <i class="bi bi-question-circle"></i> Preguntar al líder
