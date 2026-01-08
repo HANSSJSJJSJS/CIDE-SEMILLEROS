@@ -38,12 +38,17 @@ class PasswordController extends Controller
         ]);
 
         Auth::user()->update([
-            'password' => Hash::make($request->password),
-            'force_password_change' => 0,
-        ]);
+                'password' => Hash::make($request->password),
+                'must_change_password' => 0,
+            ]);
 
-        return redirect()
-            ->route('admin.dashboard')
-            ->with('success', 'Contraseña actualizada correctamente.');
+        $user = Auth::user();
+
+return redirect()->route(match ($user->role) {
+    'ADMIN', 'LIDER_INVESTIGACION' => 'admin.dashboard',
+    'LIDER_SEMILLERO'              => 'lider.dashboard',
+    'APRENDIZ'                     => 'aprendiz.dashboard',
+    default                        => 'home',
+})->with('success', 'Contraseña actualizada correctamente.');
     }
 }

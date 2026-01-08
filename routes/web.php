@@ -49,8 +49,8 @@ use App\Http\Controllers\Aprendiz\ArchivoController;
 use App\Http\Controllers\Aprendiz\DocumentoController;
 use App\Http\Controllers\Aprendiz\CalendarioController;
 use App\Http\Controllers\HolidayController;
-
-
+// cambio contraseña
+use App\Http\Controllers\Auth\PasswordController;
 /*
 |--------------------------------------------------------------------------
 | RUTAS PÚBLICAS
@@ -80,6 +80,27 @@ Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('l
 Route::post('/logout', [AuthenticatedSessionController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
+
+
+
+
+// ---------------------------------------------------------------------
+// RUTAS DE CAMBIO FORZOSO DE CONTRASEÑA
+// ---------------------------------------------------------------------
+
+Route::middleware(['auth'])->group(function () {
+
+    // Mostrar formulario
+    Route::get('/password/change', [PasswordController::class, 'showChangeForm'])
+        ->name('password.change.form');
+
+    // Guardar nueva contraseña
+    Route::post('/password/change', [PasswordController::class, 'updatePassword'])
+        ->name('password.change.update');
+
+});
+
+
 
 // ======================================================
 // RUTAS PROTEGIDAS (paneles, dashboard, etc.)

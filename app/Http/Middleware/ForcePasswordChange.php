@@ -3,18 +3,17 @@
 namespace App\Http\Middleware;
 
 use Closure;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ForcePasswordChange
 {
-    public function handle(Request $request, Closure $next)
+    public function handle($request, Closure $next)
     {
         if (
             Auth::check() &&
-            Auth::user()->force_password_change &&
-            !$request->is('password/change') &&
-            !$request->is('logout')
+            Auth::user()->must_change_password == 1 &&
+            !$request->routeIs('password.change.*') &&
+            !$request->routeIs('logout')
         ) {
             return redirect()->route('password.change.form');
         }

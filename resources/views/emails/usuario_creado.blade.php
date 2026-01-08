@@ -2,16 +2,45 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Acceso a la plataforma</title>
+    <title>Usuario creado</title>
 </head>
-<body>
-    <h2>Bienvenido/a {{ $user->nombre }}</h2>
+<body style="font-family: Arial, sans-serif; color:#00304D">
 
-    <p>Tu cuenta ha sido creada en la plataforma CIDE.</p>
+    <h2>Bienvenido al Sistema CIDE</h2>
 
-    <p><strong>Correo:</strong> {{ $user->email }}</p>
-    <p><strong>Contraseña:</strong> {{ $password }}</p>
+    <p>Hola <strong>{{ $user->nombre }}</strong>,</p>
 
-    <p>Por seguridad, cambia tu contraseña al iniciar sesión.</p>
+    <p>
+        Tu usuario ha sido creado en el sistema de gestión de semilleros del CIDE.
+    </p>
+
+    <p><strong>Datos de acceso:</strong></p>
+
+    <ul>
+        <li><strong>Correo:</strong> {{ $user->email }}</li>
+        <li><strong>Contraseña temporal:</strong> {{ $password }}</li>
+    </ul>
+
+    <p style="color:#b81e1e;">
+        ⚠️ Por seguridad, deberás cambiar esta contraseña en tu primer inicio de sesión.
+    </p>
+
+    <p>
+        Ingresa al sistema desde el siguiente enlace:
+    </p>
+
+    <p>
+        <a href="{{ url('/login') }}">
+            {{ url('/login') }}
+        </a>
+    </p>
+
+    <br>
+
+    <p>
+        Atentamente,<br>
+        <strong>Equipo CIDE</strong>
+    </p>
+
 </body>
 </html>

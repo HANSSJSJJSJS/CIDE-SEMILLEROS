@@ -206,7 +206,6 @@ class UsuarioController extends Controller
 
         $role      = $roleMap[$data['role']];
         $vinculado = (int) ($data['vinculado_sena'] ?? 1);
-        $passwordPlano = $this->generarPasswordSeguro(10);
         DB::beginTransaction();
 
         try {
@@ -215,7 +214,7 @@ class UsuarioController extends Controller
                 'nombre'         => $data['nombre'],
                 'apellidos'      => $data['apellido'],
                 'email'          => $data['email'],
-                'password' => Hash::make($passwordPlano),
+                'password'       => Hash::make($data['documento']),
                 'role'           => $role,
                 'tipo_documento' => $data['tipo_documento'],
                 'documento'      => $data['documento'],
@@ -224,10 +223,10 @@ class UsuarioController extends Controller
                 'tipo_rh'        => $data['tipo_rh'] ?? null,
                 'must_change_password' => 1,
             ]);
-            //  ENVIAR CREDENCIALES POR CORREO
-            Mail::to($user->email)->send(
-                new \App\Mail\UsuarioCreadoMail($user, $passwordPlano)
-            ); // Enviar correo con datos de acceso
+            //  ENVIAR CREDENCIALES POR CORREO descomentar para enciar contraseña 
+            //Mail::to($user->email)->send(
+                //new \App\Mail\UsuarioCreadoMail($user, $passwordPlano)
+            //); // Enviar correo con datos de acceso
 
             // ============= PERFILES =============
             switch ($role) {

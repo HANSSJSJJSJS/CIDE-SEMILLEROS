@@ -163,30 +163,6 @@
                       <div class="invalid-feedback">Ingrese un correo válido.</div>
                     </div>
 
-                    {{-- Contraseña --}}
-                    <div class="col-md-5">
-                      <label class="form-label">Contraseña <span class="text-danger">*</span></label>
-                      <div class="input-group">
-                        <input type="password"
-                               name="password"
-                               id="create_password"
-                               class="form-control"
-                               minlength="6"
-                               placeholder="Mínimo 6 caracteres"
-                               required>
-                        <button class="btn btn-outline-secondary"
-                                type="button"
-                                data-toggle-pass="#create_password">
-                          <i class="bi bi-eye"></i>
-                        </button>
-                        <button class="btn btn-outline-success"
-                                type="button"
-                                data-generate-pass="#create_password">
-                          <i class="bi bi-magic"></i>
-                        </button>
-                      </div>
-                      <div class="invalid-feedback">Ingrese una contraseña válida.</div>
-                    </div>
 
                   </div>
                 </div>
