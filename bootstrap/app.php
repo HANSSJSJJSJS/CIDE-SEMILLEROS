@@ -12,7 +12,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // Registrar alias de middlewares aquí
         $middleware->alias([
             'lider.semillero' => \App\Http\Middleware\LiderSemilleroMiddleware::class,
-            'role' => \App\Http\Middleware\RoleMiddleware::class, // opcional: registra también 'role'
+            'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'force.password.change' => \App\Http\Middleware\ForcePasswordChange::class,
         ]);
     })
     ->withExceptions(function ($exceptions): void {

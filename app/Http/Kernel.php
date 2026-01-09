@@ -3,10 +3,12 @@
 namespace App\Http;
 
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
-use App\Http\Middleware\AttachUserToSession;
 
 class Kernel extends HttpKernel
 {
+    /**
+     * Global HTTP middleware stack
+     */
     protected $middleware = [
         \App\Http\Middleware\TrustProxies::class,
         \Fruitcake\Cors\HandleCors::class,
@@ -16,6 +18,9 @@ class Kernel extends HttpKernel
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
     ];
 
+    /**
+     * Middleware groups
+     */
     protected $middlewareGroups = [
         'web' => [
             \App\Http\Middleware\EncryptCookies::class,
@@ -24,7 +29,7 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-             \App\Http\Middleware\AttachUserToSession::class,
+            \App\Http\Middleware\AttachUserToSession::class,
         ],
 
         'api' => [
@@ -33,12 +38,17 @@ class Kernel extends HttpKernel
         ],
     ];
 
-    // ✅ Solo UNA vez
+    /**
+     * Route middleware
+     */
     protected $routeMiddleware = [
-        'auth'                => \App\Http\Middleware\Authenticate::class,
-        'verified'            => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-        'role'                => \App\Http\Middleware\RoleMiddleware::class,
-        'lider.semillero'     => \App\Http\Middleware\LiderSemilleroMiddleware::class,
-        'prevent-back-history'=> \App\Http\Middleware\PreventBackHistory::class, // <-- aquí
+        'auth'                 => \App\Http\Middleware\Authenticate::class,
+        'verified'             => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+        'role'                 => \App\Http\Middleware\RoleMiddleware::class,
+        'lider.semillero'      => \App\Http\Middleware\LiderSemilleroMiddleware::class,
+        'prevent-back-history' => \App\Http\Middleware\PreventBackHistory::class,
+
+        // ✅ AQUÍ va el middleware de cambio de contraseña
+        'force.password.change' => \App\Http\Middleware\ForcePasswordChange::class,
     ];
 }

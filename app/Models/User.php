@@ -15,6 +15,8 @@ use App\Models\Documento;
 use App\Models\Evidencia;
 use App\Models\LiderSemillero;
 use App\Models\LiderInvestigacion;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\UsuarioCreadoMail;
 
 class User extends Authenticatable
 {
@@ -32,6 +34,7 @@ class User extends Authenticatable
             'celular',
             'genero',
             'tipo_rh',
+            'must_change_password',
             ];
 
 

@@ -17,7 +17,7 @@ window.cargarRecursos = function (proyectoId) {
             document.getElementById('tituloProyecto').innerText =
                 proyecto.nombre_proyecto ?? proyecto.nombre ?? "Proyecto";
 
-            const lista = document.getElementById('listaRecursos');
+            const lista = document.getElementById('listaR0ecursos');
             lista.innerHTML = '';
 
             if (!recursos.length) {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Recurso;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -11,11 +12,117 @@ use Illuminate\Support\Facades\Storage;
 
 class RecursoController extends Controller
 {
-
-    public function index()
+    // ======================================================
+    // INDEX – RECURSOS POR SEMILLERO (VISTA PRINCIPAL)
+    // ======================================================
+public function index()
 {
-    return redirect()->route('admin.recursos.multimedia');
+    $semilleros = DB::table('semilleros as s')
+        ->leftJoin('lideres_semillero as ls', 'ls.id_lider_semi', '=', 's.id_lider_semi')
+        ->leftJoin('users as u', 'u.id', '=', 'ls.id_usuario')
+        ->select(
+            's.id_semillero',
+            's.nombre',
+            DB::raw("'Sin descripción' as descripcion"), // 👈 FIX
+            DB::raw("'ACTIVO' as estado"),               // 👈 FIX
+            's.id_lider_semi',
+            DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''),' ',COALESCE(u.apellidos,''))) as lider_nombre")
+        )
+        ->orderBy('s.nombre')
+        ->get();
+
+    foreach ($semilleros as $s) {
+        $query = DB::table('recursos')
+            ->where('dirigido_a', 'lideres')
+            ->where('semillero_id', $s->id_semillero);
+
+        $s->actividades_total      = (clone $query)->count();
+        $s->actividades_pendientes = (clone $query)->where('estado', 'pendiente')->count();
+        $s->actividades_aprobadas  = (clone $query)->where('estado', 'aprobado')->count();
+        $s->actividades_rechazadas = (clone $query)->where('estado', 'rechazado')->count();
+    }
+
+    return view('admin.recursos.index', compact('semilleros'));
 }
+
+
+
+    // ======================================================
+    // PROYECTOS POR SEMILLERO
+    // ======================================================
+    public function getProyectos($id)
+    {
+        return DB::table('proyectos')
+            ->where('id_semillero', $id)
+            ->select('id_proyecto', 'nombre_proyecto')
+            ->get();
+    }
+
+    // ======================================================
+    // CREAR RECURSO PARA LÍDER
+    // ======================================================
+    public function storeActividad(Request $request)
+    {
+        $request->validate([
+            'semillero_id' => 'required|exists:semilleros,id_semillero',
+            'proyecto_id'  => 'required|exists:proyectos,id_proyecto',
+            'categoria'    => 'required|in:plantillas,manuales,otros',
+            'titulo'       => 'required|string|max:255',
+            'descripcion'  => 'required|string',
+            'fecha_limite' => 'required|date'
+        ]);
+
+        Recurso::create([
+            'nombre_archivo'    => $request->titulo,
+            'archivo'           => 'sin_archivo',
+            'categoria'         => $request->categoria,
+            'dirigido_a'        => 'lideres',
+            'estado'            => 'pendiente',
+            'semillero_id'      => $request->semillero_id,
+            'proyecto_id'       => $request->proyecto_id,
+            'fecha_vencimiento' => $request->fecha_limite,
+            'descripcion'       => $request->descripcion,
+            'user_id'           => Auth::id(),
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
+    // ======================================================
+    // ELIMINAR RECURSO
+    // ======================================================
+    public function destroy($id)
+    {
+        Recurso::where('id', $id)->delete();
+        return response()->json(['success' => true]);
+    }
+
+    // ======================================================
+    // ACTUALIZAR ESTADO
+    // ======================================================
+    public function actualizarEstadoActividad(Request $request, $id)
+    {
+        Recurso::where('id', $id)->update([
+            'estado' => $request->estado,
+            'comentarios' => $request->comentarios
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
+    // ======================================================
+    // EDITAR RECURSO
+    // ======================================================
+    public function actualizarRecurso(Request $request, $id)
+    {
+        Recurso::where('id', $id)->update([
+            'descripcion' => $request->descripcion,
+            'fecha_vencimiento' => $request->fecha_limite
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
     // ======================================================
     // VISTA MULTIMEDIA
     // ======================================================
@@ -29,43 +136,15 @@ class RecursoController extends Controller
     }
 
     // ======================================================
-    // LISTAR MULTIMEDIA (AJAX) – SEGURO
+    // LISTAR MULTIMEDIA (AJAX)
     // ======================================================
     public function obtenerMultimedia()
     {
-        if (!Schema::hasTable('recursos')) {
-            return response()->json([]);
-        }
-
-        $cols = Schema::getColumnListing('recursos');
-
-        // 🔎 Detectar ID real
-        $idCol = null;
-        foreach (['id', 'id_recurso', 'id_recursos', 'id_recurso_lider', 'id_recurso_semillero'] as $c) {
-            if (in_array($c, $cols, true)) {
-                $idCol = $c;
-                break;
-            }
-        }
-
-        if (!$idCol) {
-            return response()->json([]);
-        }
-
-        $recursos = DB::table('recursos')
-            ->select([
-                DB::raw("$idCol as id"),
-                'nombre_archivo',
-                'archivo',
-                'categoria',
-                DB::raw("LOWER(SUBSTRING_INDEX(archivo, '.', -1)) as extension"),
-                'created_at'
-            ])
+        return DB::table('recursos')
+            ->whereNotNull('archivo')
             ->orderBy('created_at', 'desc')
-            ->limit(100) // 🔒 evita error de memoria
+            ->limit(100)
             ->get();
-
-        return response()->json($recursos);
     }
 
     // ======================================================
@@ -73,15 +152,6 @@ class RecursoController extends Controller
     // ======================================================
     public function storeMultimedia(Request $request)
     {
-        $request->validate([
-            'titulo'       => 'required|string|max:255',
-            'categoria'    => 'required|in:plantillas,manuales,otros',
-            'archivo'      => 'required|file|max:20480',
-            'destino'      => 'required|in:todos,semillero',
-            'descripcion'  => 'nullable|string',
-            'semillero_id' => 'required_if:destino,semillero|nullable|exists:semilleros,id_semillero'
-        ]);
-
         $path = $request->file('archivo')->store('multimedia', 'public');
 
         DB::table('recursos')->insert([
@@ -89,7 +159,6 @@ class RecursoController extends Controller
             'archivo'        => $path,
             'categoria'      => $request->categoria,
             'dirigido_a'     => $request->destino,
-            'semillero_id'   => $request->destino === 'semillero' ? $request->semillero_id : null,
             'descripcion'    => $request->descripcion,
             'user_id'        => Auth::id(),
             'estado'         => 'pendiente',
@@ -105,31 +174,13 @@ class RecursoController extends Controller
     // ======================================================
     public function deleteMultimedia($id)
     {
-        $cols = Schema::getColumnListing('recursos');
+        $r = DB::table('recursos')->where('id', $id)->first();
 
-        $idCol = null;
-        foreach (['id', 'id_recurso', 'id_recursos', 'id_recurso_lider', 'id_recurso_semillero'] as $c) {
-            if (in_array($c, $cols, true)) {
-                $idCol = $c;
-                break;
-            }
+        if ($r && Storage::disk('public')->exists($r->archivo)) {
+            Storage::disk('public')->delete($r->archivo);
         }
 
-        if (!$idCol) {
-            return response()->json(['success' => false], 500);
-        }
-
-        $recurso = DB::table('recursos')->where($idCol, $id)->first();
-
-        if (!$recurso) {
-            return response()->json(['success' => false], 404);
-        }
-
-        if (!empty($recurso->archivo) && Storage::disk('public')->exists($recurso->archivo)) {
-            Storage::disk('public')->delete($recurso->archivo);
-        }
-
-        DB::table('recursos')->where($idCol, $id)->delete();
+        DB::table('recursos')->where('id', $id)->delete();
 
         return response()->json(['success' => true]);
     }
