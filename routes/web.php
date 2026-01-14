@@ -464,7 +464,7 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_SEMILLERO,LIDER_GENERAL'])->group(f
 | LÍDER_SEMI (UI)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth',  'role:LIDER_SEMILLERO'])
+Route::middleware(['auth', 'force.password.change', 'role:LIDER_SEMILLERO'])
     ->prefix('lider_semi')
     ->name('lider_semi.')
     ->group(function () {

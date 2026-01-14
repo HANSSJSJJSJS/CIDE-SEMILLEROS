@@ -1,0 +1,136 @@
+/* =====================================================
+   CIDE SENA – EMAIL THEME (RESET PASSWORD)
+   ===================================================== */
+
+/* Base */
+body,
+body *:not(html):not(style):not(br):not(tr):not(code) {
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+        Helvetica, Arial, sans-serif;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    width: 100% !important;
+    background-color: #1f2933;
+    color: #e5e7eb;
+}
+
+/* Typography */
+h1, h2, h3 {
+    color: #a7f3d0;
+    margin-top: 0;
+    text-align: left;
+}
+
+h1 { font-size: 20px; }
+h2 { font-size: 16px; }
+h3 { font-size: 14px; }
+
+p {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #d1d5db;
+}
+
+a {
+    color: #86efac;
+    word-break: break-all;
+}
+
+/* Layout */
+.wrapper {
+    width: 100%;
+    background-color: #1f2933;
+    padding: 0;
+    margin: 0;
+}
+
+.content {
+    width: 100%;
+    background-color: #1f2933;
+}
+
+.body {
+    width: 100%;
+    background-color: #1f2933;
+}
+
+.inner-body {
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: #2b2f33;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    overflow: hidden;
+}
+
+/* Header */
+.header {
+    text-align: center;
+    padding: 24px;
+}
+
+.header a {
+    color: #a7f3d0;
+    font-size: 18px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+/* Content */
+.content-cell {
+    padding: 32px;
+}
+
+/* Button */
+.action {
+    text-align: center;
+    margin: 30px 0;
+}
+
+.button {
+    display: inline-block;
+    text-decoration: none;
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 999px;
+}
+
+.button-success {
+    background-color: #2d572c;
+    border-top: 10px solid #2d572c;
+    border-bottom: 10px solid #2d572c;
+    border-left: 24px solid #2d572c;
+    border-right: 24px solid #2d572c;
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 12px;
+}
+
+.footer p {
+    color: #9ca3af;
+}
+
+/* Subcopy (ya no se usa, pero se deja por seguridad) */
+.subcopy {
+    border-top: 1px solid #374151;
+    margin-top: 25px;
+    padding-top: 15px;
+}
+
+.subcopy p {
+    font-size: 13px;
+    color: #9ca3af;
+}
+
+/* Utilities */
+.break-all {
+    word-break: break-all;
+}
