@@ -10,6 +10,9 @@
     $canDelete = $user->canManageModule('semilleros','delete');
 @endphp
 
+{{-- =========================
+   CONTENIDO PRINCIPAL
+   ========================= --}}
 <div class="semilleros-wrapper">
 
     {{-- CABECERA --}}
@@ -29,8 +32,8 @@
                             class="btn btn-nuevo-semillero mt-2 mt-lg-0"
                             data-bs-toggle="modal"
                             data-bs-target="#modalNuevoSemillero">
-                        <i class="bi bi-people-fill
-                         me-1"></i> Nuevo semillero
+                        <i class="bi bi-people-fill me-1"></i>
+                        Nuevo semillero
                     </button>
                 @endif
             </div>
@@ -40,7 +43,9 @@
         {{-- BARRA DE BÚSQUEDA --}}
         <div class="mt-3">
             <form method="GET" action="{{ route('admin.semilleros.index') }}" id="formFiltroSemilleros">
-                <label class="form-label fw-semibold mb-2">Buscar semillero, línea o líder</label>
+                <label class="form-label fw-semibold mb-2">
+                    Buscar semillero, línea o líder
+                </label>
 
                 <div class="search-bar-wrapper">
                     <input type="text"
@@ -56,11 +61,6 @@
             </form>
         </div>
     </div>
-
-    {{-- MODAL CREAR --}}
-    @if($canCreate)
-        @include('Admin.semilleros._modal_crear')
-    @endif
 
     {{-- TABLA --}}
     <div class="tabla-semilleros-wrapper mt-2">
@@ -86,7 +86,9 @@
                             </td>
 
                             {{-- LÍNEA --}}
-                            <td class="py-3">{{ $s->linea_investigacion ?: '—' }}</td>
+                            <td class="py-3">
+                                {{ $s->linea_investigacion ?: '—' }}
+                            </td>
 
                             {{-- LÍDER --}}
                             <td class="py-3">
@@ -104,14 +106,15 @@
                             <td class="py-3 text-center">
                                 <div class="acciones-semilleros">
 
-                                    {{-- EDITAR (CORREGIDO: sin data-bs-toggle / data-bs-target) --}}
+                                    {{-- EDITAR --}}
                                     @if($canUpdate)
                                         <button type="button"
                                                 class="btn btn-accion-editar btn-editar-semillero"
                                                 data-id="{{ $s->id_semillero }}"
                                                 data-edit-url="{{ route('admin.semilleros.edit.ajax', $s->id_semillero) }}"
                                                 data-update-url="{{ route('admin.semilleros.update', $s->id_semillero) }}">
-                                            <i class="bi bi-pencil me-1"></i> Editar
+                                            <i class="bi bi-pencil me-1"></i>
+                                            Editar
                                         </button>
                                     @endif
 
@@ -121,14 +124,16 @@
                                                 class="btn btn-accion-eliminar btn-eliminar-semillero"
                                                 data-url="{{ route('admin.semilleros.destroy',$s->id_semillero) }}"
                                                 data-nombre="{{ $s->nombre }}">
-                                            <i class="bi bi-trash me-1"></i> Eliminar
+                                            <i class="bi bi-trash me-1"></i>
+                                            Eliminar
                                         </button>
                                     @endif
 
                                     {{-- VER PROYECTOS --}}
                                     <a class="btn btn-accion-ver"
                                        href="{{ route('admin.semilleros.proyectos.index', $s->id_semillero) }}">
-                                        <i class="bi bi-folder2-open me-1"></i> Ver proyectos
+                                        <i class="bi bi-folder2-open me-1"></i>
+                                        Ver proyectos
                                     </a>
 
                                 </div>
@@ -137,7 +142,9 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="text-center py-4 text-muted">No hay registros</td>
+                            <td colspan="4" class="text-center py-4 text-muted">
+                                No hay registros
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -153,13 +160,25 @@
 
 </div> {{-- /.semilleros-wrapper --}}
 
-{{-- MODAL EDITAR (MOVIDO FUERA DEL WRAPPER) --}}
+{{-- =========================
+   MODALES (FUERA DEL WRAPPER)
+   ========================= --}}
+
+{{-- MODAL CREAR --}}
+@if($canCreate)
+    @include('Admin.semilleros._modal_crear')
+@endif
+
+{{-- MODAL EDITAR --}}
 @if($canUpdate)
     @include('Admin.semilleros._modal_editar')
 @endif
 
 @endsection
 
+{{-- =========================
+   ESTILOS Y SCRIPTS
+   ========================= --}}
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/admin/semilleros.css') }}">
 @endpush
@@ -168,10 +187,14 @@
     <script src="{{ asset('js/admin/semilleros.js') }}"></script>
 
     @if(session('success'))
-        <script> swalSuccess(@json(session('success'))); </script>
+        <script>
+            swalSuccess(@json(session('success')));
+        </script>
     @endif
 
     @if(session('error'))
-        <script> swalError(@json(session('error'))); </script>
+        <script>
+            swalError(@json(session('error')));
+        </script>
     @endif
 @endpush

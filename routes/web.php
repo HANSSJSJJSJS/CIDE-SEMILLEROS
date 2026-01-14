@@ -51,6 +51,15 @@ use App\Http\Controllers\Aprendiz\CalendarioController;
 use App\Http\Controllers\HolidayController;
 // cambio contraseña
 use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use Illuminate\Support\Facades\Mail;
+
+
+
+
+
+
 /*
 |--------------------------------------------------------------------------
 | RUTAS PÚBLICAS
@@ -83,7 +92,6 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'logout'])
 
 
 
-
 // ---------------------------------------------------------------------
 // RUTAS DE CAMBIO FORZOSO DE CONTRASEÑA
 // ---------------------------------------------------------------------
@@ -99,8 +107,24 @@ Route::middleware(['auth'])->group(function () {
         ->name('password.change.update');
 
 });
+// ======================================================
+// RUTAS DE LOGIN / olvido CONTRASEÑA
+// ======================================================
+        Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])
+            ->middleware('guest')
+            ->name('password.request');
 
+        Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
+            ->middleware('guest')
+            ->name('password.email');
 
+        Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])
+            ->middleware('guest')
+            ->name('password.reset');
+
+        Route::post('/reset-password', [NewPasswordController::class, 'store'])
+            ->middleware('guest')
+             ->name('password.reset.update');
 
 // ======================================================
 // RUTAS PROTEGIDAS (paneles, dashboard, etc.)
@@ -440,7 +464,7 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_SEMILLERO,LIDER_GENERAL'])->group(f
 | LÍDER_SEMI (UI)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:LIDER_SEMILLERO'])
+Route::middleware(['auth',  'role:LIDER_SEMILLERO'])
     ->prefix('lider_semi')
     ->name('lider_semi.')
     ->group(function () {
@@ -561,7 +585,7 @@ Route::middleware(['auth', 'role:LIDER_SEMILLERO'])
 | APRENDIZ (BLOQUE ÚNICO)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:APRENDIZ'])
+Route::middleware(['auth','force.password.change', 'role:APRENDIZ'])
     ->prefix('aprendiz')
     ->name('aprendiz.')
     ->group(function () {
