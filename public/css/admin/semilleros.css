@@ -370,3 +370,14 @@
     background-color: #09263d;
     color: #fff;
 }
+/* ================================
+   FIX MODAL SEMILLEROS (Z-INDEX)
+   ================================ */
+
+.modal {
+    z-index: 1065 !important;
+}
+
+.modal-backdrop {
+    z-index: 1055 !important;
+}

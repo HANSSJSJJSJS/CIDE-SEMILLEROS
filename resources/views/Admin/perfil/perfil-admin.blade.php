@@ -172,7 +172,7 @@
           </div>
         </div>
         <div class="alert alert-warning mt-3 py-2 px-3">
-          La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas y números.
+          La contraseña debe tener al menos 10 caracteres, incluir mayúsculas, minúsculas y números.
           <div class="progress pf-progress mt-2">
             <div class="progress-bar" id="pf_strength_bar" role="progressbar" style="width:0%"></div>
           </div>

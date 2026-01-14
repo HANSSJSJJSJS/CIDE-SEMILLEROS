@@ -3,49 +3,36 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class PasswordResetLinkController extends Controller
 {
     /**
-     * Display the password reset link request view.
+     * Mostrar formulario "Olvidé mi contraseña"
      */
-    public function create(): Response
+    public function create()
     {
-        return Inertia::render('Auth/ForgotPassword', [
-            'status' => session('status'),
-        ]);
+        return view('auth.forgot-password');
     }
 
     /**
-     * Handle an incoming password reset link request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
+     * Enviar enlace de recuperación
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
         ]);
 
-        // Enviaremos el enlace de restablecimiento de contraseña a este usuario.
-        // Una vez que hayamos intentado enviar el enlace, examinaremos la respuesta y
-        // veremos el mensaje que debemos mostrarle. Finalmente, enviaremos la respuesta correcta.
         $status = Password::sendResetLink(
             $request->only('email')
         );
 
-        if ($status == Password::RESET_LINK_SENT) {
-            return back()->with('status', __($status));
-        }
-
-        throw ValidationException::withMessages([
-            'email' => [trans($status)],
-        ]);
+        return back()->with(
+            'status',
+            'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.'
+        );
     }
 }
