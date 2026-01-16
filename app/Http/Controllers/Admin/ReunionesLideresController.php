@@ -170,7 +170,6 @@ class ReunionesLideresController extends Controller
             'participantes'   => 'nullable|array',
             'participantes.*' => 'integer',
             'tipo'            => 'nullable|string|max:50',
-            'linea_investigacion' => 'nullable|string|max:255',
             'recordatorio'    => 'nullable|string|max:50',
         ]);
 
@@ -233,7 +232,6 @@ class ReunionesLideresController extends Controller
             'participantes'   => 'sometimes|nullable|array',
             'participantes.*' => 'integer',
             'tipo'            => 'sometimes|nullable|string|max:50',
-            'linea_investigacion' => 'sometimes|nullable|string|max:255',
             'recordatorio'    => 'sometimes|nullable|string|max:50',
         ]);
 

@@ -51,9 +51,26 @@ let semilleroActualId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    modalCrear = new bootstrap.Modal(document.getElementById("modalSubirRecurso"));
-    modalVer = new bootstrap.Modal(document.getElementById("modalActividades"));
+    const modalCrearEl = document.getElementById("modalSubirRecurso");
+    const modalVerEl   = document.getElementById("modalActividades");
     const modalEditarEl = document.getElementById("modalEditarRecurso");
+
+    if (!modalCrearEl) {
+        console.error("❌ No existe #modalSubirRecurso en el DOM");
+        return;
+    }
+
+    if (typeof bootstrap === "undefined") {
+        console.error("❌ Bootstrap JS NO está cargado");
+        return;
+    }
+
+    modalCrear = new bootstrap.Modal(modalCrearEl);
+
+    if (modalVerEl) {
+        modalVer = new bootstrap.Modal(modalVerEl);
+    }
+
     if (modalEditarEl) {
         modalEditar = new bootstrap.Modal(modalEditarEl);
     }
@@ -63,6 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initFormularioCrear();
     initFormularioEditar();
 });
+
 
 
 /* ======================================================
@@ -146,7 +164,6 @@ function abrirModalVerRecursos(id, nombre) {
 /* ======================================================
    CARGAR RECURSOS (AJAX)
 ====================================================== */
-
 function cargarRecursos(id) {
 
     const url = buildUrl(window.ACT_ACTIVIDADES_POR_SEMILLERO_URL, id);
@@ -158,17 +175,29 @@ function cargarRecursos(id) {
         </div>
     `;
 
-    fetch(url)
-        .then(r => r.json())
-        .then(data => renderRecursos(data.actividades ?? []))
-        .catch(() => {
-            cont.innerHTML = `
-                <div class="text-center text-danger p-4">
-                    <i class="bi bi-x-circle fs-1"></i>
-                    <p>Error al cargar los recursos.</p>
-                </div>`;
-        });
+    fetch(url, {
+        headers: { 'Accept': 'application/json' }
+    })
+    .then(r => {
+        if (!r.ok) {
+            throw new Error('Error');
+        }
+        return r.json();
+    })
+    .then(data => {
+        renderRecursos(data.actividades ?? []);
+    })
+    .catch(err => {
+        console.error(err);
+        cont.innerHTML = `
+            <div class="text-center text-danger p-4">
+                Error al cargar recursos
+            </div>
+        `;
+    });
 }
+
+
 
 
 /* ======================================================
@@ -525,6 +554,8 @@ function initFormularioCrear() {
     const form = document.getElementById("formSubirRecurso");
     const selSem = document.getElementById("semillero_id");
 
+    if (!form || !selSem) return;
+
     selSem.addEventListener("change", () => {
         cargarLider(selSem.value);
         cargarProyectos(selSem.value);
@@ -534,60 +565,112 @@ function initFormularioCrear() {
         e.preventDefault();
 
         const data = new FormData(form);
-        const sem = document.getElementById("semillero_id_fijo").value || selSem.value;
+        const sem = document.getElementById("semillero_id_fijo")?.value || selSem.value;
 
         data.set("semillero_id", sem);
 
         fetch(window.ACT_STORE_URL, {
             method: "POST",
-            headers: { "X-CSRF-TOKEN": CSRF_TOKEN },
+            headers: {
+                "X-CSRF-TOKEN": CSRF_TOKEN,
+                "Accept": "application/json"
+            },
             body: data
         })
-            .then(r => r.json())
-            .then(() => {
-                showNotification("Correcto", "Recurso creado correctamente", "success");
-                modalCrear.hide();
-                setTimeout(() => location.reload(), 900);
-            });
-    });
+        .then(async r => {
+            if (!r.ok) {
+                const text = await r.text();
+                throw new Error(text);
+            }
+            return r.json();
+        })
+        .then(() => {
+            showNotification("Correcto", "Recurso creado correctamente", "success");
+            modalCrear.hide();
+            setTimeout(() => location.reload(), 900);
+        })
+        .catch(err => {
+            console.error("Error al guardar:", err);
+            showNotification(
+                "Error",
+                "No se pudo guardar el recurso. Revisa los datos.",
+                "error"
+            );
+        });
+    }); // ✅ ESTE ERA EL QUE FALTABA
 }
+
 
 
 /* ======================================================
    AJAX CARGAR LÍDER / PROYECTOS
 ====================================================== */
 
+function cargarProyectos(id) {
+
+    if (!id) return;
+
+    const url = buildUrl(window.URL_PROYECTOS_SEMILLERO, id);
+    const sel = document.getElementById("proyecto_id");
+
+    if (!sel) return;
+
+    sel.disabled = true;
+    sel.innerHTML = "<option>Cargando...</option>";
+
+    fetch(url, { headers: { 'Accept': 'application/json' } })
+        .then(r => {
+            if (!r.ok) throw new Error('Error cargando proyectos');
+            return r.json();
+        })
+        .then(lista => {
+            sel.innerHTML = `
+                <option value="">Seleccione…</option>
+                ${lista.map(p =>
+                    `<option value="${p.id_proyecto}">${p.nombre_proyecto}</option>`
+                ).join("")}
+            `;
+            sel.disabled = false;
+        })
+        .catch(() => {
+            sel.innerHTML = "<option>Error al cargar</option>";
+        });
+}
+
+
 function cargarLider(id) {
+
+    if (!id) return;
 
     const url = buildUrl(window.ACT_SEMILLERO_LIDER_URL, id);
     const nombre = document.getElementById("lider_nombre");
     const idInput = document.getElementById("lider_id");
 
+    if (!nombre || !idInput) return;
+
     nombre.value = "Cargando...";
+    idInput.value = "";
 
-    fetch(url)
-        .then(r => r.json())
-        .then(d => {
-            nombre.value = d.lider?.nombre_completo ?? "Sin líder";
-            idInput.value = d.lider?.id ?? "";
-        });
-}
-
-function cargarProyectos(id) {
-
-    const url = buildUrl(window.URL_PROYECTOS_SEMILLERO, id);
-    const sel = document.getElementById("proyecto_id");
-
-    sel.disabled = true;
-    sel.innerHTML = "<option>Cargando...</option>";
-
-    fetch(url)
-        .then(r => r.json())
-        .then(lista => {
-            sel.innerHTML = `
-                <option value="">Seleccione…</option>
-                ${lista.map(p => `<option value="${p.id_proyecto}">${p.nombre_proyecto}</option>`).join("")}
-            `;
-            sel.disabled = false;
-        });
+    fetch(url, {
+        headers: { 'Accept': 'application/json' }
+    })
+    .then(r => {
+        if (!r.ok) {
+            throw new Error('Error cargando líder');
+        }
+        return r.json();
+    })
+    .then(d => {
+        if (d.lider) {
+            nombre.value = d.lider.nombre_completo;
+            idInput.value = d.lider.id;
+        } else {
+            nombre.value = "Sin líder";
+            idInput.value = "";
+        }
+    })
+    .catch(() => {
+        nombre.value = "Error al cargar";
+        idInput.value = "";
+    });
 }

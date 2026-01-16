@@ -184,4 +184,36 @@ public function index()
 
         return response()->json(['success' => true]);
     }
+// ======================================================
+// OBTENER LÍDER DEL SEMILLERO (AJAX)
+// ======================================================
+public function liderDeSemillero($id)
+{
+    $lider = DB::table('semilleros as s')
+        ->leftJoin('lideres_semillero as ls', 'ls.id_lider_semi', '=', 's.id_lider_semi')
+        ->leftJoin('users as u', 'u.id', '=', 'ls.id_usuario')
+        ->where('s.id_semillero', $id)
+        ->select(
+            'u.id',
+            DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''),' ',COALESCE(u.apellidos,''))) as nombre_completo")
+        )
+        ->first();
+
+    return response()->json([
+        'lider' => $lider
+    ]);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

@@ -11,24 +11,17 @@ class Evento extends Model
     public $incrementing = true;
     protected $keyType = 'int';
 
-    protected $fillable = [
-        'id_evento',
-        'id_lider',
-        'id_lider_semi',
-        'id_lider_usuario',
-        'id_usuario',
-        'id_proyecto',
-        'titulo',
-        'tipo',
-        'linea_investigacion',
-        'descripcion',
-        'fecha_hora',
-        'duracion',
-        'ubicacion',
-        'link_virtual',
-        'codigo_reunion',
-        'recordatorio'
-    ];
+protected $fillable = [
+    'titulo',
+    'descripcion',
+    'fecha_hora',
+    'duracion',
+    'ubicacion',
+    'link_virtual',
+    'id_proyecto',   // (semillero)
+    'tipo',
+    'recordatorio'
+];
 
     protected $casts = [
         'fecha_hora' => 'datetime',

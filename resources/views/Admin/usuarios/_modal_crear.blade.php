@@ -71,9 +71,7 @@
             {{-- PASO 1: DATOS BÁSICOS (TODOS LOS ROLES) --}}
             <div class="user-step" data-step="1">
               <div class="mb-2 text-center">
-                <span class="text-muted small text-uppercase fw-semibold">
-                  Paso 1 de 1
-                </span>
+             
               </div>
 
               <div class="card border-0 shadow-sm mb-3">
