@@ -95,6 +95,15 @@
                     style="background:#77B900;">
                 Enviar enlace de recuperación
             </button>
+
+            <div class="text-center mt-4">
+    <a href="{{ route('login') }}"
+       class="text-decoration-none fw-semibold"
+       style="color:#0b2e4d;">
+        <i class="bi bi-arrow-left"></i>
+        Volver al inicio de sesión
+    </a>
+</div>
         </form>
 
     </div>

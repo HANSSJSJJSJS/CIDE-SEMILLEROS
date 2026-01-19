@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
+
 class RecursoController extends Controller
 {
     // ======================================================
@@ -88,40 +89,68 @@ public function index()
         return response()->json(['success' => true]);
     }
 
+
+
+public function download(Recurso $recurso)
+{
+    // 🔴 Caso sin archivo
+    if (
+        !$recurso->archivo ||
+        $recurso->archivo === 'sin_archivo'
+    ) {
+        return back()->with('error', 'Este recurso no tiene archivo para descargar');
+    }
+
+    // 🔴 El archivo no existe físicamente
+    if (!Storage::exists($recurso->archivo)) {
+        return back()->with('error', 'El archivo no existe en el servidor');
+    }
+
+    // ✅ Descargar correctamente
+    return Storage::download(
+        $recurso->archivo,
+        $recurso->nombre_archivo
+    );
+}
+
+
     // ======================================================
     // ELIMINAR RECURSO
     // ======================================================
     public function destroy($id)
     {
-        Recurso::where('id', $id)->delete();
+        Recurso::where('id_recurso', $id)->delete();
         return response()->json(['success' => true]);
     }
-
     // ======================================================
     // ACTUALIZAR ESTADO
     // ======================================================
-    public function actualizarEstadoActividad(Request $request, $id)
-    {
-        Recurso::where('id', $id)->update([
-            'estado' => $request->estado,
-            'comentarios' => $request->comentarios
-        ]);
+                public function actualizarEstadoActividad(Request $request, $id)
+            {
+                Recurso::where('id_recurso', $id)->update([
+                    'estado' => $request->estado,
+                    'comentarios' => $request->comentarios,
+                    'respondido_en' => now()
+                ]);
 
-        return response()->json(['success' => true]);
-    }
+                return response()->json(['success' => true]);
+            }
+
 
     // ======================================================
     // EDITAR RECURSO
     // ======================================================
-    public function actualizarRecurso(Request $request, $id)
-    {
-        Recurso::where('id', $id)->update([
-            'descripcion' => $request->descripcion,
-            'fecha_vencimiento' => $request->fecha_limite
-        ]);
+ public function actualizarRecurso(Request $request, $id)
+{
+    Recurso::where('id_recurso', $id)->update([
+        'descripcion' => $request->descripcion,
+        'fecha_vencimiento' => $request->fecha_limite,
+        'tipo_documento' => $request->tipo_documento,
+    ]);
 
-        return response()->json(['success' => true]);
-    }
+    return response()->json(['success' => true]);
+}
+    
 
     // ======================================================
     // VISTA MULTIMEDIA
@@ -205,15 +234,36 @@ public function liderDeSemillero($id)
 }
 
 
+// ======================================================
+// LISTAR RECURSOS POR SEMILLERO (ADMIN)
+// ======================================================
+public function porSemillero($semilleroId)
+{
+    $recursos = DB::table('recursos as r')
+        ->leftJoin('users as u', 'u.id', '=', 'r.user_id')
+        ->leftJoin('proyectos as p', 'p.id_proyecto', '=', 'r.proyecto_id')
+        ->where('r.dirigido_a', 'lideres')
+        ->where('r.semillero_id', $semilleroId)
+            ->select(
+            'r.id_recurso as id',
+            'r.nombre_archivo as titulo',
+            'r.descripcion',
+            'r.estado',
+            'r.fecha_vencimiento as fecha_limite',
+            'r.fecha_asignacion',
+            'r.archivo',
+            'r.archivo_respuesta',
+            'r.enlace_respuesta',
+            'r.tipo_documento as tipo_recurso',
+            'r.comentarios',
+            'r.respondido_en',
+            DB::raw("TRIM(CONCAT(COALESCE(u.nombre,''),' ',COALESCE(u.apellidos,''))) as lider_nombre"),
+            'p.nombre_proyecto'
+        )
 
+        ->orderBy('r.created_at', 'desc')
+        ->get();
 
-
-
-
-
-
-
-
-
-
+    return response()->json($recursos);
 }
+} 
