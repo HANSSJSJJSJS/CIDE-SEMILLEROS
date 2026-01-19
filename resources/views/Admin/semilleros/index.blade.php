@@ -26,17 +26,6 @@
                 </p>
             </div>
 
-            <div class="col-12 col-lg-5 d-flex justify-content-start">
-                @if($canCreate)
-                    <button type="button"
-                            class="btn btn-nuevo-semillero mt-2 mt-lg-0"
-                            data-bs-toggle="modal"
-                            data-bs-target="#modalNuevoSemillero">
-                        <i class="bi bi-people-fill me-1"></i>
-                        Nuevo semillero
-                    </button>
-                @endif
-            </div>
 
         </div>
 
@@ -58,9 +47,24 @@
                         <i class="bi bi-search text-white fs-5"></i>
                     </button>
                 </div>
+             <div class="col-12 col-lg-5 d-flex justify-content-start">
+                @if($canCreate)
+                    <button type="button"
+                            class="btn btn-nuevo-semillero mt-2 mt-lg-0"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalNuevoSemillero">
+                        <i class="bi bi-people-fill me-1"></i>
+                        Nuevo semillero
+                    </button>
+                @endif
+            </div>
+
             </form>
         </div>
     </div>
+
+    
+           
 
     {{-- TABLA --}}
     <div class="tabla-semilleros-wrapper mt-2">

@@ -366,9 +366,9 @@
     configureByRole();
   }
 
-  // ----------------------------------------------------
-  // Modal VER USUARIO (btn "Ver datos")
-  // ----------------------------------------------------
+// ----------------------------------------------------
+// Modal VER USUARIO (btn "Ver datos")
+// ----------------------------------------------------
   function initModalVerUsuario() {
     const modalEl = document.getElementById('modalVerUsuario');
     if (!modalEl) return;         // si no existe, no hacemos nada
@@ -416,7 +416,8 @@
           const badge = modalEl.querySelector('#ver-role-label');
           if (badge) badge.textContent = roleLabel;
 
-          const nombreCompleto = `${u.name ?? ''} ${u.apellidos ?? ''}`.trim() || 'Usuario';
+          const nombreCompleto = `${u.nombre ?? ''} ${u.apellidos ?? ''}`.trim() || 'Usuario';
+
 
           setField('nombre_completo',    nombreCompleto);
           setField('email',              u.email);

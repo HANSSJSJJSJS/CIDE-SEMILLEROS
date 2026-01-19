@@ -278,8 +278,7 @@
 
 .btn-accion-ver,
 .btn-accion-editar,
-.btn-accion-eliminar,
-.btn-nuevo-semillero {
+.btn-accion-eliminar {
     border-radius: 50px !important;
     padding: 6px 14px !important;
     font-size: 0.85rem;
@@ -380,4 +379,29 @@
 
 .modal-backdrop {
     z-index: 1055 !important;
+}
+/* ================================
+   BOTÓN PRINCIPAL – NUEVO SEMILLERO
+   ================================ */
+.btn-nuevo-semillero {
+    background-color: #2d572c;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 14px 28px;      /* 🔥 MÁS GRANDE */
+    font-size: 1rem;         /* 🔥 TEXTO MÁS GRANDE */
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;               /* icono + texto respiren */
+    box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+}
+
+.btn-nuevo-semillero i {
+    font-size: 1.1rem;
+}
+
+.btn-nuevo-semillero:hover {
+    background-color: #244622;
+    transform: translateY(-1px);
 }

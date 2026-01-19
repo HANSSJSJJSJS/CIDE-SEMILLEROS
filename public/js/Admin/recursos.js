@@ -51,9 +51,26 @@ let semilleroActualId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    modalCrear = new bootstrap.Modal(document.getElementById("modalSubirRecurso"));
-    modalVer = new bootstrap.Modal(document.getElementById("modalActividades"));
+    const modalCrearEl = document.getElementById("modalSubirRecurso");
+    const modalVerEl   = document.getElementById("modalActividades");
     const modalEditarEl = document.getElementById("modalEditarRecurso");
+
+    if (!modalCrearEl) {
+        console.error("❌ No existe #modalSubirRecurso en el DOM");
+        return;
+    }
+
+    if (typeof bootstrap === "undefined") {
+        console.error("❌ Bootstrap JS NO está cargado");
+        return;
+    }
+
+    modalCrear = new bootstrap.Modal(modalCrearEl);
+
+    if (modalVerEl) {
+        modalVer = new bootstrap.Modal(modalVerEl);
+    }
+
     if (modalEditarEl) {
         modalEditar = new bootstrap.Modal(modalEditarEl);
     }
@@ -63,6 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initFormularioCrear();
     initFormularioEditar();
 });
+
 
 
 /* ======================================================
@@ -146,29 +164,33 @@ function abrirModalVerRecursos(id, nombre) {
 /* ======================================================
    CARGAR RECURSOS (AJAX)
 ====================================================== */
-
 function cargarRecursos(id) {
 
+    if (!id) {
+        console.error("❌ semilleroId vacío, no se puede cargar recursos");
+        return;
+    }
+
     const url = buildUrl(window.ACT_ACTIVIDADES_POR_SEMILLERO_URL, id);
-    const cont = document.getElementById("contenedorActividades");
+    console.log("URL FINAL:", url);
 
-    cont.innerHTML = `
-        <div class="text-center p-4">
-            <div class="spinner-border text-primary"></div>
-        </div>
-    `;
-
-    fetch(url)
-        .then(r => r.json())
-        .then(data => renderRecursos(data.actividades ?? []))
-        .catch(() => {
-            cont.innerHTML = `
-                <div class="text-center text-danger p-4">
-                    <i class="bi bi-x-circle fs-1"></i>
-                    <p>Error al cargar los recursos.</p>
-                </div>`;
-        });
+    fetch(url, {
+        headers: { 'Accept': 'application/json' }
+    })
+    .then(r => {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+    })
+    .then(data => {
+        renderRecursos(Array.isArray(data) ? data : []);
+    })
+    .catch(err => {
+        console.error("Error cargando recursos:", err);
+    });
 }
+
+
+
 
 
 /* ======================================================
@@ -188,117 +210,174 @@ function renderRecursos(lista) {
         return;
     }
 
-    cont.innerHTML = lista
-        .map(r => {
-            const estado = (r.estado ?? "pendiente").toString().toLowerCase();
-            const puedeEditar = estado !== "aprobado";
-            const puedeAprobarRechazar = estado === "pendiente";
-            const esVencido = estado === 'vencido';
-            const titulo = r.titulo ?? "";
-            const fecha = r.fecha_limite ?? "—";
-            const lider = r.lider_nombre ?? "N/A";
-            const descripcion = r.descripcion ?? "";
-            const archivo = r.archivo ?? null;
-            const archivoRespuesta = r.archivo_respuesta ?? null;
-            const enlaceRespuesta = r.enlace_respuesta ?? null;
-            const comentarios = r.comentarios ?? "";
-            const respondidoEn = r.respondido_en ?? null;
-            const tipoDocumento = r.tipo_documento ?? "";
-            const badgeText = estado.toUpperCase();
+    cont.innerHTML = lista.map(r => {
+        const estado = (r.estado ?? "pendiente").toLowerCase();
+        const puedeEditar = estado !== "aprobado";
+        const puedeAprobarRechazar = estado === "pendiente";
+        const esVencido = estado === "vencido";
+        const titulo = r.titulo ?? "";
+        const fecha = r.fecha_limite ?? "—";
+        const lider = r.lider_nombre ?? "N/A";
+        const descripcion = r.descripcion ?? "";
+        const archivo = r.archivo ?? null;
+        const archivoRespuesta = r.archivo_respuesta ?? null; // 👈 ESTA LÍNEA FALTABA
+        const enlaceRespuesta = r.enlace_respuesta ?? null;
+        const tipo = (r.tipo_recurso || "").toUpperCase();
+        const badgeText = estado.toUpperCase();
+        const fechaAsignacion = r.fecha_asignacion
+            ? new Date(r.fecha_asignacion).toLocaleDateString("es-CO")
+            : "—";
 
-            const computeViewUrl = () => {
-                if (enlaceRespuesta) return enlaceRespuesta;
-                if (archivoRespuesta) return `/storage/${archivoRespuesta}`;
+        // =========================
+        // BOTÓN ARCHIVO / ENLACE
+        // =========================
+               let btnArchivo = `
+    <button type="button" class="btn btn-recurso-file" disabled>
+        <i class="bi bi-file-earmark"></i>
+        Sin evidencia
+    </button>
+`;
 
-                const txt = (comentarios || '').toString();
-                if (txt) {
-                    let m = txt.match(/Enlace respuesta:\s*(https?:\/\/\S+)/i);
-                    if (m && m[1]) return m[1];
-                    m = txt.match(/Archivo respuesta:\s*([^\s]+)/i);
-                    if (m && m[1]) return `/storage/${m[1].trim()}`;
-                }
+// 1️⃣ RESPUESTA DEL LÍDER
+if (archivoRespuesta && archivoRespuesta !== 'sin_archivo') {
+    const fileUrl = `/storage/${archivoRespuesta}`;
 
-                // Fallback: en algunos esquemas el archivo de respuesta termina en la columna `archivo`
-                // (p.ej. cuando no existe `archivo_respuesta`).
-                if (archivo) {
-                    return `/storage/${archivo}`;
-                }
-                return null;
-            };
+    if (["PDF", "IMAGEN", "VIDEO"].includes(tipo)) {
+        btnArchivo = `
+            <a class="btn btn-recurso-file"
+               href="${fileUrl}"
+               target="_blank"
+               rel="noopener">
+               <i class="bi bi-eye"></i>
+               Ver respuesta
+               <span class="badge bg-info ms-1">Líder</span>
+            </a>
+        `;
+    } else {
+        btnArchivo = `
+            <a class="btn btn-recurso-file"
+               href="${fileUrl}"
+               download>
+               <i class="bi bi-download"></i>
+               Descargar respuesta
+               <span class="badge bg-info ms-1">Líder</span>
+            </a>
+        `;
+    }
+}
 
-            const viewUrl = computeViewUrl();
+// 2️⃣ ENLACE
+else if (tipo === "ENLACE" && enlaceRespuesta) {
+    btnArchivo = `
+        <a class="btn btn-recurso-file"
+           href="${enlaceRespuesta}"
+           target="_blank"
+           rel="noopener">
+           <i class="bi bi-box-arrow-up-right"></i>
+           Abrir enlace
+        </a>
+    `;
+}
 
-            const btnArchivo = viewUrl
-                ? `<a class="btn btn-recurso-file" href="${viewUrl}" target="_blank" rel="noopener">
-                        <i class="bi bi-eye"></i>
-                        Ver
-                   </a>`
-                : `<button type="button" class="btn btn-recurso-file" disabled>
-                        <i class="bi bi-file-earmark"></i>
-                        Sin Evidencia
-                   </button>`;
+// 3️⃣ ARCHIVO DEL ADMIN
+else if (archivo && archivo !== 'sin_archivo') {
+    const fileUrl = `/storage/${archivo}`;
 
-            const accion = esVencido
-                ? `<button type="button" class="recurso-action btn-eliminar-recurso"
-                                data-id="${r.id}"
-                                aria-label="Eliminar recurso">
-                            <i class="bi bi-trash"></i>
-                        </button>`
-                : `<button type="button" class="recurso-action btn-editar-recurso"
-                                data-id="${r.id}"
-                                data-estado="${estado}"
-                                data-lider="${encodeURIComponent(lider)}"
-                                data-titulo="${encodeURIComponent(titulo)}"
-                                data-fecha="${encodeURIComponent(fecha)}"
-                                data-descripcion="${encodeURIComponent(descripcion)}"
-                                data-tipo-documento="${encodeURIComponent(tipoDocumento)}"
-                                data-archivo="${encodeURIComponent(archivo ?? '')}"
-                                ${!puedeEditar ? "disabled" : ""}
-                                aria-label="Editar recurso">
-                            <i class="bi bi-pencil-square"></i>
-                        </button>`;
+    if (["PDF", "IMAGEN", "VIDEO"].includes(tipo)) {
+        btnArchivo = `
+            <a class="btn btn-recurso-file"
+               href="${fileUrl}"
+               target="_blank"
+               rel="noopener">
+               <i class="bi bi-eye"></i>
+               Ver recurso
+            </a>
+        `;
+    } else {
+        btnArchivo = `
+            <a class="btn btn-recurso-file"
+               href="${fileUrl}"
+               download>
+               <i class="bi bi-download"></i>
+               Descargar recurso
+            </a>
+        `;
+    }
+}
 
-            return `
-                <div class="recurso-item">
 
-                    <div class="recurso-top">
-                        <div class="recurso-lider">${lider}</div>
+        // =========================
+        // ACCIÓN EDITAR / ELIMINAR
+        // =========================
+        const accion = esVencido
+            ? `<button type="button"
+                        class="recurso-action btn-eliminar-recurso"
+                        data-id="${r.id}">
+                    <i class="bi bi-trash"></i>
+               </button>`
+            : `<button type="button"
+                        class="recurso-action btn-editar-recurso"
+                        data-id="${r.id}"
+                        data-estado="${estado}"
+                        data-lider="${encodeURIComponent(lider)}"
+                        data-titulo="${encodeURIComponent(titulo)}"
+                        data-fecha="${encodeURIComponent(fecha)}"
+                        data-descripcion="${encodeURIComponent(descripcion)}"
+                        ${!puedeEditar ? "disabled" : ""}>
+                    <i class="bi bi-pencil-square"></i>
+               </button>`;
 
-                        <div class="recurso-top-right">
-                            <span class="badge badge-${estado} recurso-badge">${badgeText}</span>
-                            ${accion}
-                        </div>
+        return `
+            <div class="recurso-item">
+
+                <div class="recurso-top">
+                    <div class="recurso-lider">${lider}</div>
+
+                    <div class="recurso-top-right">
+                        <span class="badge badge-${estado} recurso-badge">${badgeText}</span>
+                        ${accion}
                     </div>
-
-                    <div class="recurso-sub">${titulo} &middot; ${fecha}</div>
-                    <div class="recurso-desc">${descripcion}</div>
-
-                    <div class="recurso-actions">
-                        ${btnArchivo}
-
-                        <button class="btn btn-recurso-approve btn-aprobar" data-id="${r.id}" ${!puedeAprobarRechazar ? "disabled" : ""}>
-                            Aprobar
-                        </button>
-
-                        <button class="btn btn-recurso-reject btn-rechazar" data-id="${r.id}" ${!puedeAprobarRechazar ? "disabled" : ""}>
-                            Rechazar
-                        </button>
-                    </div>
-
-                    <div id="rechazo-${r.id}" class="recurso-rechazo d-none">
-                        <textarea class="form-control" placeholder="Escribe el motivo..."></textarea>
-                        <button class="btn btn-danger btn-sm mt-2 btn-confirmar" data-id="${r.id}">
-                            Confirmar rechazo
-                        </button>
-                    </div>
-
                 </div>
-            `;
-        })
-        .join("");
+
+                <div class="recurso-sub">
+                    ${titulo} &middot; vence: ${fecha}<br>
+                    <small class="text-muted">Asignado: ${fechaAsignacion}</small>
+                </div>
+
+                <div class="recurso-desc">${descripcion}</div>
+
+                <div class="recurso-actions">
+                    ${btnArchivo}
+
+                    <button class="btn btn-recurso-approve btn-aprobar"
+                            data-id="${r.id}"
+                            ${!puedeAprobarRechazar ? "disabled" : ""}>
+                        Aprobar
+                    </button>
+
+                    <button class="btn btn-recurso-reject btn-rechazar"
+                            data-id="${r.id}"
+                            ${!puedeAprobarRechazar ? "disabled" : ""}>
+                        Rechazar
+                    </button>
+                </div>
+
+                <div id="rechazo-${r.id}" class="recurso-rechazo d-none">
+                    <textarea class="form-control" placeholder="Escribe el motivo..."></textarea>
+                    <button class="btn btn-danger btn-sm mt-2 btn-confirmar"
+                            data-id="${r.id}">
+                        Confirmar rechazo
+                    </button>
+                </div>
+
+            </div>
+        `;
+    }).join("");
 
     activarBotonesEstados();
 }
+
+
 
 
 /* ======================================================
@@ -440,27 +519,18 @@ function initFormularioEditar() {
                 descripcion,
             })
         })
-            .then(async (r) => {
-                const data = await r.json().catch(() => ({}));
-                return { ok: r.ok, data };
-            })
-            .then(({ ok, data }) => {
-                if (!ok) {
-                    showNotification("Error", data.message ?? "No se pudo actualizar el recurso", "error");
-                    return;
-                }
-
-                showNotification("Actualizado", "Recurso actualizado correctamente", "success");
-                modalEditar?.hide();
-                if (semilleroActualId) {
-                    cargarRecursos(semilleroActualId);
-                }
-            })
-            .catch(() => {
-                showNotification("Error", "No se pudo actualizar el recurso", "error");
-            });
+        .then(r => r.json())
+        .then(() => {
+            showNotification("Actualizado", "Recurso actualizado correctamente", "success");
+            modalEditar?.hide();
+            cargarRecursos(semilleroActualId);
+        })
+        .catch(() => {
+            showNotification("Error", "No se pudo actualizar el recurso", "error");
+        });
     });
 }
+
 
 
 function abrirModalEditar(btn) {
@@ -525,6 +595,8 @@ function initFormularioCrear() {
     const form = document.getElementById("formSubirRecurso");
     const selSem = document.getElementById("semillero_id");
 
+    if (!form || !selSem) return;
+
     selSem.addEventListener("change", () => {
         cargarLider(selSem.value);
         cargarProyectos(selSem.value);
@@ -534,60 +606,112 @@ function initFormularioCrear() {
         e.preventDefault();
 
         const data = new FormData(form);
-        const sem = document.getElementById("semillero_id_fijo").value || selSem.value;
+        const sem = document.getElementById("semillero_id_fijo")?.value || selSem.value;
 
         data.set("semillero_id", sem);
 
         fetch(window.ACT_STORE_URL, {
             method: "POST",
-            headers: { "X-CSRF-TOKEN": CSRF_TOKEN },
+            headers: {
+                "X-CSRF-TOKEN": CSRF_TOKEN,
+                "Accept": "application/json"
+            },
             body: data
         })
-            .then(r => r.json())
-            .then(() => {
-                showNotification("Correcto", "Recurso creado correctamente", "success");
-                modalCrear.hide();
-                setTimeout(() => location.reload(), 900);
-            });
-    });
+        .then(async r => {
+            if (!r.ok) {
+                const text = await r.text();
+                throw new Error(text);
+            }
+            return r.json();
+        })
+        .then(() => {
+            showNotification("Correcto", "Recurso creado correctamente", "success");
+            modalCrear.hide();
+            setTimeout(() => location.reload(), 900);
+        })
+        .catch(err => {
+            console.error("Error al guardar:", err);
+            showNotification(
+                "Error",
+                "No se pudo guardar el recurso. Revisa los datos.",
+                "error"
+            );
+        });
+    }); // ✅ ESTE ERA EL QUE FALTABA
 }
+
 
 
 /* ======================================================
    AJAX CARGAR LÍDER / PROYECTOS
 ====================================================== */
 
+function cargarProyectos(id) {
+
+    if (!id) return;
+
+    const url = buildUrl(window.URL_PROYECTOS_SEMILLERO, id);
+    const sel = document.getElementById("proyecto_id");
+
+    if (!sel) return;
+
+    sel.disabled = true;
+    sel.innerHTML = "<option>Cargando...</option>";
+
+    fetch(url, { headers: { 'Accept': 'application/json' } })
+        .then(r => {
+            if (!r.ok) throw new Error('Error cargando proyectos');
+            return r.json();
+        })
+        .then(lista => {
+            sel.innerHTML = `
+                <option value="">Seleccione…</option>
+                ${lista.map(p =>
+                    `<option value="${p.id_proyecto}">${p.nombre_proyecto}</option>`
+                ).join("")}
+            `;
+            sel.disabled = false;
+        })
+        .catch(() => {
+            sel.innerHTML = "<option>Error al cargar</option>";
+        });
+}
+
+
 function cargarLider(id) {
+
+    if (!id) return;
 
     const url = buildUrl(window.ACT_SEMILLERO_LIDER_URL, id);
     const nombre = document.getElementById("lider_nombre");
     const idInput = document.getElementById("lider_id");
 
+    if (!nombre || !idInput) return;
+
     nombre.value = "Cargando...";
+    idInput.value = "";
 
-    fetch(url)
-        .then(r => r.json())
-        .then(d => {
-            nombre.value = d.lider?.nombre_completo ?? "Sin líder";
-            idInput.value = d.lider?.id ?? "";
-        });
-}
-
-function cargarProyectos(id) {
-
-    const url = buildUrl(window.URL_PROYECTOS_SEMILLERO, id);
-    const sel = document.getElementById("proyecto_id");
-
-    sel.disabled = true;
-    sel.innerHTML = "<option>Cargando...</option>";
-
-    fetch(url)
-        .then(r => r.json())
-        .then(lista => {
-            sel.innerHTML = `
-                <option value="">Seleccione…</option>
-                ${lista.map(p => `<option value="${p.id_proyecto}">${p.nombre_proyecto}</option>`).join("")}
-            `;
-            sel.disabled = false;
-        });
+    fetch(url, {
+        headers: { 'Accept': 'application/json' }
+    })
+    .then(r => {
+        if (!r.ok) {
+            throw new Error('Error cargando líder');
+        }
+        return r.json();
+    })
+    .then(d => {
+        if (d.lider) {
+            nombre.value = d.lider.nombre_completo;
+            idInput.value = d.lider.id;
+        } else {
+            nombre.value = "Sin líder";
+            idInput.value = "";
+        }
+    })
+    .catch(() => {
+        nombre.value = "Error al cargar";
+        idInput.value = "";
+    });
 }

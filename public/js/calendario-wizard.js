@@ -1,3 +1,12 @@
+function safeText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+}
+
+
+
+
+
 // Sistema de Wizard paso a paso para crear reuniones
 let currentStep = 1;
 const totalSteps = 3;
@@ -18,20 +27,20 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeWizard(closeEventModal) {
     // Guardar el callback
     closeModalCallback = closeEventModal || window.closeEventModal;
-    
+
     // Botones de navegación
     const btnNext = document.getElementById('btn-next-step');
     const btnPrev = document.getElementById('btn-prev-step');
     const btnCancel = document.getElementById('btn-cancel');
     const eventForm = document.getElementById('event-form');
-    
+
     if (btnNext) btnNext.addEventListener('click', nextStep);
     if (btnPrev) btnPrev.addEventListener('click', prevStep);
     if (btnCancel) btnCancel.addEventListener('click', () => closeModalCallback());
     if (eventForm) eventForm.addEventListener('submit', handleFormSubmit);
-    
+
     // El enlace virtual se generará automáticamente en el backend
-    
+
     // Seleccionar todos los participantes
     const selectAllBtn = document.getElementById('select-all-participants');
     if (selectAllBtn) {
@@ -180,35 +189,35 @@ function updateButtons() {
 function validateStep(step) {
     let isValid = true;
     let errorMessage = '';
-    
+
     switch(step) {
-        case 1:
-            // Validar información básica
-            const titleEl = document.getElementById('event-title');
-            const typeEl = document.getElementById('event-type');
-            const locationEl = document.getElementById('event-location');
+case 1: {
+    // Validar información básica
+    const titleEl = document.getElementById('event-title');
+    const typeEl = document.getElementById('event-type');
+    const locationEl = document.getElementById('event-location');
 
-            if (!titleEl || !typeEl || !locationEl) {
-                return true;
-            }
+    if (!titleEl || !typeEl || !locationEl) {
+        return true; // la vista no tiene estos campos
+    }
 
-            const title = titleEl.value.trim();
-            const type = typeEl.value;
-            const location = locationEl.value;
-            
-            if (!title) {
-                errorMessage = 'Por favor ingresa el título de la reunión';
-                isValid = false;
-            } else if (!type) {
-                errorMessage = 'Por favor selecciona el tipo de reunión';
-                isValid = false;
-            } else if (!location) {
-                errorMessage = 'Por favor selecciona la ubicación';
-                isValid = false;
-            }
-            // Ya no validamos link virtual porque se genera automáticamente
-            break;
-            
+    const title = titleEl.value.trim();
+    const type = typeEl.value;
+    const location = locationEl.value;
+
+    if (!title) {
+        errorMessage = 'Por favor ingresa el título de la reunión';
+        isValid = false;
+    } else if (!type) {
+        errorMessage = 'Por favor selecciona el tipo de reunión';
+        isValid = false;
+    } else if (!location) {
+        errorMessage = 'Por favor selecciona la ubicación';
+        isValid = false;
+    }
+    break;
+}
+
         case 2:
             // Validar configuración (al menos un participante)
             const selectedParticipants = document.querySelectorAll('.participant-checkbox-modal:checked');
@@ -240,11 +249,11 @@ function isValidUrl(string) {
 }
 
 function updateParticipantsCount() {
-    const selectedCount = document.querySelectorAll('.participant-checkbox-modal:checked').length;
     const countElement = document.getElementById('selected-count');
-    if (countElement) {
-        countElement.textContent = selectedCount;
-    }
+    if (!countElement) return;
+
+    const selectedCount = document.querySelectorAll('.participant-checkbox-modal:checked').length;
+    countElement.textContent = selectedCount;
 }
 
 function setupRealtimeSummary() {
@@ -267,77 +276,66 @@ function setupRealtimeSummary() {
 
 function updateSummary() {
     // Título
-    const titleEl = document.getElementById('event-title');
-    const summaryTitleEl = document.getElementById('summary-title');
-    if (titleEl && summaryTitleEl) {
-        summaryTitleEl.textContent = titleEl.value || '--';
-    }
-    
+    const titleInput = document.getElementById('event-title');
+    safeText('summary-title', titleInput?.value || '--');
+
     // Tipo
     const typeSelect = document.getElementById('event-type');
-    const summaryTypeEl = document.getElementById('summary-type');
-    if (typeSelect && summaryTypeEl) {
-        const type = typeSelect.options[typeSelect.selectedIndex]?.text || '--';
-        summaryTypeEl.textContent = type;
-    }
-    
+    const typeText = typeSelect?.options[typeSelect.selectedIndex]?.text || '--';
+    safeText('summary-type', typeText);
+
     // Fecha y hora
     const dateInput = document.getElementById('event-date');
     const timeInput = document.getElementById('event-time');
-    const summaryDtEl = document.getElementById('summary-datetime');
-    if (!summaryDtEl) {
-        // No hay sección resumen en esta página
-    } else if (dateInput && timeInput && dateInput.value && timeInput.value) {
+
+    if (dateInput?.value && timeInput?.value) {
         const date = new Date(dateInput.value + 'T' + timeInput.value);
-        const dateStr = date.toLocaleDateString('es-CO', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
+        const dateStr = date.toLocaleDateString('es-CO', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
         });
         const timeStr = formatTime12Hour(timeInput.value);
-        summaryDtEl.textContent = `${dateStr} a las ${timeStr}`;
+        safeText('summary-datetime', `${dateStr} a las ${timeStr}`);
     } else {
-        summaryDtEl.textContent = '--';
+        safeText('summary-datetime', '--');
     }
-    
+
     // Duración
     const durationSelect = document.getElementById('event-duration');
-    const summaryDurEl = document.getElementById('summary-duration');
-    if (durationSelect && summaryDurEl) {
-        const duration = durationSelect.options[durationSelect.selectedIndex]?.text || '--';
-        summaryDurEl.textContent = duration;
-    }
-    
+    const durationText = durationSelect?.options[durationSelect.selectedIndex]?.text || '--';
+    safeText('summary-duration', durationText);
+
     // Ubicación
     const locationSelect = document.getElementById('event-location');
-    const summaryLocEl = document.getElementById('summary-location');
-    if (locationSelect && summaryLocEl) {
-        const location = locationSelect.options[locationSelect.selectedIndex]?.text || '--';
-        summaryLocEl.textContent = location;
-    }
-    
+    const locationText = locationSelect?.options[locationSelect.selectedIndex]?.text || '--';
+    safeText('summary-location', locationText);
+
     // Participantes
     const selectedParticipants = document.querySelectorAll('.participant-checkbox-modal:checked');
-    const participantNames = Array.from(selectedParticipants).map(cb => {
-        const label = document.querySelector(`label[for="${cb.id}"] .participant-name-modal`);
-        return label ? label.textContent : '';
-    });
-    
-    if (participantNames.length > 0) {
-        const sumPartsEl = document.getElementById('summary-participants');
-        if (sumPartsEl) {
-            if (participantNames.length <= 3) {
-                sumPartsEl.textContent = participantNames.join(', ');
-            } else {
-                sumPartsEl.textContent = `${participantNames.slice(0, 3).join(', ')} y ${participantNames.length - 3} más`;
-            }
-        }
+    const names = Array.from(selectedParticipants)
+        .map(cb => {
+            const label = document.querySelector(
+                `label[for="${cb.id}"] .participant-name-modal`
+            );
+            return label?.textContent || '';
+        })
+        .filter(Boolean);
+
+    if (names.length === 0) {
+        safeText('summary-participants', '--');
+    } else if (names.length <= 3) {
+        safeText('summary-participants', names.join(', '));
     } else {
-        const sumPartsEl = document.getElementById('summary-participants');
-        if (sumPartsEl) sumPartsEl.textContent = '--';
+        safeText(
+            'summary-participants',
+            `${names.slice(0, 3).join(', ')} y ${names.length - 3} más`
+        );
     }
 }
+
+
 
 function handleFormSubmit(e) {
     e.preventDefault();

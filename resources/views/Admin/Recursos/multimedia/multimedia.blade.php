@@ -24,16 +24,26 @@
 {{-- MODAL --}}
 @include('admin.recursos.multimedia._modal_multimedia')
 
-<div class="container-fluid px-4 mt-4">
+<div class="documentos-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">Multimedia</h2>
+        <p class="text-muted mb-0">
+            Imágenes, documentos, presentaciones y otros archivos
+        </p>
+    </div>
 
-    {{-- HEADER --}}
-    <div class="documentos-header d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-1">Multimedia</h2>
-            <p class="text-muted mb-0">
-                Imágenes, documentos, presentaciones y otros archivos
-            </p>
-        </div>
+    <div class="d-flex gap-2">
+        {{-- 🔙 VOLVER A RECURSOS --}}
+        <a href="{{ route('admin.recursos.index') }}" class="btn btn-light">
+            <i class="bi bi-arrow-left"></i> Volver a Recursos
+        </a>
+
+        {{-- ⬆️ SUBIR MULTIMEDIA --}}
+        <button id="btnAbrirModalMultimedia" class="btn-multimedia">
+            <i class="bi bi-upload"></i> Subir multimedia
+        </button>
+    </div>
+</div>
 
         <button id="btnAbrirModalMultimedia" class="btn-multimedia">
             <i class="bi bi-upload"></i> Subir multimedia
