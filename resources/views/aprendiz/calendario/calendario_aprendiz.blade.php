@@ -26,7 +26,7 @@
   /* Mantener controles visibles (opcional sticky si hay scroll) */
   .cal-lider .header{ position: static; top: auto; z-index: auto; background: transparent; }
   /* Badge verde en los días del mes con reuniones asignadas */
-  .cal-lider #calendar .fc-daygrid-day-frame{ position: relative; }
+  .cal-lider #calendar .fc-daygrid-day-frame{ position: relative; }|
   .cal-lider #calendar .scml-day-badge{
     position:absolute; left:6px; top:6px; z-index:2; min-width:26px; height:26px;
     padding: 2px 6px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center;
@@ -153,8 +153,6 @@ document.addEventListener('DOMContentLoaded', function(){
                     Tienes reuniones virtuales próximas.
                 </div>
 
-
-
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <!-- Vista de Mes (estática) -->
@@ -198,7 +196,7 @@ document.addEventListener('DOMContentLoaded', function(){
                                 </div>
                                 <div class="week-day-column"></div>
                                 <div class="week-day-column"></div>
-                                <div class="week-day-column"></div>
+                                <div class="week-day-column"></div>-
                                 <div class="week-day-column active"></div>
                                 <div class="week-day-column"></div>
                                 <div class="week-day-column"></div>
@@ -241,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <!-- Modal Detalle -->
 <div class="modal fade" id="eventoModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content"> 
+    <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="eventoTitulo">Detalle de la reunión</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

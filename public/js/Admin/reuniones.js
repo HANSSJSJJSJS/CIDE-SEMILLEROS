@@ -4,6 +4,8 @@
   const CFG = cfgEl ? JSON.parse(cfgEl.textContent) : { routes:{}, csrf:null, feriados:[] };
   const ROUTES   = CFG.routes || {};        // { obtener, baseEventos, semilleros, lideres }
   const CSRF     = CFG.csrf || null;
+  const CURRENT_USER_ID = CFG.currentUserId ?? null;
+  const CURRENT_USER_ROLE = CFG.currentUserRole ?? null;
   let HOLIDAYS = CFG.feriados || [];
   const HOLIDAYS_LOADED = new Set();
   const FIXED_MD_CO = ['01-01','05-01','07-20','08-07','12-08','12-25'];
@@ -417,6 +419,16 @@
           }
         } catch (_) {}
 
+        let participantsDetails = [];
+        try {
+          const pd = ev.participantes_detalle ?? ev.participantes_detalles ?? [];
+          if (Array.isArray(pd)) {
+            participantsDetails = pd;
+          } else if (pd && typeof pd === 'object' && Array.isArray(pd.data)) {
+            participantsDetails = pd.data;
+          }
+        } catch (_) {}
+
         return {
           id: ev.id_evento,
           date: datePart,
@@ -429,7 +441,13 @@
           id_proyecto: ev.id_proyecto || null,
           researchLine: ev.linea_investigacion || '',
           link: ev.link_virtual || '',
+          idAdmin: ev.id_admin ?? null,
+          createdBy: ev.creado_por ?? null,
+          idLiderSemi: ev.id_lider_semi ?? null,
+          readOnly: !!(ev.id_lider_semi ?? null) && !(ev.id_admin ?? null),
           participantsIds,
+          participantsDetails,
+          semilleroLeader: ev.lider_semillero ?? null,
         };
       });
     } catch (e) {
@@ -731,26 +749,34 @@
   function createEventElement(event) {
     const el = document.createElement('div');
     el.className = 'event';
-    el.draggable = true;
+    el.draggable = !event.readOnly;
+    if (event.readOnly) {
+      el.classList.add('event-readonly');
+    }
     el.dataset.id = event.id;
     el.innerHTML = `<div class="event-time">${event.time}</div><div class="event-title">${event.title}</div>`;
     el.addEventListener('click', (e) => { e.stopPropagation(); showEventDetails(event); });
-    el.addEventListener('dragstart', (e) => { draggedEvent = event; el.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
-    el.addEventListener('dragend',   ()  => { el.classList.remove('dragging'); draggedEvent = null; });
+    if (!event.readOnly) {
+      el.addEventListener('dragstart', (e) => { draggedEvent = event; el.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+      el.addEventListener('dragend',   ()  => { el.classList.remove('dragging'); draggedEvent = null; });
+    }
     return el;
   }
 
   function createWeekEventElement(event) {
     const el = document.createElement('div');
     el.className = 'week-event';
-    el.draggable = true;
+    el.draggable = !event.readOnly;
+    if (event.readOnly) {
+      el.classList.add('event-readonly');
+    }
     el.dataset.id = event.id;
-    const parts = event.time.split(':');
+    const parts = String(event.time || '00:00').split(':');
     const h = parseInt(parts[0] || '0', 10);
     const m = parseInt(parts[1] || '0', 10);
-    const top = (h - 8) * 60 + (isNaN(m) ? 0 : m) + 2; // 1px/minuto
+    const top = (h - 8) * 60 + (isNaN(m) ? 0 : m) + 2;
     const durationMin = Math.max(15, Number(event.duration) || 60);
-    const colHeight = WORK_HOURS.length * 60; // 60px por hora
+    const colHeight = WORK_HOURS.length * 60;
     let height = Math.round((durationMin / 60) * 60) - 4;
     if (top + height > colHeight) {
       height = Math.max(20, colHeight - top - 2);
@@ -759,36 +785,43 @@
     el.style.height = `${Math.max(20, height)}px`;
     el.innerHTML = `<div class="we-time">${event.time}</div><div class="we-title">${escapeHtml(event.title || '')}</div>`;
     el.addEventListener('click', (e) => { e.stopPropagation(); showEventDetails(event); });
-    el.addEventListener('dragstart', (e) => { draggedEvent = event; el.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
-    el.addEventListener('dragend',   ()  => { el.classList.remove('dragging'); draggedEvent = null; });
+    if (!event.readOnly) {
+      el.addEventListener('dragstart', (e) => { draggedEvent = event; el.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+      el.addEventListener('dragend',   ()  => { el.classList.remove('dragging'); draggedEvent = null; });
+    }
     return el;
   }
 
   function createDayEventElement(event) {
     const el = document.createElement('div');
     el.className = 'day-event';
-    el.draggable = true;
+    el.draggable = !event.readOnly;
+    if (event.readOnly) {
+      el.classList.add('event-readonly');
+    }
     el.dataset.id = event.id;
-    const parts = event.time.split(':');
+
+    const parts = String(event.time || '00:00').split(':');
     const h = parseInt(parts[0] || '0', 10);
     const m = parseInt(parts[1] || '0', 10);
-    const top = (h - 8) * 80 + Math.round((isNaN(m) ? 0 : m) / 60 * 80) + 2;
+    const top = (h - 8) * 80 + Math.round(((isNaN(m) ? 0 : m) / 60) * 80) + 2;
     const durationMin = Math.max(15, Number(event.duration) || 60);
-    const colHeight = WORK_HOURS.length * 80; // 80px por hora
+    const colHeight = WORK_HOURS.length * 80;
     let height = Math.round((durationMin / 60) * 80) - 4;
     if (top + height > colHeight) {
       height = Math.max(20, colHeight - top - 2);
     }
     el.style.top = `${Math.max(0, top)}px`;
     el.style.height = `${Math.max(20, height)}px`;
-    el.innerHTML = `<div style="font-weight:600;font-size:13px;">${event.time}</div><div style="font-size:12px;margin-top:2px;">${event.title}</div>`;
+    el.innerHTML = `<div style="font-weight:600;font-size:13px;">${event.time}</div><div style="font-size:12px;margin-top:2px;">${escapeHtml(event.title || '')}</div>`;
     el.addEventListener('click', (e) => { e.stopPropagation(); showEventDetails(event); });
-    el.addEventListener('dragstart', (e) => { draggedEvent = event; el.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
-    el.addEventListener('dragend',   ()  => { el.classList.remove('dragging'); draggedEvent = null; });
+    if (!event.readOnly) {
+      el.addEventListener('dragstart', (e) => { draggedEvent = event; el.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+      el.addEventListener('dragend',   ()  => { el.classList.remove('dragging'); draggedEvent = null; });
+    }
     return el;
   }
 
-  // === Drag & Drop / Modal ===
   function handleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; e.currentTarget.classList.add('drag-over'); }
   function handleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
 
@@ -797,8 +830,18 @@
     e.currentTarget.classList.remove('drag-over');
     if (!draggedEvent) return;
 
+    if (draggedEvent.readOnly) {
+      if (typeof mostrarNotificacion==='function') mostrarNotificacion('Este evento es solo lectura','info');
+      return;
+    }
+
     const idx = events.findIndex(ev => ev.id === draggedEvent.id);
     if (idx === -1) return;
+
+    if (events[idx]?.readOnly) {
+      if (typeof mostrarNotificacion==='function') mostrarNotificacion('Este evento es solo lectura','info');
+      return;
+    }
 
     const newDateStr = formatDate(newDate);
     let newTime = events[idx].time;
@@ -1003,8 +1046,7 @@
 
     return {
       titulo: titleInput ? titleInput.value : '',
-      tipo: 'presencial',
-      linea_investigacion: '',
+      tipo: 'REUNION',
       descripcion: descInput ? (descInput.value || null) : null,
       fecha_hora: fechaHora,
       duracion: durationInput ? (parseInt(durationInput.value) || 60) : 60,
@@ -1024,6 +1066,54 @@
     document.getElementById('detail-hora').textContent   = event.time || '--';
     document.getElementById('detail-duracion').textContent = `${event.duration || 60} minutos`;
     document.getElementById('detail-ubicacion').textContent = event.location || '--';
+
+    const creadorEl = document.getElementById('detail-creador');
+    if (creadorEl) {
+      const ls = event.semilleroLeader;
+      const name = (ls && (ls.nombre || ls.name)) ? String(ls.nombre || ls.name) : '';
+      const email = (ls && ls.email) ? String(ls.email) : '';
+      creadorEl.textContent = name ? (email ? `${name} (${email})` : name) : '--';
+    }
+
+    const descEl = document.getElementById('detail-descripcion');
+    if (descEl) descEl.textContent = (event.description || '').trim() || '--';
+
+    const asistenciaSection = document.getElementById('detail-asistencia-section');
+    const asistenciaList = document.getElementById('detail-asistencia-list');
+    const asistenciaSummary = document.getElementById('detail-asistencia-summary');
+    if (asistenciaSection && asistenciaList && asistenciaSummary) {
+      const normalizeAttendanceStatus = (raw) => {
+        const base = String(raw || 'pendiente').toLowerCase();
+        if (base === 'asistio' || base === 'asistió') return 'asistio';
+        const compact = base.replace(/[\s_-]+/g, '');
+        if (compact === 'noasistio') return 'no_asistio';
+        if (compact === 'asistio') return 'asistio';
+        return 'pendiente';
+      };
+      const details = Array.isArray(event.participantsDetails) ? event.participantsDetails : [];
+      if (!details.length) {
+        asistenciaSection.style.display = 'none';
+        asistenciaList.innerHTML = '';
+        asistenciaSummary.innerHTML = '';
+        asistenciaSummary.style.display = 'none';
+      } else {
+        asistenciaSection.style.display = 'block';
+        asistenciaList.innerHTML = '';
+        const counts = { pendiente: 0, asistio: 0, no_asistio: 0 };
+        details.forEach(p => {
+          const st = normalizeAttendanceStatus(p?.asistencia);
+          counts[st] = (counts[st] || 0) + 1;
+          const label = st === 'asistio' ? 'Asistió' : (st === 'no_asistio' ? 'No asistió' : 'Pendiente');
+          const row = document.createElement('div');
+          row.className = 'attendance-item';
+          row.innerHTML = `<div class="name">${escapeHtml(p?.nombre || 'Participante')}</div><div class="hint">Estado: ${escapeHtml(label)}</div>`;
+          asistenciaList.appendChild(row);
+        });
+        asistenciaSummary.style.display = 'block';
+        asistenciaSummary.innerHTML = `<h5>Resumen</h5><div class="row"><div>Pendiente: ${counts.pendiente}</div><div>Asistió: ${counts.asistio}</div><div>No asistió: ${counts.no_asistio}</div></div>`;
+      }
+    }
+
     // Participantes (nombres): usar IDs asignados desde backend (evento_asignaciones)
     const namesList = document.getElementById('detail-participants-names');
     if (namesList) {
@@ -1063,22 +1153,28 @@
     const cancelBtnE = document.getElementById('detail-cancel-edit');
 
     if (linkField) linkField.style.display = 'block';
+
+    const canEdit = !event.readOnly && (
+      (CURRENT_USER_ROLE === 'ADMIN') ||
+      (CURRENT_USER_ID !== null && event.idAdmin !== null && parseInt(event.idAdmin, 10) === parseInt(CURRENT_USER_ID, 10)) ||
+      (CURRENT_USER_ID !== null && event.createdBy !== null && parseInt(event.createdBy, 10) === parseInt(CURRENT_USER_ID, 10))
+    );
     const hasUrl = !!(event.link && event.link.startsWith('http'));
 
     if (hasUrl) {
       if (linkA) { linkA.href = event.link; linkA.style.display = 'inline-block'; }
-      genBtn && (genBtn.style.display = 'inline-block');
-      delBtn && (delBtn.style.display = 'inline-block');
+      genBtn && (genBtn.style.display = canEdit ? 'inline-block' : 'none');
+      delBtn && (delBtn.style.display = canEdit ? 'inline-block' : 'none');
       editorBox && (editorBox.style.display = 'none');
     } else {
       linkA && (linkA.style.display = 'none');
-      genBtn && (genBtn.style.display = 'inline-block');
+      genBtn && (genBtn.style.display = canEdit ? 'inline-block' : 'none');
       delBtn && (delBtn.style.display = 'none');
-      editorBox && (editorBox.style.display = 'block');
+      editorBox && (editorBox.style.display = canEdit ? 'block' : 'none');
       editorInput && (editorInput.value = '');
     }
 
-    if (genBtn) genBtn.onclick = async () => {
+    if (canEdit && genBtn) genBtn.onclick = async () => {
       try {
         const data = await fetchJSON(`${ROUTES.baseEventos}/${event.id}/generar-enlace`, {
           method: 'POST',
@@ -1099,7 +1195,7 @@
       }
     };
 
-    if (saveBtn) saveBtn.onclick = async () => {
+    if (canEdit && saveBtn) saveBtn.onclick = async () => {
       const url = (editorInput?.value || '').trim();
       if (!url) { if (window.Swal) Swal.fire({icon:'info',title:'Ingresa un enlace válido'}); else if (typeof mostrarNotificacion==='function') mostrarNotificacion('Ingresa un enlace válido','info'); else alert('Ingresa un enlace válido'); return; }
       try {
@@ -1119,9 +1215,9 @@
       }
     };
 
-    if (cancelBtnE) cancelBtnE.onclick = () => { editorBox && (editorBox.style.display = 'none'); };
+    if (canEdit && cancelBtnE) cancelBtnE.onclick = () => { editorBox && (editorBox.style.display = 'none'); };
 
-    if (delBtn) delBtn.onclick = async () => {
+    if (canEdit && delBtn) delBtn.onclick = async () => {
       if (window.Swal) {
         const r = await Swal.fire({
           title: '¿Eliminar enlace?',
@@ -1244,6 +1340,11 @@
   async function updateEventOnServer(id, newDateStr, newTime) {
     const fecha_hora = `${newDateStr}T${newTime}:00`;
     try {
+      const local = events.find(e => e.id === id);
+      if (local?.readOnly) {
+        if (typeof mostrarNotificacion==='function') mostrarNotificacion('Este evento es solo lectura','info');
+        return;
+      }
       await fetchJSON(`${ROUTES.baseEventos}/${id}`, {
         method: 'PUT',
         body: JSON.stringify({ fecha_hora }),

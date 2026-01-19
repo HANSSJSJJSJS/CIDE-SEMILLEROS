@@ -61,19 +61,60 @@
 ###  Crear manualmente el archivo .env con el siguiente contenido:
 
 ```bash
- APP_NAME=CIDE-Semilleros
- APP_ENV=local
- APP_KEY=
- APP_DEBUG=true
- APP_URL=http://127.0.0.1:8000
- LOG_CHANNEL=stack
- LOG_LEVEL=debug
- DB_CONNECTION=mysql
- DB_HOST=127.0.0.1
- DB_PORT=3306
- DB_DATABASE=semilleros
- DB_USERNAME=root
- DB_PASSWORD=
+APP_NAME="Semilleros CIDE SENA"
+APP_ENV=local
+APP_KEY=base64: se tiene que generar 
+APP_DEBUG=true
+APP_URL=http://127.0.0.1:8000
+
+LOG_CHANNEL=stack
+LOG_DEPRECATIONS_CHANNEL=null
+LOG_LEVEL=debug
+
+# -------------------------------------------------
+# BASE DE DATOS
+# -------------------------------------------------
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=cide_sena
+DB_USERNAME=root
+DB_PASSWORD=
+
+# -------------------------------------------------
+# CACHE / SESSION
+# -------------------------------------------------
+BROADCAST_DRIVER=log
+CACHE_DRIVER=file
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=sync
+SESSION_DRIVER=file
+SESSION_LIFETIME=120
+
+# -------------------------------------------------
+# CORREO (DESARROLLO - MAILTRAP)
+# -------------------------------------------------
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=semillerossenacide@gmail.com
+MAIL_PASSWORD=vrbrnoyvprqpnhoc
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=semillerossenacide@gmail.com
+MAIL_FROM_NAME="Semillero CIDE"
+
+# -------------------------------------------------
+# PASSWORD RESET
+# -------------------------------------------------
+PASSWORD_RESET_TIMEOUT=60
+
+# -------------------------------------------------
+# OTROS
+# -------------------------------------------------
+TIMEZONE=America/Bogota
+LOCALE=es
+FALLBACK_LOCALE=es
+
 ```
 
 ###  PASO 6. GENERAR CLAVE DE LA APLICACIÓN
