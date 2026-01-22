@@ -92,6 +92,8 @@
 .cal-lider .day-cell.festivo .day-number { background: #EAF2FF; color: var(--cal-blue); border-radius:6px; padding:2px 6px; }
 .cal-lider .day-cell.festivo::after { content: 'Festivo'; position:absolute; top:8px; right:8px; font-size:10px; font-weight:800; color: var(--cal-blue); background:#E6F0FF; padding:2px 6px; border-radius:6px; box-shadow: var(--cal-shadow); }
 
+ .cal-lider .day-cell.disabled{ pointer-events: auto; }
+
 /* Fecha en celda */
 .cal-lider .day-number, .cal-lider .cell-date, .cal-lider .day-label { position:absolute; top:8px; left:10px; font-weight:700; color:#41566b; }
 .cal-lider .today .day-number, .cal-lider .is-today .day-number { background: rgba(0,120,50,.12); color: var(--cal-green-dark); border-radius:6px; padding:2px 6px; }

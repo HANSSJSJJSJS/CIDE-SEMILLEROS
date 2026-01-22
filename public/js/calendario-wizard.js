@@ -13,6 +13,13 @@ const totalSteps = 3;
 let closeModalCallback = null;
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar solo si el wizard existe en esta página
+    const hasWizard = !!document.getElementById('btn-next-step')
+        && !!document.getElementById('btn-prev-step')
+        && !!document.getElementById('btn-submit')
+        && !!document.getElementById('event-type');
+    if (!hasWizard) return;
+
     // Inicializar con la función global por defecto
     initializeWizard(window.closeEventModal);
 });
@@ -159,6 +166,8 @@ function updateButtons() {
     const btnPrev = document.getElementById('btn-prev-step');
     const btnNext = document.getElementById('btn-next-step');
     const btnSubmit = document.getElementById('btn-submit');
+
+    if (!btnPrev || !btnNext || !btnSubmit) return;
     
     // Botón anterior
     if (currentStep === 1) {
@@ -182,26 +191,31 @@ function validateStep(step) {
     let errorMessage = '';
 
     switch(step) {
-        case 1: {
-            const titleEl = document.getElementById('event-title');
-            const typeEl = document.getElementById('event-type');
-            const locationEl = document.getElementById('event-location');
+case 1: {
+    // Validar información básica
+    const titleEl = document.getElementById('event-title');
+    const typeEl = document.getElementById('event-type');
+    const locationEl = document.getElementById('event-location');
 
-            const title = titleEl?.value?.trim();
-            const type = typeEl?.value;
-            const location = locationEl?.value;
+    if (!titleEl || !typeEl || !locationEl) {
+        return true; // la vista no tiene estos campos
+    }
 
-            if (!title) {
-                errorMessage = 'Por favor ingresa el título de la reunión';
-                isValid = false;
-            } else if (!type) {
-                errorMessage = 'Por favor selecciona el tipo de reunión';
-                isValid = false;
-            } else if (!location) {
-                errorMessage = 'Por favor selecciona la ubicación';
-                isValid = false;
-            }
-            break;
+    const title = titleEl.value.trim();
+    const type = typeEl.value;
+    const location = locationEl.value;
+
+    if (!title) {
+        errorMessage = 'Por favor ingresa el título de la reunión';
+        isValid = false;
+    } else if (!type) {
+        errorMessage = 'Por favor selecciona el tipo de reunión';
+        isValid = false;
+    } else if (!location) {
+        errorMessage = 'Por favor selecciona la ubicación';
+        isValid = false;
+    }
+    break;
 }
 
         case 2:
@@ -300,10 +314,14 @@ function updateSummary() {
 
     // Participantes
     const selectedParticipants = document.querySelectorAll('.participant-checkbox-modal:checked');
-    const names = Array.from(selectedParticipants).map(cb => {
-        const label = document.querySelector(`label[for="${cb.id}"] .participant-name-modal`);
-        return label?.textContent || '';
-    }).filter(Boolean);
+    const names = Array.from(selectedParticipants)
+        .map(cb => {
+            const label = document.querySelector(
+                `label[for="${cb.id}"] .participant-name-modal`
+            );
+            return label?.textContent || '';
+        })
+        .filter(Boolean);
 
     if (names.length === 0) {
         safeText('summary-participants', '--');
@@ -318,8 +336,23 @@ function updateSummary() {
 }
 
 
+
 function handleFormSubmit(e) {
     e.preventDefault();
+
+    const eventDateEl = document.getElementById('event-date');
+    const eventTimeEl = document.getElementById('event-time');
+    const titleEl = document.getElementById('event-title');
+    const typeEl = document.getElementById('event-type');
+    const durationEl = document.getElementById('event-duration');
+    const locationEl = document.getElementById('event-location');
+    const reminderEl = document.querySelector('input[name="reminder"]:checked');
+    const proyectoEl = document.getElementById('event-proyecto');
+    const descEl = document.getElementById('event-description');
+
+    if (!eventDateEl || !eventTimeEl || !titleEl || !typeEl || !durationEl || !locationEl) {
+        return;
+    }
     
     // Validar paso final
     if (!validateStep(currentStep)) {
@@ -327,8 +360,8 @@ function handleFormSubmit(e) {
     }
     
     // Obtener fecha y hora
-    const eventDate = document.getElementById('event-date').value;
-    const eventTime = document.getElementById('event-time').value;
+    const eventDate = eventDateEl.value;
+    const eventTime = eventTimeEl.value;
     
     // Validar que fecha y hora existan
     if (!eventDate || !eventTime) {
@@ -338,14 +371,14 @@ function handleFormSubmit(e) {
     
     // Recopilar todos los datos
     const formData = {
-        titulo: document.getElementById('event-title').value,
-        tipo: document.getElementById('event-type').value,
+        titulo: titleEl.value,
+        tipo: typeEl.value,
         fecha_hora: eventDate + 'T' + eventTime,
-        duracion: parseInt(document.getElementById('event-duration').value),
-        ubicacion: document.getElementById('event-location').value,
-        recordatorio: document.querySelector('input[name="reminder"]:checked').value,
-        id_proyecto: document.getElementById('event-proyecto').value || null,
-        descripcion: document.getElementById('event-description').value,
+        duracion: parseInt(durationEl.value),
+        ubicacion: locationEl.value,
+        recordatorio: reminderEl ? reminderEl.value : 'none',
+        id_proyecto: proyectoEl && proyectoEl.value ? proyectoEl.value : null,
+        descripcion: descEl ? descEl.value : null,
         participantes: Array.from(document.querySelectorAll('.participant-checkbox-modal:checked')).map(cb => cb.value)
     };
     
