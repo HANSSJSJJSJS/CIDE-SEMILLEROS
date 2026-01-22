@@ -1,9 +1,10 @@
 @php
     $layout = match(auth()->user()->role) {
-        'ADMIN', 'LIDER_INVESTIGACION' => 'layouts.admin',
-        'LIDER_SEMILLERO'              => 'layouts.lider',
-        'APRENDIZ'                     => 'layouts.aprendiz',
-        default                        => 'layouts.app',
+        'ADMIN',
+        'LIDER_INVESTIGACION',
+        'LIDER_SEMILLERO' => 'layouts.admin',
+        'APRENDIZ'        => 'layouts.aprendiz',
+        default           => 'layouts.app',
     };
 @endphp
 

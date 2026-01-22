@@ -24,6 +24,7 @@
 {{-- MODAL --}}
 @include('admin.recursos.multimedia._modal_multimedia')
 
+{{-- HEADER --}}
 <div class="documentos-header d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="mb-1">Multimedia</h2>
@@ -45,31 +46,24 @@
     </div>
 </div>
 
-        <button id="btnAbrirModalMultimedia" class="btn-multimedia">
-            <i class="bi bi-upload"></i> Subir multimedia
-        </button>
-    </div>
+{{-- SECCIÓN PLANTILLAS --}}
+<div class="mb-5">
+    <h4 class="seccion-titulo">Plantillas / Presentaciones</h4>
+    <div id="contenedorPlantillas" class="row g-4"></div>
+    <hr class="my-5">
+</div>
 
-    {{-- SECCIÓN PLANTILLAS --}}
-    <div class="mb-5">
-        <h4 class="seccion-titulo">Plantillas / Presentaciones</h4>
-        <div id="contenedorPlantillas" class="row g-4"></div>
-        <hr class="my-5">
-    </div>
+{{-- SECCIÓN MANUALES --}}
+<div class="mb-5">
+    <h4 class="seccion-titulo">Manuales</h4>
+    <div id="contenedorManuales" class="row g-4"></div>
+    <hr class="my-5">
+</div>
 
-    {{-- SECCIÓN MANUALES --}}
-    <div class="mb-5">
-        <h4 class="seccion-titulo">Manuales</h4>
-        <div id="contenedorManuales" class="row g-4"></div>
-        <hr class="my-5">
-    </div>
-
-    {{-- SECCIÓN OTROS --}}
-    <div class="mb-5">
-        <h4 class="seccion-titulo">Otros archivos</h4>
-        <div id="contenedorOtros" class="row g-4"></div>
-    </div>
-
+{{-- SECCIÓN OTROS --}}
+<div class="mb-5">
+    <h4 class="seccion-titulo">Otros archivos</h4>
+    <div id="contenedorOtros" class="row g-4"></div>
 </div>
 
 @endsection

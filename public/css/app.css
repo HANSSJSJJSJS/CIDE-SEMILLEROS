@@ -39,3 +39,7 @@ html, body {
 
     overflow: hidden;
 }
+/* Forzar SweetAlert2 por encima de TODO */
+.swal2-container {
+    z-index: 99999 !important;
+}

@@ -201,18 +201,45 @@ public function download(Recurso $recurso)
     // ======================================================
     // ELIMINAR MULTIMEDIA
     // ======================================================
-    public function deleteMultimedia($id)
-    {
-        $r = DB::table('recursos')->where('id', $id)->first();
-
-        if ($r && Storage::disk('public')->exists($r->archivo)) {
-            Storage::disk('public')->delete($r->archivo);
-        }
-
-        DB::table('recursos')->where('id', $id)->delete();
-
-        return response()->json(['success' => true]);
+public function deleteMultimedia($id)
+{
+    if (!is_numeric($id)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'ID inválido'
+        ], 400);
     }
+
+    // 🔑 USAR id_recurso (NO id)
+    $recurso = DB::table('recursos')
+        ->where('id_recurso', $id)
+        ->first();
+
+    if (!$recurso) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Recurso no encontrado'
+        ], 404);
+    }
+
+    // 🗑️ Eliminar archivo físico
+    if ($recurso->archivo && $recurso->archivo !== 'sin_archivo') {
+        if (Storage::disk('public')->exists($recurso->archivo)) {
+            Storage::disk('public')->delete($recurso->archivo);
+        }
+    }
+
+    // 🗑️ Eliminar registro BD
+    DB::table('recursos')
+        ->where('id_recurso', $id)
+        ->delete();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Archivo eliminado correctamente'
+    ]);
+}
+
 // ======================================================
 // OBTENER LÍDER DEL SEMILLERO (AJAX)
 // ======================================================

@@ -1,0 +1,69 @@
+/* ===============================
+   NOTIFICACIONES TIPO TOAST
+================================ */
+
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1055;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.notification {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 280px;
+    max-width: 360px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.15);
+    animation: slideIn .25s ease;
+    font-size: 14px;
+}
+
+.notification.success {
+    background: #e6f7ee;
+    border-left: 4px solid #28a745;
+    color: #1e7e34;
+}
+
+.notification.error {
+    background: #fdecea;
+    border-left: 4px solid #dc3545;
+    color: #a71d2a;
+}
+
+.notification-icon i {
+    font-size: 18px;
+}
+
+.notification-title {
+    font-weight: 600;
+}
+
+.notification-message {
+    font-size: 13px;
+}
+
+.notification-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}

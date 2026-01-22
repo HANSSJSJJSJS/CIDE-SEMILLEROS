@@ -42,7 +42,7 @@
   inset: 0;
   z-index: -2;
   margin-top: 80px;
-  background-image: url("/images/fondo_page.png");
+
   background-repeat: no-repeat;
   background-position: calc(50% + 140px) top;
   background-size: clamp(980px, 60vw, 1400px) auto;
