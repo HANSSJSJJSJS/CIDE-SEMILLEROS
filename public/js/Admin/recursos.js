@@ -78,8 +78,10 @@ document.addEventListener("DOMContentLoaded", () => {
     initBotonesCrear();
     initBotonesVerRecursos();
     initFormularioCrear();
-    initFormularioEditar();
+
 });
+
+
 
 
 
@@ -380,38 +382,99 @@ else if (archivo && archivo !== 'sin_archivo') {
 
 
 
-/* ======================================================
-   APROBAR / RECHAZAR
-====================================================== */
-
 function activarBotonesEstados() {
 
+    // =========================
+    // APROBAR
+    // =========================
     document.querySelectorAll(".btn-aprobar").forEach(btn => {
-        btn.addEventListener("click", () => {
-            actualizarEstado(btn.dataset.id, "aprobado", "");
+        btn.addEventListener("click", async () => {
+
+            const id = btn.dataset.id;
+
+            // 🔒 VALIDAR EVIDENCIA
+            if (!tieneEvidenciaSubida(id)) {
+                showNotification(
+                    "Evidencia requerida",
+                    "No puedes aprobar un recurso sin evidencia del líder.",
+                    "error"
+                );
+                return;
+            }
+
+            // ❓ CONFIRMACIÓN
+            const result = await Swal.fire({
+                icon: 'question',
+                title: '¿Aprobar recurso?',
+                text: '¿Estás seguro de aprobar este recurso?',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, aprobar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (!result.isConfirmed) return;
+
+            actualizarEstado(id, "aprobado", "");
         });
     });
 
+    // =========================
+    // MOSTRAR RECHAZO
+    // =========================
     document.querySelectorAll(".btn-rechazar").forEach(btn => {
         btn.addEventListener("click", () => {
-            document.getElementById(`rechazo-${btn.dataset.id}`).classList.remove("d-none");
+            document
+                .getElementById(`rechazo-${btn.dataset.id}`)
+                .classList.remove("d-none");
         });
     });
 
+    // =========================
+    // CONFIRMAR RECHAZO
+    // =========================
     document.querySelectorAll(".btn-confirmar").forEach(btn => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
+
             const id = btn.dataset.id;
-            const comentario = document.querySelector(`#rechazo-${id} textarea`).value;
+            const comentario = document
+                .querySelector(`#rechazo-${id} textarea`)
+                .value;
 
             if (!comentario.trim()) {
                 showNotification("Error", "Debes escribir un comentario", "error");
                 return;
             }
 
+            // 🔒 VALIDAR EVIDENCIA
+            if (!tieneEvidenciaSubida(id)) {
+                showNotification(
+                    "Evidencia requerida",
+                    "No puedes rechazar un recurso sin evidencia del líder.",
+                    "error"
+                );
+                return;
+            }
+
+            // ❓ CONFIRMACIÓN
+            const result = await Swal.fire({
+                icon: 'warning',
+                title: '¿Rechazar recurso?',
+                text: '¿Estás seguro de rechazar este recurso?',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, rechazar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#d33'
+            });
+
+            if (!result.isConfirmed) return;
+
             actualizarEstado(id, "rechazado", comentario);
         });
     });
 
+    // =========================
+    // EDITAR / ELIMINAR (SIN CAMBIOS)
+    // =========================
     document.querySelectorAll(".btn-editar-recurso").forEach(btn => {
         btn.addEventListener("click", () => {
             abrirModalEditar(btn);
@@ -423,166 +486,6 @@ function activarBotonesEstados() {
             eliminarRecursoVencido(btn.dataset.id);
         });
     });
-}
-
-function eliminarRecursoVencido(id) {
-    if (!id) return;
-    if (!window.ACT_DELETE_RECURSO_URL) {
-        showNotification('Error', 'No se encontró la ruta para eliminar.', 'error');
-        return;
-    }
-
-    const runDelete = () => {
-        const url = buildUrl(window.ACT_DELETE_RECURSO_URL, id);
-
-        fetch(url, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': CSRF_TOKEN,
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-            }
-        })
-            .then(async (r) => {
-                const data = await r.json().catch(() => ({}));
-                return { ok: r.ok, data };
-            })
-            .then(({ ok, data }) => {
-                if (!ok) {
-                    showNotification('Error', data.message ?? 'No se pudo eliminar el recurso', 'error');
-                    return;
-                }
-                showNotification('Eliminado', 'Recurso eliminado correctamente', 'success');
-                if (semilleroActualId) {
-                    cargarRecursos(semilleroActualId);
-                }
-            })
-            .catch(() => {
-                showNotification('Error', 'No se pudo eliminar el recurso', 'error');
-            });
-    };
-
-    if (window.Swal && typeof window.Swal.fire === 'function') {
-        window.Swal.fire({
-            title: 'Eliminar recurso vencido',
-            html: '<div class="cide-swal-text">¿Deseas eliminar este recurso vencido?</div>',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Eliminar',
-            cancelButtonText: 'Cancelar',
-            reverseButtons: true,
-            focusCancel: true,
-            customClass: {
-                popup: 'cide-swal-popup',
-                title: 'cide-swal-title',
-                htmlContainer: 'cide-swal-html',
-                confirmButton: 'cide-swal-confirm',
-                cancelButton: 'cide-swal-cancel',
-            }
-        }).then((result) => {
-            if (result && result.isConfirmed) {
-                runDelete();
-            }
-        });
-        return;
-    }
-
-    const ok = confirm('¿Deseas eliminar este recurso vencido?');
-    if (!ok) return;
-    runDelete();
-}
-
-
-function initFormularioEditar() {
-    const form = document.getElementById("formEditarRecurso");
-    if (!form) return;
-
-    form.addEventListener("submit", (e) => {
-        e.preventDefault();
-
-        const id = document.getElementById("edit_recurso_id").value;
-        const tipoDocumento = document.getElementById("edit_tipo_documento").value;
-        const fechaLimite = document.getElementById("edit_fecha_limite").value;
-        const descripcion = document.getElementById("edit_descripcion").value;
-
-        const url = buildUrl(window.ACT_UPDATE_RECURSO_URL, id);
-
-        fetch(url, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-TOKEN": CSRF_TOKEN,
-            },
-            body: JSON.stringify({
-                tipo_documento: tipoDocumento,
-                fecha_limite: fechaLimite,
-                descripcion,
-            })
-        })
-        .then(r => r.json())
-        .then(() => {
-            showNotification("Actualizado", "Recurso actualizado correctamente", "success");
-            modalEditar?.hide();
-            cargarRecursos(semilleroActualId);
-        })
-        .catch(() => {
-            showNotification("Error", "No se pudo actualizar el recurso", "error");
-        });
-    });
-}
-
-
-
-function abrirModalEditar(btn) {
-    if (!modalEditar) return;
-
-    const estado = (btn.dataset.estado ?? "").toLowerCase();
-    if (estado === "aprobado") {
-        showNotification("No permitido", "No puedes editar un recurso aprobado", "error");
-        return;
-    }
-
-    const decode = (v) => {
-        try { return decodeURIComponent(v ?? ""); } catch { return v ?? ""; }
-    };
-
-    const id = btn.dataset.id;
-    const lider = decode(btn.dataset.lider);
-    const titulo = decode(btn.dataset.titulo);
-    const fecha = decode(btn.dataset.fecha);
-    const descripcion = decode(btn.dataset.descripcion);
-    const tipoDocumento = decode(btn.dataset.tipoDocumento);
-    const archivo = decode(btn.dataset.archivo);
-
-    document.getElementById("edit_recurso_id").value = id;
-    document.getElementById("edit_lider").value = lider;
-    document.getElementById("edit_estado").value = estado.toUpperCase();
-    document.getElementById("edit_titulo").value = titulo;
-    document.getElementById("edit_tipo_documento").value = tipoDocumento;
-    document.getElementById("edit_fecha_limite").value = fecha === "—" ? "" : fecha;
-    document.getElementById("edit_descripcion").value = descripcion;
-
-    modalEditar.show();
-}
-
-
-function actualizarEstado(id, estado, comentario) {
-
-    fetch(`/admin/recursos/semillero/${id}/estado`, {
-        method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-TOKEN": CSRF_TOKEN
-        },
-        body: JSON.stringify({ estado, comentarios: comentario })
-    })
-        .then(r => r.json())
-        .then(() => {
-            showNotification("Actualizado", "El estado se modificó correctamente", "success");
-            if (semilleroActualId) {
-                cargarRecursos(semilleroActualId);
-            }
-        });
 }
 
 
@@ -713,5 +616,73 @@ function cargarLider(id) {
     .catch(() => {
         nombre.value = "Error al cargar";
         idInput.value = "";
+    });
+}
+/* ======================================================
+   VALIDAR EVIDENCIA DEL LÍDER
+====================================================== */
+
+function tieneEvidenciaSubida(recursoId) {
+
+    const card = document
+        .querySelector(`.btn-aprobar[data-id="${recursoId}"]`)
+        ?.closest('.recurso-item');
+
+    if (!card) return false;
+
+    const btnArchivo = card.querySelector('.btn-recurso-file');
+    if (!btnArchivo) return false;
+
+    const texto = btnArchivo.textContent.toLowerCase();
+
+    // ✔ solo cuenta si es respuesta del líder
+    return texto.includes('respuesta');
+}
+/* ======================================================
+   ACTUALIZAR ESTADO DEL RECURSO (APROBAR / RECHAZAR)
+====================================================== */
+function actualizarEstado(recursoId, estado, comentario = "") {
+
+    fetch(`/admin/recursos/semillero/${recursoId}/estado`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": CSRF_TOKEN,
+            "Accept": "application/json"
+        },
+        body: JSON.stringify({
+            estado: estado,
+            comentarios: comentario
+        })
+    })
+    .then(async r => {
+        if (!r.ok) {
+            const data = await r.json().catch(() => ({}));
+            throw new Error(data.message || "Error al actualizar estado");
+        }
+        return r.json();
+    })
+    .then(() => {
+        showNotification(
+            "Actualizado",
+            `El recurso fue ${estado} correctamente`,
+            "success"
+        );
+
+        // 🔄 refrescar recursos sin recargar página
+        if (semilleroActualId) {
+            cargarRecursos(semilleroActualId);
+        } else {
+            // fallback de seguridad
+            setTimeout(() => location.reload(), 800);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        showNotification(
+            "Error",
+            "No se pudo actualizar el estado del recurso",
+            "error"
+        );
     });
 }

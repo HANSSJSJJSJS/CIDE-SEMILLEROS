@@ -1,7 +1,7 @@
 <div id="modalSubirMultimedia" class="modal-overlay d-none">
 
     <div class="modal-subir-multimedia">
-        <button class="modal-close" id="cerrarModalMultimedia">×</button>
+        <button type="button" class="modal-close" id="cerrarModalMultimedia">×</button>
 
         <h3>Subir Multimedia</h3>
 
@@ -17,17 +17,16 @@
 
                 <div class="col-md-3">
                     <label class="form-label">Categoría *</label>
-                    <<select name="categoria" class="form-select" required>
-                            <option value="plantillas">Plantillas / Presentaciones</option>
-                            <option value="manuales">Manuales</option>
-                            <option value="otros">Otros</option>
-                        </select>
-
+                    <select name="categoria" class="form-select" required>
+                        <option value="plantillas">Plantillas / Presentaciones</option>
+                        <option value="manuales">Manuales</option>
+                        <option value="otros">Otros</option>
+                    </select>
                 </div>
 
                 <div class="col-md-3">
                     <label class="form-label">Destino *</label>
-                    <select name="destino" class="form-select">
+                    <select name="destino" class="form-select" required>
                         <option value="todos">Para todos los líderes</option>
                     </select>
                 </div>

@@ -1,7 +1,5 @@
 <?php
 
-// app/Models/Recurso.php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +8,10 @@ class Recurso extends Model
 {
     protected $table = 'recursos';
     protected $primaryKey = 'id_recurso';
+
+    // 🔥 ESTO ES CLAVE
+    public $incrementing = true;
+    protected $keyType = 'int';
 
     protected $fillable = [
         'nombre_archivo',
@@ -35,19 +37,16 @@ class Recurso extends Model
         'respondido_en' => 'datetime',
     ];
 
-    // Relación con semillero
     public function semillero()
     {
         return $this->belongsTo(Semillero::class, 'semillero_id', 'id_semillero');
     }
 
-    // Scope para actividades dirigidas a líderes
     public function scopeParaLideres($query)
     {
         return $query->where('dirigido_a', 'lideres');
     }
 
-    // Estado calculado (incluye "vencido")
     public function getEstadoCalculadoAttribute()
     {
         $estado = $this->estado;
