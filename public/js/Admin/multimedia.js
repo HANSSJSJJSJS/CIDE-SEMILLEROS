@@ -95,6 +95,9 @@ async function cargarMultimedia() {
             const badge = badgeInfo(item.tipo_documento);
             const icono = badge.preview ? 'bi-eye' : 'bi-download';
 
+            // URL real del archivo en storage (admita también item.url si viene del backend)
+            const fileUrl = item.url || (`/storage/${item.archivo}`);
+
             const descripcion =
                 typeof item.descripcion === 'string' && item.descripcion.trim() !== ''
                     ? item.descripcion
@@ -114,10 +117,9 @@ async function cargarMultimedia() {
                         </p>
 
                         <div class="d-flex gap-2 mt-3">
-                            <button class="btn btn-outline-primary btn-sm"
-                                onclick="window.open('/storage/${item.archivo}', '_blank')">
+                            <a class="btn btn-outline-primary btn-sm" href="${fileUrl}" download>
                                 <i class="bi ${icono}"></i>
-                            </button>
+                            </a>
 
                             <button
                                 class="btn btn-danger btn-sm btnEliminarMultimedia"

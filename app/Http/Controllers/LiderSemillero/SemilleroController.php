@@ -178,23 +178,20 @@ class SemilleroController extends Controller
                         $aprHasApellidos = Schema::hasColumn('aprendices','apellidos');
                         $usrNameCol = Schema::hasColumn('users','name') ? 'name' : (Schema::hasColumn('users','nombre') ? 'nombre' : null);
                         $usrLastCol = Schema::hasColumn('users','apellidos') ? 'apellidos' : (Schema::hasColumn('users','apellido') ? 'apellido' : null);
-                        $willJoinUser = !($aprHasNombres && $aprHasApellidos) && Schema::hasTable('users') && !empty($aprUserFkCol);
+                        // Con tu esquema, siempre hay users y queremos poder caer a users.nombre/apellidos si aprendices.* viene vacío
+                        $willJoinUser = Schema::hasTable('users') && !empty($aprUserFkCol);
                         $joinByEmail  = Schema::hasTable('users') && Schema::hasColumn('users','email_lc') && Schema::hasColumn('aprendices','correo_institucional');
                         $uNameExpr  = ($willJoinUser && $usrNameCol) ? "u.`$usrNameCol`" : 'NULL';
                         $uLastExpr  = ($willJoinUser && $usrLastCol) ? "u.`$usrLastCol`" : 'NULL';
                         $ueNameExpr = ($joinByEmail && $usrNameCol) ? "ue.`$usrNameCol`" : 'NULL';
                         $ueLastExpr = ($joinByEmail && $usrLastCol) ? "ue.`$usrLastCol`" : 'NULL';
 
-                        $baseConcat = "''";
-                        if ($aprHasNombres && $aprHasApellidos) {
-                            $baseConcat = "CONCAT(COALESCE(aprendices.nombres,''),' ',COALESCE(aprendices.apellidos,''))";
-                        } elseif ($usrNameCol && $usrLastCol) {
-                            $baseConcat = "CONCAT(COALESCE(COALESCE($uNameExpr, $ueNameExpr),''),' ',COALESCE(COALESCE($uLastExpr, $ueLastExpr),''))";
-                        } elseif ($usrNameCol) {
-                            $baseConcat = "COALESCE(COALESCE($uNameExpr, $ueNameExpr),'')";
-                        } elseif ($usrLastCol) {
-                            $baseConcat = "COALESCE(COALESCE($uLastExpr, $ueLastExpr),'')";
-                        }
+                        // Nombre base: priorizar aprendices.nombres/apellidos y caer a users.nombre/apellidos
+                        $baseConcat = "CONCAT(".
+                            "COALESCE(aprendices.nombres, $uNameExpr, $ueNameExpr, ''),".
+                            "' ',".
+                            "COALESCE(aprendices.apellidos, $uLastExpr, $ueLastExpr, '')".
+                        ")";
 
                         $uEmailExpr  = $willJoinUser ? 'u.email' : "''";
                         $ueEmailExpr = $joinByEmail ? 'ue.email' : "''";
@@ -203,11 +200,12 @@ class SemilleroController extends Controller
                             ? "COALESCE(aprendices.correo_institucional, $uEmailExpr, $ueEmailExpr, '')"
                             : 'COALESCE(aprendices.correo_institucional, "")';
 
+                        // Campos nombres/apellidos individuales con mismo orden de prioridad
                         $nombresExpr = $aprHasNombres
-                            ? "COALESCE(NULLIF(TRIM(aprendices.nombres),''), COALESCE($uNameExpr, $ueNameExpr, ''))"
+                            ? "COALESCE(NULLIF(TRIM(aprendices.nombres),''), $uNameExpr, $ueNameExpr, '')"
                             : "COALESCE($uNameExpr, $ueNameExpr, '')";
                         $apellidosExpr = $aprHasApellidos
-                            ? "COALESCE(NULLIF(TRIM(aprendices.apellidos),''), COALESCE($uLastExpr, $ueLastExpr, ''))"
+                            ? "COALESCE(NULLIF(TRIM(aprendices.apellidos),''), $uLastExpr, $ueLastExpr, '')"
                             : "COALESCE($uLastExpr, $ueLastExpr, '')";
 
                         $tipoExpr = "''";
@@ -227,7 +225,8 @@ class SemilleroController extends Controller
 
                         $rows = DB::table($pivot['table'])
                             ->join('aprendices', 'aprendices.'.$joinCol, '=', DB::raw($pivot['table'].'.'.$pivot['aprCol']))
-                            ->when(!($aprHasNombres && $aprHasApellidos) && Schema::hasTable('users') && !empty($aprUserFkCol), function($q) use ($aprUserFkCol){
+                            // Unir siempre con users cuando $willJoinUser sea true (para poder usar u.nombre/u.apellidos)
+                            ->when($willJoinUser, function($q) use ($aprUserFkCol){
                                 $q->leftJoin('users as u', 'u.id', '=', DB::raw('aprendices.' . $aprUserFkCol));
                             })
                             ->when(Schema::hasTable('users') && Schema::hasColumn('users','email_lc') && Schema::hasColumn('aprendices','correo_institucional'), function($q){
@@ -252,9 +251,19 @@ class SemilleroController extends Controller
                             $items = [];
                             if (isset($p->id_proyecto) && $grouped->has($p->id_proyecto)) {
                                 foreach ($grouped[$p->id_proyecto] as $r) {
+                                    // Nombre completo tolerante: primero nombres/apellidos, si no existen usar nombre_completo
+                                    $nombre = trim((string)($r->nombres ?? '').' '.(string)($r->apellidos ?? ''));
+                                    if ($nombre === '' && isset($r->nombre_completo) && trim((string)$r->nombre_completo) !== '') {
+                                        $nombre = trim((string)$r->nombre_completo);
+                                    }
+
+                                    if ($nombre === '') {
+                                        $nombre = 'Aprendiz';
+                                    }
+
                                     $items[] = [
                                         'id_aprendiz' => $r->id_aprendiz ?? null,
-                                        'nombre' => trim((string)($r->nombres ?? '').' '.(string)($r->apellidos ?? '')) ?: 'Aprendiz',
+                                        'nombre' => $nombre,
                                         'nombres' => $r->nombres ?? '',
                                         'apellidos' => $r->apellidos ?? '',
                                         'email'  => $r->correo_institucional,
@@ -340,9 +349,18 @@ class SemilleroController extends Controller
                 $items = [];
                 if ($rel) {
                     foreach ($rel->aprendices as $ap) {
+                        // Asegurar nombre completo incluso si no existe la propiedad nombre_completo en el modelo
+                        $nombre = trim((string)($ap->nombres ?? '').' '.(string)($ap->apellidos ?? ''));
+                        if ($nombre === '' && isset($ap->nombre_completo) && trim((string)$ap->nombre_completo) !== '') {
+                            $nombre = trim((string)$ap->nombre_completo);
+                        }
+                        if ($nombre === '') {
+                            $nombre = 'Aprendiz';
+                        }
+
                         $items[] = [
                             'id_aprendiz' => $ap->id_aprendiz,
-                            'nombre' => $ap->nombre_completo,
+                            'nombre' => $nombre,
                             'nombres' => $ap->nombres ?? '',
                             'apellidos' => $ap->apellidos ?? '',
                             'email'  => $ap->correo_institucional,

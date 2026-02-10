@@ -407,14 +407,21 @@ public function obtenerMultimedia()
             DB::raw("LOWER(SUBSTRING_INDEX(archivo, '.', -1)) as extension"),
         ])
         ->whereNotNull('archivo')
+        // Solo recursos pensados para líderes / semilleros
         ->whereIn('dirigido_a', ['todos', 'semillero'])
+        // Si existe columna de semillero, traer:
+        // - Recursos globales (dirigido_a = 'todos')
+        // - Recursos específicos del semillero actual
         ->when($semilleroKey, function ($q) use ($semilleroKey, $semillero) {
-            $q->where($semilleroKey, $semillero->id_semillero);
+            $q->where(function ($w) use ($semilleroKey, $semillero) {
+                $w->where($semilleroKey, $semillero->id_semillero)
+                  ->orWhere('dirigido_a', 'todos');
+            });
         })
         ->orderBy('created_at', 'desc')
         ->get()
         ->map(function ($r) {
-            $r->url = asset('storage/' . $r->archivo); // 👈 URL real
+            $r->url = asset('storage/' . $r->archivo); // URL real al archivo
             return $r;
         });
 

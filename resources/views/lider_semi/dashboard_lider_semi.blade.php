@@ -81,7 +81,7 @@
       <div class="list-card p-3">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <h5 class="fw-bold mb-0">Actividad de Aprendices</h5>
-          <a href="#" class="small text-primary">Ver todos →</a>
+          <a href="{{ route('lider_semi.documentos') }}" class="small text-primary">Ver todos →</a>
         </div>
         @php
           $items = $actividadReciente ?? [];

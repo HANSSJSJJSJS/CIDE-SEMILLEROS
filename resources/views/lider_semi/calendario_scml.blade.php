@@ -442,6 +442,7 @@
         </section>
         <div class="drawer-actions">
             <button type="button" class="btn-calendario btn-primary-calendario" id="drawer-edit-cta" style="display:none;">Editar</button>
+            <button type="button" class="btn-calendario btn-primary-calendario" id="drawer-save-cta" style="display:none;">Guardar asistencia</button>
             <button type="button" class="btn-calendario btn-secondary-calendario" id="drawer-delete-cta" style="display:none;">Cancelar reunión</button>
         </div>
     </div>
@@ -589,6 +590,7 @@ const wizardPrevBtn = document.getElementById('btn-prev-step');
 const wizardSubmitBtn = document.getElementById('btn-submit');
 const drawerCloseCta = document.getElementById('drawer-close-cta');
 const drawerEditCta = document.getElementById('drawer-edit-cta');
+const drawerSaveCta = document.getElementById('drawer-save-cta');
 const drawerDeleteCta = document.getElementById('drawer-delete-cta');
 const deleteBtn = document.getElementById('deleteBtn');
 const selectedDateDisplay = document.getElementById('selectedDateDisplay');
@@ -618,6 +620,7 @@ drawerCloseBtn.addEventListener('click', closeDetailDrawer);
 if (drawerCloseCta) drawerCloseCta.addEventListener('click', closeDetailDrawer);
 if (drawerEditCta) drawerEditCta.addEventListener('click', editFromDetail);
 if (drawerDeleteCta) drawerDeleteCta.addEventListener('click', deleteEvent);
+if (drawerSaveCta) drawerSaveCta.addEventListener('click', closeDetailDrawer);
 if (cancelBtn) cancelBtn.addEventListener('click', closeEventModal);
 if (wizardCancelBtn) wizardCancelBtn.addEventListener('click', closeEventModal);
 if (wizardNextBtn) wizardNextBtn.addEventListener('click', ()=> goToStep(currentWizardStep+1));
@@ -1314,8 +1317,24 @@ function showEventDetails(event){
   const canEdit = (event.creatorId !== null && event.creatorId !== undefined)
     ? (parseInt(event.creatorId, 10) === parseInt(CURRENT_USER_ID, 10))
     : false;
-  if (drawerEditCta) drawerEditCta.style.display = canEdit ? 'inline-flex' : 'none';
-  if (drawerDeleteCta) drawerDeleteCta.style.display = canEdit ? 'inline-flex' : 'none';
+  // Calcular si la reunión ya terminó (fecha/hora + duración en minutos)
+  let hasEnded = false;
+  try {
+    const raw = (event.date || '') + ' ' + (event.time || '00:00');
+    const [y,m,d] = (event.date || '').split('-').map(n=>parseInt(n,10));
+    const [H,M] = (event.time || '00:00').split(':').map(n=>parseInt(n,10));
+    if (y && m && d) {
+      const start = new Date(y, (m-1), d, H||0, M||0, 0, 0);
+      const dur = parseInt(event.duration || 60, 10) || 60;
+      const end = new Date(start.getTime() + dur*60000);
+      hasEnded = end.getTime() <= Date.now();
+    }
+  } catch(_) { hasEnded = false; }
+
+  // Si la reunión ya terminó y el usuario es el creador: solo mostrar "Guardar asistencia"
+  if (drawerEditCta) drawerEditCta.style.display = (canEdit && !hasEnded) ? 'inline-flex' : 'none';
+  if (drawerDeleteCta) drawerDeleteCta.style.display = (canEdit && !hasEnded) ? 'inline-flex' : 'none';
+  if (drawerSaveCta) drawerSaveCta.style.display = (canEdit && hasEnded) ? 'inline-flex' : 'none';
 
   const showParticipantsInsteadOfDescription = !!canEdit;
   const descSection = document.getElementById('detail-descripcion-section');

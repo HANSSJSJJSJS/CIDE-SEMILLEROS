@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class DashboardController_semi extends Controller
 {
@@ -121,8 +122,8 @@ class DashboardController_semi extends Controller
             $progresoPromedio = (int) round($semilleros->avg('progreso'));
         }
 
-        // Actividad reciente (mock)
-        $actividadReciente = $this->obtenerActividadReciente();
+        // Actividad reciente real basada en evidencias/documentos de los proyectos
+        $actividadReciente = $this->obtenerActividadReciente($semilleroIds);
 
         return view('lider_semi.dashboard_lider_semi', compact(
             'lider',
@@ -136,21 +137,85 @@ class DashboardController_semi extends Controller
         ));
     }
 
-    private function obtenerActividadReciente()
+    private function obtenerActividadReciente(array $semilleroIds): array
     {
-        return [
-            [
-                'tipo' => 'nuevo_aprendiz',
-                'titulo' => 'María González se unió al Semillero de IA',
-                'descripcion' => 'Nuevo aprendiz registrado en el grupo',
-                'tiempo' => 'Hace 5 minutos'
-            ],
-            [
+        // Si no hay semilleros asociados o no existe la tabla de documentos, no mostramos actividad
+        if (empty($semilleroIds) || !Schema::hasTable('documentos')) {
+            return [];
+        }
+
+        // Campos presentes en tu dump: documentos.fecha_subida, documentos.id_aprendiz, documentos.id_proyecto
+        // Proyectos -> semilleros.id_semillero para filtrar solo lo del líder actual.
+        $query = DB::table('documentos as d')
+            ->join('proyectos as p', 'p.id_proyecto', '=', 'd.id_proyecto')
+            ->join('aprendices as a', 'a.id_aprendiz', '=', 'd.id_aprendiz')
+            ->leftJoin('users as u', 'u.id', '=', 'a.user_id')
+            ->whereIn('p.id_semillero', $semilleroIds)
+            // Solo considerar entregas reales: que tengan archivo o enlace asociado
+            ->where(function ($q) {
+                $q->whereNotNull('d.documento')->where('d.documento', '<>', '')
+                  ->orWhere(function ($q2) {
+                      $q2->whereNotNull('d.ruta_archivo')->where('d.ruta_archivo', '<>', '');
+                  })
+                  ->orWhere(function ($q3) {
+                      if (Schema::hasColumn('documentos', 'enlace_evidencia')) {
+                          $q3->whereNotNull('d.enlace_evidencia')->where('d.enlace_evidencia', '<>', '');
+                      }
+                  });
+            })
+            ->select([
+                'd.id_documento',
+                'd.titulo_avance',
+                'd.descripcion_avance',
+                'd.documento',
+                'd.ruta_archivo',
+                'd.tipo_archivo',
+                'd.fecha_subida',
+                'd.fecha_subido',
+                'p.nombre_proyecto',
+                'a.id_aprendiz',
+                'a.nombres as apr_nombres',
+                'a.apellidos as apr_apellidos',
+                'a.correo_institucional as apr_correo',
+                'u.nombre as usr_nombre',
+                'u.apellidos as usr_apellidos',
+            ])
+            ->orderByDesc(DB::raw('COALESCE(d.fecha_subida, d.fecha_subido, NOW())'))
+            ->limit(6);
+
+        $rows = $query->get();
+
+        return $rows->map(function ($row) {
+            // Construir nombre del aprendiz: primero desde aprendices, luego desde users, por último correo
+            $nombre = trim((string)($row->apr_nombres ?? '').' '.(string)($row->apr_apellidos ?? ''));
+            if ($nombre === '') {
+                $nombre = trim((string)($row->usr_nombre ?? '').' '.(string)($row->usr_apellidos ?? ''));
+            }
+            if ($nombre === '') {
+                $nombre = $row->apr_correo ?? 'Aprendiz';
+            }
+
+            // Texto principal
+            $titulo = $nombre.' subió un documento';
+
+            // Descripción: nombre del proyecto + nombre del archivo o título de avance
+            $archivo = $row->documento ?: ($row->titulo_avance ?: 'Evidencia subida');
+            $descripcion = ($row->nombre_proyecto ?? 'Proyecto')." - ".$archivo;
+
+            // Tiempo relativo usando Carbon
+            $fechaRaw = $row->fecha_subida ?? $row->fecha_subido ?? null;
+            if ($fechaRaw) {
+                $tiempo = Carbon::parse($fechaRaw)->locale('es')->diffForHumans(now(), true).' atrás';
+            } else {
+                $tiempo = 'Hace poco';
+            }
+
+            return [
                 'tipo' => 'documento',
-                'titulo' => 'Carlos Pérez subió un documento',
-                'descripcion' => 'Proyecto Final - Desarrollo Web.pdf',
-                'tiempo' => 'Hace 1 hora'
-            ],
-        ];
+                'titulo' => $titulo,
+                'descripcion' => $descripcion,
+                'tiempo' => $tiempo,
+            ];
+        })->toArray();
     }
 }

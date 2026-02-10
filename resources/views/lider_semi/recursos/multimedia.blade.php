@@ -29,19 +29,23 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(data => {
             const cont = document.getElementById('contenedorMultimedia');
 
-            if (!data.length) {
+            if (!Array.isArray(data) || !data.length) {
                 cont.innerHTML = `<p class="text-muted">No hay archivos disponibles.</p>`;
                 return;
             }
 
+            cont.innerHTML = '';
             data.forEach(r => {
-                const url = `/storage/${r.archivo}`;
+                const url = r.url || (`/storage/${r.archivo}`);
+                const nombre = r.nombre_archivo || 'Archivo sin nombre';
+                const categoria = r.categoria || '';
+
                 cont.innerHTML += `
                     <div class="col-md-4">
                         <div class="card h-100 shadow-sm">
                             <div class="card-body">
-                                <h6>${r.nombre_archivo}</h6>
-                                <p class="text-muted">${r.categoria}</p>
+                                <h6 class="text-truncate" title="${nombre}">${nombre}</h6>
+                                ${categoria ? `<p class="text-muted mb-3">${categoria}</p>` : ''}
                                 <a href="${url}" class="btn btn-sm btn-primary" download>
                                     <i class="bi bi-download"></i> Descargar
                                 </a>
