@@ -21,6 +21,13 @@
     };
 </script>
 
+{{-- CONTENEDOR DE NOTIFICACIONES --}}
+<div class="notification-container" id="notificationContainer"></div>
+
+<div class="recursos-wrapper">
+
+<div class="container-fluid mt-4 px-4">
+
 {{-- MODAL --}}
 @include('admin.recursos.multimedia._modal_multimedia')
 
@@ -65,6 +72,10 @@
     <h4 class="seccion-titulo">Otros archivos</h4>
     <div id="contenedorOtros" class="row g-4"></div>
 </div>
+
+</div> {{-- .container-fluid --}}
+
+</div> {{-- .recursos-wrapper --}}
 
 @endsection
 
