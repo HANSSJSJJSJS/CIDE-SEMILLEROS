@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class PasswordController extends Controller
 {
@@ -37,18 +38,23 @@ class PasswordController extends Controller
             'password.confirmed' => 'Las contraseñas no coinciden.',
         ]);
 
-        Auth::user()->update([
-                'password' => Hash::make($request->password),
-                'must_change_password' => 0,
-            ]);
+        $update = [
+            'password' => Hash::make($request->password),
+        ];
+
+        if (Schema::hasColumn('users', 'must_change_password')) {
+            $update['must_change_password'] = 0;
+        }
+
+        Auth::user()->update($update);
 
         $user = Auth::user();
 
-return redirect()->route(match ($user->role) {
-    'ADMIN', 'LIDER_INVESTIGACION' => 'admin.dashboard',
-    'LIDER_SEMILLERO'              => 'lider.dashboard',
-    'APRENDIZ'                     => 'aprendiz.dashboard',
-    default                        => 'home',
-})->with('success', 'Contraseña actualizada correctamente.');
+        return redirect()->route(match ($user->role) {
+            'ADMIN', 'LIDER_INVESTIGACION' => 'admin.dashboard',
+            'LIDER_SEMILLERO'             => 'lider_semi.dashboard',
+            'APRENDIZ'                    => 'aprendiz.dashboard',
+            default                       => 'home',
+        })->with('success', 'Contraseña actualizada correctamente.');
     }
 }

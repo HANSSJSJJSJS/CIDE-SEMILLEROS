@@ -11,7 +11,6 @@ use App\Http\Controllers\ProfileController;
 // Controladores generales
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LiderController;
-use App\Http\Controllers\GrupoInvestigacionController;
 
 // Admin (alias correctos)
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -273,7 +272,7 @@ Route::middleware([
             Route::get('semilleros/{semillero}/lider', [SemilleroController::class, 'liderJson'])
                 ->name('semilleros.liderJson');
 
-             Route::get('semilleros/{semillero}/recursos', [RecursoController::class, 'porSemillero'])
+             Route::get('semilleros/{semillero}/recursos', [AdminRecursoController::class, 'porSemillero'])
             ->whereNumber('semillero')
             ->name('semilleros.recursos');
 
@@ -456,7 +455,7 @@ Route::middleware(['auth', 'role:ADMIN,LIDER_SEMILLERO'])->group(function () {
 });
 
 Route::middleware(['auth', 'role:ADMIN,LIDER_SEMILLERO,LIDER_GENERAL'])->group(function () {
-    Route::resource('grupos', GrupoInvestigacionController::class)->only(['index','create','store','show']);
+    // Route::resource('grupos', GrupoInvestigacionController::class)->only(['index','create','store','show']);
 });
 
 /*

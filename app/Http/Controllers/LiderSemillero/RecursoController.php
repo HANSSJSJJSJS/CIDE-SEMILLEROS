@@ -21,15 +21,53 @@ class RecursoController extends Controller
     {
         $user = Auth::user();
 
-        $semillero = Semillero::where('id_lider_semi', $user->id)->first();
+        $semillero = Semillero::where(function ($w) use ($user) {
+            $w->where('id_lider_semi', $user->id);
+            if (Schema::hasColumn('semilleros', 'id_lider_usuario')) {
+                $w->orWhere('id_lider_usuario', $user->id);
+            }
+        })->first();
 
-        $proyectos = $semillero 
+
+        $proyectos = $semillero
             ? Proyecto::where('id_semillero', $semillero->id_semillero)->get()
             : collect();
 
-        $recursos = Recurso::whereIn('dirigido_a', ['lideres', 'todos'])
+        if (!$semillero) {
+            $recursos = collect();
+        } else {
+            $recursosCols = [];
+            try {
+                if (Schema::hasTable('recursos')) {
+                    $recursosCols = Schema::getColumnListing('recursos');
+                }
+            } catch (\Throwable $e) {
+                $recursosCols = [];
+            }
+
+            $hasCol = function (string $col) use ($recursosCols): bool {
+                return in_array($col, $recursosCols, true);
+            };
+
+            $semilleroKey = $hasCol('semillero_id') ? 'semillero_id' : ($hasCol('id_semillero') ? 'id_semillero' : null);
+            $proyectoKey = $hasCol('proyecto_id') ? 'proyecto_id' : ($hasCol('id_proyecto') ? 'id_proyecto' : null);
+
+            $proyectoIds = $proyectos->pluck('id_proyecto')->filter()->values()->all();
+
+            $recursosQuery = Recurso::whereIn('dirigido_a', ['lideres', 'todos']);
+
+            if ($semilleroKey) {
+                $recursosQuery->where($semilleroKey, $semillero->id_semillero);
+            }
+
+            if ($proyectoKey && !empty($proyectoIds)) {
+                $recursosQuery->whereIn($proyectoKey, $proyectoIds);
+            }
+
+            $recursos = $recursosQuery
                 ->orderBy('created_at', 'desc')
                 ->get();
+        }
 
         return view('lider_semi.recursos.index', compact('proyectos', 'recursos'));
     }
@@ -339,10 +377,25 @@ public function obtenerMultimedia()
         return response()->json([]);
     }
 
+    $user = Auth::user();
+
+    $semillero = Semillero::where(function ($w) use ($user) {
+        $w->where('id_lider_semi', $user->id);
+        if (Schema::hasColumn('semilleros', 'id_lider_usuario')) {
+            $w->orWhere('id_lider_usuario', $user->id);
+        }
+    })->first();
+
+    if (!$semillero) {
+        return response()->json([]);
+    }
+
     $cols = Schema::getColumnListing('recursos');
 
     // Detectar ID real
     $idCol = in_array('id_recurso', $cols) ? 'id_recurso' : 'id';
+
+    $semilleroKey = in_array('semillero_id', $cols, true) ? 'semillero_id' : (in_array('id_semillero', $cols, true) ? 'id_semillero' : null);
 
     $recursos = DB::table('recursos')
         ->select([
@@ -354,7 +407,10 @@ public function obtenerMultimedia()
             DB::raw("LOWER(SUBSTRING_INDEX(archivo, '.', -1)) as extension"),
         ])
         ->whereNotNull('archivo')
-        ->whereIn('dirigido_a', ['todos', 'semillero']) // 👈 CLAVE
+        ->whereIn('dirigido_a', ['todos', 'semillero'])
+        ->when($semilleroKey, function ($q) use ($semilleroKey, $semillero) {
+            $q->where($semilleroKey, $semillero->id_semillero);
+        })
         ->orderBy('created_at', 'desc')
         ->get()
         ->map(function ($r) {

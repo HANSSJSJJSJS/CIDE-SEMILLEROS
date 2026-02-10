@@ -13,6 +13,31 @@
 }
 
 /* ==========================================================
+   🖼️ FONDO DEL MÓDULO DE RECURSOS
+   Usa la misma imagen decorativa del panel admin
+=========================================================== */
+.recursos-wrapper{
+    position: relative;
+    min-height: calc(100vh - 140px);
+    padding-bottom: 40px;
+    overflow: hidden; /* 👈 CLAVE: evita que sobresalga */
+    z-index: 0;
+}
+
+.recursos-wrapper::before{
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+
+    background-image: url("/images/fondo_page.png");
+    background-repeat: no-repeat;
+    background-position: center top;
+    background-size: contain; /* 👈 controla el tamaño */ 
+    pointer-events: none;
+}
+
+/* ==========================================================
    🧩 HEADER PRINCIPAL
 =========================================================== */
 

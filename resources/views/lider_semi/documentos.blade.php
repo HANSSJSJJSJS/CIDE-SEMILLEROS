@@ -9,6 +9,21 @@
 <!-- Contenedor de Notificaciones -->
 <div class="notification-container" id="notificationContainer"></div>
 
+<div class="modal-overlay" id="modalConfirmAprobar" style="display:none; position:fixed; inset:0; z-index:1400;">
+    <div class="modal-evidencia" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);">
+        <button class="btn-cerrar-modal" onclick="cerrarModalConfirmAprobar()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 2rem; color: #666; cursor: pointer;">×</button>
+        <h2 style="margin-bottom: 1rem; color:#1e4620;">Aprobar entrega</h2>
+        <p style="margin-bottom: 1.25rem; color:#555;">¿Estás seguro de aprobar esta entrega?</p>
+
+        <input type="hidden" id="aprobar_entrega_id">
+
+        <div class="modal-botones">
+            <button type="button" class="btn-cancelar-modal" onclick="cerrarModalConfirmAprobar()">Cancelar</button>
+            <button type="button" class="btn-guardar-modal" onclick="confirmarAprobarEntrega()">Aprobar</button>
+        </div>
+    </div>
+</div>
+
 <div class="container-fluid mt-4 px-4">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4 documentos-header">
@@ -489,7 +504,7 @@ function cargarEntregas(proyectoId) {
                                         <button class="btn-rechazar" disabled title="Bloqueado hasta reenvío del aprendiz" style="opacity:0.5; cursor:not-allowed;">Rechazar</button>
                                     ` : `
                                         ${entrega.estado !== 'aprobado' ? `
-                                            <button class="btn-aprobar" onclick="cambiarEstadoEntrega(${entrega.id}, 'aprobado')">Aprobar</button>
+                                            <button class="btn-aprobar" onclick="abrirModalConfirmAprobar(${entrega.id})">Aprobar</button>
                                             <button class="btn-rechazar" onclick="abrirModalMotivoRechazo(${entrega.id})">Rechazar</button>
                                         ` : ''}
                                     `}
@@ -532,6 +547,32 @@ function cargarEntregas(proyectoId) {
 
 // ===== Rechazo de evidencia con modal flotante =====
 let rechazoEntregaId = null;
+let aprobarEntregaId = null;
+
+function abrirModalConfirmAprobar(entregaId) {
+    aprobarEntregaId = entregaId;
+    const overlay = document.getElementById('modalConfirmAprobar');
+    const modalEntregas = document.getElementById('modalEntregas');
+    if (modalEntregas) {
+        modalEntregas.classList.remove('active');
+    }
+    document.getElementById('aprobar_entrega_id').value = entregaId;
+    overlay.style.display = 'block';
+    overlay.classList.add('active');
+}
+
+function cerrarModalConfirmAprobar() {
+    const overlay = document.getElementById('modalConfirmAprobar');
+    overlay.classList.remove('active');
+    overlay.style.display = 'none';
+    aprobarEntregaId = null;
+}
+
+function confirmarAprobarEntrega() {
+    const entregaId = aprobarEntregaId || document.getElementById('aprobar_entrega_id').value;
+    cerrarModalConfirmAprobar();
+    cambiarEstadoEntrega(entregaId, 'aprobado');
+}
 
 function abrirModalMotivoRechazo(entregaId) {
     rechazoEntregaId = entregaId;
@@ -574,12 +615,6 @@ function enviarMotivoRechazo(event) {
 
 // Cambiar estado de entrega (aprobar o rechazar con motivo opcional)
 function cambiarEstadoEntrega(entregaId, nuevoEstado, motivo = null) {
-    if (nuevoEstado === 'aprobado') {
-        if (!confirm('¿Estás seguro de aprobar esta entrega?')) {
-            return;
-        }
-    }
-
     fetch(`/lider_semi/entregas/${entregaId}/estado`, {
         method: 'PUT',
         headers: {

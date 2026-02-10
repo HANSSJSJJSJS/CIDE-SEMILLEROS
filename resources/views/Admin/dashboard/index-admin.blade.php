@@ -6,6 +6,15 @@
     --blue-900: #0b2e4d;
   }
 
+  .adm-page {
+  background-image: url('{{ asset('images/fondo_page.png') }}');
+  background-size: contain;      /* o cover, te explico abajo */
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-attachment: scroll; /* evita que afecte al entorno */
+  background-color: #ffffff;
+  }
+
   .kpi-card { border-radius: 14px; }
   .kpi-value { font-size: 1.8rem; font-weight: 700; }
   .kpi-label { color: #6c757d; }

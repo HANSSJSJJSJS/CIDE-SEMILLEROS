@@ -32,6 +32,8 @@
 
 <div class="notification-container" id="notificationContainer"></div>
 
+<div class="recursos-wrapper">
+
 <div class="container-fluid mt-4 px-4">
 
     {{-- HEADER --}}
@@ -82,7 +84,10 @@
 
         </div>
     </div>
-</div>
+
+</div> {{-- .container-fluid --}}
+
+</div> {{-- .recursos-wrapper --}}
 
 {{-- MODALES --}}
 @include('admin.recursos.modal-ver-recursos')

@@ -202,6 +202,8 @@ class UsuarioController extends Controller
             'contacto_celular'        => ['nullable','string','max:30'],
         ], [
             'ls_semillero_id.required_if' => 'Debes seleccionar un semillero para el líder de semillero.',
+            'email.unique'                => 'El correo ya está registrado. Usa uno diferente.',
+            'documento.unique'            => 'El número de documento ya está registrado. Usa uno diferente.',
         ]);
 
         $role      = $roleMap[$data['role']];
@@ -210,7 +212,7 @@ class UsuarioController extends Controller
 
         try {
             // ============= USERS =============
-            $user = User::create([
+            $userData = [
                 'nombre'         => $data['nombre'],
                 'apellidos'      => $data['apellido'],
                 'email'          => $data['email'],
@@ -221,8 +223,13 @@ class UsuarioController extends Controller
                 'celular'        => $data['celular'] ?? null,
                 'genero'         => $data['genero'] ?? null,
                 'tipo_rh'        => $data['tipo_rh'] ?? null,
-                'must_change_password' => 1,
-            ]);
+            ];
+
+            if (Schema::hasColumn('users', 'must_change_password')) {
+                $userData['must_change_password'] = 1;
+            }
+
+            $user = User::create($userData);
             //  ENVIAR CREDENCIALES POR CORREO descomentar para enciar contraseña 
             //Mail::to($user->email)->send(
                 //new \App\Mail\UsuarioCreadoMail($user, $passwordPlano)

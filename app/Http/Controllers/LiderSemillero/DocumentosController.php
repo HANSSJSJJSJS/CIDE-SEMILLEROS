@@ -24,7 +24,12 @@ class DocumentosController extends Controller
 
         $proyectos = DB::table('proyectos as p')
             ->join('semilleros as s', 's.id_semillero', '=', 'p.id_semillero')
-            ->where('s.id_lider_semi', $userId)
+            ->where(function ($w) use ($userId) {
+                $w->where('s.id_lider_semi', $userId);
+                if (Schema::hasColumn('semilleros', 'id_lider_usuario')) {
+                    $w->orWhere('s.id_lider_usuario', $userId);
+                }
+            })
             ->select(
                 'p.id_proyecto',
                 DB::raw('COALESCE(p.nombre_proyecto, "Proyecto") as nombre'),
@@ -32,17 +37,6 @@ class DocumentosController extends Controller
                 DB::raw('COALESCE(p.estado, "ACTIVO") as estado')
             )
             ->get();
-
-        if ($proyectos->isEmpty()) {
-            $proyectos = DB::table('proyectos as p')
-                ->select(
-                    'p.id_proyecto',
-                    DB::raw('COALESCE(p.nombre_proyecto, "Proyecto") as nombre'),
-                    DB::raw('COALESCE(p.descripcion, "") as descripcion'),
-                    DB::raw('COALESCE(p.estado, "ACTIVO") as estado')
-                )
-                ->get();
-        }
 
         $proyectos->transform(function($proyecto){
             if (Schema::hasTable('documentos')) {

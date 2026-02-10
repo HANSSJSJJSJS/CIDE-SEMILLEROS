@@ -167,14 +167,18 @@ class SemilleroController extends Controller
                     $ids = $proyectos->pluck('id_proyecto')->filter()->values()->all();
                     if (!empty($ids)) {
                         // JOIN correcto según si la pivote usa id_aprendiz o id_usuario/user_id
-                        $useUserId = in_array($pivot['aprCol'], ['id_usuario','user_id']);
-                        $joinCol = ($useUserId && Schema::hasColumn('aprendices', 'id_usuario')) ? 'id_usuario' : 'id_aprendiz';
+                        $aprUserFkCol = null;
+                        foreach (['id_usuario', 'user_id', 'id_user'] as $cand) {
+                            if (Schema::hasColumn('aprendices', $cand)) { $aprUserFkCol = $cand; break; }
+                        }
+                        $useUserId = in_array($pivot['aprCol'], ['id_usuario','user_id'], true);
+                        $joinCol = ($useUserId && !empty($aprUserFkCol)) ? $aprUserFkCol : 'id_aprendiz';
                         // Preparar columnas dinámicas para nombre completo del aprendiz
                         $aprHasNombres   = Schema::hasColumn('aprendices','nombres');
                         $aprHasApellidos = Schema::hasColumn('aprendices','apellidos');
                         $usrNameCol = Schema::hasColumn('users','name') ? 'name' : (Schema::hasColumn('users','nombre') ? 'nombre' : null);
                         $usrLastCol = Schema::hasColumn('users','apellidos') ? 'apellidos' : (Schema::hasColumn('users','apellido') ? 'apellido' : null);
-                        $willJoinUser = !($aprHasNombres && $aprHasApellidos) && Schema::hasTable('users') && Schema::hasColumn('aprendices','user_id');
+                        $willJoinUser = !($aprHasNombres && $aprHasApellidos) && Schema::hasTable('users') && !empty($aprUserFkCol);
                         $joinByEmail  = Schema::hasTable('users') && Schema::hasColumn('users','email_lc') && Schema::hasColumn('aprendices','correo_institucional');
                         $uNameExpr  = ($willJoinUser && $usrNameCol) ? "u.`$usrNameCol`" : 'NULL';
                         $uLastExpr  = ($willJoinUser && $usrLastCol) ? "u.`$usrLastCol`" : 'NULL';
@@ -223,8 +227,8 @@ class SemilleroController extends Controller
 
                         $rows = DB::table($pivot['table'])
                             ->join('aprendices', 'aprendices.'.$joinCol, '=', DB::raw($pivot['table'].'.'.$pivot['aprCol']))
-                            ->when(!($aprHasNombres && $aprHasApellidos) && Schema::hasTable('users') && Schema::hasColumn('aprendices','user_id'), function($q){
-                                $q->leftJoin('users as u','u.id','=','aprendices.user_id');
+                            ->when(!($aprHasNombres && $aprHasApellidos) && Schema::hasTable('users') && !empty($aprUserFkCol), function($q) use ($aprUserFkCol){
+                                $q->leftJoin('users as u', 'u.id', '=', DB::raw('aprendices.' . $aprUserFkCol));
                             })
                             ->when(Schema::hasTable('users') && Schema::hasColumn('users','email_lc') && Schema::hasColumn('aprendices','correo_institucional'), function($q){
                                 $q->leftJoin('users as ue', DB::raw('ue.email_lc'), '=', DB::raw('LOWER(aprendices.correo_institucional)'));

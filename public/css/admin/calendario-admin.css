@@ -3,7 +3,13 @@
 
 .cal-admin { --cal-green: #35A900; --cal-green-dark: #007832; --cal-blue: #00304D; --cal-white: #ffffff; --cal-black: #000000; --cal-bg: #F5F8FA; --cal-border: #E6EEF3; --cal-muted: #6B7280; --cal-shadow: 0 2px 6px rgba(0,0,0,.06); }
 
-.cal-admin { background: var(--cal-bg); }
+/*
+  Importante para que se vea el mismo fondo que en el resto del panel admin:
+  dejamos el fondo del contenedor principal transparente y usamos solo
+  tarjetas/tablas blancas dentro. Así se muestra la imagen "fondo_page.png"
+  que viene desde .adm-page::before.
+*/
+.cal-admin { background: transparent; }
 
 /* Ocultar vistas no seleccionadas por defecto (evita superposición) */
 .cal-admin #weekView,

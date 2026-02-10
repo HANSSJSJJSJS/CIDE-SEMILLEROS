@@ -293,6 +293,12 @@
         <script> swalError(@json(session('error'))); </script>
     @endif
 
+    @if($errors->any())
+        <script>
+            swalError(@json(implode("\n", $errors->all())));
+        </script>
+    @endif
+
     {{-- JS de la pantalla --}}
     <script src="{{ asset('js/admin/usuarios.js') }}"></script>
 @endpush

@@ -263,6 +263,7 @@
                           <option value="ARTICULACION_MEDIA_10_11">
                             Articulación con la media – Décimo / Once
                           </option>
+                          <option value="TECNOACADEMIA_7_9">
                             Tecnoacademia – Séptimo / Octavo / Noveno
                           </option>
                           <option value="TECNICO">Técnico</option>
