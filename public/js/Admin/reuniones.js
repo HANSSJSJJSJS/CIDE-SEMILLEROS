@@ -1101,15 +1101,30 @@
         items.push(`<li><div class="fw-semibold">${safeName}</div>${safeEmail ? `<div class="text-muted">${safeEmail}</div>` : ''}</li>`);
       });
 
-      // 2) Aprendices vinculados al evento (evento_participantes / proyecto)
+      // 2) Aprendices (nombre + correo en la misma línea)
       const details = Array.isArray(event.participantsDetails) ? event.participantsDetails : [];
       details.forEach(p => {
-        const full = (p && (p.nombre || p.nombre_completo || p.name)) ? String(p.nombre || p.nombre_completo || p.name) : '';
-        const fallback = (p && (p.correo_institucional || p.email)) ? String(p.correo_institucional || p.email) : '';
-        const label = (full && full.trim() !== '') ? full.trim() : (fallback && fallback.trim() !== '' ? fallback.trim() : `Aprendiz #${p.id_aprendiz ?? ''}`);
-        const key = `A-${String(p.id_aprendiz ?? label)}`;
+        const baseId = String(p.id_aprendiz ?? '');
+        const key = `A-${baseId}`;
         if (seenKeys.has(key)) return;
         seenKeys.add(key);
+
+        const rawName  = (p && typeof p.nombre === 'string') ? p.nombre.trim() : '';
+        const rawEmail = (p && (p.correo_institucional || p.email))
+          ? String(p.correo_institucional || p.email).trim()
+          : '';
+
+        let label;
+        if (rawName && rawEmail) {
+          label = `${rawName} (${rawEmail})`;
+        } else if (rawName) {
+          label = rawName;
+        } else if (rawEmail) {
+          label = rawEmail;
+        } else {
+          label = `Aprendiz #${baseId || ''}`;
+        }
+
         const safeLabel = escapeHtml(label);
         items.push(`<li>${safeLabel}</li>`);
       });

@@ -150,19 +150,24 @@ class ReunionesLideresController extends Controller
                     if (Schema::hasColumn('aprendices', 'correo_institucional')) { $aprCols[] = 'a.correo_institucional'; }
                 }
 
-                $aprQuery = DB::table('evento_participantes as ep')
-                    ->whereIn('ep.id_evento', $eventoIds);
-
-                if (Schema::hasTable('aprendices')) {
-                    $aprQuery->leftJoin('aprendices as a', 'a.id_aprendiz', '=', 'ep.id_aprendiz');
-                }
-
-                $aprRows = $aprQuery
-                    ->select(array_merge(['ep.id_evento', 'ep.id_aprendiz', 'ep.asistencia', 'ep.id_lider_semi'], $aprCols))
+                $rows = DB::table('evento_participantes as ep')
+                    ->leftJoin('aprendices as a', 'a.id_aprendiz', '=', 'ep.id_aprendiz')
+                    // Unir con users para sacar nombre completo cuando aprendices.nombres/apellidos están vacíos
+                    ->leftJoin('users as u', 'u.id', '=', 'a.user_id')
+                    ->whereIn('ep.id_evento', $eventoIds)
+                    ->select(array_merge(
+                        ['ep.id_evento', 'ep.id_aprendiz', 'ep.asistencia', 'ep.id_lider_semi'],
+                        $aprCols,
+                        [
+                            'u.nombre as u_nombre',
+                            'u.apellidos as u_apellidos',
+                            'u.email as u_email',
+                        ]
+                    ))
                     ->get();
 
-                $aprRowsByEvento = $aprRows->groupBy('id_evento');
-                $leaderIdsFromParts = $aprRows->pluck('id_lider_semi')->filter()->values();
+                $aprRowsByEvento = $rows->groupBy('id_evento');
+                $leaderIdsFromParts = $rows->pluck('id_lider_semi')->filter()->values();
             } catch (\Throwable $e) {
                 $aprRowsByEvento = collect();
                 $leaderIdsFromParts = collect();
@@ -202,14 +207,29 @@ class ReunionesLideresController extends Controller
             $ev->participantes = $parts;
 
             $aprParts = collect($aprRowsByEvento->get($ev->id_evento, collect()))->map(function ($r) {
-                $full = trim(((string)($r->nombres ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
-                $name = $full !== '' ? $full : trim((string)($r->correo_institucional ?? ''));
-                if ($name === '') { $name = 'Aprendiz #' . (string)($r->id_aprendiz ?? ''); }
+                // 1) nombres/apellidos desde aprendices
+                $fullApr = trim(((string)($r->nombres ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
+                // 2) si no hay, intentar desde users (u_nombre/u_apellidos)
+                $fullUser = trim(((string)($r->u_nombre ?? '')) . ' ' . ((string)($r->u_apellidos ?? '')));
+                $full = $fullApr !== '' ? $fullApr : $fullUser;
+
+                // 3) fallback: correo institucional o email de users
+                $email = trim((string)($r->correo_institucional ?? '')) !== ''
+                    ? trim((string)$r->correo_institucional)
+                    : trim((string)($r->u_email ?? ''));
+
+                // 4) nombre final
+                $name = $full !== ''
+                    ? $full
+                    : ($email !== ''
+                        ? $email
+                        : 'Aprendiz #' . (string)($r->id_aprendiz ?? ''));
                 $st = strtoupper(trim((string)($r->asistencia ?? 'PENDIENTE')));
                 $asistencia = $st === 'ASISTIO' ? 'asistio' : ($st === 'NO_ASISTIO' ? 'no_asistio' : 'pendiente');
                 return [
                     'id_aprendiz' => (int)($r->id_aprendiz ?? 0),
                     'nombre' => $name,
+                    'correo_institucional' => $r->correo_institucional ?? $r->u_email ?? null,
                     'asistencia' => $asistencia,
                     'id_lider_semi' => (int)($r->id_lider_semi ?? 0),
                 ];
