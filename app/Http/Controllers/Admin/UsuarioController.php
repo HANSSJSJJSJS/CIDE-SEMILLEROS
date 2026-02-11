@@ -396,18 +396,19 @@ class UsuarioController extends Controller
     // ============================================================
     public function update(Request $request, User $usuario)
     {
+        // En la edición solo se modifican algunos campos; los básicos pueden venir omitidos
         $data = $request->validate([
-            'nombre'          => ['required','string','max:120'],
-            'apellido'        => ['required','string','max:255'],
+            'nombre'          => ['sometimes','string','max:120'],
+            'apellido'        => ['sometimes','string','max:255'],
             'email'           => ['required','email','max:160', Rule::unique('users','email')->ignore($usuario->id)],
             'password'        => ['nullable','string','min:6'],
 
             'tipo_documento'  => [
-                'required',
+                'sometimes',
                 'string',
                 Rule::in(['CC','TI','CE','PASAPORTE','PERMISO ESPECIAL','REGISTRO CIVIL']),
             ],
-            'documento'       => ['required','string','max:40', Rule::unique('users','documento')->ignore($usuario->id)],
+            'documento'       => ['sometimes','string','max:40', Rule::unique('users','documento')->ignore($usuario->id)],
             'celular'         => ['nullable','string','max:30'],
             'genero'          => ['nullable','in:HOMBRE,MUJER,NO DEFINIDO'],
             'tipo_rh'         => ['nullable','in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
@@ -442,15 +443,16 @@ class UsuarioController extends Controller
         DB::transaction(function () use ($usuario, $data, $vinculado) {
 
             // ========= USERS =========
+            // Mantener los valores actuales cuando no vengan en la petición
             $updateUser = [
-                'nombre'         => $data['nombre'],
-                'apellidos'      => $data['apellido'],
+                'nombre'         => $data['nombre']         ?? $usuario->nombre,
+                'apellidos'      => $data['apellido']       ?? $usuario->apellidos,
                 'email'          => $data['email'],
-                'tipo_documento' => $data['tipo_documento'],
-                'documento'      => $data['documento'],
-                'celular'        => $data['celular'] ?? null,
-                'genero'         => $data['genero'] ?? null,
-                'tipo_rh'        => $data['tipo_rh'] ?? null,
+                'tipo_documento' => $data['tipo_documento'] ?? $usuario->tipo_documento,
+                'documento'      => $data['documento']      ?? $usuario->documento,
+                'celular'        => $data['celular']        ?? $usuario->celular,
+                'genero'         => $data['genero']         ?? $usuario->genero,
+                'tipo_rh'        => $data['tipo_rh']        ?? $usuario->tipo_rh,
                 'updated_at'     => now(),
             ];
 

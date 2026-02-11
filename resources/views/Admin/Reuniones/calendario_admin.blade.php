@@ -225,7 +225,7 @@
       </section>
 
       <section class="drawer-section">
-        <h4 class="drawer-section-title">Descripción</h4>
+        <h4 class="drawer-section-title">Participantes</h4>
         <div id="detail-descripcion" class="drawer-description">--</div>
       </section>
 

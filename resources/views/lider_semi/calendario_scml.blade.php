@@ -436,10 +436,6 @@
             <div id="detail-asistencia-list" class="attendance-list"></div>
             <div id="detail-asistencia-summary" class="attendance-summary" style="margin-top:16px; display:none;"></div>
         </section>
-        <section class="drawer-section" id="detail-descripcion-section">
-            <h4 class="drawer-section-title">Descripción</h4>
-            <div id="detail-descripcion" class="drawer-description">--</div>
-        </section>
         <div class="drawer-actions">
             <button type="button" class="btn-calendario btn-primary-calendario" id="drawer-edit-cta" style="display:none;">Editar</button>
             <button type="button" class="btn-calendario btn-primary-calendario" id="drawer-save-cta" style="display:none;">Guardar asistencia</button>
@@ -1347,7 +1343,8 @@ function showEventDetails(event){
   document.getElementById('detail-hora').textContent = event.time || '--';
   document.getElementById('detail-duracion').textContent = formatDurationMinutes(event.duration||60);
   document.getElementById('detail-ubicacion').textContent = event.location || '--';
-  document.getElementById('detail-descripcion').textContent = event.description || '--';
+  // En el panel del líder, usamos esta sección para listar participantes
+  const descEl = document.getElementById('detail-descripcion');
   const linkField = document.getElementById('detail-link-field');
   const linkA = document.getElementById('detail-link');
   const genBtn = document.getElementById('detail-generate-link');
@@ -1385,6 +1382,30 @@ function showEventDetails(event){
       ? names.map(n=>`<span class="chip">${n}</span>`).join(' ')
       : '--';
   }
+  // También rellenar la sección inferior "Participantes" con una lista detallada
+  if (descEl){
+    const detailed = Array.isArray(event.participantsDetails) && event.participantsDetails.length
+      ? event.participantsDetails
+      : (Array.isArray(event.participantes_detalle) && event.participantes_detalle.length
+          ? event.participantes_detalle
+          : (Array.isArray(event.participantes) ? event.participantes : []));
+
+    if (detailed.length){
+      const items = detailed.map(p => {
+        const full = p.nombre || p.nombre_completo || p.name || '';
+        const fallback = p.correo_institucional || p.email || '';
+        const label = (full && String(full).trim() !== '')
+          ? String(full).trim()
+          : (fallback && String(fallback).trim() !== ''
+              ? String(fallback).trim()
+              : `Aprendiz #${p.id_aprendiz ?? ''}`);
+        return `<li>${label}</li>`;
+      }).join('');
+      descEl.innerHTML = `<ul class="drawer-participants-list">${items}</ul>`;
+    } else {
+      descEl.textContent = '--';
+    }
+  }
   // Checklist de asistencia (solo reuniones virtuales)
   const asistenciaSection = document.getElementById('detail-asistencia-section');
   const asistenciaList = document.getElementById('detail-asistencia-list');
@@ -1409,26 +1430,38 @@ function showEventDetails(event){
       }
 
       details.forEach(p => {
+        // Normalizar id del aprendiz para que coincida con el backend
+        const aprId = p.id_aprendiz || p.id;
+        p.id = aprId;
+        // Construir etiqueta de nombre: primero nombres/apellidos, luego correo, por último Aprendiz #id
+        const fullName = [p.nombres || '', p.apellidos || ''].join(' ').trim();
+        const displayName = fullName !== ''
+          ? fullName
+          : ((p.nombre && String(p.nombre).trim() !== '')
+              ? String(p.nombre).trim()
+              : ((p.correo_institucional && String(p.correo_institucional).trim() !== '')
+                  ? String(p.correo_institucional).trim()
+                  : `Aprendiz #${aprId ?? ''}`));
         const currentStatus = normalizeAttendanceStatus(p.asistencia);
         p.asistencia = currentStatus;
         const row = document.createElement('div');
         row.className = 'attendance-item-card';
         row.innerHTML = `
           <div class="attendance-card-header">
-            <div class="attendance-name">${p.nombre}</div>
+            <div class="attendance-name">${displayName}</div>
           </div>
           <div class="attendance-card-body">
             <div class="attendance-label">Asistencia</div>
             <p class="attendance-help">Marca si el participante asistió o no a la reunión virtual.</p>
             <div class="attendance-options">
               <label class="attendance-option">
-                <input type="radio" name="asistencia-${event.id}-${p.id}" value="pendiente"> Pendiente
+                <input type="radio" name="asistencia-${event.id}-${aprId}" value="pendiente"> Pendiente
               </label>
               <label class="attendance-option">
-                <input type="radio" name="asistencia-${event.id}-${p.id}" value="asistio"> Asistió
+                <input type="radio" name="asistencia-${event.id}-${aprId}" value="asistio"> Asistió
               </label>
               <label class="attendance-option">
-                <input type="radio" name="asistencia-${event.id}-${p.id}" value="no_asistio"> No asistió
+                <input type="radio" name="asistencia-${event.id}-${aprId}" value="no_asistio"> No asistió
               </label>
             </div>
           </div>`;

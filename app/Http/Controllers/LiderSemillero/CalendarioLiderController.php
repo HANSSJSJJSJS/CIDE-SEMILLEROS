@@ -363,7 +363,14 @@ class CalendarioLiderController extends Controller
         });
 
         if (Schema::hasColumn('eventos', 'id_admin')) {
-            $q->whereNull('id_admin');
+            // Mostrar eventos propios del líder (sin id_admin)
+            // y también aquellos creados por admin pero asignados explícitamente
+            $q->where(function ($w) use ($assignedIds) {
+                $w->whereNull('id_admin');
+                if ($assignedIds->isNotEmpty()) {
+                    $w->orWhereIn('id_evento', $assignedIds);
+                }
+            });
         }
 
         if (Schema::hasColumn('eventos','estado')) {
@@ -418,8 +425,18 @@ class CalendarioLiderController extends Controller
 
                 $rows = DB::table('evento_participantes as ep')
                     ->leftJoin('aprendices as a', 'a.id_aprendiz', '=', 'ep.id_aprendiz')
+                    // Unir con users para poder usar nombres/apellidos del usuario cuando los del aprendiz estén vacíos
+                    ->leftJoin('users as u', 'u.id', '=', 'a.user_id')
                     ->whereIn('ep.id_evento', $eventoIds)
-                    ->select(array_merge(['ep.id_evento', 'ep.id_aprendiz', 'ep.asistencia'], $aprCols))
+                    ->select(array_merge(
+                        ['ep.id_evento', 'ep.id_aprendiz', 'ep.asistencia'],
+                        $aprCols,
+                        [
+                            'u.nombre as u_nombre',
+                            'u.apellidos as u_apellidos',
+                            'u.email as u_email',
+                        ]
+                    ))
                     ->get()
                     ->groupBy('id_evento');
 
@@ -482,9 +499,23 @@ class CalendarioLiderController extends Controller
                     }
 
                     $partsCalc = $grp->map(function ($r) {
-                        $full = trim(((string)($r->nombres ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
-                        $name = $full !== '' ? $full : (string)($r->correo_institucional ?? '');
-                        if ($name === '') { $name = 'Aprendiz #' . (string)($r->id_aprendiz ?? ''); }
+                        // 1) nombres/apellidos desde aprendices
+                        $fullApr = trim(((string)($r->nombres ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
+                        // 2) si no hay, intentar desde users (u_nombre/u_apellidos)
+                        $fullUser = trim(((string)($r->u_nombre ?? '')) . ' ' . ((string)($r->u_apellidos ?? '')));
+                        $full = $fullApr !== '' ? $fullApr : $fullUser;
+
+                        // 3) fallback: correo institucional o email de users
+                        $email = trim((string)($r->correo_institucional ?? '')) !== ''
+                            ? trim((string)$r->correo_institucional)
+                            : trim((string)($r->u_email ?? ''));
+
+                        // 4) nombre final
+                        $name = $full !== ''
+                            ? $full
+                            : ($email !== ''
+                                ? $email
+                                : 'Aprendiz #' . (string)($r->id_aprendiz ?? ''));
 
                         $st = strtoupper(trim((string)($r->asistencia ?? 'PENDIENTE')));
                         $asistencia = $st === 'ASISTIO' ? 'asistio' : ($st === 'NO_ASISTIO' ? 'no_asistio' : 'pendiente');
@@ -614,17 +645,35 @@ class CalendarioLiderController extends Controller
                     if (Schema::hasColumn('aprendices', 'nombres')) { $aprCols[] = 'a.nombres'; }
                     if (Schema::hasColumn('aprendices', 'apellidos')) { $aprCols[] = 'a.apellidos'; }
                     if (Schema::hasColumn('aprendices', 'correo_institucional')) { $aprCols[] = 'a.correo_institucional'; }
+                    if (Schema::hasColumn('aprendices', 'user_id')) { $aprCols[] = 'a.user_id'; }
                     $rows = DB::table('aprendiz_proyecto as ap')
                         ->leftJoin('aprendices as a', 'a.id_aprendiz', '=', 'ap.id_aprendiz')
+                        ->leftJoin('users as u', 'u.id', '=', 'a.user_id')
                         ->where('ap.id_proyecto', $ev->id_proyecto)
-                        ->select(array_merge(['a.id_aprendiz'], $aprCols))
+                        ->select(array_merge(
+                            ['a.id_aprendiz'],
+                            $aprCols,
+                            [
+                                'u.nombre as u_nombre',
+                                'u.apellidos as u_apellidos',
+                                'u.email as u_email',
+                            ]
+                        ))
                         ->get();
                     $list = $rows->map(function ($r) {
-                        $name = trim(((string)($r->nombres ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
-                        if ($name === '') {
-                            $name = trim((string)($r->correo_institucional ?? ''));
-                        }
-                        if ($name === '') { $name = 'Aprendiz #' . (string)($r->id_aprendiz ?? ''); }
+                        $fullApr = trim(((string)($r->nombres ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
+                        $fullUser = trim(((string)($r->u_nombre ?? '')) . ' ' . ((string)($r->u_apellidos ?? '')));
+                        $full = $fullApr !== '' ? $fullApr : $fullUser;
+
+                        $email = trim((string)($r->correo_institucional ?? '')) !== ''
+                            ? trim((string)$r->correo_institucional)
+                            : trim((string)($r->u_email ?? ''));
+
+                        $name = $full !== ''
+                            ? $full
+                            : ($email !== ''
+                                ? $email
+                                : 'Aprendiz #' . (string)($r->id_aprendiz ?? ''));
                         return [
                             'id_aprendiz' => (int)($r->id_aprendiz ?? 0),
                             'nombre' => $name,
@@ -672,9 +721,11 @@ class CalendarioLiderController extends Controller
                 if (Schema::hasColumn('aprendices', 'nombres')) { $aprCols[] = 'a.nombres'; }
                 if (Schema::hasColumn('aprendices', 'apellidos')) { $aprCols[] = 'a.apellidos'; }
                 if (Schema::hasColumn('aprendices', 'correo_institucional')) { $aprCols[] = 'a.correo_institucional'; }
+                if (Schema::hasColumn('aprendices', 'user_id')) { $aprCols[] = 'a.user_id'; }
 
                 $rows = DB::table('evento_participantes as ep')
                     ->leftJoin('aprendices as a', 'a.id_aprendiz', '=', 'ep.id_aprendiz')
+                    ->leftJoin('users as u', 'u.id', '=', 'a.user_id')
                     ->whereIn('ep.id_evento', $badIds)
                     ->select(array_merge(['ep.id_evento', 'ep.id_aprendiz', 'ep.asistencia'], $aprCols))
                     ->get()
@@ -685,9 +736,19 @@ class CalendarioLiderController extends Controller
                     if (!$eid || !$rows->has($eid)) { return $ev; }
                     $grp = $rows->get($eid, collect());
                     $ev->participantes = $grp->map(function ($r) {
-                        $full = trim(((string)($r->nombres ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
-                        $name = $full !== '' ? $full : trim((string)($r->correo_institucional ?? ''));
-                        if ($name === '') { $name = 'Aprendiz #' . (string)($r->id_aprendiz ?? ''); }
+                        $fullApr = trim(((string)($r->nombres ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
+                        $fullUser = trim(((string)($r->u_nombre ?? '')) . ' ' . ((string)($r->u_apellidos ?? '')));
+                        $full = $fullApr !== '' ? $fullApr : $fullUser;
+
+                        $email = trim((string)($r->correo_institucional ?? '')) !== ''
+                            ? trim((string)$r->correo_institucional)
+                            : trim((string)($r->u_email ?? ''));
+
+                        $name = $full !== ''
+                            ? $full
+                            : ($email !== ''
+                                ? $email
+                                : 'Aprendiz #' . (string)($r->id_aprendiz ?? ''));
                         $st = strtoupper(trim((string)($r->asistencia ?? 'PENDIENTE')));
                         $asistencia = $st === 'ASISTIO' ? 'asistio' : ($st === 'NO_ASISTIO' ? 'no_asistio' : 'pendiente');
                         return [

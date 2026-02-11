@@ -4,8 +4,6 @@
 <link rel="stylesheet" href="{{ asset('css/admin/recursos.css') }}">
 @endpush
 
-@section('module-title','Multimedia')
-@section('module-subtitle','Gestión de recursos digitales')
 
 @section('content')
 
@@ -34,7 +32,7 @@
 {{-- HEADER --}}
 <div class="documentos-header d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="mb-2">Multimedia222</h2>
+        <h2 class="mb-2">Multimedia</h2>
         <p class="text-muted mb-0">
             Imágenes, documentos, presentaciones y otros archivos
         </p>

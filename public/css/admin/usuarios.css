@@ -293,9 +293,9 @@
    ========================================= */
 .acciones-semilleros {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    justify-content: flex-end;
+    flex-direction: column;   /* botones uno debajo del otro */
+    align-items: flex-end;    /* alineados a la derecha de la celda */
+    gap: 0.4rem;              /* espacio vertical entre botones */
 }
 
 /* Todos los botones dentro de acciones con mismo tamaño */
@@ -310,6 +310,11 @@
     border-radius: 999px;
     white-space: nowrap;
     line-height: 1;
+}
+
+/* Separar un poco más el botón "Ver datos" del botón "Eliminar" */
+.acciones-semilleros .btn-accion-ver {
+    margin-top: 0.4rem;
 }
 
 /* En pantallas pequeñas, que se acomoden uno debajo del otro */

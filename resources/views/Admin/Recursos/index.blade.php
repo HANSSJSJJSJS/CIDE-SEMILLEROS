@@ -45,15 +45,8 @@
 
         <div class="d-flex gap-2">
 
-            @if($canCreate)
-            <button class="btn btn-light btn-crear-proyecto" id="btnAbrirModalActividad">
-                <i class="bi bi-plus-lg me-2"></i>Crear Recurso
-            </button>
-            @endif
-
             {{-- BOTÓN MULTIMEDIA --}}
-          <a href="{{ route('admin.recursos.multimedia') }}" class="btn-multimedia">
-
+            <a href="{{ route('admin.recursos.multimedia') }}" class="btn-multimedia">
                 <i class="bi bi-collection-play"></i> Multimedia
             </a>
 

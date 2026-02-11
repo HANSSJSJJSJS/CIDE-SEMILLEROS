@@ -587,7 +587,7 @@
     const fLsSemillero = modalEl.querySelector('#edit_ls_semillero_nombre');
 
     // Campos Aprendiz
-    const fApSemillero   = modalEl.querySelector('#edit_ap_semillero_nombre');
+    const fApSemillero   = modalEl.querySelector('#edit_ap_semillero_select');
     const fApCorreoInst  = modalEl.querySelector('#edit_ap_correo_institucional');
     const fApNivel       = modalEl.querySelector('#edit_ap_nivel_educativo');
     const fApFicha       = modalEl.querySelector('#edit_ap_ficha');
@@ -608,6 +608,10 @@
       form.classList.remove('was-validated');
       bloqueLider.classList.add('d-none');
       bloqueAprendiz.classList.add('d-none');
+      if (fApSemillero) {
+        fApSemillero.disabled = true;
+        fApSemillero.value = '';
+      }
       form.action = `/admin/usuarios/${userId}`;
 
       try {
@@ -643,7 +647,10 @@
 
         if (u.role === 'APRENDIZ') {
           bloqueAprendiz.classList.remove('d-none');
-          fApSemillero.value = p.semillero_nombre || '—';
+          if (fApSemillero) {
+            fApSemillero.disabled = false;
+            fApSemillero.value = p.semillero_id || '';
+          }
           fApCorreoInst.value = p.correo_institucional || '';
           fApNivel.value = p.nivel_educativo || '';
           fApFicha.value = p.ficha || '';

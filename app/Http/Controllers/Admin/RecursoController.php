@@ -171,6 +171,11 @@ public function download(Recurso $recurso)
     {
         return DB::table('recursos')
             ->whereNotNull('archivo')
+            // Solo archivos físicos subidos desde el formulario de multimedia:
+            // se guardan con ruta "multimedia/..." en el disco public
+            ->where('archivo', 'like', 'multimedia/%')
+            // Excluir recursos de actividades para líderes (creados con storeActividad)
+            ->where('dirigido_a', '!=', 'lideres')
             ->orderBy('created_at', 'desc')
             ->limit(100)
             ->get();

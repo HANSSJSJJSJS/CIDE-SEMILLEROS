@@ -65,58 +65,58 @@
 
                             <div class="row g-3">
 
-                                {{-- Tipo documento (RO) --}}
+                                {{-- Tipo documento (editable) --}}
                                 <div class="col-md-3">
                                     <label class="form-label">Tipo de documento</label>
                                     <input type="text"
                                            id="edit_tipo_documento"
-                                           class="form-control form-control-sm bg-light text-muted border-0"
-                                           readonly>
+                                           name="tipo_documento"
+                                           class="form-control form-control-sm">
                                 </div>
 
-                                {{-- Documento (RO) --}}
+                                {{-- Documento (editable) --}}
                                 <div class="col-md-3">
                                     <label class="form-label">Número de documento</label>
                                     <input type="text"
                                            id="edit_documento"
-                                           class="form-control form-control-sm bg-light text-muted border-0"
-                                           readonly>
+                                           name="documento"
+                                           class="form-control form-control-sm">
                                 </div>
 
-                                {{-- Nombres (RO) --}}
+                                {{-- Nombres (editable) --}}
                                 <div class="col-md-3">
                                     <label class="form-label">Nombres</label>
                                     <input type="text"
                                            id="edit_nombre"
-                                           class="form-control form-control-sm bg-light text-muted border-0"
-                                           readonly>
+                                           name="nombre"
+                                           class="form-control form-control-sm">
                                 </div>
 
-                                {{-- Apellidos (RO) --}}
+                                {{-- Apellidos (editable) --}}
                                 <div class="col-md-3">
                                     <label class="form-label">Apellidos</label>
                                     <input type="text"
                                            id="edit_apellidos"
-                                           class="form-control form-control-sm bg-light text-muted border-0"
-                                           readonly>
+                                           name="apellido"
+                                           class="form-control form-control-sm">
                                 </div>
 
-                                {{-- Género (RO) --}}
+                                {{-- Género (editable) --}}
                                 <div class="col-md-3">
                                     <label class="form-label">Género</label>
                                     <input type="text"
                                            id="edit_genero"
-                                           class="form-control form-control-sm bg-light text-muted border-0"
-                                           readonly>
+                                           name="genero"
+                                           class="form-control form-control-sm">
                                 </div>
 
-                                {{-- Tipo RH (RO) --}}
+                                {{-- Tipo RH (editable) --}}
                                 <div class="col-md-3">
                                     <label class="form-label">Tipo de RH</label>
                                     <input type="text"
                                            id="edit_tipo_rh"
-                                           class="form-control form-control-sm bg-light text-muted border-0"
-                                           readonly>
+                                           name="tipo_rh"
+                                           class="form-control form-control-sm">
                                 </div>
 
                                 {{-- Celular (EDITABLE) --}}
@@ -191,13 +191,19 @@
                             </h6>
 
                             <div class="row g-3">
-                                {{-- Semillero (RO) --}}
+                                {{-- Semillero (editable) --}}
                                 <div class="col-md-6">
                                     <label class="form-label">Semillero</label>
-                                    <input type="text"
-                                           id="edit_ap_semillero_nombre"
-                                           class="form-control form-control-sm bg-light text-muted border-0"
-                                           readonly>
+                                    <select
+                                        id="edit_ap_semillero_select"
+                                        name="semillero_id"
+                                        class="form-select form-select-sm"
+                                        disabled>
+                                        <option value="">Seleccione un semillero</option>
+                                        @foreach(($semilleros ?? collect()) as $s)
+                                            <option value="{{ $s->id_semillero }}">{{ $s->nombre }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
 
                                 {{-- Correo institucional (EDITABLE) --}}
@@ -221,31 +227,31 @@
                                            readonly>
                                 </div>
 
-                                {{-- Ficha (RO) --}}
+                                {{-- Ficha (editable) --}}
                                 <div class="col-md-4">
                                     <label class="form-label">Ficha</label>
                                     <input type="text"
                                            id="edit_ap_ficha"
-                                           class="form-control form-control-sm bg-light text-muted border-0"
-                                           readonly>
+                                           name="ficha"
+                                           class="form-control form-control-sm">
                                 </div>
 
-                                {{-- Programa (RO) --}}
+                                {{-- Programa (editable) --}}
                                 <div class="col-md-4">
                                     <label class="form-label">Programa</label>
                                     <input type="text"
                                            id="edit_ap_programa"
-                                           class="form-control form-control-sm bg-light text-muted border-0"
-                                           readonly>
+                                           name="programa"
+                                           class="form-control form-control-sm">
                                 </div>
 
-                                {{-- Institución (RO cuando no es SENA) --}}
+                                {{-- Institución (editable) --}}
                                 <div class="col-md-6">
                                     <label class="form-label">Institución</label>
                                     <input type="text"
                                            id="edit_ap_institucion"
-                                           class="form-control form-control-sm bg-light text-muted border-0"
-                                           readonly>
+                                           name="institucion"
+                                           class="form-control form-control-sm">
                                 </div>
 
                                 {{-- Contacto emergencia (EDITABLE) --}}

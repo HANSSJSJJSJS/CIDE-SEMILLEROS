@@ -1075,12 +1075,57 @@
       creadorEl.textContent = name ? (email ? `${name} (${email})` : name) : '--';
     }
 
+    // Sección inferior: lista de participantes (líderes asignados y aprendices vinculados)
     const descEl = document.getElementById('detail-descripcion');
-    if (descEl) descEl.textContent = (event.description || '').trim() || '--';
+    if (descEl) {
+      const leaderIds = Array.isArray(event.participantsIds) ? event.participantsIds : [];
+      const sel = document.getElementById('event-participants');
+      const optById = new Map(
+        sel ? Array.from(sel.options).map(o => [String(o.value), o]) : []
+      );
+
+      const items = [];
+      const seenKeys = new Set();
+
+      // 1) Líderes asignados (evento_asignaciones -> participantsIds)
+      leaderIds.forEach(pid => {
+        const opt = optById.get(String(pid));
+        const label = opt ? (opt.textContent || '') : `Líder #${pid}`;
+        const name = label.split(' — ')[0] || label;
+        const email = label.split(' — ')[1] || '';
+        const key = `L-${String(pid)}`;
+        if (seenKeys.has(key)) return;
+        seenKeys.add(key);
+        const safeName = escapeHtml(name);
+        const safeEmail = escapeHtml(email);
+        items.push(`<li><div class="fw-semibold">${safeName}</div>${safeEmail ? `<div class="text-muted">${safeEmail}</div>` : ''}</li>`);
+      });
+
+      // 2) Aprendices vinculados al evento (evento_participantes / proyecto)
+      const details = Array.isArray(event.participantsDetails) ? event.participantsDetails : [];
+      details.forEach(p => {
+        const full = (p && (p.nombre || p.nombre_completo || p.name)) ? String(p.nombre || p.nombre_completo || p.name) : '';
+        const fallback = (p && (p.correo_institucional || p.email)) ? String(p.correo_institucional || p.email) : '';
+        const label = (full && full.trim() !== '') ? full.trim() : (fallback && fallback.trim() !== '' ? fallback.trim() : `Aprendiz #${p.id_aprendiz ?? ''}`);
+        const key = `A-${String(p.id_aprendiz ?? label)}`;
+        if (seenKeys.has(key)) return;
+        seenKeys.add(key);
+        const safeLabel = escapeHtml(label);
+        items.push(`<li>${safeLabel}</li>`);
+      });
+
+      if (items.length) {
+        descEl.innerHTML = `<ul class="drawer-participants-list">${items.join('')}</ul>`;
+      } else {
+        descEl.textContent = '--';
+      }
+    }
 
     const asistenciaSection = document.getElementById('detail-asistencia-section');
     const asistenciaList = document.getElementById('detail-asistencia-list');
     const asistenciaSummary = document.getElementById('detail-asistencia-summary');
+    const isAdminMeeting = event.idAdmin !== null && event.idAdmin !== undefined; // creada por Líder General
+
     if (asistenciaSection && asistenciaList && asistenciaSummary) {
       const normalizeAttendanceStatus = (raw) => {
         const base = String(raw || 'pendiente').toLowerCase();
@@ -1090,56 +1135,37 @@
         if (compact === 'asistio') return 'asistio';
         return 'pendiente';
       };
+
       const details = Array.isArray(event.participantsDetails) ? event.participantsDetails : [];
-      if (!details.length) {
+
+      // Si la reunión fue agendada por el líder general, ocultar completamente asistencia
+      if (isAdminMeeting) {
         asistenciaSection.style.display = 'none';
         asistenciaList.innerHTML = '';
         asistenciaSummary.innerHTML = '';
         asistenciaSummary.style.display = 'none';
       } else {
-        asistenciaSection.style.display = 'block';
-        asistenciaList.innerHTML = '';
-        const counts = { pendiente: 0, asistio: 0, no_asistio: 0 };
-        details.forEach(p => {
-          const st = normalizeAttendanceStatus(p?.asistencia);
-          counts[st] = (counts[st] || 0) + 1;
-          const label = st === 'asistio' ? 'Asistió' : (st === 'no_asistio' ? 'No asistió' : 'Pendiente');
-          const row = document.createElement('div');
-          row.className = 'attendance-item';
-          row.innerHTML = `<div class="name">${escapeHtml(p?.nombre || 'Participante')}</div><div class="hint">Estado: ${escapeHtml(label)}</div>`;
-          asistenciaList.appendChild(row);
-        });
-        asistenciaSummary.style.display = 'block';
-        asistenciaSummary.innerHTML = `<h5>Resumen</h5><div class="row"><div>Pendiente: ${counts.pendiente}</div><div>Asistió: ${counts.asistio}</div><div>No asistió: ${counts.no_asistio}</div></div>`;
-      }
-    }
-
-    // Participantes (nombres): usar IDs asignados desde backend (evento_asignaciones)
-    const namesList = document.getElementById('detail-participants-names');
-    if (namesList) {
-      namesList.innerHTML = '';
-      try {
-        const parts = Array.isArray(event.participantsIds) ? event.participantsIds : [];
-        const sel = document.getElementById('event-participants');
-        const optById = new Map(
-          sel ? Array.from(sel.options).map(o => [String(o.value), o]) : []
-        );
-        if (parts.length) {
-          parts.forEach(pid => {
-            const opt = optById.get(String(pid));
-            const label = opt ? (opt.textContent || '') : `Líder #${pid}`;
-            const name = label.split(' — ')[0] || label;
-            const email = label.split(' — ')[1] || '';
-            const li = document.createElement('li');
-            li.innerHTML = `<div style="font-weight:800;color:#0f172a;">${escapeHtml(name)}</div><div class="drawer-label">${escapeHtml(email)}</div>`;
-            namesList.appendChild(li);
-          });
+        if (!details.length) {
+          asistenciaSection.style.display = 'none';
+          asistenciaList.innerHTML = '';
+          asistenciaSummary.innerHTML = '';
+          asistenciaSummary.style.display = 'none';
         } else {
-          namesList.innerHTML = '<li>--</li>';
+          asistenciaSection.style.display = 'block';
+          asistenciaList.innerHTML = '';
+          const counts = { pendiente: 0, asistio: 0, no_asistio: 0 };
+          details.forEach(p => {
+            const st = normalizeAttendanceStatus(p?.asistencia);
+            counts[st] = (counts[st] || 0) + 1;
+            const label = st === 'asistio' ? 'Asistió' : (st === 'no_asistio' ? 'No asistió' : 'Pendiente');
+            const row = document.createElement('div');
+            row.className = 'attendance-item';
+            row.innerHTML = `<div class="name">${escapeHtml(p?.nombre || 'Participante')}</div><div class="hint">Estado: ${escapeHtml(label)}</div>`;
+            asistenciaList.appendChild(row);
+          });
+          asistenciaSummary.style.display = 'block';
+          asistenciaSummary.innerHTML = `<h5>Resumen</h5><div class="row"><div>Pendiente: ${counts.pendiente}</div><div>Asistió: ${counts.asistio}</div><div>No asistió: ${counts.no_asistio}</div></div>`;
         }
-      } catch (e) {
-        console.error('Participantes (nombres):', e);
-        namesList.innerHTML = '<li>--</li>';
       }
     }
 

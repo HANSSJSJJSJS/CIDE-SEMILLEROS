@@ -217,7 +217,44 @@ class ReunionesLideresController extends Controller
                 return (int)($p['id_aprendiz'] ?? 0) > 0;
             })->values();
 
+            // Participantes detallados base: los que vienen de evento_participantes (si existen)
             $ev->participantes_detalle = $aprParts->values()->all();
+
+            // Si aún no hay participantes detallados pero el evento está ligado a un proyecto,
+            // usar como fallback los aprendices asignados a ese proyecto.
+            if (empty($ev->participantes_detalle)
+                && !empty($ev->id_proyecto)
+                && Schema::hasTable('aprendiz_proyecto')
+                && Schema::hasTable('aprendices')) {
+                try {
+                    $rows = DB::table('aprendiz_proyecto as ap')
+                        ->leftJoin('aprendices as a', 'a.id_aprendiz', '=', 'ap.id_aprendiz')
+                        ->where('ap.id_proyecto', $ev->id_proyecto)
+                        ->select('a.id_aprendiz','a.nombres','a.apellidos','a.correo_institucional')
+                        ->get();
+
+                    $fallbackApr = $rows->map(function ($r) {
+                        $full = trim(((string)($r->nombres ?? '')) . ' ' . ((string)($r->apellidos ?? '')));
+                        $name = $full !== '' ? $full : trim((string)($r->correo_institucional ?? ''));
+                        if ($name === '') {
+                            $name = 'Aprendiz #' . (string)($r->id_aprendiz ?? '');
+                        }
+                        return [
+                            'id_aprendiz' => (int)($r->id_aprendiz ?? 0),
+                            'nombre'      => $name,
+                            'asistencia'  => 'pendiente',
+                        ];
+                    })->filter(function ($p) {
+                        return (int)($p['id_aprendiz'] ?? 0) > 0;
+                    })->values();
+
+                    if ($fallbackApr->isNotEmpty()) {
+                        $ev->participantes_detalle = $fallbackApr->all();
+                    }
+                } catch (\Throwable $e) {
+                    // noop: si falla el fallback, dejamos participantes_detalle como está
+                }
+            }
 
             $lid = null;
             if (Schema::hasColumn('eventos', 'id_lider_semi') && !empty($ev->id_lider_semi)) {
